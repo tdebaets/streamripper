@@ -59,7 +59,8 @@
 
 
 error_code filelib_init(BOOL do_count, BOOL keep_incomplete, 
-			BOOL do_single_file, char* single_file_name);
+			BOOL do_single_file, 	     
+			int content_type, char* show_file_name);
 error_code filelib_start(char *filename);
 error_code filelib_end(char *filename, BOOL over_write_existing, 
 			    /*out*/ char *fullpath);

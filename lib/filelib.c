@@ -63,11 +63,12 @@ static int 	m_count;
 static int      m_do_show;
 static char 	m_output_directory[SR_MAX_PATH];
 static char 	m_incomplete_directory[SR_MAX_PATH];
-static char 	m_filename_format[] = "%s%s.mp3";
+static char 	m_filename_format[] = "%s%s%s";
 static BOOL	m_keep_incomplete = TRUE;
 static int      m_max_filename_length;
 static char 	m_show_name[SR_MAX_PATH];
 static char 	m_cue_name[SR_MAX_PATH];
+static char* m_extension;
 
 
 // For now we're not going to care. If it makes it good. it not, will know 
@@ -85,7 +86,7 @@ mkdir_if_needed(char *str)
 
 error_code
 filelib_init(BOOL do_count, BOOL keep_incomplete, BOOL do_show_file,
-	     char* show_file_name)
+	     int content_type, char* show_file_name)
 {
     m_file = INVALID_FHANDLE;
     m_show_file = INVALID_FHANDLE;
@@ -95,6 +96,26 @@ filelib_init(BOOL do_count, BOOL keep_incomplete, BOOL do_show_file,
     memset(&m_output_directory, 0, SR_MAX_PATH);
     m_show_name[0] = 0;
     m_do_show = do_show_file;
+
+    switch (content_type) {
+    case CONTENT_TYPE_MP3:
+	m_extension = ".mp3";
+	break;
+    case CONTENT_TYPE_NSV:
+    case CONTENT_TYPE_ULTRAVOX:
+	m_extension = ".nsv";
+	break;
+    case CONTENT_TYPE_OGG:
+	m_extension = ".ogg";
+	break;
+    case CONTENT_TYPE_AAC:
+	m_extension = ".aac";
+	break;
+    default:
+	fprintf (stderr, "Error (wrong suggested content type: %d)\n", 
+	    content_type);
+	return SR_ERROR_PROGRAM_ERROR;
+    }
 
     if (do_show_file) {
 	if (show_file_name && *show_file_name) {
@@ -361,7 +382,7 @@ filelib_start(char *filename)
     close_file(&m_file);
 	
     trim_filename(filename, tfile);
-    sprintf(newfile, m_filename_format, m_incomplete_directory, tfile);
+    sprintf(newfile, m_filename_format, m_incomplete_directory, tfile, m_extension);
     temp = strlen(newfile);
     temp = strlen(tfile);
     temp = SR_MAX_PATH;
@@ -372,10 +393,10 @@ filelib_start(char *filename)
 	char oldfilename[TEMP_STR_LEN];
 	char oldfile[TEMP_STR_LEN];
 	strcpy(oldfilename, tfile);
-	sprintf(oldfile, m_filename_format, m_incomplete_directory, tfile);
+	sprintf(oldfile, m_filename_format, m_incomplete_directory, tfile, m_extension);
 	while(file_exists(oldfile)) {
 	    sprintf(oldfilename, "%s(%d)", tfile, n);
-	    sprintf(oldfile, m_filename_format, m_incomplete_directory, oldfilename);
+	    sprintf(oldfile, m_filename_format, m_incomplete_directory, oldfilename, m_extension);
 	    n++;
 	}
 	if (strcmp(newfile, oldfile) != 0)
@@ -401,12 +422,12 @@ filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath)
     // Make new paths for the old path and new
     memset(newfile, 0, TEMP_STR_LEN);
     memset(oldfile, 0, TEMP_STR_LEN);
-    sprintf(oldfile, m_filename_format, m_incomplete_directory, tfile);
+    sprintf(oldfile, m_filename_format, m_incomplete_directory, tfile, m_extension);
 
     if (m_count != -1)
-        sprintf(newfile, "%s%03d_%s.mp3", m_output_directory, m_count, tfile);
+        sprintf(newfile, "%s%03d_%s%s", m_output_directory, m_count, tfile, m_extension);
     else
-	sprintf(newfile, m_filename_format, m_output_directory, tfile);
+	sprintf(newfile, m_filename_format, m_output_directory, tfile, m_extension);
 
     // If we are over writing existing tracks
     if (!over_write_existing) {
@@ -543,7 +564,7 @@ filelib_shutdown()
      * We're just calling this to zero out 
      * the vars, it's not really nessasary.
      */
-    filelib_init(FALSE, TRUE, FALSE, 0);
+    filelib_init(FALSE, TRUE, FALSE, CONTENT_TYPE_MP3, 0);
 }
 
 error_code
@@ -551,7 +572,7 @@ filelib_remove(char *filename)
 {
     char delfile[SR_MAX_PATH];
 	
-    sprintf(delfile, m_filename_format, m_output_directory, filename);
+    sprintf(delfile, m_filename_format, m_output_directory, filename, m_extension);
     if (!DeleteFile(delfile))
 	return SR_ERROR_FAILED_TO_MOVE_FILE;
 
@@ -574,7 +595,7 @@ trim_mp3_suffix(char *filename, char* out)
     char* suffix_ptr;
     strncpy(out, filename, SR_MAX_PATH);
     suffix_ptr = out + strlen(out) - 4;  // -4 for ".mp3"
-    if (strcmp(suffix_ptr,".mp3") == 0) {
+    if (strcmp (suffix_ptr, m_extension) == 0) {
 	*suffix_ptr = 0;
     }
 }
@@ -610,5 +631,5 @@ set_show_filenames (void)
 	strcpy (m_show_name, m_cue_name);
     }
     strcat (m_cue_name, ".cue");
-    strcat (m_show_name, ".mp3");
+    strcat (m_show_name, m_extension);
 }

@@ -509,6 +509,13 @@ start_ripping()
     strcpy(m_ripinfo.streamname, m_info.icy_name);
     strcpy(m_ripinfo.server_name, m_info.server);
 
+    /* GCS testing... moved from rip_manager_start() */
+    filelib_init(GET_COUNT_FILES(m_options.flags),
+		 GET_KEEP_INCOMPLETE(m_options.flags),
+		 GET_SINGLE_FILE_OUTPUT(m_options.flags),
+		 m_info.content_type, 
+		 m_options.output_file);
+
     ret = set_output_directory();
     if (ret != SR_SUCCESS) {
 	goto RETURN_ERR;
@@ -581,10 +588,12 @@ rip_manager_start(void (*status_callback)(int message, void *data),
     if (!options)
 	return SR_ERROR_INVALID_PARAM;
 
+#if defined (commentout)
     filelib_init(GET_COUNT_FILES(options->flags),
 		 GET_KEEP_INCOMPLETE(options->flags),
 		 GET_SINGLE_FILE_OUTPUT(options->flags),
 		 options->output_file);
+#endif
     socklib_init();
 
     init_error_strings();

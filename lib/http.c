@@ -264,6 +264,10 @@ httplib_parse_sc_header(const char *url, char *header, SR_HTTP_HEADER *info)
     extract_header_value(header, info->http_location, "Location:");
     extract_header_value(header, info->server, "Server:");
     rc = extract_header_value(header, info->icy_name, "icy-name:");
+    if (rc == 0) {
+	/* Icecast 2.0.1 */
+	rc = extract_header_value(header, info->icy_name, "ice-name:");
+    }
     info->have_icy_name = rc;
     extract_header_value(header, info->icy_url, "icy-url:");
     extract_header_value(header, stempbr, "icy-br:");
@@ -271,6 +275,9 @@ httplib_parse_sc_header(const char *url, char *header, SR_HTTP_HEADER *info)
 
     /* interpret the content type from http header */
     rc = extract_header_value(header, stempbr, "Content-Type:");
+    if (rc == 0) {
+        rc = extract_header_value(header, stempbr, "content-type:");
+    }
     if (rc == 0) {
 	info->content_type = CONTENT_TYPE_UNKNOWN;
     }
