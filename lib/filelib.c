@@ -35,7 +35,7 @@
 /*********************************************************************************
  * Public functions
  *********************************************************************************/
-error_code	filelib_init(BOOL do_count);
+error_code	filelib_init(BOOL do_count, BOOL preserve_incomplete);
 error_code	filelib_start(char *filename);
 error_code	filelib_end(char *filename, BOOL over_write_existing);
 error_code	filelib_write(char *buf, u_long size);
@@ -48,7 +48,8 @@ error_code  filelib_remove(char *filename);
  * Private Functions
  *********************************************************************************/
 static error_code	mkdir_if_needed(char *str);
-static void close_file();
+static void			close_file();
+static BOOL			file_exists(char *filename);
 
 
 /*********************************************************************************
@@ -73,7 +74,7 @@ static int m_count;
 static char m_output_directory[MAX_PATH];
 static char m_incomplete_directory[MAX_PATH];
 static char m_filename_format[] = "%s%s.mp3";
-
+static BOOL	m_preserve_incomplete = TRUE;
 
 
 
@@ -90,10 +91,11 @@ error_code mkdir_if_needed(char *str)
 
 }
 
-error_code filelib_init(BOOL do_count)
+error_code filelib_init(BOOL do_count, BOOL preserve_incomplete)
 {
 	m_file = (HFILE)NULL;
 	m_count = do_count ? 1 : -1;
+	m_preserve_incomplete = preserve_incomplete;
 	memset(&m_output_directory, 0, MAX_PATH);
 
 	return SR_SUCCESS;
@@ -130,12 +132,46 @@ void close_file()
 	}
 }
 
+BOOL file_exists(char *filename)
+{
+	HANDLE f = CreateFile(filename, 
+					GENERIC_READ,              // open for reading 
+					FILE_SHARE_READ |           // share for reading 
+					FILE_SHARE_WRITE,
+					NULL,                      // no security 
+					OPEN_EXISTING,             // existing file only 
+					FILE_ATTRIBUTE_NORMAL,     // normal file 
+					NULL);                     // no attr. template 
+	CloseHandle(f);
+
+ 	if (f == INVALID_HANDLE_VALUE)
+		return FALSE;
+
+	return TRUE;
+}
+
+
 error_code filelib_start(char *filename)
 {
 	char newfile[MAX_FILENAME];
 	close_file();
 
 	sprintf(newfile, m_filename_format, m_incomplete_directory, filename);
+
+	if (m_preserve_incomplete)
+	{
+		char oldfilename[MAX_FILENAME];
+		char oldfile[MAX_FILENAME];
+		strcpy(oldfilename, filename);
+		sprintf(oldfile, m_filename_format, m_incomplete_directory, filename);
+		while(file_exists(oldfile))
+		{
+			sprintf(oldfilename, "%s_old", oldfilename);
+			sprintf(oldfile, m_filename_format, m_incomplete_directory, oldfilename);
+		}
+		if (strcmp(newfile, oldfile) != 0)
+			MOVE_FILE(newfile, oldfile);
+	}
 	
 #if WIN32	
 	m_file = CreateFile(newfile, GENERIC_WRITE,              // open for reading 
@@ -240,7 +276,7 @@ void filelib_shutdown()
     	 * We're just calling this to zero out 
 	 * the vars, it's not really nessasary.
 	 */
-	filelib_init(FALSE);
+	filelib_init(FALSE, TRUE);
 }
 
 error_code filelib_remove(char *filename)

@@ -9,7 +9,11 @@
 #define MAX_SERVER_LEN		1024
 #define MAX_DIR_LEN			100
 
+//
 // Messages for status_callback hook in rip_manager_init()
+// used for notifing to client whats going on *DO NOT* call rip_mananger_start or rip_mananger_stop from
+// these functions!!! it will cause a deadlock
+//
 #define RM_UPDATE		0x01		// returns a pointer RIP_MANAGER_INFO struct
 #define RM_ERROR		0x02		// returns the error code
 #define RM_DONE			0x03		// NULL
@@ -18,10 +22,12 @@
 #define RM_TRACK_DONE	0x06		// Name of the track completed
 #define RM_OUTPUT_DIR	0x07		// Full path of the output directory
 
+//
+// The following are the possible status values for RIP_MANAGER_INFO
+//
 #define RM_STATUS_BUFFERING		0x01
 #define RM_STATUS_RIPPING		0x02
 #define RM_STATUS_RECONNECTING	0x03
-#define RM_STATUS_DONE			0x04
 
 typedef struct RIP_MANAGER_INFOst
 {

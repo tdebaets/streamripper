@@ -281,21 +281,6 @@ void UpdateRippingDisplay()
 		case RM_STATUS_RECONNECTING:
 				strcpy(sStatusStr, "Re-connecting..");
 				break;
-		case RM_STATUS_DONE:
-				strcpy(sStatusStr, "Done");
-
-				/*
-				 * A stream is 'done' when it's lost a connection, or something 
-				 * bad happened. usually a connection dropped so we want to re-connect
-				 * (as long as the user said to). if we don't want to reconnect though,
-				 * we should tell the engine to stop (yes that's retrarded, it should
-				 * stop on it's own). this all started with ripping mp3.com stuff and 
-				 * having it stop automatticly, or at least look like it's stopped.
-				 */
-//				if (!OPT_FLAG_ISSET(OPT_AUTO_RECONNECT, m_rmoOpt.flags))
-//					stop_button_pressed();
-
-				break;
 		default:
 			OutputDebugString("************ what am i doing here?");
 	}
@@ -359,11 +344,22 @@ void RipCallback(int message, void *data)
 			break;
 		case RM_ERROR:
 			err = (ERROR_INFO*)data;
+OutputDebugString("***RipCallback: about to post error dialog\n");
 			MessageBox(m_hWnd, err->error_str, "Streamripper", MB_SETFOREGROUND);
+OutputDebugString("***RipCallback: done posting error dialog\n");
 			break;
 		case RM_DONE:
-			m_rmiInfo.status = RM_STATUS_DONE;
-			stop_button_pressed();
+			//stop_button_pressed();
+			//
+			// calling the stop button in here caused all kinds of stupid problems
+			// so, fuck it. call the clearing button shit here. 
+			//
+			render_clear_all_data();
+			m_bRipping = FALSE;
+			start_button_enable();
+			stop_button_disable();
+			render_set_prog_bar(FALSE);
+
 			break;
 		case RM_TRACK_DONE:
 			if (m_guiOpt.m_add_finshed_tracks_to_playlist)
@@ -374,6 +370,7 @@ void RipCallback(int message, void *data)
 				touch_page_listing(m_rmoOpt.proxyurl, m_rmiInfo.streamname, (char*)data, m_rmiInfo.bitrate);
 			break;
 		case RM_STARTED:
+			stop_button_enable();
 			break;
 		case RM_OUTPUT_DIR:
 			strcpy(m_output_dir, (char*)data);
@@ -400,7 +397,6 @@ void start_button_pressed()
 	m_bRipping = TRUE;
 
 	render_set_prog_bar(TRUE);
-	stop_button_enable();
 	PostMessage(m_hWnd, WM_MY_TRAY_NOTIFICATION, (WPARAM)NULL, WM_LBUTTONDBLCLK);
 }
 
@@ -408,9 +404,12 @@ void stop_button_pressed()
 {
 	OutputDebugString("stop\n");
 
+	stop_button_disable();
 	assert(m_bRipping);
 	render_clear_all_data();
+
 	rip_manager_stop();
+
 	m_bRipping = FALSE;
 	start_button_enable();
 	stop_button_disable();

@@ -80,12 +80,12 @@ static error_code	try_port(u_short port);
 /*********************************************************************************
  * Private vars 
  *********************************************************************************/
-static BOOL		m_connected = FALSE;
+static HEVENT	m_event_not_connected = NULL;
 static char		m_http_header[MAX_HEADER_LEN];
 static SOCKET	m_hostsock = 0;
 static SOCKET	m_listensock = 0;
 static BOOL		m_running = FALSE;
-static THREAD_HANDLE	m_hthread;
+static THREAD_HANDLE m_hthread;
 
 BOOL relaylib_isrunning()
 {
@@ -129,6 +129,15 @@ error_code relaylib_init(BOOL search_ports, int relay_port, int max_port, int *p
 	signal(SIGPIPE, catch_pipe);
 #endif
 
+	m_event_not_connected = threadlib_create_event();
+	if (m_event_not_connected == NULL)
+		return SR_ERROR_CANT_CREATE_EVENT;
+	//
+	// NOTE: we need to signel it here in case we try to destroy
+	// relaylib before the thread starts!
+	//
+	threadlib_signel_event(&m_event_not_connected);
+
 	*port_used = 0;
 	if (!search_ports)
 		max_port = relay_port;
@@ -153,10 +162,6 @@ error_code relaylib_init(BOOL search_ports, int relay_port, int max_port, int *p
 error_code try_port(u_short port)
 {
 	struct sockaddr_in local;
-	int ret;
-
-	m_connected = FALSE;
-
 
 	m_listensock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
 	if (m_listensock == SOCKET_ERROR)
@@ -166,8 +171,9 @@ error_code try_port(u_short port)
 	local.sin_family = AF_INET;
 	local.sin_port = htons(port);
 	
-	if ((ret = bind(m_listensock, (struct sockaddr *)&local, sizeof(local))) == SOCKET_ERROR)
+	if (bind(m_listensock, (struct sockaddr *)&local, sizeof(local)) == SOCKET_ERROR)
 	{
+		int x = WSAGetLastError();
 		closesocket(m_listensock);
 		return SR_ERROR_CANT_BIND_ON_PORT;
 	}
@@ -184,21 +190,29 @@ error_code try_port(u_short port)
 
 void relaylib_shutdown()
 {
+OutputDebugString("***relaylib_shutdown:start\n");
 	if (!relaylib_isrunning())
+	{
+OutputDebugString("***relaylib_shutdown:return'd\n");
+
 		return;
-debug_printf("in relaylib_shutdown()\n");
+	}
 	m_running = FALSE;
-debug_printf("1\n");
-	m_connected = FALSE;
-	threadlib_stop(&m_hthread);
-debug_printf("2\n");
-	closesocket(m_listensock);
-	closesocket(m_hostsock);
-debug_printf("3\n");
+	threadlib_signel_event(&m_event_not_connected);
+	if (closesocket(m_listensock) == SOCKET_ERROR)
+	{
+		int x = WSAGetLastError();
+	}
+	if (m_hostsock && closesocket(m_hostsock) == SOCKET_ERROR)
+	{
+		int x = WSAGetLastError();
+	}
 	memset(m_http_header, 0, MAX_HEADER_LEN);
-debug_printf("waiting for close()\n");
 	threadlib_waitforclose(&m_hthread);
-debug_printf("done with()\n");
+	threadlib_destroy_event(&m_event_not_connected);
+OutputDebugString("***relaylib_shutdown:done\n");
+	m_hostsock = m_listensock = 0;
+
 }
 
 
@@ -206,6 +220,7 @@ error_code relaylib_start()
 {
 	int ret;
 
+	m_running = TRUE;
 	// Spawn on a thread so it's non-blocking
 	if ((ret = threadlib_beginthread(&m_hthread, thread_accept)) != SR_SUCCESS)
 		return ret;
@@ -219,82 +234,60 @@ void thread_accept(void *notused)
 	int iAddrSize = sizeof(client);
 	char headbuf;
 
-	// Set listen and host sock to non blocking
-	#ifdef WIN32
-		{
-		unsigned long lame = 1;
-		ioctlsocket(m_hostsock, FIONBIO, &lame);
-		ioctlsocket(m_listensock, FIONBIO, &lame);
-		}
-	#else
-		fcntl(m_hostsock, F_SETFL, O_NONBLOCK);
-		fcntl(m_listensock, F_SETFL, O_NONBLOCK);
-	#endif
+OutputDebugString("***thread_accept:start\n");
 
-
-	m_running = TRUE;
 	while(m_running)
 	{
-
-		// if we're connected we don't want to accept
-		while(m_connected)
-			Sleep(10);
+		
+		//
+		// this event will keep use from accepting while we have a connection active
+		// when a connection gets dropped, or when streamripper shuts down
+		// this event will get signaled
+		//
+OutputDebugString("***thread_accept:threadlib_waitfor_event\n");
+		threadlib_waitfor_event(&m_event_not_connected);
+OutputDebugString("***thread_accept:threadlib_waitfor_event returned!\n");
+		if (!m_running)
+			break;
 
 		m_hostsock = accept(m_listensock, (struct sockaddr *)&client, &iAddrSize);
 		if (m_hostsock == SOCKET_ERROR)
 		{
-			if (WSAGetLastError() == EWOULDBLOCK)
-			{
-				Sleep(10);
-				continue;
-			}
 			break;
 		}
+		
+		//
+		// receive _some_ data, just enough to accept the request really.
+		// then send out http header
+		//
 
-		// Wait for some data
-		ret = 0;
-		while(!ret)
-		{
-			fd_set set;
-			struct timeval t;
-			t.tv_sec = t.tv_usec = 0;
-			FD_ZERO(&set); FD_SET(m_hostsock, &set);
-			ret = select(m_hostsock+1, &set, NULL, NULL, &t);
-		}
 		recv(m_hostsock, &headbuf, 1, 0); 
 		ret = send(m_hostsock, m_http_header, strlen(m_http_header), 0);
-		if (ret >= 0)
+		if (ret < 0)
 		{
-			m_connected = TRUE;
+			threadlib_signel_event(&m_event_not_connected);	// go back to accept
 		}
 	}
-	threadlib_close(&m_hthread);
 	m_running = FALSE;
-	return;
+	threadlib_endthread(&m_hthread);
 }
 
+//
+// this function will be called for us, if we're connected then we send some data
+// otherwise we just return with not connected
+//
 error_code relaylib_send(char *data, int len)
 {
 	int ret;
 
-	if (!m_connected)
+	if (threadlib_event_signaled(&m_event_not_connected))
 		return SR_ERROR_HOST_NOT_CONNECTED;
 
-	for(;;)
-	{
-		ret = send(m_hostsock, data, len, 0);
-		if (ret == -1 && WSAGetLastError() == EAGAIN)
-		{
-			Sleep(100);
-			continue;
-		}
-		break;
-	}
-
+	ret = send(m_hostsock, data, len, 0);
 	if (ret < 0)
 	{
 		m_hostsock = 0;
-		m_connected = FALSE;
+		threadlib_signel_event(&m_event_not_connected);
 		return SR_ERROR_HOST_NOT_CONNECTED;
 	}
 	return SR_SUCCESS;

@@ -67,97 +67,82 @@
  * Public functions
  *********************************************************************************/
 error_code	threadlib_beginthread(THREAD_HANDLE *thread, void (*callback)(void *));
-void		threadlib_stop(THREAD_HANDLE *thread);
-void		threadlib_close(THREAD_HANDLE *thread);
-void		threadlib_sleep(THREAD_HANDLE *thread, int sec);
 BOOL		threadlib_isrunning(THREAD_HANDLE *thread);
 void		threadlib_waitforclose(THREAD_HANDLE *thread);
+void		threadlib_endthread(THREAD_HANDLE *thread);
+
+HEVENT		threadlib_create_event();
+error_code	threadlib_waitfor_event(HEVENT *e);
+error_code	threadlib_signel_event(HEVENT *e);
+void		threadlib_destroy_event(HEVENT *e);
+BOOL		threadlib_event_signaled(HEVENT *e);
+
 
 error_code threadlib_beginthread(THREAD_HANDLE *thread, void (*callback)(void *))
 {
 	debug_printf("starting thread\n");
 
-	InitializeCriticalSection(&thread->crit);
-	thread->state = THREAD_STATE_RUNNING;
-	// the < 0 is for BeOS, all other OS's expect -1
-	if (beginthread(&thread->thread_handle, callback) < 0)	
-	{
-		thread->state = THREAD_STATE_CLOSED;
+	thread->_event = threadlib_create_event();
+	thread->thread_handle = (HANDLE) _beginthread(callback, 0, NULL);
+	if (thread->thread_handle == NULL)
 		return SR_ERROR_CANT_CREATE_THREAD;
-	}
 
 	return SR_SUCCESS;
 }
 
-void threadlib_stop(THREAD_HANDLE *thread)
-{
-	EnterCriticalSection(&thread->crit);
-	if (thread->state == THREAD_STATE_RUNNING)
-		thread->state = THREAD_STATE_CLOSE_PENDING;
-	LeaveCriticalSection(&thread->crit);
-}
-
-void threadlib_close(THREAD_HANDLE *thread)
-{
-	EnterCriticalSection(&thread->crit);
-	thread->state = THREAD_STATE_CLOSED;
-	LeaveCriticalSection(&thread->crit);
-	
-	debug_printf("Thread closed!!!!\n");
-}
-
-void threadlib_sleep(THREAD_HANDLE *thread, int sec)
-{
-	time_t start, now;
-	
-	time(&start);
-	while(TRUE)
-	{
-		EnterCriticalSection(&thread->crit);
-		if (thread->state != THREAD_STATE_RUNNING)
-		{
-			LeaveCriticalSection(&thread->crit);
-			break;
-		}
-		LeaveCriticalSection(&thread->crit);
-
-		time(&now);
-		if (now-start >= sec)
-			break;
-		Sleep(100);
-	}
-}
 BOOL threadlib_isrunning(THREAD_HANDLE *thread)
 {
-	BOOL state;
-
-	EnterCriticalSection(&thread->crit);
-	state = thread->state == THREAD_STATE_RUNNING;
-	LeaveCriticalSection(&thread->crit);
-	return state;
-	
+	return thread->thread_handle != NULL;
 }
 
 void threadlib_waitforclose(THREAD_HANDLE *thread)
 {
-	BOOL needloop;
+	WaitForSingleObject(thread->_event, INFINITE);
+	thread->thread_handle = NULL;
+}
 
-	EnterCriticalSection(&thread->crit);
-	needloop  = thread->state == THREAD_STATE_CLOSE_PENDING;
-	LeaveCriticalSection(&thread->crit);
-
-	if (!needloop)
-		return;
-
-	while(needloop)
-	{
-		EnterCriticalSection(&thread->crit);
-		needloop = thread->state != THREAD_STATE_CLOSED;
-		LeaveCriticalSection(&thread->crit);
-		Sleep(100);
-	}
-
-	DeleteCriticalSection(&thread->crit);
+void threadlib_endthread(THREAD_HANDLE *thread)
+{
+	SetEvent(thread->_event);
+	_endthread();
 }
 
 
+HEVENT threadlib_create_event()
+{
+	return CreateEvent(NULL, FALSE, FALSE, NULL);
+}
+
+BOOL threadlib_event_signaled(HEVENT *e)
+{
+	DWORD ret;
+	if (!e)
+		return FALSE;
+
+	ret = WaitForSingleObject(*e, 0);
+	return ret == WAIT_OBJECT_0;
+}
+
+
+error_code threadlib_waitfor_event(HEVENT *e)
+{
+	if (!e)
+		return SR_ERROR_INVALID_PARAM;
+	if (WaitForSingleObject(*e, INFINITE) != WAIT_OBJECT_0)
+		return SR_ERROR_CANT_WAIT_ON_THREAD;
+
+	return SR_SUCCESS;
+}
+error_code threadlib_signel_event(HEVENT *e)
+{
+	if (!e)
+		return SR_ERROR_INVALID_PARAM;
+
+	SetEvent(*e);
+
+	return SR_SUCCESS;
+}
+void threadlib_destroy_event(HEVENT *e)
+{
+	CloseHandle(*e);
+}

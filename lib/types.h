@@ -41,14 +41,6 @@ typedef unsigned char u_char;
 typedef unsigned short u_short;
 #endif
  
-typedef enum thread_state_enum
-{
-	THREAD_STATE_RUNNING = 2,
-	THREAD_STATE_CLOSE_PENDING = 1,
-	THREAD_STATE_CLOSED = 0
-} thread_state_e;
-
-
 /* 
  * IO_DATA_INPUT is a interface for socket input data, it has one 
  * method 'get_data' and is called by a "ripper" which is effectivly 
@@ -86,7 +78,10 @@ typedef struct IO_PUT_STREAMst{
 ////////////////////////////////////////////////
 // StreamRipper Codes
 ////////////////////////////////////////////////
-#define NUM_ERROR_CODES					0x33+1
+
+/* ******************** IMPORTANT IF YOU ADD ERROR CODES!!!! *****************************/
+#define NUM_ERROR_CODES					0x36+1
+/* ******************** IMPORTANT IF YOU ADD ERROR CODES!!!! *****************************/
 
 #define SR_SUCCESS					0x00
 #define SR_SUCCESS_BUFFERING				0x01
@@ -141,5 +136,8 @@ typedef struct IO_PUT_STREAMst{
 #define SR_ERROR_SOCKET_CLOSED				-	0x31
 #define SR_ERROR_LIVE365					-	0x32
 #define SR_ERROR_MAX_BYTES_RIPPED			-	0x33
+#define SR_ERROR_CANT_WAIT_ON_THREAD		-	0x34
+#define SR_ERROR_CANT_CREATE_EVENT			-	0x35
+#define SR_ERROR_NOT_SHOUTCAST_STREAM		-	0x36
 
 #endif //__SRIPPER_H__

@@ -121,9 +121,6 @@ error_code socklib_open(HSOCKET *socket_handle, char *host, int port)
     struct sockaddr_in address;
     struct hostent *hp;
     int len;
-#ifdef WIN32
-    struct timeval timeout = {DEFAULT_TIMEOUT*1000, 0};
-#endif
 
     socket_handle->s = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -147,15 +144,11 @@ error_code socklib_open(HSOCKET *socket_handle, char *host, int port)
 
 #ifdef WIN32
 	{
-	unsigned long lame = 1;
-	ioctlsocket(socket_handle->s, FIONBIO, &lame);
+    struct timeval timeout = {DEFAULT_TIMEOUT*1000, 0};
+	if (setsockopt(socket_handle->s, SOL_SOCKET,  SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) == SOCKET_ERROR)
+		return SR_ERROR_CANT_SET_SOCKET_OPTIONS;
 	}
-#else
-	fcntl(socket_handle->s, F_SETFL, O_NONBLOCK);
 #endif
-
-	// Put socket into non-blocking mode
-	
 
 	socket_handle->closed = FALSE;
     return SR_SUCCESS;
@@ -241,34 +234,15 @@ error_code	socklib_read_header(HSOCKET *socket_handle, char *buffer, int size,
 int socklib_recvall(HSOCKET *socket_handle, char* buffer, int size)
 {
     int ret = 0, read = 0;
-	fd_set set;
-	struct timeval t;
-	time_t time_start, time_last;
-	time(&time_start);
     while(size)
     {
 		if (socket_handle->closed)
 			return SR_ERROR_SOCKET_CLOSED;
 		
-		time(&time_last);
-		if ((time_last - time_start) > DEFAULT_TIMEOUT)
-			return SOCKET_ERROR;
-
-        t.tv_sec = t.tv_usec = 0;
-        FD_ZERO(&set); FD_SET(socket_handle->s, &set);
-        ret = select(socket_handle->s+1, &set, NULL, NULL, &t);
-        if (!ret)
-        {
-                Sleep(100);
-                continue;
-        }
-
         ret = recv(socket_handle->s, &buffer[read], size, 0);
         if (ret == SOCKET_ERROR)
-		{
 			return SOCKET_ERROR;
-		}
-		
+				
 		if (ret == 0)
 			break;
 

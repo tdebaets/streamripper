@@ -237,14 +237,6 @@ SOURCE=..\lib\inet.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\lib\live365info.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\lib\live365info.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\lib\mpeg.c
 # End Source File
 # Begin Source File
@@ -266,14 +258,6 @@ SOURCE=..\lib\rip_manager.c
 # Begin Source File
 
 SOURCE=..\lib\rip_manager.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\lib\riplive365.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\lib\riplive365.h
 # End Source File
 # Begin Source File
 
@@ -318,54 +302,6 @@ SOURCE=..\lib\util.c
 # Begin Source File
 
 SOURCE=..\lib\util.h
-# End Source File
-# End Group
-# Begin Group "mpglib"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\mpglib\common.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\mpglib\dct64.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\mpglib\decode.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\mpglib\huffman.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\mpglib\interface.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\mpglib\layer3.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\mpglib\mpg123.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\mpglib\mpglib.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\mpglib\tabinit.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\mpglib\VbrTag.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\mpglib\VbrTag.h
 # End Source File
 # End Group
 # End Target

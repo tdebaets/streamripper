@@ -200,6 +200,8 @@ LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 					m_guiOpt->m_allow_touch = get_checkbox(hWnd, IDC_ALLOW_TOUCH);
 
 					m_opt->flags = 0;
+					m_opt->flags |= OPT_SEARCH_PORTS;			// caused bad bug, must remember this.
+
 					if (get_checkbox(hWnd, IDC_SEPERATE_DIRS))
 						m_opt->flags ^= OPT_SEPERATE_DIRS;
 

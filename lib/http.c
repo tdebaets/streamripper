@@ -83,8 +83,8 @@ Host: %s:%d\r\n\
 User-Agent: Streamripper/1.x\r\n\
 Icy-MetaData:1\r\n\
 Accept: */*\r\n\r\n", myurl, ui.host, ui.port);
-
     return SR_SUCCESS;
+//WinampMPEG/2.7\r\n
 }
 
 // Here we pretend we're IE 5, hehe
