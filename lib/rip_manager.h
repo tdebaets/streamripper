@@ -43,7 +43,9 @@ typedef struct RIP_MANAGER_INFOst
 #define OPT_SEARCH_PORTS		0x00000008
 #define OPT_NO_RELAY			0x00000010 
 #define OPT_COUNT_FILES			0x00000020 
-#define OPT_ADD_ID3			0x00000040 
+#define OPT_ADD_ID3				0x00000040 
+#define OPT_DATE_STAMP			0x00000100
+#define OPT_CHECK_MAX_BYTES		0x00000200
 
 typedef struct RIP_MANAGER_OPTIONSst
 {
@@ -51,11 +53,9 @@ typedef struct RIP_MANAGER_OPTIONSst
 	char	proxyurl[MAX_URL_LEN];
 	char	output_directory[MAX_PATH_LEN];
 	BOOL	over_write_existing_tracks;
-	BOOL	add_seq_number;
-	BOOL	add_id3tag;
 	int	relay_port;
-	int	sequence_number;
 	u_short	max_port;
+	u_long	maxMB_rip_size;
 	u_short	flags;
 } RIP_MANAGER_OPTIONS;
 

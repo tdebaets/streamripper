@@ -174,6 +174,15 @@ LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			set_checkbox(hWnd, IDC_MAKE_RELAY, !OPT_FLAG_ISSET(m_opt->flags, OPT_NO_RELAY));
 			set_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST, m_guiOpt->m_add_finshed_tracks_to_playlist);
 			set_checkbox(hWnd, IDC_ALLOW_TOUCH, m_guiOpt->m_allow_touch);
+			set_checkbox(hWnd, IDC_COUNT_FILES, OPT_FLAG_ISSET(m_opt->flags, OPT_COUNT_FILES));
+			set_checkbox(hWnd, IDC_DATE_STAMP, OPT_FLAG_ISSET(m_opt->flags, OPT_DATE_STAMP));
+			set_checkbox(hWnd, IDC_ADD_ID3, OPT_FLAG_ISSET(m_opt->flags, OPT_ADD_ID3));
+			set_checkbox(hWnd, IDC_CHECK_MAX_BYTES, OPT_FLAG_ISSET(m_opt->flags, OPT_CHECK_MAX_BYTES));
+
+			if (OPT_FLAG_ISSET(m_opt->flags, OPT_CHECK_MAX_BYTES))
+			{
+				SetDlgItemInt(hWnd, IDC_MAX_BYTES, m_opt->maxMB_rip_size, FALSE);
+			}
 
 			return TRUE;
 
@@ -200,6 +209,23 @@ LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 					if (!get_checkbox(hWnd, IDC_MAKE_RELAY))
 						m_opt->flags ^= OPT_NO_RELAY;
+
+					if (get_checkbox(hWnd, IDC_COUNT_FILES))
+						m_opt->flags ^= OPT_COUNT_FILES;
+
+					if (get_checkbox(hWnd, IDC_DATE_STAMP))
+						m_opt->flags ^= OPT_DATE_STAMP;
+
+					if (get_checkbox(hWnd, IDC_ADD_ID3))
+						m_opt->flags ^= OPT_ADD_ID3;
+
+					if (get_checkbox(hWnd, IDC_CHECK_MAX_BYTES))
+					{
+						m_opt->flags ^= OPT_CHECK_MAX_BYTES;
+						m_opt->maxMB_rip_size = GetDlgItemInt(hWnd, IDC_MAX_BYTES, FALSE, FALSE);
+					}
+
+				
 
 					m_guiOpt->m_add_finshed_tracks_to_playlist = get_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST);
 
@@ -237,7 +263,11 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	BOOL	seperate_dirs,
 			auto_reconnect,
 			over_write_tracks,
-			no_relay;
+			no_relay,
+			count_files,
+			date_stamp,
+			add_id3,
+			check_max_btyes;
 
 	if (!get_desktop_folder(desktop_path))
 	{
@@ -259,6 +289,12 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	auto_reconnect = GetPrivateProfileInt(APPNAME, "auto_reconnect", TRUE, filename);
 	over_write_tracks = GetPrivateProfileInt(APPNAME, "over_write_tracks", FALSE, filename);
 	no_relay = GetPrivateProfileInt(APPNAME, "no_relay", FALSE, filename);
+	count_files = GetPrivateProfileInt(APPNAME, "count_files", FALSE, filename);
+	date_stamp = GetPrivateProfileInt(APPNAME, "date_stamp", FALSE, filename);
+	add_id3 = GetPrivateProfileInt(APPNAME, "add_id3", TRUE, filename);
+	check_max_btyes = GetPrivateProfileInt(APPNAME, "check_max_bytes", FALSE, filename);
+	opt->maxMB_rip_size = GetPrivateProfileInt(APPNAME, "maxMB_bytes", 0, filename);
+
 	guiOpt->m_add_finshed_tracks_to_playlist = GetPrivateProfileInt(APPNAME, "add_tracks_to_playlist", FALSE, filename);
 	guiOpt->m_start_minimized = GetPrivateProfileInt(APPNAME, "start_minimized", FALSE, filename);
 	guiOpt->m_allow_touch = GetPrivateProfileInt(APPNAME, "allow_touch", TRUE, filename);
@@ -275,6 +311,10 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	if (auto_reconnect) opt->flags |= OPT_AUTO_RECONNECT;
 	if (over_write_tracks) opt->flags |= OPT_OVER_WRITE_TRACKS;
 	if (no_relay) opt->flags |= OPT_NO_RELAY;
+	if (count_files) opt->flags |= OPT_COUNT_FILES;
+	if (date_stamp) opt->flags |= OPT_DATE_STAMP;
+	if (add_id3) opt->flags |= OPT_ADD_ID3;
+	if (check_max_btyes) opt->flags |= OPT_CHECK_MAX_BYTES;
 
 	return TRUE;
 }
@@ -300,6 +340,13 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	fprintf(fp, "auto_reconnect=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_AUTO_RECONNECT));
 	fprintf(fp, "over_write_tracks=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_OVER_WRITE_TRACKS));
 	fprintf(fp, "no_relay=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_NO_RELAY));
+	fprintf(fp, "count_files=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_COUNT_FILES));
+	fprintf(fp, "date_stamp=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_DATE_STAMP));
+	fprintf(fp, "add_id3=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_ADD_ID3));
+	fprintf(fp, "check_max_bytes=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_CHECK_MAX_BYTES));
+	fprintf(fp, "maxMB_bytes=%d\n", opt->maxMB_rip_size);
+
+
 	fprintf(fp, "add_tracks_to_playlist=%d\n", guiOpt->m_add_finshed_tracks_to_playlist);
 	fprintf(fp, "start_minimized=%d\n", guiOpt->m_start_minimized);
 	fprintf(fp, "allow_touch=%d\n", guiOpt->m_allow_touch);

@@ -176,9 +176,9 @@ error_code filelib_end(char *filename, BOOL over_write_existing)
 	sprintf(oldfile, m_filename_format, m_incomplete_directory, filename);
 	
 	if (m_count != -1)
-		sprintf(newfile, m_filename_format, m_output_directory, filename);
-	else
 		sprintf(newfile, "%s%03d_%s.mp3", m_output_directory, m_count, filename);
+	else
+		sprintf(newfile, m_filename_format, m_output_directory, filename);
 
 	// If we are over writing exsiting tracks
 	if (!over_write_existing)
@@ -203,6 +203,7 @@ error_code filelib_end(char *filename, BOOL over_write_existing)
 	if (ok_to_write)
 		if (!MOVE_FILE(oldfile, newfile))
 			return SR_ERROR_FAILED_TO_MOVE_FILE;
+
 	if (m_count != -1)
 		m_count++;
 	return SR_SUCCESS;

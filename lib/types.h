@@ -26,7 +26,7 @@ typedef int error_code;
 #define MAX_ICY_STRING		4024
 #define MAX_SERVER_LEN		1024
 #define MAX_TRACK_LEN		1024
-#define MAX_ERROR_STR           1024
+#define MAX_ERROR_STR       2048
 
 
 #ifdef WIN32
@@ -140,5 +140,6 @@ typedef struct IO_PUT_STREAMst{
 #define SR_ERROR_CANT_DECODE_MP3			-	0x30
 #define SR_ERROR_SOCKET_CLOSED				-	0x31
 #define SR_ERROR_LIVE365					-	0x32
+#define SR_ERROR_MAX_BYTES_RIPPED			-	0x33
 
 #endif //__SRIPPER_H__

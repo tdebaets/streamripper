@@ -88,6 +88,7 @@ static IO_GET_STREAM		m_ripin; // Raw stream data + song information
 static IO_PUT_STREAM		m_ripout;// Generic output interface
 static void					(*m_status_callback)(int message, void *data);
 static BOOL					m_told_to_stop = FALSE;
+static u_long				m_bytes_ripped;
 
 /*
  * Needs english type messages, just copy pasted for now
@@ -149,6 +150,7 @@ void init_error_strings()
 	SET_ERR_STR("SR_ERROR_SOCKET_CLOSED",				0x31)
 	SET_ERR_STR("Due to legal reasons Streamripper can no longer work with Live365(tm).\r\n"
 			"See streamripper.sourceforge.net for more on this matter.", 0x32)
+	SET_ERR_STR("The maximum number of bytes ripped has been reached", 0x33)
 	
 }
 
@@ -208,6 +210,24 @@ void ripthread(void *bla)
 
 		if (m_ripinfo.filesize > 0)
 			set_status(RM_STATUS_RIPPING);
+
+		/* 
+		 * Added 8/4/2001 jc --
+		 * for max number of MB ripped stuff
+		 * At the time of writting this, i honestly 
+		 * am not sure i understand what happens 
+		 * when once trys to stop the ripping from the lib and
+		 * the interface it's a weird combonation of threads
+		 * wnd locks, etc.. all i know is that this appeared to work
+		 */
+		if (m_bytes_ripped >= (m_options.maxMB_rip_size*1048576) &&
+			OPT_FLAG_ISSET(m_options.flags, OPT_CHECK_MAX_BYTES))
+		{
+			m_told_to_stop = TRUE;
+			post_error(SR_ERROR_MAX_BYTES_RIPPED);
+			break;
+		}
+
 	}
 	
 	if (m_told_to_stop)
@@ -296,17 +316,9 @@ int myrecv(char* buffer, int size)
 error_code start_track(char *trackname)
 {
 	char temptrack[MAX_TRACK_LEN];
-	char    temptrack2[MAX_TRACK_LEN];
 	int ret;
 	
 	strcpy(temptrack, trackname);
-
-	if (m_options.add_seq_number) {
-		memset(temptrack2, '\000', sizeof(temptrack2));
-		sprintf(temptrack2, "%04d_%s", m_options.sequence_number, temptrack);
-		strcpy(temptrack, temptrack2);
-//		m_options.sequence_number++;
-	}
 
 	strip_invalid_chars(temptrack);
 	if ((ret = filelib_start(temptrack)) != SR_SUCCESS)
@@ -330,22 +342,13 @@ error_code start_track(char *trackname)
 error_code end_track(char *trackname)
 {
 	char temptrack[MAX_TRACK_LEN];
-	char    temptrack2[MAX_TRACK_LEN];
 
 	strcpy(temptrack, trackname);
-
-	if (m_options.add_seq_number) {
-		memset(temptrack2, '\000', sizeof(temptrack2));
-		sprintf(temptrack2, "%04d_%s", m_options.sequence_number, temptrack);
-		strcpy(temptrack, temptrack2);
-		m_options.sequence_number++;
-	}
 
 	strip_invalid_chars(temptrack);
 	filelib_end(temptrack, m_options.over_write_existing_tracks);
 	m_status_callback(RM_UPDATE, &m_ripinfo);
 	m_status_callback(RM_TRACK_DONE, (void*)temptrack);
-	
 
 	return SR_SUCCESS;
 }
@@ -357,6 +360,7 @@ error_code put_data(char *buf, int size)
 //	printf(".");
 	
 	m_ripinfo.filesize += size;
+	m_bytes_ripped += size;
 	m_status_callback(RM_UPDATE, &m_ripinfo);
 
 	return SR_SUCCESS;
@@ -391,7 +395,7 @@ void set_output_directory()
 		timestring = malloc(36);
 		time(&timestamp);
 		theTime = localtime(&timestamp);
-		time_len = strftime(timestring, 35, "%Y-%B-%d_%k:%M", theTime);
+		time_len = strftime(timestring, 35, "%Y-%B-%d", theTime);
 
 		striped_icy_name = malloc(strlen(m_info.icy_name)+ 1);
 		strcpy(striped_icy_name, m_info.icy_name);
@@ -399,9 +403,16 @@ void set_output_directory()
 		left_str(striped_icy_name, MAX_DIR_LEN);
 		trim(striped_icy_name);
 		strcat(newpath, striped_icy_name);
-		strcat(newpath, "_");
-		strcat(newpath, timestring);
+
+		if (OPT_FLAG_ISSET(m_options.flags, OPT_DATE_STAMP))
+		{
+			strcat(newpath, "_");
+			strcat(newpath, timestring);
+		}
+
 		free(timestring);
+
+
 		free(striped_icy_name);
 	}
 	filelib_set_output_directory(newpath);
@@ -490,11 +501,12 @@ error_code rip_manager_start(void (*status_callback)(int message, void *data),
 		return SR_ERROR_INVALID_PARAM;
 
 	one_time_init();
-	filelib_init(!OPT_FLAG_ISSET(options->flags, OPT_COUNT_FILES));
+	filelib_init(OPT_FLAG_ISSET(options->flags, OPT_COUNT_FILES));
 	socklib_init();
 	m_status_callback = status_callback;
 	m_told_to_stop = FALSE;
 	m_destroy_func = NULL;
+	m_bytes_ripped = 0;
 
 	/*
   	 * Get a local copy of the options passed
@@ -586,7 +598,7 @@ error_code rip_manager_start(void (*status_callback)(int message, void *data),
 	 * ripstream is good to go, it knows how to get data, and where
 	 * it's sending it to
 	 */
-	if ((ret = ripstream_init(mult, &m_ripin, &m_ripout, m_info.icy_name, m_options.add_id3tag )) != SR_SUCCESS)
+	if ((ret = ripstream_init(mult, &m_ripin, &m_ripout, m_info.icy_name, OPT_FLAG_ISSET(options->flags, OPT_ADD_ID3))) != SR_SUCCESS)
 	{
 		ripstream_destroy();
 		goto RETURN_ERR;

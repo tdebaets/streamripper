@@ -292,8 +292,8 @@ void UpdateRippingDisplay()
 				 * stop on it's own). this all started with ripping mp3.com stuff and 
 				 * having it stop automatticly, or at least look like it's stopped.
 				 */
-				if (!OPT_FLAG_ISSET(OPT_AUTO_RECONNECT, m_rmoOpt.flags))
-					stop_button_pressed();
+//				if (!OPT_FLAG_ISSET(OPT_AUTO_RECONNECT, m_rmoOpt.flags))
+//					stop_button_pressed();
 
 				break;
 		default:
@@ -359,9 +359,11 @@ void RipCallback(int message, void *data)
 			break;
 		case RM_ERROR:
 			err = (ERROR_INFO*)data;
+			MessageBox(m_hWnd, err->error_str, "BAD", 0);
 			break;
 		case RM_DONE:
 			m_rmiInfo.status = RM_STATUS_DONE;
+			stop_button_pressed();
 			break;
 		case RM_TRACK_DONE:
 			if (m_guiOpt.m_add_finshed_tracks_to_playlist)
@@ -388,9 +390,7 @@ void start_button_pressed()
 	render_clear_all_data();
 	render_set_display_data(IDR_STREAMNAME, "Connecting...");
 	start_button_disable();
-	{
-		m_rmoOpt.add_id3tag = TRUE;
-	}
+
 	if ((ret = rip_manager_start(RipCallback, &m_rmoOpt)) != SR_SUCCESS)
 	{
 		MessageBox(m_hWnd, rip_manager_get_error_str(ret), "Failed to connect to stream", MB_ICONSTOP);

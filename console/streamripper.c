@@ -225,7 +225,7 @@ void print_usage()
         fprintf(stderr, "        -v             - Print version info and quite\n");
         fprintf(stderr, "        -l <seconds>   - number of seconds to run, otherwise runs forever\n");
         fprintf(stderr, "        -q             - add sequence number to output file\n");
-        fprintf(stderr, "        -i             - *dont* add ID3V1 Tags to output file\n");
+        fprintf(stderr, "        -i             - dont add ID3V1 Tags to output file\n");
 
 }
 

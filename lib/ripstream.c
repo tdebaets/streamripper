@@ -61,7 +61,6 @@ static char				*m_getbuffer = NULL;
 static int				m_find_silence = -1;
 static BOOL				m_on_first_track = TRUE;
 static BOOL				m_addID3tag = TRUE;
-static BOOL				m_addSeqNum = FALSE;
 
 /*
  * oddsock's id3 tags
@@ -337,7 +336,7 @@ error_code start_track(char *trackname)
 	ID3V2head	id3v2header;
 	ID3V2frame	id3v2frame1;
 	ID3V2frame	id3v2frame2;
-	char    comment[1024] = "Streamripper!";
+	char    comment[1024] = "Ripped with Streamripper";
 	char    artist[1024] = "";
 	char    title[1024] = "";
 	char    album[1024] = "";

@@ -487,14 +487,6 @@ BOOL render_do_paint(HDC hdc)
 		   0,
 		   SRCCOPY);
 
-#ifdef _DEBUG
-	{
-		static int x = 0;
-		char buf[50];
-		sprintf(buf, "drawing  %d\n", x++);
-		OutputDebugString(buf);
-	}
-#endif
 
 	return TRUE;
 }
