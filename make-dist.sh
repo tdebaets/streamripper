@@ -1,21 +1,24 @@
+#! /bin/sh
+
+version=streamripper-1.60.pre1
 
 make clean
-if test -d streamripper-1.60; then
-  rm -rf streamripper-1.60
+if test -d $version; then
+  rm -rf $version
 fi
-mkdir streamripper-1.60
+mkdir $version
 cp README readme_xfade.txt COPYING CHANGES Makefile.in \
     THANKS TODO config.guess configure.in configure config.sub \
     install-sh ltconfig ltmain.sh \
-    streamripper-1.60
+    $version
 
-mkdir streamripper-1.60/console
+mkdir $version/console
 cp -R console/*.c console/Makefile.in \
-    streamripper-1.60/console
+    $version/console
 
 cp -R libmad \
-    streamripper-1.60
-cd streamripper-1.60
+    $version
+cd $version
 rm -rf libmad/CVS
 rm -rf libmad/Debug
 rm -rf libmad/Release
@@ -26,12 +29,12 @@ rm -rf libmad/Makefile
 rm -rf libmad/stamp-h
 cd ..
 
-mkdir streamripper-1.60/lib
+mkdir $version/lib
 cp -R lib/*.h lib/*.c lib/Makefile.in \
-    streamripper-1.60/lib
+    $version/lib
 
 echo Setting timestamps, please wait
-cd streamripper-1.60/libmad
+cd $version/libmad
 sleep 5
 touch aclocal.m4
 sleep 5
@@ -50,4 +53,4 @@ dos2unix ltconfig
 dos2unix ltmain.sh
 dos2unix install-sh
 cd ..
-tar czvf streamripper-1.60.tar.gz streamripper-1.60
+tar czvf $version.tar.gz $version
