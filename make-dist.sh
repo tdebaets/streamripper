@@ -52,5 +52,10 @@ dos2unix config.guess
 dos2unix ltconfig
 dos2unix ltmain.sh
 dos2unix install-sh
+dos2unix lib/*.h
+dos2unix lib/*.c
+dos2unix libmad/*.h
+dos2unix libmad/*.c
+dos2unix console/*.c
 cd ..
 tar czvf $version.tar.gz $version
