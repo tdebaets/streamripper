@@ -310,7 +310,7 @@ filelib_write_cue(char *artist, char* title, int secs)
     filelib_write(m_cue_file,buf,rc);
     rc = snprintf(buf,1024,"    PERFORMER \"%s\"\n",artist);
     filelib_write(m_cue_file,buf,rc);
-    rc = snprintf(buf,1024,"    INDEX 01 %02d:%02d\n",
+    rc = snprintf(buf,1024,"    INDEX 01 %02d:%02d:00\n",
 	secs / 60, secs % 60);
     filelib_write(m_cue_file,buf,rc);
 
@@ -470,8 +470,16 @@ filelib_write_show(char *buf, u_long size)
     }
     if (*m_show_name) {
 	int rc;
+        char cue_buf[1024];
 	set_show_filenames ();
 	rc = filelib_open_for_write (&m_cue_file, m_cue_name);
+	if (rc != SR_SUCCESS) {
+	    *m_show_name = 0;
+	    return rc;
+	}
+	/* Write cue header here */
+	rc = snprintf(cue_buf,1024,"FILE \"%s\" MP3\n",m_show_name);
+	rc = filelib_write(m_cue_file,cue_buf,rc);
 	if (rc != SR_SUCCESS) {
 	    *m_show_name = 0;
 	    return rc;
