@@ -7,6 +7,12 @@
 // Set this 0 to 2, won't take effect unless _DEBUG_ is def'd
 // setting to -1 turn everything off.
 //
+//#define DLEVEL	2
+#define DLEVEL	-1
+#define _DEBUG_
+
+
+// GCS DEBUGGING
 #define DLEVEL	2
 
 extern char* _varg2str(char *format, ...);
@@ -27,7 +33,7 @@ extern void _freevargstr(char *str);
 				 body);												\
 	if (DLEVEL >= _level_)											\
 	{																\
-		OutputDebugString(str);										\
+		/* OutputDebugString(str); */									\
 		fprintf(stderr, "%s", str);									\
 	}																\
 	_freevargstr(body);												\
@@ -44,6 +50,10 @@ extern void _freevargstr(char *str);
 #define DEBUG2(_x_)
 #endif
 
+
+void debug_open (void);
+void debug_close (void);
+void debug_printf (char* fmt, ...);
 
 #endif//__DEBUG_H__
 

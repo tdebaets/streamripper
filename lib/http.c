@@ -25,9 +25,6 @@
 #include "util.h"
 #include "debug.h"
 
-#if WIN32
-#define snprintf	_snprintf
-#endif
 
 /*********************************************************************************
  * Public functions
@@ -102,59 +99,59 @@ error_code httplib_parse_url(const char *url, URLINFO *urlinfo)
 
 error_code httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, char *useragent)
 {
-	int ret;
-	URLINFO ui;
-	URLINFO proxyui;
-	char myurl[MAX_URL_LEN];
-	if ((ret = httplib_parse_url(url, &ui)) != SR_SUCCESS)
-		return ret;
+    int ret;
+    URLINFO ui;
+    URLINFO proxyui;
+    char myurl[MAX_URL_LEN];
+    if ((ret = httplib_parse_url(url, &ui)) != SR_SUCCESS)
+	return ret;
 
-	if (proxyurl)
-	{
-		sprintf(myurl, "http://%s:%d%s", ui.host, ui.port, ui.path);
-		if ((ret = httplib_parse_url(proxyurl, &proxyui)) != SR_SUCCESS)
-			return ret;
-	}
-	else
-		strcpy(myurl, ui.path);
+    if (proxyurl)
+    {
+	sprintf(myurl, "http://%s:%d%s", ui.host, ui.port, ui.path);
+	if ((ret = httplib_parse_url(proxyurl, &proxyui)) != SR_SUCCESS)
+	    return ret;
+    }
+    else
+	strcpy(myurl, ui.path);
 
-	snprintf(buffer, MAX_HEADER_LEN + MAX_HOST_LEN + MAX_PATH_LEN,
-					"GET %s HTTP/1.0\r\n"
-					"Host: %s:%d\r\n"
-					"User-Agent: %s\r\n"
-					"Icy-MetaData:1\r\n", 
-					myurl, 
-					ui.host, 
-					ui.port, 
-					useragent[0] ? useragent : "Streamripper/1.x");
+    snprintf(buffer, MAX_HEADER_LEN + MAX_HOST_LEN + MAX_PATH_LEN,
+	     "GET %s HTTP/1.0\r\n"
+	     "Host: %s:%d\r\n"
+	     "User-Agent: %s\r\n"
+	     "Icy-MetaData:1\r\n", 
+	     myurl, 
+	     ui.host, 
+	     ui.port, 
+	     useragent[0] ? useragent : "Streamripper/1.x");
 
-	//
-	// http authentication (not proxy, see below for that)
-	// 
-	if (ui.username[0] && ui.password[0])
-	{
-		char *authbuf = make_auth_header("Authorization", 
-						 ui.username,
-						 ui.password);
-		strcat(buffer, authbuf);
-		free(authbuf);
-	}
+    //
+    // http authentication (not proxy, see below for that)
+    // 
+    if (ui.username[0] && ui.password[0])
+    {
+	char *authbuf = make_auth_header("Authorization", 
+					 ui.username,
+					 ui.password);
+	strcat(buffer, authbuf);
+	free(authbuf);
+    }
 
-	//
-	// proxy auth stuff
-	//
-	if (proxyurl && proxyui.username[0] && proxyui.password[0])
-	{
-		char *authbuf = make_auth_header("Proxy-Authorization",
-						 proxyui.username,
-						 proxyui.password);
-		strcat(buffer, authbuf);
-		free(authbuf);
-	}
+    //
+    // proxy auth stuff
+    //
+    if (proxyurl && proxyui.username[0] && proxyui.password[0])
+    {
+	char *authbuf = make_auth_header("Proxy-Authorization",
+					 proxyui.username,
+					 proxyui.password);
+	strcat(buffer, authbuf);
+	free(authbuf);
+    }
 	
-	strcat(buffer, "\r\n");
+    strcat(buffer, "\r\n");
 
-	return SR_SUCCESS;
+    return SR_SUCCESS;
 }
 
 // Make the 'Authorization: Basic xxxxxx\r\n' or 'Proxy-Authorization...' 

@@ -36,17 +36,17 @@
 /*********************************************************************************
  * Public functions
  *********************************************************************************/
-error_code	ripstream_init(u_long buffersize_mult, IO_GET_STREAM *in, IO_PUT_STREAM *out, char *no_meta_name, BOOL addID3Tag);
-error_code	ripstream_rip();
-void		ripstream_destroy();
+/* -- See ripstream.h -- */
 
 /*********************************************************************************
  * Private functions
  *********************************************************************************/
-static error_code	find_sep(u_long *pos);
-static error_code end_track(u_long pos, char *trackname);
+static error_code	find_sep (u_long *pos1, u_long *pos2);
+static error_code end_track(u_long pos1, u_long pos2, char *trackname);
 static error_code start_track(char *trackname);
 
+static void compute_cbuffer_size (SPLITPOINT_OPTIONS *sp_opt,
+				  int bitrate, int meta_interval);
 
 /*********************************************************************************
  * Private Vars
@@ -57,11 +57,21 @@ static IO_PUT_STREAM	*m_out;
 static char				m_last_track[MAX_TRACK_LEN] = {'\0'};
 static char				m_current_track[MAX_TRACK_LEN] = {'\0'};
 static char				m_no_meta_name[MAX_TRACK_LEN] = {'\0'};
-static int				m_buffersize_mult;
 static char				*m_getbuffer = NULL;
 static int				m_find_silence = -1;
 static BOOL				m_on_first_track = TRUE;
 static BOOL				m_addID3tag = TRUE;
+static BOOL			m_pad_songs = FALSE;
+static SPLITPOINT_OPTIONS	*m_sp_opt;
+static int			m_bitrate;
+static int			m_meta_interval;
+
+static int			m_cbuffer_size;
+static int			m_mi_to_cbuffer_start;
+static int			m_mi_to_cbuffer_end;
+static int			m_sw_start_to_cbuffer_end;
+static int			m_sw_end_to_cbuffer_end;
+static int			m_min_search_win;
 
 /*
  * oddsock's id3 tags
@@ -92,33 +102,48 @@ typedef struct ID3V2framest {
 
 
 
-error_code ripstream_init(u_long buffersize_mult, IO_GET_STREAM *in, IO_PUT_STREAM *out, char *no_meta_name, BOOL addID3tag)
+error_code
+#if defined (commentout)
+ripstream_init (u_long buffersize_mult, IO_GET_STREAM *in, IO_PUT_STREAM *out, char *no_meta_name, BOOL addID3tag, BOOL pad_songs)
+#endif
+ripstream_init (IO_GET_STREAM *in, IO_PUT_STREAM *out, char *no_meta_name, 
+		SPLITPOINT_OPTIONS *sp_opt, int bitrate, BOOL addID3tag)
 {
-
+#if defined (commentout)
 	if (!in || !out || buffersize_mult < 1 || !no_meta_name)
 		return SR_ERROR_INVALID_PARAM;
+#endif
+    if (!in || !out || !sp_opt || !no_meta_name) {
+	printf ("Error: invalid ripstream parameters\n");
+	return SR_ERROR_INVALID_PARAM;
+    }
 
 	m_in = in;
 	m_out = out;
-	m_buffersize_mult = buffersize_mult;
+    m_sp_opt = sp_opt;
 	m_on_first_track = TRUE;
 	m_addID3tag = addID3tag;
 	strcpy(m_no_meta_name, no_meta_name);
+    m_bitrate = bitrate;
+    m_meta_interval = in->getsize;
 
 	if ((m_getbuffer = malloc(in->getsize)) == NULL)
 		return SR_ERROR_CANT_ALLOC_MEMORY;
 
-	return cbuffer_init(&m_cbuffer, in->getsize * buffersize_mult);
+    // Compute some constants needed to do track splitting
+    // See readme files for details
+    compute_cbuffer_size (sp_opt, m_bitrate, in->getsize);
 	
+    return cbuffer_init(&m_cbuffer, in->getsize * m_cbuffer_size);
 }
 
 void ripstream_destroy()
 {
 	if (m_getbuffer) {free(m_getbuffer); m_getbuffer = NULL;}
-	m_find_silence = 0;
+    m_find_silence = -1;
 	m_in = NULL;
 	m_out = NULL;
-	m_buffersize_mult = 0;
+    m_cbuffer_size = 0;
 	cbuffer_destroy(&m_cbuffer);
 	m_last_track[0] = '\0';
 	m_current_track[0] = '\0';
@@ -134,6 +159,9 @@ BOOL is_buffer_full()
 
 BOOL is_track_changed()
 {
+#if defined (commentout)
+    printf ("   <>%s\n   >>%s\n",m_last_track, m_current_track);
+#endif
 	return strcmp(m_last_track, m_current_track) != 0 && *m_last_track;
 }
 
@@ -152,91 +180,160 @@ error_code ripstream_rip()
 	// we are not waiting to buffer for a silent point
 	if (m_find_silence < 0)
 		strcpy(m_last_track, m_current_track);
+
+    // get the data
 	if ((ret = m_in->get_data(m_getbuffer, m_current_track)) != SR_SUCCESS)
 	{
+	DEBUG0(("m_in->get_data bad return code(?) %d", ret));
+	// GCS - presumably we still want to return the original error 
 		// If it is a single track recording, finish the track
-		if (is_no_meta_track())
-			if ((ret = end_track(cbuffer_get_used(&m_cbuffer), m_no_meta_name)) != SR_SUCCESS)
-				return ret;
+	// if end_track is successful
+	if (is_no_meta_track()) {
+	    int ret2;
+	    ret2 = end_track(cbuffer_get_used(&m_cbuffer),
+			     cbuffer_get_used(&m_cbuffer),
+			     m_no_meta_name);
+	    if (ret2 != SR_SUCCESS) {
+		return ret2;
+	    }
+	}
 		return ret;
 	}
 	
+    /* GCS - The next two tests will both happen at most once each, right? */
 	// if the current track matchs with the special no track info 
-	// name we declair that we are no longer on the first track (or the last for that matter)
+    // name we declair that we are no longer on the first track 
+    // (or the last for that matter)
 	// this is so end_track will actually call end.
-	if (is_no_meta_track() &&
-		m_on_first_track)
+    if (is_no_meta_track() && m_on_first_track)
 	{
-		if ((ret = start_track(m_no_meta_name)) != SR_SUCCESS)
+	if ((ret = start_track(m_no_meta_name)) != SR_SUCCESS) {
+	    DEBUG0(("start_track had bad return code %d", ret));
 			return ret;
 	} 
+    }
 	// if this is the first time we have received a track name, then we
 	// can start the track
 	else if	(*m_current_track && *m_last_track == '\0')
 	{
 		// Done say set first track on, because the first track 
 		// should not be ended. It will always be incomplete.
-		if ((ret = m_out->start_track(m_current_track)) != SR_SUCCESS)
+	if ((ret = m_out->start_track(m_current_track)) != SR_SUCCESS) {
+	    DEBUG0(("start_track had bad return code %d", ret));
 			return ret;
 	}
+    }
 
-	if ((ret = cbuffer_insert(&m_cbuffer, m_getbuffer, m_in->getsize)) != SR_SUCCESS)
+    /* Copy the data into cbuffer */
+    ret = cbuffer_insert(&m_cbuffer, m_getbuffer, m_in->getsize);
+    if (ret != SR_SUCCESS) {
+	DEBUG0(("start_track had bad return code %d", ret));
 		return ret;
-
-	// The track changed, signal a findsep in a little while
-	if (is_track_changed() &&
-		is_buffer_full() &&
-		m_find_silence < 0)
-	{
-		m_find_silence = (m_buffersize_mult/2);
 	}													
 
-	m_find_silence--;
+    if (is_track_changed()) {
+	/* Set m_find_silence equal to the number of additional blocks 
+	   needed until we can do silence separation. */
+	if (m_find_silence < 0) {
+	    if (m_mi_to_cbuffer_end > 0) {
+		m_find_silence = m_mi_to_cbuffer_end;
+	    } else {
+		m_find_silence = 0;
+	    }
+	}
+    }
 
+    if (m_find_silence == 0) {
+	/* Find separation point */
+	u_long pos1, pos2;
+	ret = find_sep (&pos1, &pos2);
+	if (ret != SR_SUCCESS) {
+	    DEBUG0(("find_sep had bad return code %d", ret));
+	    return ret;
+	}
 
-	// If the buffer is not full, buffer more
-	if (!is_buffer_full())
-		return SR_SUCCESS_BUFFERING;
-
-	// This means we had a track change a little while back and it's time
-	// to find a silent point to seperate the track
-	if (m_find_silence == 0)
-	{
-		u_long pos = 0;
-
-		if ((ret = find_sep(&pos)) != SR_SUCCESS)
+	/* Write out previous track */
+	if ((ret = end_track(pos1, pos2, m_last_track)) != SR_SUCCESS)
 			real_ret = ret;
-
-		if ((ret = end_track(pos, m_last_track)) != SR_SUCCESS)
-			real_ret = ret;
-
 		if ((ret = start_track(m_current_track)) != SR_SUCCESS)
 			real_ret = ret;
-
 		m_find_silence = -1;
 	}		
+    if (m_find_silence >= 0) m_find_silence --;
 
-	// Remove our buffer size from the buffer
-	extract_size = m_in->getsize < cbuffer_get_used(&m_cbuffer) ? m_in->getsize : cbuffer_get_used(&m_cbuffer);
-	if ((ret = cbuffer_extract(&m_cbuffer, m_getbuffer, extract_size)) != SR_SUCCESS)
+    /* If buffer almost full, then post to caller */
+    if (cbuffer_get_free(&m_cbuffer) < m_in->getsize) {
+        /* Extract only as much as needed */
+	extract_size = m_in->getsize - cbuffer_get_free(&m_cbuffer);
+        ret = cbuffer_extract(&m_cbuffer, m_getbuffer, extract_size);
+        if (ret != SR_SUCCESS) {
+	    DEBUG0(("cbuffer_extract had bad return code %d", ret));
 		return ret;
-	
-	// And post that data to our caller
+	}
+        /* Post to caller */
 	if (*m_current_track)
 		m_out->put_data(m_getbuffer, extract_size);
+    }
 
 	return real_ret;
-
 }
 
 
-error_code find_sep(u_long *pos)
+/* New version */
+error_code
+find_sep (u_long *pos1, u_long *pos2)
+{
+    int sw_start, sw_end, sw_sil, bufsize;
+    u_long psilence;
+    int ret;
+
+    /* First, find the search region w/in cbuffer. */
+    sw_start = cbuffer_get_used(&m_cbuffer) - m_sw_start_to_cbuffer_end;
+    if (sw_start < 0) sw_start = 0;
+    sw_end = cbuffer_get_used(&m_cbuffer) - m_sw_end_to_cbuffer_end;
+    if (sw_end < 0) sw_end = 0;
+
+    if (sw_end - sw_start < m_min_search_win) {
+        /* If the search region is too small, take the middle. */
+	sw_sil = (sw_end + sw_start) / 2;
+    } else {
+	/* Otherwise, copy from search window into private buffer */
+	int bufsize = sw_end - sw_start;
+	char* buf = (u_char *)malloc(bufsize);
+	if ((ret = cbuffer_peek_rgn (&m_cbuffer, buf, sw_start, bufsize)) != SR_SUCCESS) {
+	    //	    DEBUG0(("Couldn't cbuffer_peek_rgn: %d", ret));
+	    free(buf);
+	    return ret;
+	}
+
+	/* Find silence point */
+	ret = findsep_silence(buf, bufsize, &psilence);
+	free(buf);
+	if (ret != SR_SUCCESS && ret != SR_ERROR_CANT_DECODE_MP3) {
+	    //	    DEBUG0(("Call to findsep_silence failed: %d", ret));
+	    return ret;
+	}
+	sw_sil = sw_start + psilence;
+    }
+
+    /* Compute padding.  We need pos1 == end of 1st song and 
+       pos2 == beginning of 2nd song. */
+    *pos1 = sw_sil + m_sp_opt->xs_padding_2;
+    *pos2 = sw_sil - m_sp_opt->xs_padding_1;
+
+    /* GCS FIX: need to clip above or it *will* crash */
+
+    return SR_SUCCESS;
+}
+
+#if defined (commentout)
+error_code find_sep (u_long *pos1, u_long *pos2)
 {
 	int cbufsize = cbuffer_get_used(&m_cbuffer);
 	u_char *buf = (u_char *)malloc(cbufsize);
 	int ret;
 
-	if (!pos)
+    if (!pos1 || !pos2)
 		return SR_ERROR_INVALID_PARAM;
 
 	if ((ret = cbuffer_peek(&m_cbuffer, buf, cbufsize)) != SR_SUCCESS)
@@ -257,19 +354,28 @@ error_code find_sep(u_long *pos)
 	}
 #endif
 
-	*pos = 0;
-	ret = findsep_silence(buf, cbufsize, pos);
+    if (m_pad_songs) {
+	*pos2 = 0;
+	*pos1 = cbufsize-1;
+    } else {
+	*pos1 = 0;
+	ret = findsep_silence(buf, cbufsize, pos1);
 	if (ret != SR_SUCCESS && ret != SR_ERROR_CANT_DECODE_MP3)
 		return ret;
 	
-	if (*pos > cbuffer_get_used(&m_cbuffer))
+	if (*pos1 > cbuffer_get_used(&m_cbuffer))
 	{
 		DEBUG1(("pos bigger then buffer!!!"));
 		free(buf);
 		return SR_ERROR_CANT_FIND_TRACK_SEPERATION;
 	}
 
-	if (*pos == 0)
+	// GCS: Seems to me that this can happen if the silence 
+	// region is right at the beginning of the interval.
+	// However, if findsep_silence were to return the middle 
+	// of the silent region instead of the beginning (which would 
+	// be better, no?), then we couldn't get pos==0.
+	if (*pos1 == 0)
 	{
 		//
 		// I used to return can't find track sep, but people
@@ -280,20 +386,27 @@ error_code find_sep(u_long *pos)
 		// even find the first mpeg header, which is bad.. so lets just assume
 		// the seperation is right in the middle of our buffer
 		//
-		*pos = cbufsize/2;
+		*pos1 = cbufsize/2;
 	}
+	*pos2 = *pos1;
 	free(buf);
+    }
 
 	return SR_SUCCESS;
 }
+#endif
 
-error_code end_track(u_long pos, char *trackname)
+error_code end_track(u_long pos1, u_long pos2, char *trackname)
 {
+    // pos1 is end of prev track
+    // pos2 is beginning of next track
 	int ret;
 	ID3Tag	id3;
 	char	*p1;
 
-	u_char *buf = (u_char *)malloc(pos);
+    // I think pos can be zero if the silence is right at the beginning
+    // i.e. it is a bug in s.r.
+    u_char *buf = (u_char *)malloc(pos1);
 
     if (m_addID3tag) 
 	{
@@ -302,7 +415,7 @@ error_code end_track(u_long pos, char *trackname)
 
             memset(&id3, '\000',sizeof(id3));
             strncpy(id3.tag, "TAG", strlen("TAG"));
-//            strncpy(id3.comment, "Streamripper!", strlen("Streamripper!"));
+	//            strncpy(id3.comment, "Streamripper!", strlen("Streamripper!"));
 
             memset(&artist, '\000',sizeof(artist));
             memset(&title, '\000',sizeof(title));
@@ -323,12 +436,28 @@ error_code end_track(u_long pos, char *trackname)
 
     }
 
-	// get out the part of the last track
-	if ((ret = cbuffer_extract(&m_cbuffer, buf, pos)) != SR_SUCCESS)
+    // pos1 is end of prev track
+    // pos2 is beginning of next track
+
+    // First, dump the part only in prev track
+    if (pos1 <= pos2) {
+	if ((ret = cbuffer_extract(&m_cbuffer, buf, pos1)) != SR_SUCCESS)
+	    goto BAIL;
+	// Next, skip past portion not in either track
+	if (pos1 < pos2) {
+	    if ((ret = cbuffer_fastforward(&m_cbuffer, pos2-pos1)) != SR_SUCCESS)
 		goto BAIL;
+	}
+    } else {
+	if ((ret = cbuffer_extract(&m_cbuffer, buf, pos2)) != SR_SUCCESS)
+	    goto BAIL;
+	// Next, grab, but don't skip, past portion in both tracks
+	if ((ret = cbuffer_peek(&m_cbuffer, buf+pos2, pos1-pos2)) != SR_SUCCESS)
+	    goto BAIL;
+    }
 
 	// Write that out to the current file
-	if ((ret = m_out->put_data(buf, pos)) != SR_SUCCESS)
+    if ((ret = m_out->put_data(buf, pos1)) != SR_SUCCESS)
 		goto BAIL;
 
         if (m_addID3tag) {
@@ -339,11 +468,12 @@ error_code end_track(u_long pos, char *trackname)
 		if ((ret = m_out->end_track(trackname)) != SR_SUCCESS)
 			goto BAIL;
 
-BAIL:
+ BAIL:
 	free(buf);
 	return ret;
-
 }
+
+
 error_code start_track(char *trackname)
 {
 	int ret;
@@ -506,3 +636,158 @@ error_code start_track(char *trackname)
 	return SR_SUCCESS;
 }
 
+#if defined (commentout)
+static int
+compute_cbuffer_mults (SPLITPOINT_OPTIONS *sp_opt, int bitrate, 
+		      int meta_interval)
+{
+    u_long bufsize_def, bufsize_sil;
+    u_long sws = sp_opt->xs_search_window_1 + sp_opt->xs_search_window_2;
+
+    /* compute bufsize in case of default splitting */
+    bufsize_def = sp_opt->xpadding_1 + sp_opt->xpadding_2;
+    if (sp_opt->xd_offset > 0)
+	bufsize_def += sp_opt->xd_offset;
+
+    /* compute bufsize in case of silence splitting */
+    bufsize_sil = sp_opt->xpadding_1 + sp_opt->xpadding_2;
+    if (sp_opt->xpadding_1 + sws > bufsize_sil)
+	bufsize_sil = sp_opt->xpadding_1 + sws;
+    if (sp_opt->xpadding_2 + sws > bufsize_sil)
+	bufsize_sil = sp_opt->xpadding_2 + sws;
+    if (sp_opt->xs_offset > 0)
+	bufsize_def += sp_opt->xs_offset;
+    bufsize_sil += sp_opt->xs_search_window_1;
+
+    /* pick larger of def or sil, save into bufsize_def */
+    if (sp_opt->xs && bufsize_sil > bufsize_def) {
+	bufsize_def = bufsize_sil;
+    }
+
+    /* convert from ms into bytes */
+    bufsize_def *= bitrate;  // bits
+    bufsize_def /= 8;        // bytes
+
+    /* convert bytes into blocks */
+    bufsize_def = bufsize_def + (m_meta_interval-1) / m_meta_interval;
+
+    /* One for truncation of division above,
+	One because interval does not follow meta_int boundaries
+	One for "insurance" */
+    bufsize_def += 3;
+    return bufsize_def;
+}
+
+/* After I get the track change, how many meta-ints
+    do I need to buffer to make sure that the entire
+    search window is in the cbuffer? */
+static int
+compute_cbuffer_searchwin_delay (void)
+{
+    int end_of_sw;
+    if (!m_sp_opt->xs)
+	return 0;
+
+    end_of_sw = m_sp_opt->xs_offset + m_sp_opt->xs_search_window_2;
+    if (end_of_sw <= 0)
+	return 0;
+
+    end_of_sw *= m_bitrate;
+    end_of_sw /= 8;
+    end_of_sw = end_of_sw + (m_meta_interval-1) / m_meta_interval;
+}
+#endif
+
+/* GCS: This converts either positive or negative ms to blocks,
+   and must work for rounding up and rounding down */
+static int
+ms_to_blocks (int ms, int bitrate, int round_up)
+{
+    int ms_abs = ms > 0 ? ms : -ms;
+    int ms_sign = ms > 0 ? 1 : 0;
+    int bits = ms_abs * bitrate;
+    int bits_per_block = 8 * m_meta_interval;
+    int blocks = bits / bits_per_block;
+    if (bits % bits_per_block > 0) {
+	if (!(round_up ^ ms_sign)) {
+	    blocks++;
+	}
+    }
+    if (!ms_sign) {
+	blocks = -blocks;
+    }
+    return blocks;
+}
+
+/* Simpler routine, only positive amounts rounded down. */
+static int
+ms_to_bytes (int ms, int bitrate)
+{
+    int bits = ms * bitrate;
+    return bits / 8;
+}
+
+static void
+compute_cbuffer_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate, 
+		      int meta_interval)
+{
+    u_long sws;
+    
+    /* compute the search window size */
+    sws = sp_opt->xs_search_window_1 + sp_opt->xs_search_window_2;
+
+    /* compute interval from mi to beginning of buffer */
+    m_mi_to_cbuffer_start = sp_opt->xs_offset - sp_opt->xs_search_window_1
+	+ sp_opt->xs_silence_length/2 - sp_opt->xs_padding_1;
+
+    /* compute interval from mi to end of buffer */
+    m_mi_to_cbuffer_end = sp_opt->xs_offset + sp_opt->xs_search_window_2
+	- sp_opt->xs_silence_length/2 + sp_opt->xs_padding_2;
+
+    printf ("bitrate = %d, meta_inf = %d\n", bitrate, meta_interval);
+
+    printf ("CBUFFER (ms): %d:%d\n",m_mi_to_cbuffer_start,
+	m_mi_to_cbuffer_end);
+
+    /* convert from ms to meta-inf blocks */
+    m_mi_to_cbuffer_start = ms_to_blocks (m_mi_to_cbuffer_start, bitrate, 0);
+    m_mi_to_cbuffer_end = ms_to_blocks (m_mi_to_cbuffer_end, bitrate, 1);
+
+    /* Case 1 -- see readme (GCS) */
+    if (m_mi_to_cbuffer_start > 0) {
+        m_cbuffer_size = m_mi_to_cbuffer_end;
+	m_sw_end_to_cbuffer_end = sp_opt->xs_padding_2 
+	    - sp_opt->xs_silence_length/2;
+	m_sw_start_to_cbuffer_end = m_sw_end_to_cbuffer_end + sws;
+    }
+
+    /* Case 2 */
+    else if (m_mi_to_cbuffer_end >= 0) {
+        m_cbuffer_size = m_mi_to_cbuffer_end - m_mi_to_cbuffer_start;
+	m_sw_end_to_cbuffer_end = sp_opt->xs_padding_2 
+	    - sp_opt->xs_silence_length/2;
+	m_sw_start_to_cbuffer_end = m_sw_end_to_cbuffer_end + sws;
+    }
+
+    /* Case 3 */
+    else {
+        m_cbuffer_size = - m_mi_to_cbuffer_start;
+        m_sw_start_to_cbuffer_end = m_cbuffer_size 
+	    + sp_opt->xs_silence_length/2 
+	    - sp_opt->xs_padding_1;
+	m_sw_end_to_cbuffer_end = m_sw_start_to_cbuffer_end + sws;
+    }
+
+    /* Convert these from ms to bytes */
+    m_sw_start_to_cbuffer_end = ms_to_bytes (m_sw_start_to_cbuffer_end, 
+	bitrate);
+    m_sw_end_to_cbuffer_end = ms_to_bytes (m_sw_end_to_cbuffer_end, bitrate);
+
+    /* Get minimum search window (in bytes) */
+    m_min_search_win = sp_opt->xs_silence_length + (sws - sp_opt->xs_silence_length) / 2 ;
+    m_min_search_win = ms_to_bytes (m_min_search_win, bitrate);
+
+    printf ("CBUFFER (BLOCKS): %d:%d -> %d\n",m_mi_to_cbuffer_start,
+	m_mi_to_cbuffer_end, m_cbuffer_size);
+    printf ("SEARCH WIN: %d | %d | %d\n",m_sw_start_to_cbuffer_end,sws,m_sw_end_to_cbuffer_end);
+}

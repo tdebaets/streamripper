@@ -11,6 +11,11 @@
 #include <sys/types.h>
 #endif
 
+
+#if WIN32
+#define snprintf _snprintf
+#endif
+
 typedef int error_code;
 #define BOOL	int
 #define TRUE	1
@@ -80,6 +85,25 @@ typedef struct IO_PUT_STREAMst{
 	error_code (*end_track)(char* trackname);			// track name or '\0'
 } IO_PUT_STREAM;
 	
+/* 
+ * SPLITPOINT_OPTIONS are the options used to tweek how the silence 
+ * separation is done.
+ */
+typedef struct SPLITPOINT_OPTIONSst
+{
+    int	xs;
+    int xs_min_volume;
+    int xs_silence_length;
+    int xs_search_window_1;
+    int xs_search_window_2;
+    int xs_offset;
+    //int xd_offset;
+    //int xpadding_1;
+    //int xpadding_2;
+    int xs_padding_1;
+    int xs_padding_2;
+} SPLITPOINT_OPTIONS;
+
 
 ////////////////////////////////////////////////
 // StreamRipper Codes

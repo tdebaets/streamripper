@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <wchar.h>
+#include <locale.h>
 #include <time.h>
 #include "types.h"
 
@@ -129,8 +131,83 @@ int word_count(char *str)
 	return n+1;
 }
 
-char *strip_invalid_chars(char *str)
+void
+initialize_locale (void)
 {
+#if defined (commentout)
+    static int initialized = 0;
+    if (!initialized) {
+	initialized = 1;
+	setlocale (LC_ALL, "");
+	setlocale (LC_CTYPE, "");
+	printf ("LOCALE is %s\n",setlocale(LC_ALL,NULL));
+    }
+#endif
+    setlocale (LC_ALL, "");
+    setlocale (LC_CTYPE, "");
+    printf ("LOCALE is %s\n",setlocale(LC_ALL,NULL));
+}
+
+char*
+strip_invalid_chars(char *str)
+{
+    //    int i;
+    char invalid_chars[] = "\\/:*?\"<>|.~@";
+    char* mb_in = str;
+    int mb_in_len = strlen(mb_in);
+    wchar_t *w_in = (wchar_t*) malloc (2*mb_in_len+2);
+    wchar_t *w_invalid = (wchar_t*) malloc(2*strlen(invalid_chars)+2);
+    wchar_t replacement;
+    wchar_t *wstrp;
+
+#if defined (commentout)
+    /* GCS: Moved to program initialization */
+    initialize_locale();
+#endif
+
+#if defined (commentout)
+    printf (mb_in);
+    printf ("\n");
+    for (strp = mb_in; *strp; strp++) {
+	printf ("%02x ",*strp&0x0ff);
+    }
+    printf ("\n");
+#endif
+
+    /* Convert invalid chars to wide char */
+    mbstowcs(w_invalid,invalid_chars,strlen(invalid_chars)+1);
+
+    /* Convert title string to wchar */
+    mbstowcs(w_in,mb_in,mb_in_len+1);
+
+    /* Convert "replacement" to wide */
+    mbtowc (&replacement,"-",1);
+
+#if defined (commentout)
+    for (wstrp = w_in; *wstrp; wstrp++) {
+	printf ("%04x ",*wstrp&0x0ffff);
+    }
+    printf ("\n");
+#endif
+
+    /* Replace illegals to legal */
+    for (wstrp = w_in; *wstrp; wstrp++) {
+	if (wcschr(w_invalid, *wstrp) == NULL)
+	    continue;
+	*wstrp = replacement;
+    }
+
+    /* Convert back to multibyte */
+    wcstombs(mb_in,w_in,mb_in_len);
+    return str;
+
+#if defined (commentout)    
+    printf (mb_in);
+#endif
+
+#if defined (commentout)
+    /* GCS - This is the old code.  Keep for reference until the
+       above code is well tested */
 	char invalid_chars[] = "\\/:*?\"<>|.~";
 	char *oldstr = str;						
 	char *newstr = str;
@@ -149,6 +226,7 @@ char *strip_invalid_chars(char *str)
 	*newstr = '\0';
 
 	return str;
+#endif
 }
 
 char *format_byte_size(char *str, long size)

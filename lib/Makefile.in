@@ -23,6 +23,7 @@ LIBOBJS =  cbuffer.o \
 	ripstream.o \
 	rip_manager.o \
 	relaylib.o \
+	debug.o \
 	ripshout.o
 
 all: $(LIBOBJS)

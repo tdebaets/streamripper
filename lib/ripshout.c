@@ -23,6 +23,7 @@
 #include "util.h"
 #include "ripshout.h"
 #include "types.h"
+#include "debug.h"
 
 #define DEFAULT_BUFFER_SIZE	1024
 
@@ -119,8 +120,10 @@ error_code getdata(char *data, char *track)
 	}
 	else
 	{
-		if ((ret = get_trackname(c * 16, newtrack)) != SR_SUCCESS)
+		if ((ret = get_trackname(c * 16, newtrack)) != SR_SUCCESS) {
+		    DEBUG0(("get_trackname had a bad return %d", ret));
 	 		return ret;
+		}
 
 		// WolfFM is a station that does not stream meta-data, but is in that format anyway...
 		// StreamTitle='', so we need to pretend this has no meta data.

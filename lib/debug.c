@@ -27,3 +27,77 @@ void _freevargstr(char *str)
 	if (str)
 		free(str);
 }
+
+
+#define DEBUG_ENABLED 0
+#define DEBUG_PRINTF_TO_FILE 1
+
+#if (DEBUG_ENABLED)
+int command_line_debug = 0;
+FILE* gcsfp = 0;
+#endif
+
+void
+debug_open (void)
+{
+#if (DEBUG_ENABLED)
+    char* filename = "gcs.txt";
+    if (!gcsfp) {
+	gcsfp = fopen(filename, "a");
+    }
+#endif /* DEBUG_ENABLED */
+}
+
+void
+debug_close (void)
+{
+#if (DEBUG_ENABLED)
+    if (gcsfp) {
+	fclose(gcsfp);
+	gcsfp = 0;
+    }
+#endif /* DEBUG_ENABLED */
+}
+
+void
+debug_printf (char* fmt, ...)
+{
+#if (DEBUG_ENABLED)
+#if (DEBUG_PRINTF_TO_FILE)
+    static int initialized = 0;
+    int was_open = 1;
+#endif
+    va_list argptr;
+
+#if (DEBUG_PRINTF_TO_FILE)
+    va_start (argptr, fmt);
+    if (!gcsfp) {
+	was_open = 0;
+	debug_open();
+    }
+    if (!initialized) {
+	initialized = 1;
+	fprintf (gcsfp, "=========================\n");
+    }
+    vfprintf (gcsfp, fmt, argptr);
+#endif
+
+    if (command_line_debug) {
+#if (!DEBUG_PRINTF_TO_FILE)
+      va_start (argptr, fmt);
+#endif
+      vprintf (fmt, argptr);
+#if (!DEBUG_PRINTF_TO_FILE)
+      va_end (argptr);
+#endif
+    }
+
+#if (DEBUG_PRINTF_TO_FILE)
+    va_end (argptr);
+    if (!was_open) {
+	debug_close ();
+    }
+#endif
+#endif /* DEBUG_ENABLED */
+}
+

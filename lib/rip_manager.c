@@ -255,57 +255,62 @@ error_code put_data(char *buf, int size)
 }
 
 
+/* GCS - Honestly, the filename code needs to be ripped out and rewritten.
+   Problems include: (1) no wchar support, (2) truncation and stripping
+   should not be applied to ID3 data, (3) MAX_PATH and NAME_MAX should 
+   be properly used, or even better pathconf (see glibc manual for example),
+   (4) why is it smeared across rip_manager.c and filelib.c ?
+
+   But "for now", I've hacked it to do better truncation at least in this 
+   limited circumstance: ASCII streams with MAX_PATH == NAME_MAX.
+
+   In particular, the -d flag now overrides the name of the stream instead
+   of giving the base directory.
+
+   Actually, now -d is required (failure to do so will dump the mp3's into
+   the current directory.  Need to debug things better.
+*/
 void set_output_directory()
 {
-	char newpath[MAX_PATH_LEN] = {'\0'};
-	char *striped_icy_name;
+    char newpath[MAX_PATH_LEN] = {'\0'};
+    char *striped_icy_name;
+    if (*m_options.output_directory) {
+	_snprintf (newpath, MAX_PATH_LEN, "%s%c",
+		   m_options.output_directory, PATH_SLASH);
+    }
+    if (GET_SEPERATE_DIRS(m_options.flags)) {
+	/* felix@blasphemo.net: insert date after icy_name 
+	   for per-session directories */
+	char *timestring;
+	time_t timestamp;
+	struct tm *theTime;
+	int time_len;
 
-	if (*m_options.output_directory)
-	{
-		strcat(newpath, m_options.output_directory);
-#ifdef WIN32
-		if (newpath[strlen(newpath)-1] != '\\')
-			strcat(newpath, "\\");
-#else
-		if (newpath[strlen(newpath)-1] != '/')
-			strcat(newpath, "/");
-#endif
+	timestring = malloc(36);
+	time(&timestamp);
+	theTime = localtime(&timestamp);
+	time_len = strftime(timestring, 35, "%Y-%B-%d", theTime);
 
+	striped_icy_name = malloc(strlen(m_info.icy_name)+ 1);
+	strcpy(striped_icy_name, m_info.icy_name);
+	strip_invalid_chars(striped_icy_name);
+	left_str(striped_icy_name, MAX_DIR_LEN);
+	trim(striped_icy_name);
+	strcat(newpath, striped_icy_name);
+
+	if (GET_DATE_STAMP(m_options.flags)) {
+	    strcat(newpath, "_");
+	    strcat(newpath, timestring);
 	}
-	if (GET_SEPERATE_DIRS(m_options.flags))
-	{
-		/* felix@blasphemo.net: insert date after icy_name for per-session directories */
-		char *timestring  ;
-		time_t timestamp;
-		struct tm *theTime;
-		int time_len;
 
-		timestring = malloc(36);
-		time(&timestamp);
-		theTime = localtime(&timestamp);
-		time_len = strftime(timestring, 35, "%Y-%B-%d", theTime);
+	free(timestring);
+	free(striped_icy_name);
+    }
 
-		striped_icy_name = malloc(strlen(m_info.icy_name)+ 1);
-		strcpy(striped_icy_name, m_info.icy_name);
-		strip_invalid_chars(striped_icy_name);
-		left_str(striped_icy_name, MAX_DIR_LEN);
-		trim(striped_icy_name);
-		strcat(newpath, striped_icy_name);
+    /* Clip output name if too long */
 
-		if (GET_DATE_STAMP(m_options.flags))
-		{
-			strcat(newpath, "_");
-			strcat(newpath, timestring);
-		}
-
-		free(timestring);
-
-
-		free(striped_icy_name);
-	}
-	filelib_set_output_directory(newpath);
-	m_status_callback(RM_OUTPUT_DIR, (void*)newpath);
-
+    filelib_set_output_directory(newpath);
+    m_status_callback(RM_OUTPUT_DIR, (void*)newpath);
 }
 
 
@@ -364,6 +369,7 @@ void ripthread(void *notused)
 	while(TRUE)
 	{
 		ret = ripstream_rip();
+		DEBUG0(("ripstream_rip returned %d", ret));
 
 		/*
 		 * If the user told use to stop, well, then we bail
@@ -519,13 +525,12 @@ void destroy_subsystems()
 	DEBUG0(("destroy_subsystems complete"));
 }
 
-
 error_code start_ripping()
 {
 
 	error_code ret;
 	char *pproxy = m_options.proxyurl[0] ? m_options.proxyurl : NULL;
-	int mult;
+//	int mult;
 
 	DEBUG2(( "calling inet_sc_connect url=%s\n", m_options.url ));
 
@@ -608,7 +613,7 @@ error_code start_ripping()
 		 * mult = metaint*mult. size of the buffer. i've tried 6, but it seems to still
 		 * cut short on many streams, so i'm trying 10
 		 */
-		mult = 10;
+		//mult = 10;
 		m_destroy_func = ripshout_destroy;
 	}
 
@@ -617,8 +622,13 @@ error_code start_ripping()
 	 * it's sending it to
 	 */
 	ripstream_destroy();
+#if defined (commentout)
 	if ((ret = ripstream_init(mult, &m_ripin, &m_ripout, m_info.icy_name, 
-		GET_ADD_ID3(m_options.flags))) != SR_SUCCESS)
+		GET_ADD_ID3(m_options.flags),GET_PAD_SONGS(m_options.flags))) != SR_SUCCESS)
+#endif
+	if ((ret = ripstream_init(&m_ripin, &m_ripout, 
+		m_info.icy_name, &m_options.sp_opt, 
+		m_ripinfo.bitrate, GET_ADD_ID3(m_options.flags))) != SR_SUCCESS)
 	{
 		ripstream_destroy();
 		goto RETURN_ERR;
@@ -686,6 +696,8 @@ error_code rip_manager_start(void (*status_callback)(int message, void *data),
 		return SR_SUCCESS;		// to prevent reentrenty
 
 	m_ripping = TRUE;
+
+	initialize_locale();
 
 	if (!options)
 		return SR_ERROR_INVALID_PARAM;

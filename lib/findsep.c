@@ -135,7 +135,14 @@ error_code findsep_silence(const u_char* mpgbuf, long mpgsize, u_long* psilence)
 
 	}
 
+	/* GCS FIX: Need to return middle of silence instead of beginning */
+
+	// GCS -- crapped out here
+	// why assert this??
+#if defined (commentout)
 	assert(i != NUM_SILTRACKERS);
+#endif
+
 	if (i == NUM_SILTRACKERS)
 		printf("\nwarning: no silence found between tracks\n");
 	*psilence = silstart;
@@ -158,6 +165,13 @@ void init_siltrackers(SILENCETRACKER* siltrackers)
 	}
 }
 
+/* 
+   Your input callback is called whenever the decoder's stream buffer 
+   lacks enough data to decode a complete frame. You should refill the 
+   buffer from your data source, taking care to place the unconsumed data 
+   from the end of the old buffer (starting from stream->next_frame) at 
+   the beginning of your new buffer.
+*/
 enum mad_flow input(void *data, struct mad_stream *ms)
 {
 	DECODE_STRUCT *ds = (DECODE_STRUCT *)data;
@@ -272,8 +286,12 @@ static enum
 mad_flow header(void *data, struct mad_header const *pheader)
 {
 	DECODE_STRUCT *ds = (DECODE_STRUCT *)data;
-	if (!ds->samplerate)
+	if (!ds->samplerate) {
 		ds->samplerate = pheader->samplerate;
+#if defined (commentout)
+		printf ("Setting samplerate: %ld\n",ds->samplerate);
+#endif
+	}
 	return MAD_FLOW_CONTINUE;
 }
 

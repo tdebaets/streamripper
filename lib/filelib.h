@@ -6,6 +6,12 @@
 #include <windows.h>
 #endif
 
+#if WIN32
+#define PATH_SLASH '\\'
+#else
+#define PATH_SLASH '/'
+#endif
+
 #ifndef MAX_PATH
 #define MAX_PATH		512
 #endif

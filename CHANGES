@@ -1,3 +1,13 @@
+New for 1.60
+------------
+* track splitting enhancements
+* multibyte character support
+* fix crashes on very long file names
+* luria's patch for relay to multiple clients
+* ejViNjdbkcg='s patch for improved authentication
+  (already applied - see below)
+* BeyondLogic's patch for overwriting incomplete files
+
 new in cvs
 ----------
 

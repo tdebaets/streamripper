@@ -82,8 +82,8 @@ error_code filelib_init(BOOL do_count, BOOL keep_incomplete)
 	return SR_SUCCESS;
 }
 
-
-error_code filelib_set_output_directory(char *str)
+error_code
+filelib_set_output_directory(char *str)
 {
 	if (!str)
 	{
@@ -170,6 +170,7 @@ error_code filelib_start(char *filename)
 	{
 		int r = GetLastError();
 		r = strlen(newfile);
+		printf ("ERROR creating file: %s\n",newfile);
 		return SR_ERROR_CANT_CREATE_FILE;
 	}
 #else
@@ -303,3 +304,4 @@ void trim_filename(char *filename, char* out)
 	strip_invalid_chars(out);
 	out[maxlen-4] = '\0';	// -4 for ".mp3"
 }
+

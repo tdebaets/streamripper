@@ -34,13 +34,13 @@ Xsed="sed -e s/^X//"
 if test "${CDPATH+set}" = set; then CDPATH=; export CDPATH; fi
 
 ### BEGIN LIBTOOL CONFIG
-# Libtool was configured as follows, on host merlin.matrix.net:
+# Libtool was configured as follows, on host reality-iqtnb9z:
 #
-# CC="gcc" CFLAGS="-g -O2" CPPFLAGS="" \
-# LD="/usr/bin/ld" LDFLAGS="" LIBS="" \
+# CC="gcc" CFLAGS="-O2 -Wall" CPPFLAGS="" \
+# LD="/usr/i686-pc-cygwin/bin/ld.exe" LDFLAGS="" LIBS="" \
 # NM="/usr/bin/nm -B" RANLIB="ranlib" LN_S="ln -s" \
 # DLLTOOL="" OBJDUMP="" AS="" \
-#   ./../ltconfig --cache-file=.././config.cache --disable-shared --with-gcc --with-gnu-ld --no-verify ./../ltmain.sh i686-pc-linux-gnu
+#   ./../ltconfig --cache-file=.././config.cache --disable-shared --with-gcc --with-gnu-ld --no-verify ./../ltmain.sh i686-pc-cygwin
 #
 # Compiler and other test output produced by ltconfig, useful for
 # debugging ltconfig, is in ./config.log if it exists.
@@ -61,8 +61,8 @@ build_old_libs=yes
 fast_install=needless
 
 # The host system.
-host_alias=i686-pc-linux-gnu
-host=i686-pc-linux-gnu
+host_alias=i686-pc-cygwin
+host=i686-pc-cygwin
 
 # An echo program that does not interpret backslashes.
 echo="echo"
@@ -74,7 +74,7 @@ AR="ar"
 CC="gcc"
 
 # The linker used to build libraries.
-LD="/usr/bin/ld"
+LD="/usr/i686-pc-cygwin/bin/ld.exe"
 
 # Whether we need hard or soft links.
 LN_S="ln -s"
@@ -108,10 +108,10 @@ objext="o"
 libext="a"
 
 # Executable file suffix (normally "").
-exeext=""
+exeext=".exe"
 
 # Additional compiler flags for building library objects.
-pic_flag=" -fPIC"
+pic_flag=""
 
 # Does compiler simultaneously support -c and -o options?
 compiler_c_o="yes"
@@ -141,29 +141,29 @@ dlopen_self_static=unknown
 link_static_flag="-static"
 
 # Compiler flag to turn off builtin functions.
-no_builtin_flag=" -fno-builtin -fno-rtti -fno-exceptions"
+no_builtin_flag=" -fno-builtin"
 
 # Compiler flag to allow reflexive dlopens.
 export_dynamic_flag_spec="\${wl}--export-dynamic"
 
 # Compiler flag to generate shared objects directly from archives.
-whole_archive_flag_spec="\${wl}--whole-archive\$convenience \${wl}--no-whole-archive"
+whole_archive_flag_spec=""
 
 # Compiler flag to generate thread-safe objects.
 thread_safe_flag_spec=""
 
 # Library versioning type.
-version_type=linux
+version_type=windows
 
 # Format of library name prefix.
 libname_spec="lib\$name"
 
 # List of archive names.  First name is the real one, the rest are links.
 # The last name is the one that the linker finds with -lNAME.
-library_names_spec="\${libname}\${release}.so\$versuffix \${libname}\${release}.so\$major \$libname.so"
+library_names_spec="\${libname}\`echo \${release} | sed -e s/[.]/-/g\`\${versuffix}.dll \$libname.a"
 
 # The coded name of the library, if different from the real name.
-soname_spec="\${libname}\${release}.so\$major"
+soname_spec=""
 
 # Commands used to build and install an old-style archive.
 RANLIB="ranlib"
@@ -172,34 +172,46 @@ old_postinstall_cmds="\$RANLIB \$oldlib~chmod 644 \$oldlib"
 old_postuninstall_cmds=""
 
 # Create an old-style archive from a shared archive.
-old_archive_from_new_cmds=""
+old_archive_from_new_cmds="\$DLLTOOL --as=\$AS --dllname \$soname --def \$objdir/\$soname-def --output-lib \$objdir/\$libname.a"
 
 # Commands used to build and install a shared archive.
-archive_cmds="\$CC -shared \$libobjs \$deplibs \$linkopts \${wl}-soname \$wl\$soname -o \$lib"
-archive_expsym_cmds="\$CC -shared \$libobjs \$deplibs \$linkopts \${wl}-soname \$wl\$soname \${wl}-retain-symbols-file \$wl\$export_symbols -o \$lib"
+archive_cmds=""
+archive_expsym_cmds="echo EXPORTS > \$objdir/\$soname-def~
+      _lt_hint=1;
+      for symbol in \\\`cat \$export_symbols\\\`; do
+	echo \\\"	\\\$symbol @ \\\$_lt_hint ; \\\" >> \$objdir/\$soname-def;
+	_lt_hint=\\\`expr 1 + \\\$_lt_hint\\\`;
+      done~
+      test -f \$objdir/\$soname-ltdll.c || sed -e \\\"/^# \\\\/\\\\* ltdll\\\\.c starts here \\\\*\\\\//,/^# \\\\/\\\\* ltdll.c ends here \\\\*\\\\// { s/^# //; p; }\\\" -e d < \$0 > \$objdir/\$soname-ltdll.c~
+      test -f \$objdir/\$soname-ltdll.\$objext || (cd \$objdir && \$CC -c \$soname-ltdll.c)~
+      \$CC -Wl,--base-file,\$objdir/\$soname-base -Wl,--dll -nostartfiles -Wl,-e,__cygwin_dll_entry@12 -o \$lib \$objdir/\$soname-ltdll.\$objext \$libobjs \$deplibs \$linkopts~
+      \$DLLTOOL --as=\$AS --dllname \$soname --exclude-symbols DllMain@12,_cygwin_dll_entry@12,_cygwin_noncygwin_dll_entry@12 --def \$objdir/\$soname-def --base-file \$objdir/\$soname-base --output-exp \$objdir/\$soname-exp~
+      \$CC -Wl,--base-file,\$objdir/\$soname-base \$objdir/\$soname-exp -Wl,--dll -nostartfiles -Wl,-e,__cygwin_dll_entry@12 -o \$lib \$objdir/\$soname-ltdll.\$objext \$libobjs \$deplibs \$linkopts~
+      \$DLLTOOL --as=\$AS --dllname \$soname --exclude-symbols DllMain@12,_cygwin_dll_entry@12,_cygwin_noncygwin_dll_entry@12 --def \$objdir/\$soname-def --base-file \$objdir/\$soname-base --output-exp \$objdir/\$soname-exp~
+      \$CC \$objdir/\$soname-exp -Wl,--dll -nostartfiles -Wl,-e,__cygwin_dll_entry@12 -o \$lib \$objdir/\$soname-ltdll.\$objext \$libobjs \$deplibs \$linkopts"
 postinstall_cmds=""
 postuninstall_cmds=""
 
 # Method to check whether dependent libraries are shared objects.
-deplibs_check_method="file_magic ELF [0-9][0-9]*-bit [LM]SB (shared object|dynamic lib )"
+deplibs_check_method="file_magic file format pei*-i386(.*architecture: i386)?"
 
 # Command to use when deplibs_check_method == file_magic.
-file_magic_cmd="/usr/bin/file"
+file_magic_cmd="\${OBJDUMP} -f"
 
 # Flag that allows shared libraries with undefined symbols to be built.
-allow_undefined_flag=""
+allow_undefined_flag="unsupported"
 
 # Flag that forces no undefined symbols.
 no_undefined_flag=""
 
 # Commands used to finish a libtool library installation in a directory.
-finish_cmds="PATH=\\\"\\\$PATH:/sbin\\\" ldconfig -n \$libdir"
+finish_cmds=""
 
 # Same as above, but a single script fragment to be evaled but not shown.
 finish_eval=""
 
 # Take the output of nm and produce a listing of raw symbols and C names.
-global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([ABCDGISTW]\\)[ 	][ 	]*\\(\\)\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 \\2\\3 \\3/p'"
+global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([ABCDGISTW]\\)[ 	][ 	]*\\(_\\)\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 \\2\\3 \\3/p'"
 
 # Transform the output of nm in a proper C declaration
 global_symbol_to_cdecl="sed -n -e 's/^. .* \\(.*\\)\$/extern char \\1;/p'"
@@ -208,10 +220,10 @@ global_symbol_to_cdecl="sed -n -e 's/^. .* \\(.*\\)\$/extern char \\1;/p'"
 runpath_var=LD_RUN_PATH
 
 # This is the shared library path variable.
-shlibpath_var=LD_LIBRARY_PATH
+shlibpath_var=PATH
 
 # Is shlibpath searched before the hard-coded library search path?
-shlibpath_overrides_runpath=no
+shlibpath_overrides_runpath=unknown
 
 # How to hardcode a shared library path into an executable.
 hardcode_action=immediate
@@ -245,10 +257,13 @@ sys_lib_dlsearch_path_spec="/lib /usr/lib"
 fix_srcfile_path=""
 
 # Set to yes if exported symbols are required.
-always_export_symbols=no
+always_export_symbols=yes
 
 # The commands to list exported symbols.
-export_symbols_cmds="\$NM \$libobjs \$convenience | \$global_symbol_pipe | sed 's/.* //' | sort | uniq > \$export_symbols"
+export_symbols_cmds="test -f \$objdir/\$soname-ltdll.c || sed -e \\\"/^# \\\\/\\\\* ltdll\\\\.c starts here \\\\*\\\\//,/^# \\\\/\\\\* ltdll.c ends here \\\\*\\\\// { s/^# //; p; }\\\" -e d < \$0 > \$objdir/\$soname-ltdll.c~
+      test -f \$objdir/\$soname-ltdll.\$objext || (cd \$objdir && \$CC -c \$soname-ltdll.c)~
+      \$DLLTOOL --export-all --exclude-symbols DllMain@12,_cygwin_dll_entry@12,_cygwin_noncygwin_dll_entry@12 --output-def \$objdir/\$soname-def  \$objdir/\$soname-ltdll.\$objext \$libobjs \$convenience~
+      sed -e \\\"1,/EXPORTS/d\\\" -e \\\"s/ @ [0-9]* ; *//\\\" < \$objdir/\$soname-def > \$export_symbols"
 
 # Symbols that should not be listed in the preloaded symbols.
 exclude_expsyms="_GLOBAL_OFFSET_TABLE_"

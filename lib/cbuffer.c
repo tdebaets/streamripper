@@ -16,7 +16,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 #include <stdlib.h>
 #include "cbuffer.h"
 
@@ -28,6 +27,8 @@ void		cbuffer_destroy(CBUFFER *buffer);
 error_code	cbuffer_extract(CBUFFER *buffer, char *items, u_long count);
 error_code	cbuffer_peek(CBUFFER *buffer, char *items, u_long count);
 error_code	cbuffer_insert(CBUFFER *buffer, const char *items, u_long count);
+error_code cbuffer_fastforward (CBUFFER *buffer, u_long count);
+
 u_long		cbuffer_get_free(CBUFFER *buffer);
 u_long 		cbuffer_get_used(CBUFFER *buffer);
 u_long		cbuffer_get_size(CBUFFER *buffer);
@@ -38,6 +39,8 @@ u_long		cbuffer_get_size(CBUFFER *buffer);
  *********************************************************************************/
 static void	reset(CBUFFER *buffer);
 static void	increment(CBUFFER *buffer, u_long *index);
+static u_long   get_read_ptr (CBUFFER *buffer, u_long pos);
+
 
 error_code	cbuffer_init(CBUFFER *buffer, unsigned long size)
 {
@@ -65,6 +68,44 @@ void cbuffer_destroy(CBUFFER *buffer)
 		buffer->buf = NULL;
 	}
 }
+
+// GCS -- Inefficient
+error_code cbuffer_fastforward (CBUFFER *buffer, u_long count)
+{
+	u_long i;	
+	
+	for(i = 0; i < count; i++)
+	{
+		if (buffer->item_count > 0)
+			buffer->item_count--;
+		else
+			return SR_ERROR_BUFFER_EMPTY;
+
+		increment(buffer, &buffer->read_index);
+	}
+	return SR_SUCCESS;
+}
+
+error_code
+cbuffer_peek_rgn (CBUFFER *buffer, char *out_buf, u_long start, u_long length)
+{
+    u_long sidx;
+
+    if (length > buffer->item_count)
+	return SR_ERROR_BUFFER_EMPTY;
+    sidx = get_read_ptr (buffer, start);
+    if (sidx + length > buffer->size) {
+	int first_hunk = buffer->size - sidx;
+	memcpy (out_buf, buffer->buf+sidx, first_hunk);
+	sidx = 0;
+	length -= first_hunk;
+	out_buf += first_hunk;
+    }
+    memcpy (out_buf, buffer->buf+sidx, length);
+
+    return SR_SUCCESS;
+}
+
 
 error_code cbuffer_extract(CBUFFER *buffer, char *items, u_long count)
 {
@@ -138,7 +179,6 @@ u_long cbuffer_get_used(CBUFFER *buffer)
 	return buffer->item_count;
 }
 
-
 void increment(CBUFFER *buffer, u_long *index)
 {
    (*index)++;
@@ -152,4 +192,14 @@ void reset(CBUFFER *buffer)
 	buffer->item_count = 0;
 }
 
+static u_long
+get_read_ptr (CBUFFER *buffer, u_long pos)
+{
+    u_long idx;
+    idx = buffer->read_index + pos + 1;
+    if (idx >= buffer->size) {
+	idx -= buffer->size;
+    }
+    return idx;
+}
 

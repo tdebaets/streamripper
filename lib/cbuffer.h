@@ -17,9 +17,11 @@ extern void			cbuffer_destroy(CBUFFER *buffer);
 extern error_code	cbuffer_extract(CBUFFER *buffer, char *items, u_long count);
 extern error_code	cbuffer_peek(CBUFFER *buffer, char *items, u_long count);
 extern error_code	cbuffer_insert(CBUFFER *buffer, const char *items, u_long count);
+error_code cbuffer_fastforward (CBUFFER *buffer, u_long count);
 extern u_long		cbuffer_get_free(CBUFFER *buffer);
 extern u_long 		cbuffer_get_used(CBUFFER *buffer);
 extern u_long		cbuffer_get_size(CBUFFER *buffer);
+error_code cbuffer_peek_rgn (CBUFFER *buffer, char *out_buf, u_long start, u_long length);
 
 #endif //__CBUFFER_H__
 

@@ -29,7 +29,7 @@
 # include <string.h>
 
 # ifdef HAVE_ASSERT_H
-#  include <assert.h>
+//#  include <assert.h>
 # endif
 
 # ifdef HAVE_LIMITS_H

@@ -54,5 +54,6 @@
 #   define assert(x)	do { if (!(x)) abort(); } while (0)
 #  endif
 # endif
+#   define assert(x)	do { if (!(x)) abort(); } while (0)
 
 # endif

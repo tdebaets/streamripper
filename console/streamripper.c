@@ -27,7 +27,7 @@
 #include "rip_manager.h"
 #include "util.h"
 #include "filelib.h"
-#define SRVERSION	"1.55-pre1"
+#define SRVERSION	"1.60-pre1"
 
 /*******************************************************************************
  * Private functions
@@ -37,6 +37,9 @@ static void print_status();
 static void catch_sig(int code);
 static void parse_arguments(int argc, char **argv);
 static void rip_callback(int message, void *data);
+static void parse_splitpoint_rules (char* rule);
+static void verify_splitpoint_rules (void);
+
 /*******************************************************************************
  * Private Vars 
  ******************************************************************************/
@@ -229,7 +232,7 @@ void print_usage()
         fprintf(stderr, "        -q             - add sequence number to output file\n");
         fprintf(stderr, "        -i             - dont add ID3V1 Tags to output file\n");
         fprintf(stderr, "        -u <useragent> - Use a different UserAgent then \"Streamripper\"\n");
-
+        fprintf(stderr, "        --x            - Invoke splitpoint detection rules\n");
 }
 
 /* 
@@ -262,19 +265,29 @@ void parse_arguments(int argc, char **argv)
 	strncpy(m_opt.url, argv[1], MAX_URL_LEN);
 	strcpy(m_opt.useragent, "sr-POSIX/" SRVERSION);
 
+    // Defaults for splitpoint
+    // Times are in ms
+    m_opt.sp_opt.xs = 1;
+    m_opt.sp_opt.xs_min_volume = 1;
+    m_opt.sp_opt.xs_silence_length = 1000;
+    m_opt.sp_opt.xs_search_window_1 = 6000;
+    m_opt.sp_opt.xs_search_window_2 = 6000;
+    m_opt.sp_opt.xs_offset = 0;
+    m_opt.sp_opt.xs_padding_1 = 300;
+    m_opt.sp_opt.xs_padding_2 = 300;
+
         //get arguments
-        for(i = 1; i < argc; i++)
-        {
+    for(i = 1; i < argc; i++) {
                 if (argv[i][0] != '-')
                         continue;
 
                 c = strchr("dplu", argv[i][1]);
-                if (c != NULL)
-                        if ((i == (argc-1)) || (argv[i+1][0] == '-'))
-                        {
+        if (c != NULL) {
+            if ((i == (argc-1)) || (argv[i+1][0] == '-')) {
                                 fprintf(stderr, "option %s requires an argument\n", argv[i]);
                                 exit(1);
                         }
+	}
                 switch (argv[i][1])
                 {
                         case 'd':
@@ -296,7 +309,6 @@ void parse_arguments(int argc, char **argv)
 								// Default
 								if (i == (argc-1) || argv[i+1][0] == '-')
 									break;
-
 								i++;
 								m_opt.relay_port = atoi(argv[i]);
 												break;
@@ -304,6 +316,14 @@ void parse_arguments(int argc, char **argv)
                                 m_opt.flags ^= OPT_SEARCH_PORTS;
 			        			m_opt.max_port = m_opt.relay_port+1000;
                                 break;
+	    #if defined (commentout)
+	    case 'x':
+		m_opt.flags ^= OPT_PAD_SONGS;
+		break;
+#endif
+            case '-':
+		parse_splitpoint_rules(&argv[i][2]);
+		break;
                         case 'p':
 								i++;
 								strncpy(m_opt.proxyurl, argv[i], MAX_URL_LEN);
@@ -328,4 +348,97 @@ void parse_arguments(int argc, char **argv)
 				break;
                 }
         }
+
+    /* Need to verify that splitpoint rules were sane */
+    verify_splitpoint_rules ();
+}
+
+static void
+parse_splitpoint_rules (char* rule)
+{
+    int x,y;
+
+    if (!strcmp(rule,"xs_none")) {
+	m_opt.sp_opt.xs = 0;
+	printf ("Disable silence detection");
+	return;
+    }
+    if (1==sscanf(rule,"xs_min_volume=%d",&x)) {
+	m_opt.sp_opt.xs_min_volume = x;
+	printf ("Setting minimum volume to %d\n",x);
+	return;
+    }
+    if (1==sscanf(rule,"xs_silence_length=%d",&x)) {
+	m_opt.sp_opt.xs_silence_length = x;
+	printf ("Setting silence length to %d\n",x);
+	return;
+    }
+    if (2==sscanf(rule,"xs_search_window=%d:%d",&x,&y)) {
+	m_opt.sp_opt.xs_search_window_1 = x;
+	m_opt.sp_opt.xs_search_window_2 = y;
+	printf ("Setting search window to (%d:%d)\n",x,y);
+	return;
+    }
+    if (1==sscanf(rule,"xs_offset=%d",&x)) {
+	m_opt.sp_opt.xs_offset = x;
+	printf ("Setting silence offset to %d\n",x);
+	return;
+    }
+    if (2==sscanf(rule,"xs_padding=%d:%d",&x,&y)) {
+	m_opt.sp_opt.xs_padding_1 = x;
+	m_opt.sp_opt.xs_padding_2 = y;
+	printf ("Setting file output padding to (%d:%d)\n",x,y);
+	return;
+    }
+
+    /* All rules failed */
+    fprintf (stderr, "Can't parse command option: --%s\n", rule);
+    exit (-1);
+}
+
+static void
+verify_splitpoint_rules (void)
+{
+    fprintf (stderr, "Warning: splitpoint sanity check not yet implemented.\n");
+
+    /* OK, maybe just a few */
+    
+    /* xs_silence_length must be non-negative and divisible by two */
+    if (m_opt.sp_opt.xs_silence_length < 0) {
+	m_opt.sp_opt.xs_silence_length = 0;
+    }
+    if (m_opt.sp_opt.xs_silence_length % 2) {
+        m_opt.sp_opt.xs_silence_length ++;
+    }
+
+    /* search_window values must be non-negative */
+    if (m_opt.sp_opt.xs_search_window_1 < 0) {
+	m_opt.sp_opt.xs_search_window_1 = 0;
+    }
+    if (m_opt.sp_opt.xs_search_window_2 < 0) {
+	m_opt.sp_opt.xs_search_window_2 = 0;
+    }
+
+    /* if silence_length is 0, then search window should be zero */
+    if (m_opt.sp_opt.xs_silence_length == 0) {
+	m_opt.sp_opt.xs_search_window_1 = 0;
+	m_opt.sp_opt.xs_search_window_2 = 0;
+    }
+
+    /* search_window values must be longer than silence_length */
+    if (m_opt.sp_opt.xs_search_window_1 + m_opt.sp_opt.xs_search_window_2
+	    < m_opt.sp_opt.xs_silence_length) {
+	/* if this happens, disable search */
+	m_opt.sp_opt.xs_search_window_1 = 0;
+	m_opt.sp_opt.xs_search_window_2 = 0;
+	m_opt.sp_opt.xs_silence_length = 0;
+    }
+
+    /* search window lengths must be at least 1/2 of silence_length */
+    if (m_opt.sp_opt.xs_search_window_1 < m_opt.sp_opt.xs_silence_length) {
+	m_opt.sp_opt.xs_search_window_1 = m_opt.sp_opt.xs_silence_length;
+    }
+    if (m_opt.sp_opt.xs_search_window_2 < m_opt.sp_opt.xs_silence_length) {
+	m_opt.sp_opt.xs_search_window_2 = m_opt.sp_opt.xs_silence_length;
+    }
 }

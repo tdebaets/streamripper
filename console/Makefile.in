@@ -18,6 +18,7 @@ MADLIBOBJS = $(MADLIBPATH)/.libs/libmad.a
 
 LIBOBJS =  $(LIBPATH)/cbuffer.o \
 	$(LIBPATH)/util.o \
+	$(LIBPATH)/debug.o \
 	$(LIBPATH)/filelib.o \
 	$(LIBPATH)/socklib.o \
 	$(LIBPATH)/http.o \

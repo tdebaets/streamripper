@@ -32,7 +32,7 @@
 /* #undef const */
 
 /* Define if you have <sys/wait.h> that is POSIX.1 compatible.  */
-#define HAVE_SYS_WAIT_H 1
+/* #undef HAVE_SYS_WAIT_H */
 
 /* Define as __inline if that's what the C compiler calls it.  */
 /* #undef inline */
@@ -81,16 +81,16 @@
 #define SIZEOF_LONG_LONG 8
 
 /* Define if you have the fcntl function.  */
-#define HAVE_FCNTL 1
+/* #undef HAVE_FCNTL */
 
 /* Define if you have the fork function.  */
-#define HAVE_FORK 1
+/* #undef HAVE_FORK */
 
 /* Define if you have the pipe function.  */
-#define HAVE_PIPE 1
+/* #undef HAVE_PIPE */
 
 /* Define if you have the waitpid function.  */
-#define HAVE_WAITPID 1
+/* #undef HAVE_WAITPID */
 
 /* Define if you have the <assert.h> header file.  */
 #define HAVE_ASSERT_H 1

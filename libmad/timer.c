@@ -28,7 +28,7 @@
 # include <stdio.h>
 
 # ifdef HAVE_ASSERT_H
-#  include <assert.h>
+//#  include <assert.h>
 # endif
 
 # include "timer.h"

@@ -143,7 +143,11 @@ error_code socklib_open(HSOCKET *socket_handle, char *host, int port)
 	DEBUG2(( "connect: sock=%d\n", socket_handle->s ));
     if (connect(socket_handle->s, (struct sockaddr *)&address, len) == SOCKET_ERROR)
 	{
+#if WIN32
 		DEBUG0(( "connect failed: error=%d\n", WSAGetLastError() ));
+#else
+		DEBUG0(( "connect failed.\n" ));
+#endif
 		return SR_ERROR_CONNECT_FAILED;
 	}
 
