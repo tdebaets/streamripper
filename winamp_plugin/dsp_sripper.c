@@ -91,7 +91,7 @@ int dont_modify_samples(struct winampDSPModule *this_mod, short int *samples, in
 int init()
 {
 	WNDCLASS wc;
-	
+		
 	winamp_init(m_plugin.hDllInstance);
 	options_load(&m_rmoOpt, &m_guiOpt);
 
@@ -117,7 +117,6 @@ int init()
 	m_hWnd = CreateWindow(m_szWindowClass, m_plugin.description, WS_POPUP,
 	  m_guiOpt.oldpos.x, m_guiOpt.oldpos.y, WINDOW_WIDTH, WINDOW_HEIGHT, 
 	  m_plugin.hwndParent, NULL, m_plugin.hDllInstance, NULL);
-
 
 
 	// Create a systray icon
@@ -246,20 +245,25 @@ void stop_button_disable()
 void UpdateNotRippingDisplay(HWND hwnd)
 {
 	WINAMP_INFO winfo;
-//	HWND hwndStart = GetDlgItem(hwnd, IDC_START);		// JCBUG, why was this here?
-	winamp_get_info(&winfo, m_guiOpt.use_old_playlist_ret);
+
+	if (winamp_get_info(&winfo, m_guiOpt.use_old_playlist_ret) == FALSE)
+	{
+		// if the new way didn't work, lets try the new way
+		if (m_guiOpt.use_old_playlist_ret == FALSE)
+			m_guiOpt.use_old_playlist_ret = TRUE;	
+
+		winamp_get_info(&winfo, m_guiOpt.use_old_playlist_ret);
+	}
 	assert(winfo.is_running);
 	strcpy(m_rmoOpt.url, winfo.url);
 
 	if (strchr(m_rmoOpt.url, ':'))
 	{
-//		EnableWindow(hwndStart, TRUE);
 		render_set_display_data(IDR_STREAMNAME, "Press start to rip %s", m_rmoOpt.url);
 		start_button_enable();
 	}
 	else
 	{
-//		EnableWindow(hwndStart, FALSE);
 		render_set_display_data(IDR_STREAMNAME, "Winamp is not listening to a stream");
 		start_button_disable();
 	}

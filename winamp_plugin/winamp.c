@@ -88,11 +88,14 @@ BOOL winamp_init()
 	return winamp_get_path(m_winamps_path);
 }
 
+#define DbgBox(_x_)	MessageBox(NULL, _x_, "Debug", 0)
 
 BOOL winamp_get_info(WINAMP_INFO *info, BOOL useoldway)
 {
-	HWND hwndWinamp = FindWindow("Winamp v1.x", NULL);
+	HWND hwndWinamp;
 	info->url[0] = '\0';
+
+	hwndWinamp = FindWindow("Winamp v1.x", NULL);
 
 	// Get winamps path
 	if (!m_winamps_path[0])
@@ -139,13 +142,18 @@ BOOL winamp_get_info(WINAMP_INFO *info, BOOL useoldway)
 	// Much better way to get the filename
 		int get_filename = 211;
 		int get_position = 125;
-
 		int data = 0;
-		int pos = (int)SendMessage(hwndWinamp, WM_USER, data, get_position);
-		char* fname = (char*)SendMessage(hwndWinamp, WM_USER, pos, get_filename);
-		char *purl = strstr(fname, "http://");
+		int pos;
+		char* fname;
+		char *purl;
+
+		pos = (int)SendMessage(hwndWinamp, WM_USER, data, get_position);
+		fname = (char*)SendMessage(hwndWinamp, WM_USER, pos, get_filename);
+		if (fname == NULL)
+			return FALSE;
+		purl = strstr(fname, "http://");
 		if (purl)
-			strcpy(info->url, purl);
+			strncpy(info->url, purl, MAX_URL_LEN);
 	}
 
 	return TRUE;
