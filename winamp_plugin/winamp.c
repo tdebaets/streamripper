@@ -106,30 +106,43 @@ BOOL winamp_get_info(WINAMP_INFO *info)
 	// Send a message to winamp to save the current playlist
 	// to a file, 'n' is the index of the currently selected item
 	// 
-	n  = SendMessage(hwndWinamp, WM_USER, (WPARAM)NULL, 120); 
+//	n  = SendMessage(hwndWinamp, WM_USER, (WPARAM)NULL, 120); 
+//
+//	{
+//		char m3u_path[MAX_PATH_LEN];
+//		char buf[4096] = {'\0'};
+//		FILE *fp;
+//
+//		sprintf(m3u_path, "%s%s", m_winamps_path, "winamp.m3u");	
+//		if ((fp = fopen(m3u_path, "r")) == NULL)
+//			return FALSE;
+//
+//		while(!feof(fp) && n >= 0)
+//		{
+//			fgets(buf, 4096, fp);
+//			if (*buf != '#')
+//				n--;
+//		}
+//		fclose(fp);
+//		buf[strlen(buf)-1] = '\0';
+//
+//		// Make sure it's a URL
+//		if (strncmp(buf, "http://", strlen("http://")) == 0)
+//			strcpy(info->url, buf);
+//	}
 
+	// Much better way to get the filename
 	{
-		char m3u_path[MAX_PATH_LEN];
-		char buf[4096] = {'\0'};
-		FILE *fp;
+		int get_filename = 211;
+		int get_position = 125;
 
-		sprintf(m3u_path, "%s%s", m_winamps_path, "winamp.m3u");	
-		if ((fp = fopen(m3u_path, "r")) == NULL)
-			return FALSE;
-
-		while(!feof(fp) && n >= 0)
-		{
-			fgets(buf, 4096, fp);
-			if (*buf != '#')
-				n--;
-		}
-		fclose(fp);
-		buf[strlen(buf)-1] = '\0';
-
-		// Make sure it's a URL
-		if (strncmp(buf, "http://", strlen("http://")) == 0)
-			strcpy(info->url, buf);
+		int data = 0;
+		int pos = (int)SendMessage(hwndWinamp, WM_USER, data, get_position);
+		char* fname = (char*)SendMessage(hwndWinamp, WM_USER, pos, get_filename);
+		if (strncmp(fname, "http://", strlen("http://")) == 0)
+			strcpy(info->url, fname);
 	}
+
 	return TRUE;
 }
 
