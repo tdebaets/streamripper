@@ -573,9 +573,9 @@ options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
     {
     case WM_INITDIALOG:
 	if (confile == 0)
-	    saveload_conopts(hWnd, FALSE);
-	else if (confile == 1)
 	    saveload_fileopts(hWnd, FALSE);
+	else if (confile == 1)
+	    saveload_conopts(hWnd, FALSE);
 	else if (confile == 2)
 	    saveload_splittingopts(hWnd, FALSE);
 
@@ -661,9 +661,9 @@ options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 	    {
 	    case PSN_APPLY:
 		if (confile == 0)
-		    saveload_conopts(hWnd, TRUE);
-		else if (confile == 1)
 		    saveload_fileopts(hWnd, TRUE);
+		else if (confile == 1)
+		    saveload_conopts(hWnd, TRUE);
 		else if (confile == 2)
 		    saveload_splittingopts(hWnd, TRUE);
 		break;

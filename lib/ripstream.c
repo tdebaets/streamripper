@@ -225,10 +225,9 @@ ripstream_rip()
 	 * properly in seconds.  See the readme file for details.  */
 	if (m_bitrate == 0) {
 	    /* I'm not sure what this means, but let's go with 24k ... */
-	    compute_cbuffer_size (m_sp_opt, 24, m_in->getsize);
-	} else {
-	    compute_cbuffer_size (m_sp_opt, m_bitrate, m_in->getsize);
+	    m_bitrate = 24;
 	}
+        compute_cbuffer_size (m_sp_opt, m_bitrate, m_in->getsize);
 	ret = cbuffer_init(&m_cbuffer, m_in->getsize * m_cbuffer_size);
 	if (ret != SR_SUCCESS) return ret;
     }
