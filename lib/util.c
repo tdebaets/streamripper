@@ -20,9 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#if defined HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "srconfig.h"
 #if defined HAVE_UNISTD_H
 #include <unistd.h>
 #endif
