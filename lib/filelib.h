@@ -27,5 +27,6 @@ extern error_code	filelib_write(char *buf, u_long size);
 extern void			filelib_shutdown();
 extern error_code	filelib_set_output_directory(char *str);
 extern error_code	filelib_remove(char *filename);
+void filelib_set_max_filename_length (int mfl);
 
 #endif //FILELIB

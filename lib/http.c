@@ -20,7 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "types.h"
+#include "compat.h"
 #include "http.h"
 #include "util.h"
 #include "debug.h"

@@ -20,7 +20,7 @@ extern void _freevargstr(char *str);
 	char str[MAX_ERROR_STR];										\
 	char datebuf[50];												\
 	time_t now = time(NULL);										\
-	strftime(datebuf, 50, "%m/%d/%y:%H:%M:%S", localtime(&now));	\
+	strftime(datebuf, 50, "%m/%d/%Y:%H:%M:%S", localtime(&now));	\
 	sprintf(str, "L%d [%s] %s:%d -- %s\n",							\
 				 _level_,											\
 				 datebuf,											\

@@ -86,4 +86,11 @@
 #define WSACleanup()
 #endif
 
+// Other stuff
+////////////////////////////////////////// 
+
+#if WIN32
+#define snprintf _snprintf
+#endif
+
 #endif // __COMPAT_H__

@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include <wchar.h>
 #include <wctype.h>
 #include <locale.h>
@@ -72,7 +73,7 @@ char *subnstr_until(const char *str, char *until, char *newstr, int maxlen)
 
 char *escape_string_alloc(const char *str)
 {
-	static const char c2x_table[] = "0123456789abcdef";
+    static const char c2x_table[] = "0123456789abcdef";
     const unsigned char *spStr = (const unsigned char *)str;
     char *sNewStr = (char *)calloc(3 * strlen(str) + 1, sizeof(char));
     unsigned char *spNewStr = (unsigned char *)sNewStr;
@@ -147,6 +148,22 @@ initialize_locale (void)
     setlocale (LC_ALL, "");
     setlocale (LC_CTYPE, "");
     printf ("LOCALE is %s\n",setlocale(LC_ALL,NULL));
+}
+
+int
+dir_max_filename_length (char* dirname)
+{
+#if WIN32
+    char full[_MAX_PATH];
+    if (_fullpath( full, dirname, _MAX_PATH ) == NULL) {
+	debug_printf ("_fullpath returned zero?\n");
+	return 0;
+    }
+    debug_printf ("strlen(full) == %d\n",strlen(full));
+    return _MAX_PATH - strlen(full) - 1;
+#else
+    return pathconf(dirname, _PC_NAME_MAX);
+#endif
 }
 
 char*

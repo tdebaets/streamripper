@@ -57,6 +57,7 @@ static char 	m_output_directory[MAX_PATH];
 static char 	m_incomplete_directory[MAX_PATH];
 static char 	m_filename_format[] = "%s%s.mp3";
 static BOOL	m_keep_incomplete = TRUE;
+static int      m_max_filename_length;
 
 
 // For now we're not going to care. If it makes it good. it not, will know 
@@ -96,14 +97,20 @@ filelib_set_output_directory(char *str)
 	add_trailing_slash(m_output_directory);
 
 	// Make the incomplete directory
-	sprintf(m_incomplete_directory, "%s%s", m_output_directory, "incomplete");
+	sprintf(m_incomplete_directory, "%s%s", m_output_directory,
+		"incomplete");
 	mkdir_if_needed(m_incomplete_directory);
 	add_trailing_slash(m_incomplete_directory);
-
 	{
 		long t = strlen(m_incomplete_directory);
 	}
 	return SR_SUCCESS;
+}
+
+void
+filelib_set_max_filename_length (int mfl)
+{
+    m_max_filename_length = mfl - strlen("incomplete") - 1;
 }
 
 void close_file()
@@ -298,10 +305,14 @@ error_code filelib_remove(char *filename)
 
 void trim_filename(char *filename, char* out)
 {
-	long maxlen = MAX_PATH_LEN-strlen(m_incomplete_directory);
-	
-	strncpy(out, filename, MAX_TRACK_LEN);
-	strip_invalid_chars(out);
-	out[maxlen-4] = '\0';	// -4 for ".mp3"
+#if defined (commentout)
+    /* GCS This would have worked, except that m_incomplete_directory
+	is usually a relative path */
+    long maxlen = MAX_PATH_LEN-strlen(m_incomplete_directory);
+#endif
+    long maxlen = m_max_filename_length;
+    strncpy(out, filename, MAX_TRACK_LEN);
+    strip_invalid_chars(out);
+    out[maxlen-4] = '\0';	// -4 for ".mp3"
 }
 

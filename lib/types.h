@@ -11,11 +11,6 @@
 #include <sys/types.h>
 #endif
 
-
-#if WIN32
-#define snprintf _snprintf
-#endif
-
 typedef int error_code;
 #define BOOL	int
 #define TRUE	1
@@ -112,7 +107,7 @@ typedef struct SPLITPOINT_OPTIONSst
 // are not organized at all, should have space to insert in places.
 //
 /* ******************** IMPORTANT IF YOU ADD ERROR CODES!!!! *****************************/
-#define NUM_ERROR_CODES					0x38+1
+#define NUM_ERROR_CODES					0x39+1
 /* ******************** IMPORTANT IF YOU ADD ERROR CODES!!!! *****************************/
 #define SR_SUCCESS					0x00
 #define SR_SUCCESS_BUFFERING				0x01
@@ -172,5 +167,6 @@ typedef struct SPLITPOINT_OPTIONSst
 #define SR_ERROR_NOT_SHOUTCAST_STREAM		-	0x36
 #define SR_ERROR_HTTP_407_ERROR				-	0x37
 #define	SR_ERROR_HTTP_403_ERROR				-	0x38
+#define SR_ERROR_DIR_PATH_TOO_LONG			-	0x39
 
 #endif //__SRIPPER_H__
