@@ -15,7 +15,8 @@ consoleapp:
 	@mv console/streamripper .
 
 clean:
-	rm -f streamripper *.o lib/*.o mpglib/*.o console/*.o *.core core
+	rm -f streamripper *.o lib/*.o console/*.o *.core core
+	cd libmad; make clean
 
 install:
 	@echo "- Installing streamripper"

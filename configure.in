@@ -50,4 +50,4 @@ AC_TYPE_SIGNAL
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(mkdir socket strerror strstr)
 
-AC_OUTPUT(Makefile lib/Makefile mpglib/Makefile console/Makefile)
+AC_OUTPUT(Makefile lib/Makefile console/Makefile)

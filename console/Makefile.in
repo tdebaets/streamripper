@@ -6,22 +6,15 @@ SHELL = /bin/sh
 CC = @CC@
 
 LDFLAGS = @THREADLIBS@ -lm
-INCPATHS = -I ../mpglib -I ../lib
+INCPATHS = -I ../libmad -I ../lib 
 CFLAGS = @CFLAGS@
 DEFS = -D_REENTRANT -DUSE_LAYER3 -DHAVE_MPGLIB -DNOANALYSIS -D__DEBUG
 COMPILE_CFLAGS = $(CFLAGS) $(DEFS) $(INCPATHS)
 
 LIBPATH = ../lib
-MPGLIBPATH = ../mpglib
-
 INSTALL = /usr/bin/install -c
-MPGLIBOBJS = $(MPGLIBPATH)/VbrTag.o  \
-	$(MPGLIBPATH)/common.o  \
-	$(MPGLIBPATH)/dct64.o  \
-	$(MPGLIBPATH)/decode.o \
-	$(MPGLIBPATH)/interface.o  \
-	$(MPGLIBPATH)/layer3.o  \
-	$(MPGLIBPATH)/tabinit.o 
+MADLIBPATH= ../libmad
+MADLIBOBJS = $(MADLIBPATH)/.libs/libmad.a 
 
 LIBOBJS =  $(LIBPATH)/cbuffer.o \
 	$(LIBPATH)/util.o \
@@ -37,21 +30,21 @@ LIBOBJS =  $(LIBPATH)/cbuffer.o \
 	$(LIBPATH)/relaylib.o \
 	$(LIBPATH)/rip_manager.o
 
-all: mpglib123 libripper console
+all: madlib libripper console
 
-mpglib123:
-	@echo "Compiling mpglib, MP3 decoding library -"
-	@cd ../mpglib; make
+madlib:
+	@echo "Compiling madlib library"
+	@cd $(MADLIBPATH); ./configure; make
 
 libripper:
 	@echo "Compiling streamripper library functions -"
 	@cd ../lib; make
 
 console: streamripper.c 
-	$(CC) $(COMPILE_CFLAGS) $(LIBOBJS) $(MPGLIBOBJS) streamripper.c -o streamripper $(LDFLAGS)
+	$(CC) $(COMPILE_CFLAGS) $(LIBOBJS) $(MADLIBOBJS) streamripper.c -o streamripper $(LDFLAGS)
 
 test:	test.c libripper mpglib123
-	$(CC) $(COMPILE_CFLAGS) $(LIBOBJS) $(MPGLIBOBJS) test.c -o test $(LDFLAGS)
+	$(CC) $(COMPILE_CFLAGS) $(LIBOBJS) $(MADLIBOBJS) test.c -o test $(LDFLAGS)
 
 clean:
 	rm -f streamripper *.o $(LIBPATH)/*.o $(MPGLIBPATH)/*.o *.core core
