@@ -100,6 +100,7 @@ ripshout_getdata(char *data, char *track)
     if ((ret = m_in->get_input_data(&c, 1)) <= 0)
 	return ret;
 
+    debug_printf ("METADATA LEN: %d\n",(int)c);
     if (c < 0) {
 	debug_printf ("Got invalid metadata: %d\n",c);
 	return SR_ERROR_INVALID_METADATA;
@@ -114,7 +115,7 @@ ripshout_getdata(char *data, char *track)
 	return SR_SUCCESS;
     } else {
 	if ((ret = get_trackname(c * 16, newtrack)) != SR_SUCCESS) {
-	    DEBUG0(("get_trackname had a bad return %d", ret));
+	    debug_printf("get_trackname had a bad return %d", ret);
 	    return ret;
 	}
 
@@ -132,6 +133,7 @@ ripshout_getdata(char *data, char *track)
 error_code
 get_trackname(int size, char *newtrack)
 {
+    int i;
     int ret;
     char *namebuf;
 
@@ -142,6 +144,22 @@ get_trackname(int size, char *newtrack)
 	free(namebuf);
 	return ret;
     }
+
+    debug_printf ("METADATA TITLE\n");
+    for (i=0; i<size; i++) {
+	debug_printf ("%2x ",(unsigned int)namebuf[i]);
+	if (i % 20 == 19) {
+	    debug_printf ("\n");
+	}
+    }
+    debug_printf ("\n");
+    for (i=0; i<size; i++) {
+	debug_printf ("%2c ",namebuf[i]);
+	if (i % 20 == 19) {
+	    debug_printf ("\n");
+	}
+    }
+    debug_printf ("\n");
 
     if(strstr(namebuf, "StreamTitle='") == NULL) {
 	free(namebuf);

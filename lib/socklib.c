@@ -319,6 +319,8 @@ int socklib_recvall(HSOCKET *socket_handle, char* buffer, int size, int timeout)
 	//		DEBUG2(("calling recv for %d bytes", size));
         ret = recv(socket_handle->s, &buffer[read], size, 0);
 	//		DEBUG2(("recv: %d", ret));
+	debug_printf ("RECV req %5d bytes, got %5d bytes\n", size, ret);
+
         if (ret == SOCKET_ERROR)
 	    return SR_ERROR_RECV_FAILED;
 
