@@ -100,7 +100,7 @@ error_code findsep_silence(const u_char* mpgbuf, long mpgsize,
 
 	init_siltrackers(ds.siltrackers);
 
-#ifdef _DEBUG_
+#if defined (MAKE_DUMP_MP3)
 	{
 		FILE* fp = fopen("dump.mp3", "wb");
 		fwrite(mpgbuf, mpgsize, 1, fp);
