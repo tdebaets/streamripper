@@ -1,3 +1,14 @@
+New for 1.60.12
+---------------
+* Add -R option to limit number of clients connected to relay
+* Autodetect streamripper as server
+* Fix bug in command line parsing with -I flag
+
+New for 1.60.11
+---------------
+July 09 2004
+* Possible fix for frameoffset != READSIZE problem 
+
 New for 1.60.10
 ---------------
 Sat Jun  5 12:53:36 EDT 2004 (GCS)
