@@ -1,11 +1,16 @@
+configure
 config.cache
 config.log
 config.status
 dump.mp3
 gcs.txt
+Makefile.in
 console/Makefile
 consoleWin32/consoleWin32.ncb
 consoleWin32/consoleWin32.sln
 consoleWin32/consoleWin32.suo
 consoleWin32/consoleWin32.vcproj
 consoleWin32/Debug
+libmad-0.15.1b/mad.h
+libmad-0.15.1b/Makefile.in
+libmad-0.15.1b/msvc++/Makefile.in

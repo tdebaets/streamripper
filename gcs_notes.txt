@@ -1,5 +1,19 @@
 Greg's notes
 -----------------------------------------
+* Generated files
+~~~~~~~~~~~~~~~~~
+I deleted the automatically generated files from CVS.  The people 
+who download from CVS should be advanced enough to figure out 
+how to build.  Just in case, I included a config.sh file to show 
+how it is done.
+
+Note the Windows mad.h should be coming from the msvc++ directory 
+anyways, so there is no need to keep the version built on unix.
+
+CVS: 	Makefile.in configure libmad/Makefile.in 
+CVS: 	libmad-0.15.1b/Makefile.in libmad-0.15.1b/mad.h 
+CVS: 	libmad-0.15.1b/msvc++/Makefile.in 
+
 
 * More problems
 ~~~~~~~~~~~~~~~
