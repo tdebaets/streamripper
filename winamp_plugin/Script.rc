@@ -45,7 +45,7 @@ BEGIN
                     IDC_RECONNECT,"Button",BS_AUTOCHECKBOX | BS_MULTILINE | 
                     WS_TABSTOP,7,7,179,15
     CONTROL         "&Create relay stream",IDC_MAKE_RELAY,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,26,123,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,24,123,14
     CONTROL         "A&llow anonymous usage logging",IDC_ALLOW_TOUCH,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,7,61,123,14
     CONTROL         "&Don't rip over X megs",IDC_CHECK_MAX_BYTES,"Button",
@@ -68,25 +68,36 @@ FONT 8, "MS Sans Serif"
 BEGIN
     CONTROL         "&Make separate directories for each stream",
                     IDC_SEPERATE_DIRS,"Button",BS_AUTOCHECKBOX | 
-                    BS_MULTILINE | WS_TABSTOP,4,7,172,14
+                    BS_MULTILINE | WS_TABSTOP,7,7,172,14
     CONTROL         "&Overwrite existing tracks in the complete directory",
-                    IDC_OVER_WRITE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,
+                    IDC_OVER_WRITE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,
                     24,184,14
     CONTROL         "&Add finished tracks to playlist",
                     IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,4,56,123,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,56,123,14
     CONTROL         "A&dd sequence numbers to tracks",IDC_COUNT_FILES,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,4,73,121,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,73,121,14
     CONTROL         "A&ppend the date to the directory",IDC_DATE_STAMP,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,89,121,14
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,89,121,14
     CONTROL         "Add &ID3 info to the tracks",IDC_ADD_ID3,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,4,108,91,14
-    EDITTEXT        IDC_OUTPUT_DIRECTORY,10,137,154,15,ES_AUTOHSCROLL
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,108,91,14
+    EDITTEXT        IDC_OUTPUT_DIRECTORY,14,137,154,15,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BROWSE,179,136,17,14
-    GROUPBOX        "Output Directory",IDC_STATIC,4,126,199,33
+    GROUPBOX        "Output Directory",IDC_STATIC,7,126,196,33
     CONTROL         "&Never overwrite files from incomplete folder",
                     IDC_KEEP_INCOMPLETE,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,4,40,160,14
+                    WS_TABSTOP,7,40,160,14
+END
+
+IDD_PROPPAGE_SKIN DIALOG DISCARDABLE  0, 0, 210, 154
+STYLE WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "Skins"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LISTBOX         IDC_SKIN_LIST,7,19,85,128,LBS_SORT | 
+                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Skin Preview",IDC_STATIC,99,39,104,59
+    LTEXT           "Skins",IDC_STATIC,7,7,88,12
 END
 
 
@@ -116,10 +127,18 @@ BEGIN
 
     IDD_PROPPAGE_FILE, DIALOG
     BEGIN
-        LEFTMARGIN, 4
+        LEFTMARGIN, 7
         RIGHTMARGIN, 203
         TOPMARGIN, 7
         BOTTOMMARGIN, 159
+    END
+
+    IDD_PROPPAGE_SKIN, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 203
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 147
     END
 END
 #endif    // APSTUDIO_INVOKED

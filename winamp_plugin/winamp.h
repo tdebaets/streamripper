@@ -3,6 +3,8 @@
 
 #include "types.h"
 
+#define SKIN_PATH "Skins\\SrSkins\\"
+
 typedef struct WINAMP_INFOst
 {
 	char url[MAX_URL_LEN];

@@ -454,7 +454,7 @@ BOOL CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 	{
 		case WM_CREATE:
 
-			if (!render_init(m_plugin.hDllInstance, hWnd, "srskin.bmp"))
+			if (!render_init(m_plugin.hDllInstance, hWnd, m_guiOpt.default_skin))
 			{
 				MessageBox(hWnd, "Failed to find the skin bitmap", "Error", 0);
 				break;

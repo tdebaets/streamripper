@@ -86,8 +86,6 @@ BOOL winamp_init()
 BOOL winamp_get_info(WINAMP_INFO *info)
 {
 	HWND hwndWinamp = FindWindow("Winamp v1.x", NULL);
-//	int n;
-
 	info->url[0] = '\0';
 
 	// Get winamps path

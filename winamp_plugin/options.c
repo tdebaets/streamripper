@@ -27,11 +27,22 @@
 #include "options.h"
 #include "resource.h"
 #include "winamp.h"
+#include "debug.h"
+#include "render.h"
+#include <assert.h>
 
 #define MAX_INI_LINE_LEN	1024
 #define DEFAULT_RELAY_PORT	8000
 #define APPNAME		"sripper"
 #define DEFAULT_USERAGENT	"FreeAmp/2.x"
+#define NUM_PROP_PAGES	3
+#define DEFAULT_SKINFILE	"srskin.bmp"
+#define SKIN_PREV_LEFT		158
+#define SKIN_PREV_TOP		79
+#define	MAX_SKINS			256
+#define PROP_SHEET_CON		0
+#define PROP_SHEET_FILE		1
+#define PROP_SHEET_SKINS	2
 #define SRVERSION			"1.32"
 
 /**********************************************************************************
@@ -49,12 +60,14 @@ static BOOL				browse_for_folder(HWND hwnd, const char *title, UINT flags, char 
 static BOOL				get_desktop_folder(char *path);
 static LRESULT CALLBACK file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK con_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, BOOL confile);
 static void				saveload_fileopts(HWND hWnd, BOOL saveload);
 static void				saveload_conopts(HWND hWnd, BOOL saveload);
 static HPROPSHEETPAGE	create_prop_sheet_page(HINSTANCE inst, DWORD iddres, DLGPROC dlgproc);
 static void				add_useragent_strings();
-
+static BOOL				get_skin_list();
+static void				free_skin_list();
 
 /**********************************************************************************
  * Private Vars
@@ -65,6 +78,66 @@ typedef HRESULT (__stdcall * PFNSHGETFOLDERPATHA)(HWND, int, HANDLE, DWORD, LPST
 
 static RIP_MANAGER_OPTIONS *m_opt;
 static GUI_OPTIONS *m_guiOpt;
+static char *m_pskin_list[MAX_SKINS];
+static int m_skin_list_size = 0;
+static int m_curskin = 0;
+//JCBUG not yet implemented (need to figure out how to get this)
+static int m_last_sheet = 0;	
+
+
+BOOL get_skin_list()
+{
+	WIN32_FIND_DATA	filedata; 
+	HANDLE			hsearch = NULL;
+	char			temppath[MAX_PATH];
+
+	m_skin_list_size = 0;
+	memset(m_pskin_list, 0, sizeof(m_pskin_list));
+		
+	if (!winamp_get_path(temppath))
+		return FALSE;
+	strcat(temppath, SKIN_PATH);
+	strcat(temppath, "*.bmp");
+	hsearch = FindFirstFile(temppath, &filedata);
+	if (hsearch == INVALID_HANDLE_VALUE) 
+		return FALSE;
+
+	m_pskin_list[m_skin_list_size] = strdup(filedata.cFileName);
+	m_skin_list_size++;
+
+	while(TRUE)
+	{
+		if (FindNextFile(hsearch, &filedata)) 
+		{
+			m_pskin_list[m_skin_list_size] = strdup(filedata.cFileName);
+			m_skin_list_size++;
+			continue;
+		}
+		if (GetLastError() == ERROR_NO_MORE_FILES) 
+		{
+			break;
+		}
+		else 
+		{
+			if (hsearch)
+				FindClose(hsearch);
+			return FALSE;
+		}
+	}
+	
+	FindClose(hsearch);
+	return TRUE;
+}
+
+void free_skin_list()
+{
+	while(m_skin_list_size--)
+	{
+		assert(m_pskin_list[m_skin_list_size]);
+		free(m_pskin_list[m_skin_list_size]);
+		m_pskin_list[m_skin_list_size] = NULL;
+	}
+}
 
 BOOL get_desktop_folder(char *path)
 {
@@ -157,10 +230,9 @@ HPROPSHEETPAGE create_prop_sheet_page(HINSTANCE inst, DWORD iddres, DLGPROC dlgp
 }
 
 
-
 void options_dialog_show(HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 {
-	HPROPSHEETPAGE hPage[2];	
+	HPROPSHEETPAGE hPage[NUM_PROP_PAGES];	
 	int ret;
 	char szCaption[256];
 	PROPSHEETHEADER psh;
@@ -172,14 +244,15 @@ void options_dialog_show(HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, 
 	options_load(m_opt, m_guiOpt);
 	hPage[0] = create_prop_sheet_page(inst, IDD_PROPPAGE_CON, con_dlg);
 	hPage[1] = create_prop_sheet_page(inst, IDD_PROPPAGE_FILE, file_dlg);
+	hPage[2] = create_prop_sheet_page(inst, IDD_PROPPAGE_SKIN, skin_dlg);
 	memset(&psh, 0, sizeof(PROPSHEETHEADER));
 	psh.dwSize = sizeof(PROPSHEETHEADER);
 	psh.dwFlags = PSH_DEFAULT;
 	psh.hwndParent = parent;
 	psh.hInstance = inst;
 	psh.pszCaption = szCaption;
-	psh.nPages = 2;
-	psh.nStartPage = 0;
+	psh.nPages = NUM_PROP_PAGES;
+	psh.nStartPage = m_last_sheet;
 	psh.phpage = hPage;
 	ret = PropertySheet(&psh);
 	if (ret == -1)
@@ -192,6 +265,8 @@ void options_dialog_show(HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, 
 	}
 	if (ret)
 		options_save(m_opt, m_guiOpt);
+
+	render_change_skin(m_pskin_list[m_curskin]);
 
 }
 
@@ -323,12 +398,85 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 //
 LRESULT CALLBACK file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	DEBUG2(( "file_dlg\n" ));
 	return options_dlg(hWnd, message, wParam, lParam, FALSE);
 }
 LRESULT CALLBACK con_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	DEBUG2(( "con_dlg\n" ));
 	return options_dlg(hWnd, message, wParam, lParam, TRUE);
 }
+
+BOOL populate_skin_list(HWND dlg)
+{
+	int i;
+	HWND hlist = GetDlgItem(dlg, IDC_SKIN_LIST);
+	
+	if (!hlist)
+		return FALSE;
+
+	for(i = 0; i < m_skin_list_size; i++)
+	{
+		assert(m_pskin_list[i]);
+
+		SendMessage(hlist, LB_ADDSTRING, 0, 
+					(LPARAM)m_pskin_list[i]);
+	}
+	SendMessage(hlist, LB_SETCURSEL, (WPARAM)m_curskin, 0);
+	return TRUE;
+}
+
+LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	DEBUG2(( "skin_dlg\n" ));
+	switch(message)
+	{
+//	case WM_ACTIVATE:
+//		if (wParam == WA_ACTIVE)
+//			m_last_sheet = PROP_SHEET_SKINS;
+//		break;
+
+	case WM_INITDIALOG:
+		DEBUG2(( "skin:WM_INITDIALOG\n" ));
+		if (m_skin_list_size == 0)
+		{
+			assert(get_skin_list());
+		}
+		assert(populate_skin_list(hWnd));
+
+		return TRUE;
+	case WM_PAINT:
+		{
+			PAINTSTRUCT pt;
+			HDC hdc = BeginPaint(hWnd, &pt);
+			DEBUG2(( "skin:WM_PAINT\n" ));
+			render_create_preview(m_pskin_list[m_curskin], hdc, SKIN_PREV_LEFT, 
+									SKIN_PREV_TOP);
+			EndPaint(hWnd, &pt);
+		}
+		return FALSE;
+
+	case WM_COMMAND: 
+		switch (LOWORD(wParam)) 
+		{ 
+		case IDC_SKIN_LIST: 
+			switch (HIWORD(wParam)) 
+			{ 
+			case LBN_SELCHANGE:
+				{
+				HWND hwndlist = GetDlgItem(hWnd, IDC_SKIN_LIST); 
+				m_curskin = SendMessage(hwndlist, LB_GETCURSEL, 0, 0); 
+				assert(m_curskin >= 0 && m_curskin < m_skin_list_size);
+				strcpy(m_guiOpt->default_skin, m_pskin_list[m_curskin]);
+				UpdateWindow(hWnd);
+				InvalidateRect(hWnd, NULL, FALSE);
+				}
+			}
+		}
+	}
+	return FALSE;
+}
+
 
 LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, BOOL confile)
 {
@@ -437,6 +585,7 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	GetPrivateProfileString(APPNAME, "output_dir", desktop_path, opt->output_directory, MAX_INI_LINE_LEN, filename);
 	GetPrivateProfileString(APPNAME, "localhost", "localhost", guiOpt->localhost, MAX_INI_LINE_LEN, filename);
 	GetPrivateProfileString(APPNAME, "useragent", DEFAULT_USERAGENT, opt->useragent, MAX_INI_LINE_LEN, filename);
+	GetPrivateProfileString(APPNAME, "default_skin", DEFAULT_SKINFILE, guiOpt->default_skin, MAX_INI_LINE_LEN, filename);
 
 	seperate_dirs = GetPrivateProfileInt(APPNAME, "seperate_dirs", TRUE, filename);
 	opt->relay_port = GetPrivateProfileInt(APPNAME, "relay_port", 8000, filename);
@@ -513,6 +662,7 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	fprintf(fp, "window_x=%d\n", guiOpt->oldpos.x);
 	fprintf(fp, "window_y=%d\n", guiOpt->oldpos.y);
 	fprintf(fp, "enabled=%d\n", guiOpt->m_enabled);
+	fprintf(fp, "default_skin=%s\n", guiOpt->default_skin);
 
 	fclose(fp);
 

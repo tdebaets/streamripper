@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include "render.h"
 #include "winamp.h"
+#include "debug.h"
 
 #define BIG_IMAGE_WIDTH		400
 #define BIG_IMAGE_HEIGHT	150
@@ -43,6 +44,9 @@
  * Public functions
  *********************************************************************************/
 BOOL	render_init(HINSTANCE hInst, HWND hWnd, LPCTSTR szBmpFile);
+BOOL	render_destroy();
+BOOL	render_change_skin(LPCTSTR szBmpFile);
+
 BOOL	render_set_background(RECT *rt, POINT *rgn_points, int num_points);
 VOID	render_set_prog_rects(RECT *imagert, POINT dest, COLORREF line_color);
 VOID	render_set_prog_bar(BOOL on_off);
@@ -54,21 +58,14 @@ VOID	render_clear_all_data();
 HBUTTON	render_add_button(RECT *normal, RECT *pressed, RECT *hot, RECT *grayed, RECT *dest, void (*clicked)());
 BOOL	render_add_bar(RECT *rt, POINT dest);
 BOOL	render_do_paint(HDC hdc);
+BOOL	render_create_preview(char* skinfile, HDC hdc, long left, long right);
 VOID	render_do_mousemove(HWND hWnd, LONG wParam, LONG lParam);
 VOID	render_do_lbuttonup(HWND hWnd, LONG wParam, LONG lParam);
 VOID	render_do_lbuttondown(HWND hWnd, LONG wParam, LONG lParam);
-BOOL	render_destroy();
 
 
 /*********************************************************************************
- * Private functions
- *********************************************************************************/
-VOID CALLBACK on_timer(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
-BOOL TrimTextOut(HDC hdc, int x, int y, int maxwidth, char *str);
-#define do_refresh(rect)	(InvalidateRect(m_hwnd, rect, FALSE))
-
-/*********************************************************************************
- * Private Vars
+ * Private structs
  *********************************************************************************/
 typedef struct BUTTONst
 {
@@ -92,7 +89,24 @@ typedef struct BITMAPDCst
 	HDC		hdc;
 } BITMAPDC;
 
+
+
+/*********************************************************************************
+ * Private functions
+ *********************************************************************************/
+VOID CALLBACK on_timer(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
+BOOL TrimTextOut(HDC hdc, int x, int y, int maxwidth, char *str);
+BOOL bitmapdc_from_skinfile(const char* skinfile, BITMAPDC* pbmdc);
+void bitmapdc_close(BITMAPDC bmdc);
+BOOL internal_render_do_paint(HDC skindc, HDC outhdc);
+
+#define do_refresh(rect)	(InvalidateRect(m_hwnd, rect, FALSE))
+
+/*********************************************************************************
+ * Private Vars
+ *********************************************************************************/
 static BITMAPDC		m_tempdc;
+static BITMAPDC		m_tempprevdc;
 static HFONT		m_tempfont;
 static HBRUSH		m_tempbrush;
 
@@ -111,30 +125,31 @@ static COLORREF		m_text_color;
 
 BOOL render_init(HINSTANCE hInst, HWND hWnd, LPCTSTR szBmpFile)
 {
-	char m_skinfile[MAX_PATH];
-
-	if (!winamp_get_path(m_skinfile))
-		return FALSE;
-	strcat(m_skinfile, "Plugins\\");
-	strcat(m_skinfile, szBmpFile);
-
-	m_offscreendc.bm = (HBITMAP) LoadImage(hInst, m_skinfile, IMAGE_BITMAP, 
-						BIG_IMAGE_WIDTH, BIG_IMAGE_HEIGHT, LR_CREATEDIBSECTION | LR_LOADFROMFILE);
-	if (m_offscreendc.bm == NULL)
+	if (!bitmapdc_from_skinfile(szBmpFile, &m_offscreendc))
 		return FALSE;
 
-	m_offscreendc.hdc = CreateCompatibleDC(NULL);
 	m_num_buttons = 0;
-	SelectObject(m_offscreendc.hdc, m_offscreendc.bm);
 	m_tempdc.hdc = NULL;
 	m_tempdc.bm = NULL;
-
-
+	m_tempprevdc.hdc = NULL;
+	m_tempprevdc.bm = NULL;
+	
 	// Set a timer for mouseovers
 	SetTimer(hWnd, TIMER_ID, 100, (TIMERPROC)on_timer);
 	m_hwnd = hWnd;
+
 	return TRUE;	
 }
+
+BOOL render_change_skin(LPCTSTR szBmpFile)
+{
+	bitmapdc_close(m_offscreendc);
+	if (!bitmapdc_from_skinfile(szBmpFile, &m_offscreendc))
+		return FALSE;
+	return TRUE;
+}
+
+
 
 VOID render_set_text_color(POINT pt)
 {
@@ -371,19 +386,83 @@ BOOL render_destroy()
 	return TRUE;
 }
 
+BOOL bitmapdc_from_skinfile(const char* skinfile, BITMAPDC* pbmdc)
+{
+	char tempfile[MAX_PATH];
+
+	if (!winamp_get_path(tempfile))
+		return FALSE;
+	strcat(tempfile, SKIN_PATH);
+	strcat(tempfile, skinfile);
+
+	pbmdc->bm = (HBITMAP) LoadImage(0, tempfile, IMAGE_BITMAP, 
+						BIG_IMAGE_WIDTH, BIG_IMAGE_HEIGHT, 
+						LR_CREATEDIBSECTION | LR_LOADFROMFILE);
+	if (pbmdc->bm == NULL)
+		return FALSE;
+
+	pbmdc->hdc = CreateCompatibleDC(NULL);
+	SelectObject(pbmdc->hdc, pbmdc->bm);
+	return TRUE;
+}
+
+void bitmapdc_close(BITMAPDC bmdc)
+{
+	DeleteDC(bmdc.hdc);
+	DeleteObject(bmdc.bm);
+}
+
+BOOL render_create_preview(char* skinfile, HDC hdc, long left, long right)
+{
+	BOOL b;
+	long orig_width = WIDTH(m_rect_background);
+	long orig_hight = HEIGHT(m_rect_background);
+	BITMAPDC skindc;
+	BITMAPDC tempdc;
+
+	DEBUG2(( "render_do_paint_preview: %d\n", hdc ));
+
+	if (!bitmapdc_from_skinfile(skinfile, &skindc))
+		return FALSE;
+
+	tempdc.hdc = CreateCompatibleDC(skindc.hdc);
+	tempdc.bm = CreateCompatibleBitmap(skindc.hdc, orig_width, orig_hight);
+	SelectObject(tempdc.hdc, tempdc.bm);
+
+	if (!internal_render_do_paint(skindc.hdc, tempdc.hdc))
+		return FALSE;
+	b = StretchBlt(hdc, left, right, orig_width / 2, orig_hight / 2,
+					tempdc.hdc, 0, 0, orig_width, orig_hight, 
+					SRCCOPY);
+	bitmapdc_close(tempdc);
+	bitmapdc_close(skindc);
+	if (!b)
+		return FALSE;
+	return TRUE;
+}
+
 BOOL render_do_paint(HDC hdc)
+{
+	return internal_render_do_paint(m_offscreendc.hdc, hdc);
+}
+
+
+BOOL internal_render_do_paint(HDC skinhdc, HDC outhdc)
 {
 	BUTTON *b;
 	RECT *prt;
 	int i;
+
+	DEBUG2(( "render_do_paint: %d\n", skinhdc ));
 
 	// Create out temp dc if we haven't made it yet
 	if (m_tempdc.hdc == NULL)
 	{
 		LOGFONT ft;
 
-		m_tempdc.hdc = CreateCompatibleDC(hdc);
-		m_tempdc.bm = CreateCompatibleBitmap(hdc, WIDTH(m_rect_background), HEIGHT(m_rect_background));
+		m_tempdc.hdc = CreateCompatibleDC(skinhdc);
+		m_tempdc.bm = CreateCompatibleBitmap(skinhdc, WIDTH(m_rect_background), 
+						HEIGHT(m_rect_background));
 		SelectObject(m_tempdc.hdc, m_tempdc.bm);
 
 		// And the font
@@ -405,7 +484,7 @@ BOOL render_do_paint(HDC hdc)
 		   0, 
 		   WIDTH(m_rect_background),
 		   HEIGHT(m_rect_background),
-		   m_offscreendc.hdc,
+		   skinhdc,
 		   m_rect_background.left,
 		   m_rect_background.top,
 		   SRCCOPY);
@@ -420,7 +499,7 @@ BOOL render_do_paint(HDC hdc)
 			   b->dest.top,
 			   WIDTH(b->dest),
 			   HEIGHT(b->dest),
-			   m_offscreendc.hdc,
+			   skinhdc,
 			   prt->left,
 			   prt->top,
 			   SRCCOPY);
@@ -450,7 +529,7 @@ BOOL render_do_paint(HDC hdc)
 					   rt.top+2,
 					   WIDTH(m_prog_rect),
 					   HEIGHT(m_prog_rect),
-					   m_offscreendc.hdc,
+					   skinhdc,
 					   m_prog_rect.left,
 					   m_prog_rect.top,
 					   SRCCOPY);
@@ -477,7 +556,7 @@ BOOL render_do_paint(HDC hdc)
 	
 
 	// onto the actual screen 
-	BitBlt(hdc,
+	BitBlt(outhdc,
 		   0,
 		   0,
 		   WIDTH(m_rect_background),
