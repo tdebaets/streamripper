@@ -402,6 +402,8 @@ ripthread(void *notused)
 		// not sure about. no reasdon to i imagine.
 		socklib_close(&m_sock);
 		relaylib_shutdown();
+		// GCS testing...
+		filelib_shutdown();
 		ripstream_destroy();
 		if (m_destroy_func)
 		    m_destroy_func();
@@ -626,7 +628,13 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
 	    OPT_SEPERATE_DIRS | 
 	    OPT_SEARCH_PORTS |
 	    OPT_ADD_ID3;
+
+    /* GCS FIX: What is the difference between this timeout 
+       and the one used in setsockopt()? */
+#if defined (commentout)
     m_opt->timeout = 0;
+#endif
+    m_opt->timeout = 15;
     m_opt->max_connections = 1;
 
     strcpy(m_opt->output_directory, "./");

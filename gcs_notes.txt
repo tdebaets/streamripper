@@ -4,6 +4,9 @@ Greg's notes
 HTTP HEADERS
 ~~~~~~~~~~~~
 
+http://141.211.232.136:8000/wcbn-lo.ogg
+===============================
+
 http://stream.orban.com:8006 (Shoutcast/aac)
 ===============================
 ICY 200 OK
@@ -164,6 +167,7 @@ Current title: mischfuehler-dub.souling mixset
 1)  configure.ac
 2)  lib/rip_manager.h
 3)  winamp_plugin/sr2x.nsi
+4)  makedist_win.bat
 
 * Generated files
 ~~~~~~~~~~~~~~~~~

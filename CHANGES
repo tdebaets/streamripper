@@ -1,9 +1,10 @@
 New for 1.61.2
 --------------
+Sat 12-04-2004
 * Identify different stream types: mp3, ogg, aac, & nsv.
 * Save stream types with correct file extensions.
 * Don't do silence splitting on ogg, aac & nsv.
-* Support "ice-" style http headers from early icecast2 servers
+* Support "ice-" style http headers used by some icecast2 servers
 
 New for 1.61.1
 --------------

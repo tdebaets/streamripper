@@ -422,8 +422,8 @@ httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size)
 
     memset(header, 0, size);
 
-    /* GCS - try this */
 #if defined (commentout)
+    /* GCS - try this */
     strcpy (header, test_header);
     return SR_SUCCESS;
 #endif
