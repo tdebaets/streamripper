@@ -4,6 +4,8 @@ dnl AC_INIT(lib/types.h)
 AC_INIT(streamripper,1.61.0b)
 AM_INIT_AUTOMAKE
 
+AC_CONFIG_HEADERS([lib/config.h])
+
 dnl Checks for programs.
 AC_PROG_CC
 
@@ -46,8 +48,9 @@ AC_SUBST(THREADLIBS)
 dnl Check for semaphore library
 AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(sem, sem_init,))
 
-dnl Check for iconv
+dnl Check for iconv & related
 AM_ICONV
+AM_LANGINFO_CODESET
 
 AC_CHECK_LIB(dce,pthread_create,THREADLIBS="-ldce",)
 
