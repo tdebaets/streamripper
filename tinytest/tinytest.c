@@ -239,6 +239,8 @@ void test_plain(char *url)
 	
 	printf("Starting...\n");
 	rip_manager_start(rip_manager_proc, &opt);
+	getch();
+	rip_manager_stop();
 }
 
 
@@ -273,13 +275,12 @@ void main()
 {
 
 
-//	test_auto_reconnect("http://maris:8000");
-//	test_plain("http://maris:8000");
-//	test_hammer("http://maris:8000");
 	test_overnight("http://205.188.245.132:8038");
-//	test_relay("http://maris:8000");
+	test_auto_reconnect("http://maris:8000");
+	test_plain("http://maris:8000");
+	test_hammer("http://maris:8000");
+	test_relay("http://maris:8000");
 
 //	printf("Done, press any key to quit.\n");
 //	getch();
-
 }

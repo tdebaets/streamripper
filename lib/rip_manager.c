@@ -241,7 +241,7 @@ error_code end_track(char *trackname)
 	strcpy(temptrack, trackname);
 
 	strip_invalid_chars(temptrack);
-	filelib_end(temptrack, OPT_FLAG_ISSET(m_options.flags, OPT_OVER_WRITE_TRACKS));
+	filelib_end(temptrack, GET_OVER_WRITE_TRACKS(m_options.flags));
 	post_status(0);
 	m_status_callback(RM_TRACK_DONE, (void*)temptrack);
 
@@ -278,7 +278,7 @@ void set_output_directory()
 #endif
 
 	}
-	if (OPT_FLAG_ISSET(m_options.flags, OPT_SEPERATE_DIRS))
+	if (GET_SEPERATE_DIRS(m_options.flags))
 	{
 		/* felix@blasphemo.net: insert date after icy_name for per-session directories */
 		char *timestring  ;
@@ -298,7 +298,7 @@ void set_output_directory()
 		trim(striped_icy_name);
 		strcat(newpath, striped_icy_name);
 
-		if (OPT_FLAG_ISSET(m_options.flags, OPT_DATE_STAMP))
+		if (GET_DATE_STAMP(m_options.flags))
 		{
 			strcat(newpath, "_");
 			strcat(newpath, timestring);
@@ -387,7 +387,7 @@ OutputDebugString("***ripthread:ripping\n");
 		 * wnd locks, etc.. all i know is that this appeared to work
 		 */
 		if (m_bytes_ripped >= (m_options.maxMB_rip_size*100000) &&
-			OPT_FLAG_ISSET(m_options.flags, OPT_CHECK_MAX_BYTES))
+			GET_CHECK_MAX_BYTES(m_options.flags))
 		{
 			post_error(SR_ERROR_MAX_BYTES_RIPPED);
 			break;
@@ -408,7 +408,7 @@ OutputDebugString("***ripthread:ripping\n");
 			continue;
 		}
 		else if (ret == SR_ERROR_RECV_FAILED && 
-			     OPT_FLAG_ISSET(m_options.flags, OPT_AUTO_RECONNECT))
+			     GET_AUTO_RECONNECT(m_options.flags))
 		{
 			/*
 			 * Try to reconnect, if thats what the user wants
@@ -630,7 +630,8 @@ error_code start_ripping()
 	 * it's sending it to
 	 */
 	ripstream_destroy();
-	if ((ret = ripstream_init(mult, &m_ripin, &m_ripout, m_info.icy_name, OPT_FLAG_ISSET(m_options.flags, OPT_ADD_ID3))) != SR_SUCCESS)
+	if ((ret = ripstream_init(mult, &m_ripin, &m_ripout, m_info.icy_name, 
+		GET_ADD_ID3(m_options.flags))) != SR_SUCCESS)
 	{
 		ripstream_destroy();
 		goto RETURN_ERR;
@@ -643,10 +644,10 @@ error_code start_ripping()
 	 * the stream we are relaying.. this just sets the header to 
 	 * something very simulare to what we got from the stream.
 	 */
-	if (!OPT_FLAG_ISSET(m_options.flags, OPT_NO_RELAY))
+	if (!GET_NO_RELAY(m_options.flags))
 	{
 		int new_port = 0;
-		if ((ret = relaylib_init(OPT_FLAG_ISSET(m_options.flags, OPT_SEARCH_PORTS), 
+		if ((ret = relaylib_init(GET_SEARCH_PORTS(m_options.flags), 
 								 m_options.relay_port, 
 								 m_options.max_port, 
 								 &new_port)) != SR_SUCCESS)
@@ -670,7 +671,6 @@ RETURN_ERR:
 	return ret;
 		
 }
-
 
 /* 
  * From an email to oddsock he asked how one would be able to add ID3 data
@@ -703,7 +703,8 @@ OutputDebugString("***rip_manager_start:being\n");
 	if (!options)
 		return SR_ERROR_INVALID_PARAM;
 
-	filelib_init(OPT_FLAG_ISSET(options->flags, OPT_COUNT_FILES));
+	filelib_init(GET_COUNT_FILES(options->flags),
+				 GET_WIPE_INCOMPLETE(options->flags));
 	socklib_init();
 
 	init_error_strings();

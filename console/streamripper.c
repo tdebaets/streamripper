@@ -162,7 +162,7 @@ void print_status()
 			   m_curinfo.server_name,
 			   m_curinfo.bitrate,
 			   m_curinfo.meta_interval);
-		if(!OPT_FLAG_ISSET(m_opt.flags, OPT_NO_RELAY))
+		if(!GET_NO_RELAY(m_opt.flags)
 		{
 			fprintf(stderr, "relay port: %d\n"
 					"[%14s]\r",

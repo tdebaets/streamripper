@@ -74,7 +74,7 @@ static int m_count;
 static char m_output_directory[MAX_PATH];
 static char m_incomplete_directory[MAX_PATH];
 static char m_filename_format[] = "%s%s.mp3";
-static BOOL	m_preserve_incomplete = TRUE;
+static BOOL	m_wipe_incomplete = TRUE;
 
 
 
@@ -91,11 +91,11 @@ error_code mkdir_if_needed(char *str)
 
 }
 
-error_code filelib_init(BOOL do_count, BOOL preserve_incomplete)
+error_code filelib_init(BOOL do_count, BOOL wipe_incomplete)
 {
 	m_file = (HFILE)NULL;
 	m_count = do_count ? 1 : -1;
-	m_preserve_incomplete = preserve_incomplete;
+	m_wipe_incomplete = wipe_incomplete;
 	memset(&m_output_directory, 0, MAX_PATH);
 
 	return SR_SUCCESS;
@@ -158,21 +158,23 @@ error_code filelib_start(char *filename)
 
 	sprintf(newfile, m_filename_format, m_incomplete_directory, filename);
 
-	if (m_preserve_incomplete)
+	if (!m_wipe_incomplete)
 	{
+		int n = 1;
 		char oldfilename[MAX_FILENAME];
 		char oldfile[MAX_FILENAME];
 		strcpy(oldfilename, filename);
 		sprintf(oldfile, m_filename_format, m_incomplete_directory, filename);
 		while(file_exists(oldfile))
 		{
-			sprintf(oldfilename, "%s_old", oldfilename);
+			sprintf(oldfilename, "%s(%d)", filename, n);
 			sprintf(oldfile, m_filename_format, m_incomplete_directory, oldfilename);
+			n++;
 		}
 		if (strcmp(newfile, oldfile) != 0)
 			MOVE_FILE(newfile, oldfile);
 	}
-	
+
 #if WIN32	
 	m_file = CreateFile(newfile, GENERIC_WRITE,              // open for reading 
 					FILE_SHARE_READ,           // share for reading 

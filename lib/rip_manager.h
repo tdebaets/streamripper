@@ -52,6 +52,20 @@ typedef struct RIP_MANAGER_INFOst
 #define OPT_ADD_ID3				0x00000040		// add ID3 info to the mp3s (thanks oddsock)
 #define OPT_DATE_STAMP			0x00000100		// add a date stamp to the output directory
 #define OPT_CHECK_MAX_BYTES		0x00000200		// use the maxMB_rip_size value to know how much to rip
+#define OPT_WIPE_INCOMPLETE		0x00000400		// overwrite files in the incomplete directory, add counter instead
+//
+// Helper macros for checking options
+//
+#define GET_AUTO_RECONNECT(flags)			(OPT_FLAG_ISSET(flags, OPT_AUTO_RECONNECT))
+#define GET_SEPERATE_DIRS(flags)			(OPT_FLAG_ISSET(flags, OPT_SEPERATE_DIRS))
+#define GET_OVER_WRITE_TRACKS(flags)		(OPT_FLAG_ISSET(flags, OPT_OVER_WRITE_TRACKS))
+#define GET_SEARCH_PORTS(flags)				(OPT_FLAG_ISSET(flags, OPT_SEARCH_PORTS))
+#define GET_NO_RELAY(flags)					(OPT_FLAG_ISSET(flags, OPT_NO_RELAY))
+#define GET_COUNT_FILES(flags)				(OPT_FLAG_ISSET(flags, OPT_COUNT_FILES))
+#define GET_ADD_ID3(flags)					(OPT_FLAG_ISSET(flags, OPT_ADD_ID3))
+#define GET_DATE_STAMP(flags)				(OPT_FLAG_ISSET(flags, OPT_DATE_STAMP))
+#define GET_CHECK_MAX_BYTES(flags)			(OPT_FLAG_ISSET(flags, OPT_CHECK_MAX_BYTES))
+#define GET_WIPE_INCOMPLETE(flags)			(OPT_FLAG_ISSET(flags, OPT_WIPE_INCOMPLETE))
 
 typedef struct RIP_MANAGER_OPTIONSst
 {

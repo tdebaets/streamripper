@@ -12,7 +12,7 @@
 #define MAX_FILENAME	256+MAX_PATH
 
 
-extern error_code	filelib_init();
+extern error_code	filelib_init(BOOL do_count, BOOL preserve_incomplete);
 extern error_code	filelib_start(char *filename);
 extern error_code	filelib_end(char *filename, BOOL over_write_existing);
 extern error_code	filelib_write(char *buf, u_long size);
