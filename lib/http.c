@@ -202,112 +202,120 @@ error_code httplib_construct_page_request(const char *url, BOOL proxyformat, cha
 
 }
 
-void extract_header_value(char *header, char *dest, char *match)
+/* Return 1 if a match was found, 0 if not found */
+int
+extract_header_value(char *header, char *dest, char *match)
 {
-	char* start = (char *)strstr(header, match);
-	if (start)
-		subnstr_until(start+strlen(match), "\n", dest, MAX_ICY_STRING);
+    char* start = (char *)strstr(header, match);
+    if (start) {
+	subnstr_until(start+strlen(match), "\n", dest, MAX_ICY_STRING);
+	return 1;
+    } else {
+	return 0;
+    }
 }
 
 
-error_code	httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
+error_code
+httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
 {
+    int rc;
     char *start;
-	char versionbuf[64];
-	char stempbr[50];
+    char versionbuf[64];
+    char stempbr[50];
 
-	if (!header || !info)
-		return SR_ERROR_INVALID_PARAM;
+    if (!header || !info)
+	return SR_ERROR_INVALID_PARAM;
 
-	memset(info, 0, sizeof(SR_HTTP_HEADER));
+    memset(info, 0, sizeof(SR_HTTP_HEADER));
 
-	// Get the ICY code.
-	start = (char *)strstr(header, "ICY ");
-	if (!start)
+    // Get the ICY code.
+    start = (char *)strstr(header, "ICY ");
+    if (!start) {
+	start = (char *)strstr(header, "HTTP/1.");
+	if (!start)	return SR_ERROR_NO_RESPOSE_HEADER;
+    }
+
+    start = strstr(start, " ") + 1;
+    sscanf(start, "%i", &info->icy_code);
+
+    DEBUG2(("header:\n %s", header));
+
+    if (info->icy_code >= 400)
+    {
+	switch (info->icy_code)
 	{
-		start = (char *)strstr(header, "HTTP/1.");
-		if (!start)	return SR_ERROR_NO_RESPOSE_HEADER;
+	case 400:
+	    return SR_ERROR_HTTP_400_ERROR;
+	case 404:
+	    return SR_ERROR_HTTP_404_ERROR;
+	case 401:
+	    return SR_ERROR_HTTP_401_ERROR;
+	case 403:
+	    return SR_ERROR_HTTP_403_ERROR;
+	case 407:
+	    return SR_ERROR_HTTP_407_ERROR;
+	case 502:
+	    return SR_ERROR_HTTP_502_ERROR;
+	default:
+	    return SR_ERROR_NO_ICY_CODE;
+	}
+    }
+
+    // read the Shoutcast headers
+    // apparently some icecast streams use different headers
+    // but other then that it always works like this
+    extract_header_value(header, info->http_location, "Location:");
+    extract_header_value(header, info->server, "Server:");
+    rc = extract_header_value(header, info->icy_name, "icy-name:");
+    extract_header_value(header, info->icy_url, "icy-url:");
+    extract_header_value(header, stempbr, "icy-br:");
+    info->icy_bitrate = atoi(stempbr);
+    info->have_icy_name = rc;
+
+    // Lets try to guess the server :)
+    // Try Shoutcast
+    if ((start = (char *)strstr(header, "SHOUTcast")) != NULL)
+    {
+	strcpy(info->server, "SHOUTcast/");
+	if ((start = (char *)strstr(start, "Server/")) != NULL)
+	{
+	    sscanf(start, "Server/%[^<]<", versionbuf);
+	    strcat(info->server, versionbuf);
 	}
 
-	start = strstr(start, " ") + 1;
-	sscanf(start, "%i", &info->icy_code);
-
-	DEBUG2(("header:\n %s", header));
-
-	if (info->icy_code >= 400)
+    }
+    else if ((start = (char *)strstr(header, "icecast")) != NULL)
+    {
+	if (!info->server[0])
 	{
-		switch (info->icy_code)
-		{
-			case 400:
-				return SR_ERROR_HTTP_400_ERROR;
-			case 404:
-				return SR_ERROR_HTTP_404_ERROR;
-			case 401:
-				return SR_ERROR_HTTP_401_ERROR;
-			case 403:
-				return SR_ERROR_HTTP_403_ERROR;
-			case 407:
-				return SR_ERROR_HTTP_407_ERROR;
-			case 502:
-				return SR_ERROR_HTTP_502_ERROR;
-			default:
-				return SR_ERROR_NO_ICY_CODE;
-		}
+	    strcpy(info->server, "icecast/");
+	    if ((start = (char *)strstr(start, "version ")) != NULL)
+	    {
+		sscanf(start, "version %[^<]<", versionbuf);
+		strcat(info->server, versionbuf);
+	    }
 	}
 
-	// read the Shoutcast headers
-	// apparently some icecast streams use different headers
-	// but other then that it always works like this
-	//
-	extract_header_value(header, info->http_location, "Location:");
-	extract_header_value(header, info->server, "Server:");
-	extract_header_value(header, info->icy_name, "icy-name:");
-	extract_header_value(header, info->icy_url, "icy-url:");
-	extract_header_value(header, stempbr, "icy-br:");
+	// icecast headers.
+	extract_header_value(header, info->icy_url, "x-audiocast-server-url:");
+	rc = extract_header_value(header, info->icy_name, "x-audiocast-name:");
+	extract_header_value(header, info->icy_genre, "x-audiocast-genre:");
+	extract_header_value(header, stempbr, "x-audiocast-bitrate:");
 	info->icy_bitrate = atoi(stempbr);
+	info->have_icy_name |= rc;
+    }
+    else if ((start = (char *)strstr(header, "Zwitterion v")) != NULL)
+    {
+	sscanf(start, "%[^<]<", info->server);
+    }
 
-	// Lets try to guess the server :)
-	// Try Shoutcast
-	if ((start = (char *)strstr(header, "SHOUTcast")) != NULL)
-	{
-		strcpy(info->server, "SHOUTcast/");
-		if ((start = (char *)strstr(start, "Server/")) != NULL)
-		{
-			sscanf(start, "Server/%[^<]<", versionbuf);
-			strcat(info->server, versionbuf);
-		}
-
-	}
-	else if ((start = (char *)strstr(header, "icecast")) != NULL)
-	{
-		if (!info->server[0])
-		{
-			strcpy(info->server, "icecast/");
-			if ((start = (char *)strstr(start, "version ")) != NULL)
-			{
-				sscanf(start, "version %[^<]<", versionbuf);
-				strcat(info->server, versionbuf);
-			}
-		}
-
-		// icecast headers.
-		extract_header_value(header, info->icy_url, "x-audiocast-server-url:");
-		extract_header_value(header, info->icy_name, "x-audiocast-name:");
-		extract_header_value(header, info->icy_genre, "x-audiocast-genre:");
-		extract_header_value(header, stempbr, "x-audiocast-bitrate:");
-		info->icy_bitrate = atoi(stempbr);
-	}
-	else if ((start = (char *)strstr(header, "Zwitterion v")) != NULL)
-	{
-		sscanf(start, "%[^<]<", info->server);
-	}
-
-	// Make sure we don't have any CRLF's at the end of our strings
-	trim(info->icy_url);
-	trim(info->icy_genre);
-	trim(info->icy_name);
-	trim(info->http_location);
-	trim(info->server);
+    // Make sure we don't have any CRLF's at the end of our strings
+    trim(info->icy_url);
+    trim(info->icy_genre);
+    trim(info->icy_name);
+    trim(info->http_location);
+    trim(info->server);
 
     //get the meta interval
     start = (char*)strstr(header, "icy-metaint:");
@@ -331,62 +339,68 @@ error_code	httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
  */
 error_code httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size)
 {
-	char *buf = (char *)malloc(size);
+    char *buf = (char *)malloc(size);
 
-	if (!info || !header || size < 1)
-		return SR_ERROR_INVALID_PARAM;
+    if (!info || !header || size < 1)
+	return SR_ERROR_INVALID_PARAM;
 
-	memset(header, 0, size);
+    memset(header, 0, size);
 	
-	sprintf(buf, "HTTP/1.0 %d\r\n", info->icy_code);
+    sprintf(buf, "HTTP/1.0 %d\r\n", info->icy_code);
+    strcat(header, buf);
+
+    if (info->http_location[0])
+    {
+	sprintf(buf, "Location:%s\r\n", info->http_location);
 	strcat(header, buf);
+    }
 
-	if (info->http_location[0])
-	{
-		sprintf(buf, "Location:%s\r\n", info->http_location);
-		strcat(header, buf);
-	}
+    if (info->server[0])
+    {
+	sprintf(buf, "Server:%s\r\n", info->server);
+	strcat(header, buf);
+    }
 
-	if (info->server[0])
-	{
-		sprintf(buf, "Server:%s\r\n", info->server);
-		strcat(header, buf);
-	}
+#if defined (commentout)
+    if (info->icy_name[0])
+    {
+	sprintf(buf, "icy-name:%s\r\n", info->icy_name);
+	strcat(header, buf);
+    }
+#endif
+    if (info->have_icy_name) {
+	sprintf(buf, "icy-name:%s\r\n", info->icy_name);
+	strcat(header, buf);
+    }
 
-	if (info->icy_name[0])
-	{
-		sprintf(buf, "icy-name:%s\r\n", info->icy_name);
-		strcat(header, buf);
-	}
+    if (info->icy_url[0])
+    {
+	sprintf(buf, "icy-url:%s\r\n", info->icy_url);
+	strcat(header, buf);
+    }
 
-	if (info->icy_url[0])
-	{
-		sprintf(buf, "icy-url:%s\r\n", info->icy_url);
-		strcat(header, buf);
-	}
+    if (info->icy_bitrate)
+    {
+	sprintf(buf, "icy-br:%d\r\n", info->icy_bitrate);
+	strcat(header, buf);
+    }
 
-	if (info->icy_bitrate)
-	{
-		sprintf(buf, "icy-br:%d\r\n", info->icy_bitrate);
-		strcat(header, buf);
-	}
+    if (info->icy_genre[0])
+    {
+	sprintf(buf, "icy-genre:%s\r\n", info->icy_genre);
+	strcat(header, buf);
+    }
 
-	if (info->icy_genre[0])
-	{
-		sprintf(buf, "icy-genre:%s\r\n", info->icy_genre);
-		strcat(header, buf);
-	}
+    if (info->meta_interval > 0)
+    {
+	sprintf(buf, "icy-metaint:%d\r\n", info->meta_interval);
+	strcat(header, buf);
+    }
 
-	if (info->meta_interval > 0)
-	{
-		sprintf(buf, "icy-metaint:%d\r\n", info->meta_interval);
-		strcat(header, buf);
-	}
+    free(buf);
+    strcat(header, "\r\n");
 
-	free(buf);
-	strcat(header, "\r\n");
-
-	return SR_SUCCESS;
+    return SR_SUCCESS;
 }
 
 

@@ -29,7 +29,7 @@ void _freevargstr(char *str)
 }
 
 
-#define DEBUG_ENABLED 0
+#define DEBUG_ENABLED 1
 #define DEBUG_PRINTF_TO_FILE 1
 
 #if (DEBUG_ENABLED)

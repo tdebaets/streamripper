@@ -600,13 +600,23 @@ error_code start_ripping()
 		goto RETURN_ERR;
 	}
 
+#if defined (commentout)
 	if (strlen(m_info.icy_name) == 0)
 	{
 		ret = SR_ERROR_NOT_SHOUTCAST_STREAM;
 		goto RETURN_ERR;
 	}
-
-
+#endif
+	if (!m_info.have_icy_name) {
+	    ret = SR_ERROR_NOT_SHOUTCAST_STREAM;
+	    goto RETURN_ERR;
+	}
+	/* If the icy_name exists, but is empty, set to a bogus name so 
+	   that we can create the directory correctly, etc. */
+	if (strlen(m_info.icy_name) == 0) {
+	    strcpy (m_info.icy_name, "Streamripper_rips");
+	}
+	
 	/*
 	 * Set the ripinfo struct from the data we now know about the 
 	 * stream, this info are things like server name, type, 

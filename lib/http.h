@@ -5,14 +5,15 @@
 
 typedef struct SR_HTTP_HEADERst
 {
-    int  meta_interval;
+    int meta_interval;
+    int have_icy_name;
     char icy_name[MAX_ICY_STRING];
-	int  icy_code;
-	int  icy_bitrate;
-	char icy_genre[MAX_ICY_STRING];
-	char icy_url[MAX_ICY_STRING];
-	char http_location[MAX_HOST_LEN];
-	char server[MAX_SERVER_LEN];
+    int icy_code;
+    int icy_bitrate;
+    char icy_genre[MAX_ICY_STRING];
+    char icy_url[MAX_ICY_STRING];
+    char http_location[MAX_HOST_LEN];
+    char server[MAX_SERVER_LEN];
 } SR_HTTP_HEADER;
 
 typedef struct URLINFOst
