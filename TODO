@@ -1,7 +1,0 @@
-TODO for streamripper
-
-if you want to help mail me at jonclegg@yahoo.com, or just make the changes and send me a diff
--------------------------------------------------------------------------------
-* figure out why digitally imported doesn't work over proxys
-* some icecast streams cause a SR_ERROR_NO_TRACK_INFO which stops execution
-* myplay.comm, make it work.
