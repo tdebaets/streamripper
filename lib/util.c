@@ -164,8 +164,9 @@ strip_invalid_chars(char *str)
     char invalid_chars[] = "\\/:*?\"<>|.~";
     char* mb_in = str;
     int mb_in_len = strlen(mb_in);
-    wchar_t *w_in = (wchar_t*) malloc (2*mb_in_len+2);
-    wchar_t *w_invalid = (wchar_t*) malloc(2*strlen(invalid_chars)+2);
+    wchar_t *w_in = (wchar_t*) malloc (sizeof(wchar_t)*mb_in_len+2);
+    wchar_t *w_invalid = (wchar_t*) malloc(sizeof(wchar_t)
+					   *strlen(invalid_chars)+2);
     wchar_t replacement;
     wchar_t *wstrp;
 
