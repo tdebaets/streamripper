@@ -1,10 +1,11 @@
 
 New for 1.60.7
 --------------
+Mon May 17 00:09:40 EDT 2004 (GCS)
 * Send metadata to relay stream
 * Add plugin gui prop page for splitpoints options
 * Fix crash when bitrate==0
-* Fix crash when no metadata reported as 0
+* Fix crash when no metadata
 * Mike Frysinger's patch to rip from specified interface
 
 New for 1.60.6
