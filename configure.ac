@@ -50,7 +50,6 @@ fi
 AC_SUBST(THREADLIBS)
 
 dnl -------- Tests for using included libmad ------
-echo ENABLE_STATIC is $enable_static
 LIBMAD=""
 AC_SUBST(LIBMAD)
 if test "$enable_static" = no; then
