@@ -102,6 +102,10 @@ BOOL winamp_get_info(WINAMP_INFO *info)
 	else
 		info->is_running = TRUE;
 
+	//
+	// Send a message to winamp to save the current playlist
+	// to a file, 'n' is the index of the currently selected item
+	// 
 	n  = SendMessage(hwndWinamp, WM_USER, (WPARAM)NULL, 120); 
 
 	{
@@ -109,7 +113,7 @@ BOOL winamp_get_info(WINAMP_INFO *info)
 		char buf[4096] = {'\0'};
 		FILE *fp;
 
-		sprintf(m3u_path, "%s%s", m_winamps_path, "winamp.m3u");
+		sprintf(m3u_path, "%s%s", m_winamps_path, "winamp.m3u");	
 		if ((fp = fopen(m3u_path, "r")) == NULL)
 			return FALSE;
 

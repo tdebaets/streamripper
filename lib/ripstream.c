@@ -261,12 +261,22 @@ error_code find_sep(u_long *pos)
 	if (*pos > cbuffer_get_used(&m_cbuffer))
 	{
 		debug_printf("pos bigger then buffer!!!");
+		free(buf);
+		return SR_ERROR_CANT_FIND_TRACK_SEPERATION;
 	}
 
 	if (*pos == 0)
 	{
-		free(buf);
-		return SR_ERROR_CANT_FIND_TRACK_SEPERATION;
+		//
+		// I used to return can't find track sep, but people
+		// don't want streamripper to stop, or restart or anything
+		// when this happens.. though in theroy it prob should report it
+		// as a non fatal error
+		// anyway, we know that when this happens it means mpeglib couldn't
+		// even find the first mpeg header, which is bad.. so lets just assume
+		// the seperation is right in the middle of our buffer
+		//
+		*pos = cbufsize/2;
 	}
 	free(buf);
 
