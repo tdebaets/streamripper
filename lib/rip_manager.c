@@ -93,7 +93,7 @@ static u_long				m_bytes_ripped;
 /*
  * Needs english type messages, just copy pasted for now
  */
-static char m_error_str[MAX_ERROR_STR][NUM_ERROR_CODES];
+static char m_error_str[NUM_ERROR_CODES][MAX_ERROR_STR];
 #define SET_ERR_STR(str, code)	strncpy(m_error_str[code], str, MAX_ERROR_STR);
 
 void init_error_strings()

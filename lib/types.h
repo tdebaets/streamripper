@@ -26,7 +26,7 @@ typedef int error_code;
 #define MAX_ICY_STRING		4024
 #define MAX_SERVER_LEN		1024
 #define MAX_TRACK_LEN		1024
-#define MAX_ERROR_STR       2048
+#define MAX_ERROR_STR       (1024)
 
 
 #ifdef WIN32
@@ -86,7 +86,7 @@ typedef struct IO_PUT_STREAMst{
 ////////////////////////////////////////////////
 // StreamRipper Codes
 ////////////////////////////////////////////////
-#define NUM_ERROR_CODES					0x32
+#define NUM_ERROR_CODES					0x33+1
 
 #define SR_SUCCESS					0x00
 #define SR_SUCCESS_BUFFERING				0x01
