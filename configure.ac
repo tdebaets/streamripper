@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl AC_INIT(lib/types.h)
 
-AC_INIT(streamripper,1.61.0)
+AC_INIT(streamripper,1.61.0b)
 AM_INIT_AUTOMAKE
 
 dnl Checks for programs.
@@ -45,6 +45,11 @@ AC_SUBST(THREADLIBS)
 
 dnl Check for semaphore library
 AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(sem, sem_init,))
+
+dnl Check for iconv
+AM_ICONV
+
+AC_CHECK_LIB(dce,pthread_create,THREADLIBS="-ldce",)
 
 dnl Checks for header files.
 AC_HEADER_DIRENT

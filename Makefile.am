@@ -103,6 +103,7 @@ man_MANS = \
 	streamripper.1
 
 EXTRA_DIST = \
+	config.rpath \
 	CHANGES \
 	readme_xfade.txt \
 	lib/live365info.c \
@@ -120,6 +121,4 @@ DIST_SUBDIRS =
 AM_CPPFLAGS = -Ilib -Ilibmad-0.15.1b -D__UNIX__
 
 streamripper_LDADD = \
-	libmad-0.15.1b/.libs/libmad.a @THREADLIBS@
-
-
+	libmad-0.15.1b/.libs/libmad.a @THREADLIBS@ @LTLIBICONV@

@@ -242,9 +242,11 @@ socklib_read_header(HSOCKET *socket_handle, char *buffer, int size,
     {
 	if ((ret = (*myrecv)(socket_handle, &buffer[i], 1, 0)) < 0)
 	    return ret;
-		
-	if (ret == 0)
+
+	if (ret == 0) {
+	    debug_printf("http header:\n%s\n", buffer);
 	    return SR_ERROR_NO_HTTP_HEADER;
+	}
 
 	if (socket_handle->closed)
 	    return SR_ERROR_SOCKET_CLOSED;
@@ -262,8 +264,10 @@ socklib_read_header(HSOCKET *socket_handle, char *buffer, int size,
 	    break;
     }
 
-    if (i == size)
+    if (i == size) {
+	debug_printf("http header:\n%s\n", buffer);
 	return SR_ERROR_NO_HTTP_HEADER;
+    }
 
     buffer[i] = '\0';
 

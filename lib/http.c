@@ -229,7 +229,7 @@ httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
 
     memset(info, 0, sizeof(SR_HTTP_HEADER));
 
-    debug_printf("http header:\n %s", header);
+    debug_printf("http header:\n%s\n", header);
 
     // Get the ICY code.
     start = (char *)strstr(header, "ICY ");

@@ -27,6 +27,8 @@
 #include <wctype.h>
 #include <locale.h>
 #include <time.h>
+#include <iconv.h>
+#include <langinfo.h>
 #include "debug.h"
 #include "types.h"
 
@@ -139,24 +141,124 @@ int word_count(char *str)
 void
 initialize_locale (void)
 {
+    char* locale_codeset;
     setlocale (LC_ALL, "");
     setlocale (LC_CTYPE, "");
     debug_printf ("LOCALE is %s\n",setlocale(LC_ALL,NULL));
+    locale_codeset = nl_langinfo(CODESET);
+    debug_printf ("LOCALE CODESET is %s\n", locale_codeset);
 }
 
 
 /* Given a multibyte string containing the title, three names are 
    suggested.  One in utf8 encoding, one in the multibyte encoding 
-   of the locale, and one is a "guaranteed-to-work" ascii name. */
+   of the locale, and one is a "guaranteed-to-work" ascii name.
+*/
 void
 suggest_filenames (char *title_string, char *utf8_name, 
 		   char *locale_name, char *ascii_name)
 {
 }
 
+char*
+strip_invalid_chars_testing(char *str)
+{
+    /* GCS FIX: Only the leading "." should be stripped for unix. */
+#if defined (WIN32)
+    char invalid_chars[] = "\\/:*?\"<>|~";
+#else
+    char invalid_chars[] = "\\/:*?\"<>|.~";
+#endif
+    char* mb_in = str;
+    char* strp;
+    int mb_in_len = strlen(mb_in);
+    wchar_t *w_in = (wchar_t*) malloc (sizeof(wchar_t)*(mb_in_len+2));
+    wchar_t *w_invalid = (wchar_t*) malloc(sizeof(wchar_t)
+					   *strlen(invalid_chars)+2);
+    wchar_t replacement;
+    wchar_t *wstrp;
+    int i;
+    size_t t;
+
+    iconv_t ict;
+    size_t inleft, outleft;
+    char *fromcode = nl_langinfo(CODESET);
+
+    debug_printf ("strip_invalid_chars() mb_in:\n");
+    debug_printf (mb_in);
+    debug_printf ("\n");
+    for (strp = mb_in; *strp; strp++) {
+	debug_printf ("%02x ",*strp&0x0ff);
+    }
+    debug_printf ("\n");
+
+    /* Convert title string to wchar */
+    t = mbstowcs(w_in,mb_in,mb_in_len+1);
+    debug_printf ("Conversion #1 returned %d\n", t);
+
+    ict = iconv_open("WCHAR_T",fromcode);
+    inleft = mb_in_len+1;
+    outleft = (mb_in_len+1)*sizeof(wchar_t);
+    t = iconv(ict,&mb_in,&inleft,(char**)&w_in,&outleft);
+    iconv_close(ict);
+
+    debug_printf ("FROMCODE is %s\n", fromcode);
+    debug_printf ("Conversion #2 returned %d,%d,%d\n", t, inleft, outleft);
+
+    /* Convert invalid chars to wide char */
+    t = mbstowcs(w_invalid,invalid_chars,strlen(invalid_chars)+1);
+
+    /* Convert "replacement" to wide */
+    mbtowc (&replacement,"-",1);
+
+    debug_printf ("strip_invalid_chars() w_in (pre):\n");
+    for (wstrp = w_in; *wstrp; wstrp++) {
+	debug_printf ("%04x ",*wstrp&0x0ffff);
+    }
+    debug_printf ("strip_invalid_chars() w_in (pre #2):\n");
+    for (i = 0; i < t; i++) {
+	debug_printf ("%04x ",*wstrp&0x0ffff);
+    }
+    debug_printf ("\n");
+    debug_printf ("strip_invalid_chars() w_invalid:\n");
+    for (wstrp = w_invalid; *wstrp; wstrp++) {
+	debug_printf ("%04x ",*wstrp&0x0ffff);
+    }
+    debug_printf ("\n");
+
+    /* Replace illegals to legal */
+    for (wstrp = w_in; *wstrp; wstrp++) {
+	if ((wcschr(w_invalid, *wstrp) == NULL) && (!iswcntrl(*wstrp)))
+	    continue;
+	*wstrp = replacement;
+    }
+
+    debug_printf ("strip_invalid_chars() w_in (post):\n");
+    for (wstrp = w_in; *wstrp; wstrp++) {
+	debug_printf ("%04x ",*wstrp&0x0ffff);
+    }
+    debug_printf ("\n");
+
+    /* Convert back to multibyte */
+    wcstombs(mb_in,w_in,mb_in_len);
+
+    debug_printf ("strip_invalid_chars() mb_in (post):\n");
+    debug_printf (mb_in);
+    debug_printf ("\n");
+    for (strp = mb_in; *strp; strp++) {
+	debug_printf ("%02x ",*strp&0x0ff);
+    }
+    debug_printf ("\n");
+
+    free (w_in);
+    free (w_invalid);
+
+    return str;
+}
+
 
 char*
-strip_invalid_chars(char *str)
+strip_invalid_chars_stable(char *str)
 {
     /* GCS FIX: Only the leading "." should be stripped for unix. */
 #if defined (WIN32)
@@ -172,6 +274,8 @@ strip_invalid_chars(char *str)
 					   *strlen(invalid_chars)+2);
     wchar_t replacement;
     wchar_t *wstrp;
+    int i;
+    size_t t;
 
     debug_printf ("strip_invalid_chars() mb_in:\n");
     debug_printf (mb_in);
@@ -182,7 +286,8 @@ strip_invalid_chars(char *str)
     debug_printf ("\n");
 
     /* Convert invalid chars to wide char */
-    mbstowcs(w_invalid,invalid_chars,strlen(invalid_chars)+1);
+    t = mbstowcs(w_invalid,invalid_chars,strlen(invalid_chars)+1);
+    debug_printf ("Conversion returned %d\n", t);
 
     /* Convert title string to wchar */
     mbstowcs(w_in,mb_in,mb_in_len+1);
@@ -192,6 +297,10 @@ strip_invalid_chars(char *str)
 
     debug_printf ("strip_invalid_chars() w_in (pre):\n");
     for (wstrp = w_in; *wstrp; wstrp++) {
+	debug_printf ("%04x ",*wstrp&0x0ffff);
+    }
+    debug_printf ("strip_invalid_chars() w_in (pre #2):\n");
+    for (i = 0; i < t; i++) {
 	debug_printf ("%04x ",*wstrp&0x0ffff);
     }
     debug_printf ("\n");
@@ -253,6 +362,13 @@ strip_invalid_chars(char *str)
 	return str;
 #endif
 }
+
+char* 
+strip_invalid_chars(char *str)
+{
+    return strip_invalid_chars_stable(str);
+}
+
 
 char *format_byte_size(char *str, long size)
 {

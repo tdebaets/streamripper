@@ -354,5 +354,15 @@ Also see,
 http://www.unrelatedinventions.com/Audiotools/Help/thejargonbehindmp3.htm
 
 -----------------------------------------------------------------------
+How to create a sjis locale
+
+localedef -v -c -i ja_JP -f SHIFT_JIS ja_JP.SJIS
+
+-----------------------------------------------------------------------
 How to open a new file (start track)
+
+1) Use wfopen with utf8
+2) Use open with local encoding
+3) Use open with utf8
+4) Recoded
 
