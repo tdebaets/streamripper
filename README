@@ -1,4 +1,4 @@
-s t r e a m r i p p e r  - v 1.0.5
+s t r e a m r i p p e r  - v 1.32
 
 by Jon Clegg
 
@@ -13,13 +13,12 @@ Streamripper mailing list:
 http://lists.sourceforge.net/lists/listinfo/streamripper-general
 
 Shoutcast: www.shoutcast.com
-Live365: www.live365.com
 Icecast: www.icecast.org
 ShoutClub: www.shoutclub.com
 
-About streamripper
+About Streamripper
 ~~~~~~~~~~~~~~~~~~
-streamripper records shoutcast compatible and live365 streams. For shoutcast style streams it finds the "meta data" or track separation data, and uses that as a marker for where the track should be separated. For live365 streams it hits the website and finds when a track has changed. Either way, the MP3 data will be decoded and scanned for a silent point which is where tracks will be created.
+Streamripper records shoutcast compatible streams. Shoutcast style streams contain "meta data" or track separation data, it uses that as a marker for where the track should be separated, next the MP3 data is decoded and scanned for a silent point which is where tracks will be created. Finally, tracks are placed nicely on your harddrive with appropriate names and separation.
 
 Installation
 ~~~~~~~~~~~~
@@ -29,7 +28,7 @@ download the latest version from ftp://streamripper.sourceforge.net/pub/streamri
 make
 make install
 
-this works on FreeBSD 3.4, and Linux 2.2/2.4. If it doesn't work on your setup let me know, i'll see what i can do.
+this works on FreeBSD 4.5, Linux 2.4 and OSX. If it doesn't work on your setup let me know, i'll see what i can do.
 
 Usage
 ~~~~~
@@ -75,6 +74,7 @@ when streamripper rips tracks they are first in the incomplete directory. if the
 -c             - Optional: Don't auto-reconnect
 
 Once again, not sure why you wouldn't want this. Normally streamripper will be very aggressive and try to re-connect to a dropped stream, this disables that.
+
 
 Bugs
 ~~~~
