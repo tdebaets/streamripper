@@ -46,19 +46,12 @@
 #include "threadlib.h"
 #include "debug.h"
 
-#if WIN32
 #define DEFAULT_TIMEOUT		15
+
+#if WIN32
 #define FIRST_READ_TIMEOUT	(30 * 1000)
 #elif __UNIX__
-#define closesocket(socket)	close(socket)
-#define DEFAULT_TIMEOUT		15
 #define FIRST_READ_TIMEOUT	30
-#define Sleep				usleep
-#elif __BEOS__
-#define DEFAULT_TIMEOUT		15
-#define FIRST_READ_TIMEOUT	30
-#define Sleep(x)			snooze(x*100)
-#define INADDR_NONE			-1	// why don't they have this???
 #endif
 
 #ifndef WIN32

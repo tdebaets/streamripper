@@ -85,7 +85,7 @@
 #elif __UNIX__
 #define closesocket     close
 #define SOCKET_ERROR	-1
+#define WSACleanup()
 #endif
-
 
 #endif // __COMPAT_H__
