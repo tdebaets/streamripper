@@ -267,8 +267,10 @@ httplib_parse_sc_header(const char *url, char *header, SR_HTTP_HEADER *info)
     }
     info->have_icy_name = rc;
     extract_header_value(header, info->icy_url, "icy-url:");
-    extract_header_value(header, stempbr, "icy-br:");
-    info->icy_bitrate = atoi(stempbr);
+    rc = extract_header_value(header, stempbr, "icy-br:");
+    if (rc) {
+	info->icy_bitrate = atoi(stempbr);
+    }
 
     /* interpret the content type from http header */
     rc = extract_header_value(header, stempbr, "Content-Type:");
@@ -354,8 +356,10 @@ httplib_parse_sc_header(const char *url, char *header, SR_HTTP_HEADER *info)
 	rc = extract_header_value(header, info->icy_name, "x-audiocast-name:");
 	info->have_icy_name |= rc;
 	extract_header_value(header, info->icy_genre, "x-audiocast-genre:");
-	extract_header_value(header, stempbr, "x-audiocast-bitrate:");
-	info->icy_bitrate = atoi(stempbr);
+	rc = extract_header_value(header, stempbr, "x-audiocast-bitrate:");
+	if (rc) {
+	    info->icy_bitrate = atoi(stempbr);
+	}
     }
     // WTF is Zwitterion?
     else if ((start = (char *)strstr(header, "Zwitterion v")) != NULL) {

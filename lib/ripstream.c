@@ -151,6 +151,7 @@ ripstream_init (IO_GET_STREAM *in, char *no_meta_name,
 void
 ripstream_destroy()
 {
+    debug_printf ("RIPSTREAM_DESTROY\n");
     if (m_getbuffer) {free(m_getbuffer); m_getbuffer = NULL;}
     m_find_silence = -1;
     m_in = NULL;
@@ -228,7 +229,7 @@ ripstream_rip()
     u_long extract_size;
 
     /* get the data & title */
-    debug_printf ("RIPSTREAM_RIP: get_stream_data\n");
+    debug_printf ("RIPSTREAM_RIP: get_stream_data:%p\n",m_in);
     ret = m_in->get_stream_data(m_getbuffer, m_current_track.raw_metadata);
     if (ret != SR_SUCCESS) {
 	debug_printf("m_in->get_stream_data bad return code: %d\n", ret);
