@@ -491,9 +491,8 @@ relaylib_send(char *data, int len)
 		} else {
 		    debug_printf("Relay: overflow copying %d data bytes to %d\n", len , ptr->m_BufferSize-len );
 		    memcpy( ptr->m_Buffer + ptr->m_BufferSize-len, data, len );
-		    ptr->m_LeftToSend+= ptr->m_BufferSize;
-
-		}//drop the bytes if the receiver is too far behind
+		    ptr->m_LeftToSend = ptr->m_BufferSize;
+		}
 	    }         
             if (ptr != NULL)
             {
