@@ -224,7 +224,7 @@ this is :
 
   - autoconf 2.59, automake 1.8.2, libtool 1.5.2.
 
-Next in Makefile.am, make the following modifications.
+Next in libmad/Makefile.am, make the following modifications.
 
   ## GCS - don't install for streamripper
   ## lib_LTLIBRARIES =	libmad.la
@@ -246,10 +246,21 @@ libmad distro.
 -----------------------------------------
 How to revise libtre
 
-in libtre/configure.ac, comment out the disable static line
+Check to make sure my versions work.  Here is what I use for tre-0.7.0:
+
+  - autoconf 2.59, automake 1.8.2, libtool 1.5.2.
+
+Next, in libtre/configure.ac, comment out the disable static line:
 
 dnl AM_DISABLE_STATIC
 
+Next rebuild the auto* files.  Test it all out and make sure it works.
+
+To be finished:
+
+a) which files to remove from cvs?  (e.g. configure)
+b) get rid of installation from Makefile.am's
+c) add manifest to distro
 
 -----------------------------------------
 Console mode:
