@@ -252,10 +252,9 @@ void parse_arguments(int argc, char **argv)
 	m_opt.flags = OPT_AUTO_RECONNECT | 
 		      OPT_SEPERATE_DIRS | 
 		      OPT_SEARCH_PORTS |
-		      OPT_NO_RELAY;
+		      OPT_NO_RELAY |
+			  OPT_ADD_ID3;
 
-	m_opt.add_id3tag = TRUE;
-	
 	strcpy(m_opt.output_directory, "./");
 	m_opt.proxyurl[0] = (char)NULL;
 	strncpy(m_opt.url, argv[1], MAX_URL_LEN);
@@ -278,34 +277,33 @@ void parse_arguments(int argc, char **argv)
                         case 'd':
                                 i++;
                                 //dynamically allocat enough space for the dest dir
-				strncpy(m_opt.output_directory, argv[i], MAX_DIR_LEN);
+								strncpy(m_opt.output_directory, argv[i], MAX_DIR_LEN);
                                 break;
                         case 'i':
-                                m_opt.add_id3tag = FALSE;
+                                m_opt.flags ^= OPT_ADD_ID3;
                                 break;
                         case 'q':
-                                m_opt.add_seq_number = TRUE;
-                                m_opt.sequence_number = 0;
+                                m_opt.flags ^= OPT_COUNT_FILES;
                                 break;
                         case 's':
                                 m_opt.flags ^= OPT_SEPERATE_DIRS;
                                 break;
                         case 'r':
                                 m_opt.flags ^= OPT_NO_RELAY;
-				// Default
-				if (i == (argc-1) || argv[i+1][0] == '-')
-					break;
+								// Default
+								if (i == (argc-1) || argv[i+1][0] == '-')
+									break;
 
-				i++;
-				m_opt.relay_port = atoi(argv[i]);
-                                break;
+								i++;
+								m_opt.relay_port = atoi(argv[i]);
+												break;
                         case 'z':
                                 m_opt.flags ^= OPT_SEARCH_PORTS;
-        			m_opt.max_port = m_opt.relay_port+1000;
+			        			m_opt.max_port = m_opt.relay_port+1000;
                                 break;
                         case 'p':
-				i++;
-				strncpy(m_opt.proxyurl, argv[i], MAX_URL_LEN);
+								i++;
+								strncpy(m_opt.proxyurl, argv[i], MAX_URL_LEN);
                                 break;
                         case 'o':
                                 m_opt.flags |= OPT_OVER_WRITE_TRACKS;
@@ -314,13 +312,13 @@ void parse_arguments(int argc, char **argv)
                                 m_opt.flags ^= OPT_AUTO_RECONNECT;
                                 break;
                         case 'v':
-				printf("streamripper 1.0.4 by Jon Clegg <jonclegg@yahoo.com>\n");
-				exit(0);
+								printf("streamripper 1.0.4 by Jon Clegg <jonclegg@yahoo.com>\n");
+								exit(0);
                         case 'l':
-				i++;
-				time(&m_stop_time);
-				m_stop_time += atoi(argv[i]);
-				break;
+								i++;
+								time(&m_stop_time);
+								m_stop_time += atoi(argv[i]);
+								break;
                 }
         }
 }
