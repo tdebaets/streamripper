@@ -10,6 +10,13 @@ autoconf
 autoheader
 cd ..
 
+cd tre-0.7.0
+aclocal
+automake --add-missing --foreign Makefile
+autoconf
+autoheader
+cd ..
+
 rm -f config.cache
 ## ./configure
 ./configure --with-included-libmad --with-included-tre
