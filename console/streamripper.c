@@ -27,7 +27,6 @@
 #include "rip_manager.h"
 #include "util.h"
 #include "filelib.h"
-#define SRVERSION	"1.60-pre1"
 
 /*******************************************************************************
  * Private functions
@@ -94,7 +93,7 @@ int main(int argc, char* argv[])
 	}
 
 	m_dont_print = TRUE;
-	fprintf(stderr, "shuting down\n");
+	fprintf(stderr, "shutting down\n");
 	rip_manager_stop();
 	return 0;
 }
@@ -255,6 +254,9 @@ void parse_arguments(int argc, char **argv)
     }
 
     // Defaults
+    set_rip_manager_options_defaults (&m_opt);
+
+#if defined (commentout)
     m_opt.relay_port = 8000;
     m_opt.max_port = 18000;
     m_opt.flags = OPT_AUTO_RECONNECT | 
@@ -277,6 +279,10 @@ void parse_arguments(int argc, char **argv)
     m_opt.sp_opt.xs_offset = 0;
     m_opt.sp_opt.xs_padding_1 = 300;
     m_opt.sp_opt.xs_padding_2 = 300;
+#endif
+
+    // get URL
+    strncpy(m_opt->url, argv[1], MAX_URL_LEN);
 
     //get arguments
     for(i = 1; i < argc; i++) {
@@ -409,7 +415,6 @@ static void
 verify_splitpoint_rules (void)
 {
     fprintf (stderr, "Warning: splitpoint sanity check not yet implemented.\n");
-
     /* OK, maybe just a few */
     
     /* xs_silence_length must be non-negative and divisible by two */
