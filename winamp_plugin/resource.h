@@ -18,7 +18,10 @@
 #define IDC_OK                          1130
 #define IDC_SEPERATE_DIRS               1150
 #define IDC_OUTPUT_DIRECTORY            1160
+#define IDC_RIP_SINGLE_EDIT             1161
 #define IDC_BROWSE                      1170
+#define IDC_BROWSE_OUTDIR               1170
+#define IDC_BROWSE_RIPSINGLE            1171
 #define IDC_RECONNECT                   1190
 #define IDC_OVER_WRITE                  1200
 #define IDC_MAKE_RELAY                  1210
@@ -29,6 +32,7 @@
 #define IDC_DATE_STAMP                  1320
 #define IDC_CHECK_MAX_BYTES             1330
 #define IDC_ADD_ID3                     1340
+#define IDC_RIP_SINGLE_CHECK            1341
 #define IDC_LOCALHOST                   1350
 #define IDC_KEEP_INCOMPLETE             1360
 #define IDC_USERAGENT                   1370

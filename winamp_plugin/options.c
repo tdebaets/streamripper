@@ -87,320 +87,321 @@ static int m_last_sheet = 0;
 
 BOOL get_skin_list()
 {
-	WIN32_FIND_DATA	filedata; 
-	HANDLE			hsearch = NULL;
-	char			temppath[MAX_PATH];
+    WIN32_FIND_DATA	filedata; 
+    HANDLE			hsearch = NULL;
+    char			temppath[MAX_PATH];
 
-	m_skin_list_size = 0;
-	memset(m_pskin_list, 0, sizeof(m_pskin_list));
+    m_skin_list_size = 0;
+    memset(m_pskin_list, 0, sizeof(m_pskin_list));
 		
-	if (!winamp_get_path(temppath))
-		return FALSE;
-	strcat(temppath, SKIN_PATH);
-	strcat(temppath, "*.bmp");
+    if (!winamp_get_path(temppath))
+	return FALSE;
+    strcat(temppath, SKIN_PATH);
+    strcat(temppath, "*.bmp");
 
-	hsearch = FindFirstFile(temppath, &filedata);
-	if (hsearch == INVALID_HANDLE_VALUE) 
-		return FALSE;
+    hsearch = FindFirstFile(temppath, &filedata);
+    if (hsearch == INVALID_HANDLE_VALUE) 
+	return FALSE;
 
-	m_pskin_list[m_skin_list_size] = strdup(filedata.cFileName);
-	m_skin_list_size++;
+    m_pskin_list[m_skin_list_size] = strdup(filedata.cFileName);
+    m_skin_list_size++;
 
-	while(TRUE)
+    while(TRUE)
+    {
+	if (FindNextFile(hsearch, &filedata)) 
 	{
-		if (FindNextFile(hsearch, &filedata)) 
-		{
-			m_pskin_list[m_skin_list_size] = strdup(filedata.cFileName);
-			m_skin_list_size++;
-			continue;
-		}
-		if (GetLastError() == ERROR_NO_MORE_FILES) 
-		{
-			break;
-		}
-		else 
-		{
-			if (hsearch)
-				FindClose(hsearch);
-			return FALSE;
-		}
+	    m_pskin_list[m_skin_list_size] = strdup(filedata.cFileName);
+	    m_skin_list_size++;
+	    continue;
 	}
+	if (GetLastError() == ERROR_NO_MORE_FILES) 
+	{
+	    break;
+	}
+	else 
+	{
+	    if (hsearch)
+		FindClose(hsearch);
+	    return FALSE;
+	}
+    }
 	
-	FindClose(hsearch);
-	return TRUE;
+    FindClose(hsearch);
+    return TRUE;
 }
 
 void free_skin_list()
 {
-	if (m_skin_list_size == 0)
-		return;
+    if (m_skin_list_size == 0)
+	return;
 
-	while(m_skin_list_size--)
-	{
-		assert(m_pskin_list[m_skin_list_size]);
-		free(m_pskin_list[m_skin_list_size]);
-		m_pskin_list[m_skin_list_size] = NULL;
-	}
-	m_skin_list_size = 0;
+    while(m_skin_list_size--)
+    {
+	assert(m_pskin_list[m_skin_list_size]);
+	free(m_pskin_list[m_skin_list_size]);
+	m_pskin_list[m_skin_list_size] = NULL;
+    }
+    m_skin_list_size = 0;
 }
 
 BOOL get_desktop_folder(char *path)
 {
-	static HMODULE hMod = NULL;
-	PFNSHGETFOLDERPATHA pSHGetFolderPath = NULL;
+    static HMODULE hMod = NULL;
+    PFNSHGETFOLDERPATHA pSHGetFolderPath = NULL;
 	
-	if (!path)
-		return FALSE;
+    if (!path)
+	return FALSE;
 
-	path[0] = '\0';
+    path[0] = '\0';
 
-   // Load SHFolder.dll only once
-	if (!hMod)
-		hMod = LoadLibrary("SHFolder.dll");
+    // Load SHFolder.dll only once
+    if (!hMod)
+	hMod = LoadLibrary("SHFolder.dll");
 
-	if (hMod == NULL)
-		return FALSE;
+    if (hMod == NULL)
+	return FALSE;
 
-	// Obtain a pointer to the SHGetFolderPathA function
-	pSHGetFolderPath = (PFNSHGETFOLDERPATHA)GetProcAddress(hMod, "SHGetFolderPathA");
-	pSHGetFolderPath(NULL, CSIDL_COMMON_DESKTOPDIRECTORY, (HANDLE)0, (DWORD)0, path);
+    // Obtain a pointer to the SHGetFolderPathA function
+    pSHGetFolderPath = (PFNSHGETFOLDERPATHA)GetProcAddress(hMod, "SHGetFolderPathA");
+    pSHGetFolderPath(NULL, CSIDL_COMMON_DESKTOPDIRECTORY, (HANDLE)0, (DWORD)0, path);
 
-	return path[0] != '\0';
+    return path[0] != '\0';
 } 
 
 
 BOOL browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder, long foldersize)
 {
-	char *strResult = NULL;
-	LPITEMIDLIST lpItemIDList;
-	LPMALLOC lpMalloc;  // pointer to IMalloc
-	BROWSEINFO browseInfo;
-	char display_name[_MAX_PATH];
-	char buffer[_MAX_PATH];
-	BOOL retval = FALSE;
+    char *strResult = NULL;
+    LPITEMIDLIST lpItemIDList;
+    LPMALLOC lpMalloc;  // pointer to IMalloc
+    BROWSEINFO browseInfo;
+    char display_name[_MAX_PATH];
+    char buffer[_MAX_PATH];
+    BOOL retval = FALSE;
 
 
-	if (SHGetMalloc(&lpMalloc) != NOERROR)
-	 return FALSE;
+    if (SHGetMalloc(&lpMalloc) != NOERROR)
+	return FALSE;
 
 
-	browseInfo.hwndOwner = hwnd;
-	// set root at Desktop
-	browseInfo.pidlRoot = NULL; 
-	browseInfo.pszDisplayName = display_name;
-	browseInfo.lpszTitle = title;   // passed in
-	browseInfo.ulFlags = flags;   // also passed in
-	browseInfo.lpfn = NULL;      // not used
-	browseInfo.lParam = 0;      // not used   
+    browseInfo.hwndOwner = hwnd;
+    // set root at Desktop
+    browseInfo.pidlRoot = NULL; 
+    browseInfo.pszDisplayName = display_name;
+    browseInfo.lpszTitle = title;   // passed in
+    browseInfo.ulFlags = flags;   // also passed in
+    browseInfo.lpfn = NULL;      // not used
+    browseInfo.lParam = 0;      // not used   
 
 
-	if ((lpItemIDList = SHBrowseForFolder(&browseInfo)) == NULL)
-		goto BAIL;
+    if ((lpItemIDList = SHBrowseForFolder(&browseInfo)) == NULL)
+	goto BAIL;
 
 
-	 // Get the path of the selected folder from the
-	 // item ID list.
-	if (!SHGetPathFromIDList(lpItemIDList, buffer))
-		goto BAIL;
+    // Get the path of the selected folder from the
+    // item ID list.
+    if (!SHGetPathFromIDList(lpItemIDList, buffer))
+	goto BAIL;
 
-	// At this point, szBuffer contains the path 
-	// the user chose.
-	if (buffer[0] == '\0')
-		goto BAIL;
+    // At this point, szBuffer contains the path 
+    // the user chose.
+    if (buffer[0] == '\0')
+	goto BAIL;
 	
-	// We have a path in szBuffer!
-	// Return it.
-	strncpy(folder, buffer, foldersize);
-	retval = TRUE;
+    // We have a path in szBuffer!
+    // Return it.
+    strncpy(folder, buffer, foldersize);
+    retval = TRUE;
 
-BAIL:
-	lpMalloc->lpVtbl->Free(lpMalloc, lpItemIDList);
-	lpMalloc->lpVtbl->Release(lpMalloc);      
+ BAIL:
+    lpMalloc->lpVtbl->Free(lpMalloc, lpItemIDList);
+    lpMalloc->lpVtbl->Release(lpMalloc);      
 
-	return retval;
+    return retval;
 }
 
 HPROPSHEETPAGE create_prop_sheet_page(HINSTANCE inst, DWORD iddres, DLGPROC dlgproc)
 {
-	PROPSHEETPAGE  psp;
-	memset(&psp, 0, sizeof(PROPSHEETPAGE));
-	psp.dwSize      = sizeof(PROPSHEETPAGE);
-	psp.dwFlags     = PSP_DEFAULT;
-	psp.hInstance   = inst;
-	psp.pszTemplate = MAKEINTRESOURCE(iddres);
-	psp.pfnDlgProc  = dlgproc;
-	return CreatePropertySheetPage(&psp);
+    PROPSHEETPAGE  psp;
+    memset(&psp, 0, sizeof(PROPSHEETPAGE));
+    psp.dwSize      = sizeof(PROPSHEETPAGE);
+    psp.dwFlags     = PSP_DEFAULT;
+    psp.hInstance   = inst;
+    psp.pszTemplate = MAKEINTRESOURCE(iddres);
+    psp.pfnDlgProc  = dlgproc;
+    return CreatePropertySheetPage(&psp);
 }
 
 
 void options_dialog_show(HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 {
-	HPROPSHEETPAGE hPage[NUM_PROP_PAGES];	
-	int ret;
-	char szCaption[256];
-	PROPSHEETHEADER psh;
+    HPROPSHEETPAGE hPage[NUM_PROP_PAGES];	
+    int ret;
+    char szCaption[256];
+    PROPSHEETHEADER psh;
 
-	m_opt = opt;
-	m_guiOpt = guiOpt;
+    m_opt = opt;
+    m_guiOpt = guiOpt;
 
-	sprintf(szCaption, "Streamripper Settings v%s", SRVERSION);
-	options_load(m_opt, m_guiOpt);
-	hPage[0] = create_prop_sheet_page(inst, IDD_PROPPAGE_CON, con_dlg);
-	hPage[1] = create_prop_sheet_page(inst, IDD_PROPPAGE_FILE, file_dlg);
-	hPage[2] = create_prop_sheet_page(inst, IDD_PROPPAGE_SKIN, skin_dlg);
-	memset(&psh, 0, sizeof(PROPSHEETHEADER));
-	psh.dwSize = sizeof(PROPSHEETHEADER);
-	psh.dwFlags = PSH_DEFAULT;
-	psh.hwndParent = parent;
-	psh.hInstance = inst;
-	psh.pszCaption = szCaption;
-	psh.nPages = NUM_PROP_PAGES;
-	psh.nStartPage = m_last_sheet;
-	psh.phpage = hPage;
-	ret = PropertySheet(&psh);
-	if (ret == -1)
+    sprintf(szCaption, "Streamripper Settings v%s", SRVERSION);
+    options_load(m_opt, m_guiOpt);
+    hPage[0] = create_prop_sheet_page(inst, IDD_PROPPAGE_CON, con_dlg);
+    hPage[1] = create_prop_sheet_page(inst, IDD_PROPPAGE_FILE, file_dlg);
+    hPage[2] = create_prop_sheet_page(inst, IDD_PROPPAGE_SKIN, skin_dlg);
+    memset(&psh, 0, sizeof(PROPSHEETHEADER));
+    psh.dwSize = sizeof(PROPSHEETHEADER);
+    psh.dwFlags = PSH_DEFAULT;
+    psh.hwndParent = parent;
+    psh.hInstance = inst;
+    psh.pszCaption = szCaption;
+    psh.nPages = NUM_PROP_PAGES;
+    psh.nStartPage = m_last_sheet;
+    psh.phpage = hPage;
+    ret = PropertySheet(&psh);
+    if (ret == -1)
+    {
+	char s[255];
+	sprintf(s, "There was an error while attempting to load the options dialog\r\n"
+		"Please check http://streamripper.sourceforge.net for updates\r\n"
+		"Error: %d\n", GetLastError());
+	MessageBox(parent, s, "Can't load options dialog", MB_ICONEXCLAMATION);
+	return; //JCBUG
+
+    }
+    if (ret)
+    {
+	if (m_pskin_list[m_curskin])
 	{
-		char s[255];
-		sprintf(s, "There was an error while attempting to load the options dialog\r\n"
-				   "Please check http://streamripper.sourceforge.net for updates\r\n"
-				   "Error: %d\n", GetLastError());
-		MessageBox(parent, s, "Can't load options dialog", MB_ICONEXCLAMATION);
-		return; //JCBUG
-
+	    strcpy(m_guiOpt->default_skin, m_pskin_list[m_curskin]);
+	    //JCBUG font color doesn't change until restart.
+	    render_change_skin(m_guiOpt->default_skin);
 	}
-	if (ret)
-	{
-		if (m_pskin_list[m_curskin])
-		{
-			strcpy(m_guiOpt->default_skin, m_pskin_list[m_curskin]);
-			//JCBUG font color doesn't change until restart.
-			render_change_skin(m_guiOpt->default_skin);
-		}
-		options_save(m_opt, m_guiOpt);
-	}
+	options_save(m_opt, m_guiOpt);
+    }
 
-	free_skin_list();
+    free_skin_list();
 }
 
 
 void set_checkbox(HWND parent, int id, BOOL checked)
 {
-	HWND hwndctl = GetDlgItem(parent, id);
-	SendMessage(hwndctl, BM_SETCHECK, 
+    HWND hwndctl = GetDlgItem(parent, id);
+    SendMessage(hwndctl, BM_SETCHECK, 
 		(LPARAM)checked ? BST_CHECKED : BST_UNCHECKED,
 		(WPARAM)NULL);
 }
 
 BOOL get_checkbox(HWND parent, int id)
 {
-	HWND hwndctl = GetDlgItem(parent, id);
-	return SendMessage(hwndctl, BM_GETCHECK, (LPARAM)NULL, (WPARAM)NULL);
+    HWND hwndctl = GetDlgItem(parent, id);
+    return SendMessage(hwndctl, BM_GETCHECK, (LPARAM)NULL, (WPARAM)NULL);
 }
 
 void set_to_checkbox(HWND parent, int id, u_short* popt, u_short flag)
 {
-	if (get_checkbox(parent, id))
-		*popt |= flag;
-	else
-	{
-		if (OPT_FLAG_ISSET(flag, *popt))
-			*popt ^= flag;
-	}
+    if (get_checkbox(parent, id))
+	*popt |= flag;
+    else
+    {
+	if (OPT_FLAG_ISSET(flag, *popt))
+	    *popt ^= flag;
+    }
 }
 
 void add_useragent_strings(HWND hdlg)
 {
-	HWND hcombo = GetDlgItem(hdlg, IDC_USERAGENT);
+    HWND hcombo = GetDlgItem(hdlg, IDC_USERAGENT);
 
-	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"Streamripper/1.x");
-//	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"WinampMPEG/2.7");
-	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"FreeAmp/2.x");
-	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"XMMS/1.x");
-	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"UnknownPlayer/1.x");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"Streamripper/1.x");
+    //	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"WinampMPEG/2.7");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"FreeAmp/2.x");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"XMMS/1.x");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"UnknownPlayer/1.x");
 }
 
 void saveload_fileopts(HWND hWnd, BOOL saveload)
 {
-
-	/*
-	- seperate dir
-	- overwrite
-	- add finished to winamp
-	- add seq numbers/count files
-	- append date
-	- add id3
-	- output dir
-	- keep incomplete
-	*/
-
-	if (saveload)
-	{
-		set_to_checkbox(hWnd, IDC_SEPERATE_DIRS, &m_opt->flags, OPT_SEPERATE_DIRS);
-		set_to_checkbox(hWnd, IDC_OVER_WRITE, &m_opt->flags, OPT_OVER_WRITE_TRACKS);
-		m_guiOpt->m_add_finshed_tracks_to_playlist =	get_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST);
-		set_to_checkbox(hWnd, IDC_COUNT_FILES, &m_opt->flags, OPT_COUNT_FILES);
-		set_to_checkbox(hWnd, IDC_DATE_STAMP, &m_opt->flags, OPT_DATE_STAMP);
-		set_to_checkbox(hWnd, IDC_ADD_ID3, &m_opt->flags, OPT_ADD_ID3);
-		GetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory, MAX_PATH_LEN);
-		set_to_checkbox(hWnd, IDC_KEEP_INCOMPLETE, &m_opt->flags, OPT_KEEP_INCOMPLETE);
-	}
-	else
-	{
-		set_checkbox(hWnd, IDC_SEPERATE_DIRS, OPT_FLAG_ISSET(m_opt->flags, OPT_SEPERATE_DIRS));
-		set_checkbox(hWnd, IDC_OVER_WRITE, OPT_FLAG_ISSET(m_opt->flags, OPT_OVER_WRITE_TRACKS));
-		set_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST, m_guiOpt->m_add_finshed_tracks_to_playlist);
-		set_checkbox(hWnd, IDC_COUNT_FILES, OPT_FLAG_ISSET(m_opt->flags, OPT_COUNT_FILES));
-		set_checkbox(hWnd, IDC_DATE_STAMP, OPT_FLAG_ISSET(m_opt->flags, OPT_DATE_STAMP));
-		set_checkbox(hWnd, IDC_ADD_ID3, OPT_FLAG_ISSET(m_opt->flags, OPT_ADD_ID3));
-		SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory);
-		set_checkbox(hWnd, IDC_KEEP_INCOMPLETE, OPT_FLAG_ISSET(m_opt->flags, OPT_KEEP_INCOMPLETE));
-	}
-
+    /*
+      - seperate dir
+      - overwrite
+      - add finished to winamp
+      - add seq numbers/count files
+      - append date
+      - add id3
+      - output dir
+      - keep incomplete
+      - rip single file check
+      - rip single file filename
+    */
+    if (saveload)
+    {
+	set_to_checkbox(hWnd, IDC_SEPERATE_DIRS, &m_opt->flags, OPT_SEPERATE_DIRS);
+	set_to_checkbox(hWnd, IDC_OVER_WRITE, &m_opt->flags, OPT_OVER_WRITE_TRACKS);
+	m_guiOpt->m_add_finshed_tracks_to_playlist =	get_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST);
+	set_to_checkbox(hWnd, IDC_COUNT_FILES, &m_opt->flags, OPT_COUNT_FILES);
+	set_to_checkbox(hWnd, IDC_DATE_STAMP, &m_opt->flags, OPT_DATE_STAMP);
+	set_to_checkbox(hWnd, IDC_ADD_ID3, &m_opt->flags, OPT_ADD_ID3);
+	GetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory, MAX_PATH_LEN);
+	set_to_checkbox(hWnd, IDC_KEEP_INCOMPLETE, &m_opt->flags, OPT_KEEP_INCOMPLETE);
+	set_to_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, &m_opt->flags, OPT_SINGLE_FILE_OUTPUT);
+	GetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->output_file, MAX_PATH_LEN);
+    }
+    else
+    {
+	set_checkbox(hWnd, IDC_SEPERATE_DIRS, OPT_FLAG_ISSET(m_opt->flags, OPT_SEPERATE_DIRS));
+	set_checkbox(hWnd, IDC_OVER_WRITE, OPT_FLAG_ISSET(m_opt->flags, OPT_OVER_WRITE_TRACKS));
+	set_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST, m_guiOpt->m_add_finshed_tracks_to_playlist);
+	set_checkbox(hWnd, IDC_COUNT_FILES, OPT_FLAG_ISSET(m_opt->flags, OPT_COUNT_FILES));
+	set_checkbox(hWnd, IDC_DATE_STAMP, OPT_FLAG_ISSET(m_opt->flags, OPT_DATE_STAMP));
+	set_checkbox(hWnd, IDC_ADD_ID3, OPT_FLAG_ISSET(m_opt->flags, OPT_ADD_ID3));
+	SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory);
+	set_checkbox(hWnd, IDC_KEEP_INCOMPLETE, OPT_FLAG_ISSET(m_opt->flags, OPT_KEEP_INCOMPLETE));
+	set_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, OPT_FLAG_ISSET(m_opt->flags, OPT_SINGLE_FILE_OUTPUT));
+	SetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->output_file);
+    }
 }
 
 
 void saveload_conopts(HWND hWnd, BOOL saveload)
 {
+    /*
+      - reconnect
+      - relay
+      - rip max
+      - anon usage
+      - proxy server
+      - local machine name
+      - useragent
+      - use old way
+    */
 
-	/*
-	- reconnect
-	- relay
-	- rip max
-	- anon usage
-	- proxy server
-	- local machine name
-	- useragent
-	- use old way
-	*/
-
-	if (saveload)
+    if (saveload)
+    {
+	set_to_checkbox(hWnd, IDC_RECONNECT, &m_opt->flags, OPT_AUTO_RECONNECT);
+	set_to_checkbox(hWnd, IDC_MAKE_RELAY, &m_opt->flags, OPT_MAKE_RELAY);
+	set_to_checkbox(hWnd, IDC_CHECK_MAX_BYTES, &m_opt->flags, OPT_CHECK_MAX_BYTES);
+	m_opt->maxMB_rip_size = GetDlgItemInt(hWnd, IDC_MAX_BYTES, FALSE, FALSE);
+	GetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl, MAX_URL_LEN);
+	GetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost, MAX_HOST_LEN);
+	GetDlgItemText(hWnd, IDC_USERAGENT, m_opt->useragent, MAX_USERAGENT_STR);
+	m_guiOpt->use_old_playlist_ret = get_checkbox(hWnd, IDC_USE_OLD_PLAYLIST_RET);
+    }
+    else
+    {
+	set_checkbox(hWnd, IDC_RECONNECT, OPT_FLAG_ISSET(m_opt->flags, OPT_AUTO_RECONNECT));
+	set_checkbox(hWnd, IDC_MAKE_RELAY, OPT_FLAG_ISSET(m_opt->flags, OPT_MAKE_RELAY));
+	if (OPT_FLAG_ISSET(m_opt->flags, OPT_CHECK_MAX_BYTES))
 	{
-		set_to_checkbox(hWnd, IDC_RECONNECT, &m_opt->flags, OPT_AUTO_RECONNECT);
-		set_to_checkbox(hWnd, IDC_MAKE_RELAY, &m_opt->flags, OPT_MAKE_RELAY);
-		set_to_checkbox(hWnd, IDC_CHECK_MAX_BYTES, &m_opt->flags, OPT_CHECK_MAX_BYTES);
-		m_opt->maxMB_rip_size = GetDlgItemInt(hWnd, IDC_MAX_BYTES, FALSE, FALSE);
-		GetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl, MAX_URL_LEN);
-		GetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost, MAX_HOST_LEN);
-		GetDlgItemText(hWnd, IDC_USERAGENT, m_opt->useragent, MAX_USERAGENT_STR);
-		m_guiOpt->use_old_playlist_ret = get_checkbox(hWnd, IDC_USE_OLD_PLAYLIST_RET);
+	    set_checkbox(hWnd, IDC_CHECK_MAX_BYTES, OPT_FLAG_ISSET(m_opt->flags, OPT_CHECK_MAX_BYTES));
+	    SetDlgItemInt(hWnd, IDC_MAX_BYTES, m_opt->maxMB_rip_size, FALSE);
 	}
-	else
-	{
-		set_checkbox(hWnd, IDC_RECONNECT, OPT_FLAG_ISSET(m_opt->flags, OPT_AUTO_RECONNECT));
-		set_checkbox(hWnd, IDC_MAKE_RELAY, OPT_FLAG_ISSET(m_opt->flags, OPT_MAKE_RELAY));
-		if (OPT_FLAG_ISSET(m_opt->flags, OPT_CHECK_MAX_BYTES))
-		{
-			set_checkbox(hWnd, IDC_CHECK_MAX_BYTES, OPT_FLAG_ISSET(m_opt->flags, OPT_CHECK_MAX_BYTES));
-			SetDlgItemInt(hWnd, IDC_MAX_BYTES, m_opt->maxMB_rip_size, FALSE);
-		}
-		SetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl);
-		SetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost);
-		if (!m_opt->useragent[0])
-			strcpy(m_opt->useragent, DEFAULT_USERAGENT);
-		SetDlgItemText(hWnd, IDC_USERAGENT, m_opt->useragent);
-		set_checkbox(hWnd, IDC_USE_OLD_PLAYLIST_RET, m_guiOpt->use_old_playlist_ret);
-	}
-
+	SetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl);
+	SetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost);
+	if (!m_opt->useragent[0])
+	    strcpy(m_opt->useragent, DEFAULT_USERAGENT);
+	SetDlgItemText(hWnd, IDC_USERAGENT, m_opt->useragent);
+	set_checkbox(hWnd, IDC_USE_OLD_PLAYLIST_RET, m_guiOpt->use_old_playlist_ret);
+    }
 }
 
 //
@@ -411,276 +412,293 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 //
 LRESULT CALLBACK file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	return options_dlg(hWnd, message, wParam, lParam, FALSE);
+    return options_dlg(hWnd, message, wParam, lParam, FALSE);
 }
 LRESULT CALLBACK con_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	return options_dlg(hWnd, message, wParam, lParam, TRUE);
+    return options_dlg(hWnd, message, wParam, lParam, TRUE);
 }
 
 BOOL populate_skin_list(HWND dlg)
 {
-	int i;
-	HWND hlist = GetDlgItem(dlg, IDC_SKIN_LIST);
+    int i;
+    HWND hlist = GetDlgItem(dlg, IDC_SKIN_LIST);
 
-	if (!hlist)
-		return FALSE;
+    if (!hlist)
+	return FALSE;
 
-	for(i = 0; i < m_skin_list_size; i++)
-	{
-		assert(m_pskin_list[i]);
+    for(i = 0; i < m_skin_list_size; i++)
+    {
+	assert(m_pskin_list[i]);
 
-		SendMessage(hlist, LB_ADDSTRING, 0, 
-					(LPARAM)m_pskin_list[i]);
+	SendMessage(hlist, LB_ADDSTRING, 0, 
+		    (LPARAM)m_pskin_list[i]);
 
-		if (strcmp(m_pskin_list[i], m_guiOpt->default_skin) == 0)
-			m_curskin = i;
-	}
-	SendMessage(hlist, LB_SETCURSEL, (WPARAM)m_curskin, 0);
-	return TRUE;
+	if (strcmp(m_pskin_list[i], m_guiOpt->default_skin) == 0)
+	    m_curskin = i;
+    }
+    SendMessage(hlist, LB_SETCURSEL, (WPARAM)m_curskin, 0);
+    return TRUE;
 }
 
 LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 
-	switch(message)
+    switch(message)
+    {
+    case WM_INITDIALOG:
+	DEBUG2(( "skin:WM_INITDIALOG\n" ));
+
+	if (!get_skin_list() || 
+	    !populate_skin_list(hWnd))	// order of exec important!
 	{
-	case WM_INITDIALOG:
-		DEBUG2(( "skin:WM_INITDIALOG\n" ));
+	    MessageBox(hWnd, 
+		       "Failed to find any skins in the SrSkin directory\r\n"
+		       "Please make verifiy that the Winamp/Skins/SrSkins/"
+		       "contins some Streamripper skins",
+		       "Can't load skins", MB_ICONEXCLAMATION);
+	    return FALSE;
+	}
 
-		if (!get_skin_list() || 
-			!populate_skin_list(hWnd))	// order of exec important!
-		{
-			MessageBox(hWnd, 
-				"Failed to find any skins in the SrSkin directory\r\n"
-				"Please make verifiy that the Winamp/Skins/SrSkins/"
-				"contins some Streamripper skins",
-				"Can't load skins", MB_ICONEXCLAMATION);
-			return FALSE;
-		}
-
-		return TRUE;
-	case WM_PAINT:
-		{
-			PAINTSTRUCT pt;
-			HDC hdc = BeginPaint(hWnd, &pt);
-			DEBUG2(( "skin:WM_PAINT\n" ));
-			render_create_preview(m_pskin_list[m_curskin], hdc, SKIN_PREV_LEFT, 
-									SKIN_PREV_TOP);
-			EndPaint(hWnd, &pt);
-		}
-		return FALSE;
-
-	case WM_COMMAND: 
-		switch (LOWORD(wParam)) 
-		{ 
-		case IDC_SKIN_LIST: 
-			switch (HIWORD(wParam)) 
-			{ 
-			case LBN_SELCHANGE:
-				{
-				HWND hwndlist = GetDlgItem(hWnd, IDC_SKIN_LIST); 
-				m_curskin = SendMessage(hwndlist, LB_GETCURSEL, 0, 0); 
-				assert(m_curskin >= 0 && m_curskin < m_skin_list_size);
-				UpdateWindow(hWnd);
-				InvalidateRect(hWnd, NULL, FALSE);
-				}
-			}
-		}
+	return TRUE;
+    case WM_PAINT:
+	{
+	    PAINTSTRUCT pt;
+	    HDC hdc = BeginPaint(hWnd, &pt);
+	    DEBUG2(( "skin:WM_PAINT\n" ));
+	    render_create_preview(m_pskin_list[m_curskin], hdc, SKIN_PREV_LEFT, 
+				  SKIN_PREV_TOP);
+	    EndPaint(hWnd, &pt);
 	}
 	return FALSE;
+
+    case WM_COMMAND: 
+	switch (LOWORD(wParam)) 
+	{ 
+	case IDC_SKIN_LIST: 
+	    switch (HIWORD(wParam)) 
+	    { 
+	    case LBN_SELCHANGE:
+		{
+		    HWND hwndlist = GetDlgItem(hWnd, IDC_SKIN_LIST); 
+		    m_curskin = SendMessage(hwndlist, LB_GETCURSEL, 0, 0); 
+		    assert(m_curskin >= 0 && m_curskin < m_skin_list_size);
+		    UpdateWindow(hWnd);
+		    InvalidateRect(hWnd, NULL, FALSE);
+		}
+	    }
+	}
+    }
+    return FALSE;
 }
 
 
 LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, BOOL confile)
 {
-	int wmId, wmEvent;
+    int wmId, wmEvent;
 
-	switch(message)
+    switch(message)
+    {
+    case WM_INITDIALOG:
+	if (confile)
+	    saveload_conopts(hWnd, FALSE);
+	else
+	    saveload_fileopts(hWnd, FALSE);
+
+	PropSheet_UnChanged(GetParent(hWnd), hWnd);
+
+	add_useragent_strings(hWnd);
+
+	return TRUE;
+    case WM_COMMAND:
+	wmId    = LOWORD(wParam); 
+	wmEvent = HIWORD(wParam); 
+	switch(wmId)
 	{
-		case WM_INITDIALOG:
-			if (confile)
-				saveload_conopts(hWnd, FALSE);
-			else
-				saveload_fileopts(hWnd, FALSE);
-
-			PropSheet_UnChanged(GetParent(hWnd), hWnd);
-
-			add_useragent_strings(hWnd);
-
-			return TRUE;
-		case WM_COMMAND:
-			wmId    = LOWORD(wParam); 
-			wmEvent = HIWORD(wParam); 
-			switch(wmId)
-			{
-				case IDC_BROWSE:
-					{
-						char temp_dir[MAX_PATH_LEN];
-						if (browse_for_folder(hWnd, "Select a folder", 0, temp_dir, MAX_PATH_LEN))
-						{
-							strncpy(m_opt->output_directory, temp_dir, MAX_PATH_LEN);
-							SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory);
-						}
-						return TRUE;
-					}
-				case IDC_CHECK_MAX_BYTES:
-					{
-					BOOL isset = get_checkbox(hWnd, IDC_CHECK_MAX_BYTES);
-					HWND hwndEdit = GetDlgItem(hWnd, IDC_MAX_BYTES);
-					SendMessage(hwndEdit, EM_SETREADONLY, !isset, 0);
-					}
-
-				case IDC_SEPERATE_DIRS:
-				case IDC_RECONNECT:
-				case IDC_OVER_WRITE:
-				case IDC_MAKE_RELAY:
-				case IDC_COUNT_FILES:
-				case IDC_DATE_STAMP:
-				case IDC_ADD_ID3:
-				case IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST:
-				case IDC_PROXY:
-				case IDC_OUTPUT_DIRECTORY:
-				case IDC_LOCALHOST:
-				case IDC_ALLOW_TOUCH:
-				case IDC_KEEP_INCOMPLETE:
-				case IDC_USERAGENT:
-				case IDC_USE_OLD_PLAYLIST_RET:
-					PropSheet_Changed(GetParent(hWnd), hWnd);
-					break;
-			}
-			break;
-		case WM_NOTIFY:
+	case IDC_BROWSE_OUTDIR:
+	    {
+		char temp_dir[MAX_PATH_LEN];
+		if (browse_for_folder(hWnd, "Select a folder", 0, temp_dir, MAX_PATH_LEN))
 		{
-			NMHDR* phdr = (NMHDR*) lParam;
-			switch ( phdr->code )
-			{
-			case PSN_APPLY:
-				if (confile)
-					saveload_conopts(hWnd, TRUE);
-				else
-					saveload_fileopts(hWnd, TRUE);
-				break;
-			}
+		    strncpy(m_opt->output_directory, temp_dir, MAX_PATH_LEN);
+		    SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory);
 		}
+		return TRUE;
+	    }
+	case IDC_BROWSE_RIPSINGLE:
+	    {
+		char temp_dir[MAX_PATH_LEN];
+		if (browse_for_folder(hWnd, "Select a folder", 0, temp_dir, MAX_PATH_LEN))
+		{
+		    strncpy(m_opt->output_directory, temp_dir, MAX_PATH_LEN);
+		    SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory);
+		}
+		return TRUE;
+	    }
+	case IDC_CHECK_MAX_BYTES:
+	    {
+		BOOL isset = get_checkbox(hWnd, IDC_CHECK_MAX_BYTES);
+		HWND hwndEdit = GetDlgItem(hWnd, IDC_MAX_BYTES);
+		SendMessage(hwndEdit, EM_SETREADONLY, !isset, 0);
+	    }
+
+	case IDC_SEPERATE_DIRS:
+	case IDC_RECONNECT:
+	case IDC_OVER_WRITE:
+	case IDC_MAKE_RELAY:
+	case IDC_COUNT_FILES:
+	case IDC_DATE_STAMP:
+	case IDC_ADD_ID3:
+	case IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST:
+	case IDC_PROXY:
+	case IDC_OUTPUT_DIRECTORY:
+	case IDC_LOCALHOST:
+	case IDC_ALLOW_TOUCH:
+	case IDC_KEEP_INCOMPLETE:
+	case IDC_USERAGENT:
+	case IDC_USE_OLD_PLAYLIST_RET:
+	case IDC_RIP_SINGLE_CHECK:
+	case IDC_RIP_SINGLE_EDIT:
+	    PropSheet_Changed(GetParent(hWnd), hWnd);
+	    break;
 	}
-	return FALSE;
+	break;
+    case WM_NOTIFY:
+	{
+	    NMHDR* phdr = (NMHDR*) lParam;
+	    switch ( phdr->code )
+	    {
+	    case PSN_APPLY:
+		if (confile)
+		    saveload_conopts(hWnd, TRUE);
+		else
+		    saveload_fileopts(hWnd, TRUE);
+		break;
+	    }
+	}
+    }
+    return FALSE;
 }
 
 BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 {
-	char desktop_path[MAX_INI_LINE_LEN];
-	char filename[MAX_INI_LINE_LEN];
-	BOOL	seperate_dirs,
-			auto_reconnect,
-			over_write_tracks,
-			make_relay,
-			count_files,
-			date_stamp,
-			add_id3,
-			check_max_btyes,
-			keep_incomplete;
+    char desktop_path[MAX_INI_LINE_LEN];
+    char filename[MAX_INI_LINE_LEN];
+    BOOL    seperate_dirs,
+	    auto_reconnect,
+	    over_write_tracks,
+	    make_relay,
+	    count_files,
+	    date_stamp,
+	    add_id3,
+	    check_max_btyes,
+	    keep_incomplete,
+	    rip_single_file;
 
-	if (!get_desktop_folder(desktop_path))
-	{
-		// Maybe an error message? nahhh..
-		desktop_path[0] = '\0';
-	}
+    if (!get_desktop_folder(desktop_path))
+    {
+	// Maybe an error message? nahhh..
+	desktop_path[0] = '\0';
+    }
 
-	if (!winamp_get_path(filename))
-		return FALSE;
+    if (!winamp_get_path(filename))
+	return FALSE;
 
-	strcat(filename, "Plugins\\sripper.ini");
+    strcat(filename, "Plugins\\sripper.ini");
 
-	opt->flags = 0;
-	opt->flags |= OPT_SEARCH_PORTS;			// not having this caused a bad bug, must remember this.
+    opt->flags = 0;
+    opt->flags |= OPT_SEARCH_PORTS;			// not having this caused a bad bug, must remember this.
 
-	GetPrivateProfileString(APPNAME, "url", "", opt->url, MAX_INI_LINE_LEN, filename);
-	GetPrivateProfileString(APPNAME, "proxy", "", opt->proxyurl, MAX_INI_LINE_LEN, filename);
-	GetPrivateProfileString(APPNAME, "output_dir", desktop_path, opt->output_directory, MAX_INI_LINE_LEN, filename);
-	GetPrivateProfileString(APPNAME, "localhost", "localhost", guiOpt->localhost, MAX_INI_LINE_LEN, filename);
-	GetPrivateProfileString(APPNAME, "useragent", DEFAULT_USERAGENT, opt->useragent, MAX_INI_LINE_LEN, filename);
-	GetPrivateProfileString(APPNAME, "default_skin", DEFAULT_SKINFILE, guiOpt->default_skin, MAX_INI_LINE_LEN, filename);
+    GetPrivateProfileString(APPNAME, "url", "", opt->url, MAX_INI_LINE_LEN, filename);
+    GetPrivateProfileString(APPNAME, "proxy", "", opt->proxyurl, MAX_INI_LINE_LEN, filename);
+    GetPrivateProfileString(APPNAME, "output_dir", desktop_path, opt->output_directory, MAX_INI_LINE_LEN, filename);
+    GetPrivateProfileString(APPNAME, "localhost", "localhost", guiOpt->localhost, MAX_INI_LINE_LEN, filename);
+    GetPrivateProfileString(APPNAME, "useragent", DEFAULT_USERAGENT, opt->useragent, MAX_INI_LINE_LEN, filename);
+    GetPrivateProfileString(APPNAME, "default_skin", DEFAULT_SKINFILE, guiOpt->default_skin, MAX_INI_LINE_LEN, filename);
+    GetPrivateProfileString(APPNAME, "rip_single_path", "", opt->output_file, MAX_INI_LINE_LEN, filename);
 
-	seperate_dirs = GetPrivateProfileInt(APPNAME, "seperate_dirs", TRUE, filename);
-	opt->relay_port = GetPrivateProfileInt(APPNAME, "relay_port", 8000, filename);
-	opt->max_port = opt->relay_port+1000;
-	auto_reconnect = GetPrivateProfileInt(APPNAME, "auto_reconnect", TRUE, filename);
-	over_write_tracks = GetPrivateProfileInt(APPNAME, "over_write_tracks", FALSE, filename);
-	make_relay = GetPrivateProfileInt(APPNAME, "make_relay", FALSE, filename);
-	count_files = GetPrivateProfileInt(APPNAME, "count_files", FALSE, filename);
-	date_stamp = GetPrivateProfileInt(APPNAME, "date_stamp", FALSE, filename);
-	add_id3 = GetPrivateProfileInt(APPNAME, "add_id3", TRUE, filename);
-	check_max_btyes = GetPrivateProfileInt(APPNAME, "check_max_bytes", FALSE, filename);
-	opt->maxMB_rip_size = GetPrivateProfileInt(APPNAME, "maxMB_bytes", 0, filename);
-	keep_incomplete = GetPrivateProfileInt(APPNAME, "keep_incomplete", TRUE, filename);
+    seperate_dirs = GetPrivateProfileInt(APPNAME, "seperate_dirs", TRUE, filename);
+    opt->relay_port = GetPrivateProfileInt(APPNAME, "relay_port", 8000, filename);
+    opt->max_port = opt->relay_port+1000;
+    auto_reconnect = GetPrivateProfileInt(APPNAME, "auto_reconnect", TRUE, filename);
+    over_write_tracks = GetPrivateProfileInt(APPNAME, "over_write_tracks", FALSE, filename);
+    make_relay = GetPrivateProfileInt(APPNAME, "make_relay", FALSE, filename);
+    count_files = GetPrivateProfileInt(APPNAME, "count_files", FALSE, filename);
+    date_stamp = GetPrivateProfileInt(APPNAME, "date_stamp", FALSE, filename);
+    add_id3 = GetPrivateProfileInt(APPNAME, "add_id3", TRUE, filename);
+    check_max_btyes = GetPrivateProfileInt(APPNAME, "check_max_bytes", FALSE, filename);
+    opt->maxMB_rip_size = GetPrivateProfileInt(APPNAME, "maxMB_bytes", 0, filename);
+    keep_incomplete = GetPrivateProfileInt(APPNAME, "keep_incomplete", TRUE, filename);
+    rip_single_file = GetPrivateProfileInt(APPNAME, "rip_single_file", FALSE, filename);
 
-	guiOpt->m_add_finshed_tracks_to_playlist = GetPrivateProfileInt(APPNAME, "add_tracks_to_playlist", FALSE, filename);
-	guiOpt->m_start_minimized = GetPrivateProfileInt(APPNAME, "start_minimized", FALSE, filename);
-	guiOpt->oldpos.x = GetPrivateProfileInt(APPNAME, "window_x", 0, filename);
-	guiOpt->oldpos.y = GetPrivateProfileInt(APPNAME, "window_y", 0, filename);
-	guiOpt->m_enabled = GetPrivateProfileInt(APPNAME, "enabled", 1, filename);
-	guiOpt->use_old_playlist_ret = GetPrivateProfileInt(APPNAME, "use_old_playlist_ret", 0, filename);
+    guiOpt->m_add_finshed_tracks_to_playlist = GetPrivateProfileInt(APPNAME, "add_tracks_to_playlist", FALSE, filename);
+    guiOpt->m_start_minimized = GetPrivateProfileInt(APPNAME, "start_minimized", FALSE, filename);
+    guiOpt->oldpos.x = GetPrivateProfileInt(APPNAME, "window_x", 0, filename);
+    guiOpt->oldpos.y = GetPrivateProfileInt(APPNAME, "window_y", 0, filename);
+    guiOpt->m_enabled = GetPrivateProfileInt(APPNAME, "enabled", 1, filename);
+    guiOpt->use_old_playlist_ret = GetPrivateProfileInt(APPNAME, "use_old_playlist_ret", 0, filename);
 
 
-	if (guiOpt->oldpos.x < 0 || guiOpt->oldpos.y < 0)
-		guiOpt->oldpos.x = guiOpt->oldpos.y = 0;
+    if (guiOpt->oldpos.x < 0 || guiOpt->oldpos.y < 0)
+	guiOpt->oldpos.x = guiOpt->oldpos.y = 0;
 
-	opt->flags = 0;
-	opt->flags |= OPT_SEARCH_PORTS;
-	if (seperate_dirs) opt->flags |= OPT_SEPERATE_DIRS;
-	if (auto_reconnect) opt->flags |= OPT_AUTO_RECONNECT;
-	if (over_write_tracks) opt->flags |= OPT_OVER_WRITE_TRACKS;
-	if (make_relay) opt->flags |= OPT_MAKE_RELAY;
-	if (count_files) opt->flags |= OPT_COUNT_FILES;
-	if (date_stamp) opt->flags |= OPT_DATE_STAMP;
-	if (add_id3) opt->flags |= OPT_ADD_ID3;
-	if (check_max_btyes) opt->flags |= OPT_CHECK_MAX_BYTES;
-	if (keep_incomplete) opt->flags |= OPT_KEEP_INCOMPLETE;
+    opt->flags = 0;
+    opt->flags |= OPT_SEARCH_PORTS;
+    if (seperate_dirs) opt->flags |= OPT_SEPERATE_DIRS;
+    if (auto_reconnect) opt->flags |= OPT_AUTO_RECONNECT;
+    if (over_write_tracks) opt->flags |= OPT_OVER_WRITE_TRACKS;
+    if (make_relay) opt->flags |= OPT_MAKE_RELAY;
+    if (count_files) opt->flags |= OPT_COUNT_FILES;
+    if (date_stamp) opt->flags |= OPT_DATE_STAMP;
+    if (add_id3) opt->flags |= OPT_ADD_ID3;
+    if (check_max_btyes) opt->flags |= OPT_CHECK_MAX_BYTES;
+    if (keep_incomplete) opt->flags |= OPT_KEEP_INCOMPLETE;
+    if (rip_single_file) opt->flags |= OPT_SINGLE_FILE_OUTPUT;
 
-	return TRUE;
+    return TRUE;
 }
 
 
 BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 {
 
-	char filename[MAX_INI_LINE_LEN];
-	FILE *fp;
-	winamp_get_path(filename);
-	strcat(filename, "Plugins\\sripper.ini");
-	fp = fopen(filename, "w");
-	if (!fp)
-		return FALSE;
+    char filename[MAX_INI_LINE_LEN];
+    FILE *fp;
+    winamp_get_path(filename);
+    strcat(filename, "Plugins\\sripper.ini");
+    fp = fopen(filename, "w");
+    if (!fp)
+	return FALSE;
 
-	fprintf(fp, "[%s]\n", APPNAME);
-	fprintf(fp, "url=%s\n", opt->url);
-	fprintf(fp, "proxy=%s\n", opt->proxyurl);
-	fprintf(fp, "output_dir=%s\n", opt->output_directory);
-	fprintf(fp, "localhost=%s\n", guiOpt->localhost);
-	fprintf(fp, "useragent=%s\n", opt->useragent);
-	fprintf(fp, "seperate_dirs=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_SEPERATE_DIRS));
-	fprintf(fp, "relay_port=%d\n", opt->relay_port);
-	fprintf(fp, "auto_reconnect=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_AUTO_RECONNECT));
-	fprintf(fp, "over_write_tracks=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_OVER_WRITE_TRACKS));
-	fprintf(fp, "make_relay=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_MAKE_RELAY));
-	fprintf(fp, "count_files=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_COUNT_FILES));
-	fprintf(fp, "date_stamp=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_DATE_STAMP));
-	fprintf(fp, "add_id3=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_ADD_ID3));
-	fprintf(fp, "check_max_bytes=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_CHECK_MAX_BYTES));
-	fprintf(fp, "maxMB_bytes=%d\n", opt->maxMB_rip_size);
-	fprintf(fp, "keep_incomplete=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_KEEP_INCOMPLETE));
+    fprintf(fp, "[%s]\n", APPNAME);
+    fprintf(fp, "url=%s\n", opt->url);
+    fprintf(fp, "proxy=%s\n", opt->proxyurl);
+    fprintf(fp, "output_dir=%s\n", opt->output_directory);
+    fprintf(fp, "localhost=%s\n", guiOpt->localhost);
+    fprintf(fp, "useragent=%s\n", opt->useragent);
+    fprintf(fp, "seperate_dirs=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_SEPERATE_DIRS));
+    fprintf(fp, "relay_port=%d\n", opt->relay_port);
+    fprintf(fp, "auto_reconnect=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_AUTO_RECONNECT));
+    fprintf(fp, "over_write_tracks=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_OVER_WRITE_TRACKS));
+    fprintf(fp, "make_relay=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_MAKE_RELAY));
+    fprintf(fp, "count_files=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_COUNT_FILES));
+    fprintf(fp, "date_stamp=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_DATE_STAMP));
+    fprintf(fp, "add_id3=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_ADD_ID3));
+    fprintf(fp, "check_max_bytes=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_CHECK_MAX_BYTES));
+    fprintf(fp, "maxMB_bytes=%d\n", opt->maxMB_rip_size);
+    fprintf(fp, "keep_incomplete=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_KEEP_INCOMPLETE));
+    fprintf(fp, "rip_single_file=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_SINGLE_FILE_OUTPUT));
+    fprintf(fp, "rip_single_path=%s\n", opt->output_file);
 
+    fprintf(fp, "add_tracks_to_playlist=%d\n", guiOpt->m_add_finshed_tracks_to_playlist);
+    fprintf(fp, "start_minimized=%d\n", guiOpt->m_start_minimized);
+    fprintf(fp, "window_x=%d\n", guiOpt->oldpos.x);
+    fprintf(fp, "window_y=%d\n", guiOpt->oldpos.y);
+    fprintf(fp, "enabled=%d\n", guiOpt->m_enabled);
+    fprintf(fp, "default_skin=%s\n", guiOpt->default_skin);
+    fprintf(fp, "use_old_playlist_ret=%d", guiOpt->use_old_playlist_ret);
 
-	fprintf(fp, "add_tracks_to_playlist=%d\n", guiOpt->m_add_finshed_tracks_to_playlist);
-	fprintf(fp, "start_minimized=%d\n", guiOpt->m_start_minimized);
-	fprintf(fp, "window_x=%d\n", guiOpt->oldpos.x);
-	fprintf(fp, "window_y=%d\n", guiOpt->oldpos.y);
-	fprintf(fp, "enabled=%d\n", guiOpt->m_enabled);
-	fprintf(fp, "default_skin=%s\n", guiOpt->default_skin);
-	fprintf(fp, "use_old_playlist_ret=%d", guiOpt->use_old_playlist_ret);
+    fclose(fp);
 
-	fclose(fp);
-
-	return TRUE;
+    return TRUE;
 }

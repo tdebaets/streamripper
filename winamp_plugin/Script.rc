@@ -62,7 +62,7 @@ BEGIN
                     WS_TABSTOP,7,62,196,12
 END
 
-IDD_PROPPAGE_FILE DIALOG DISCARDABLE  0, 0, 210, 166
+IDD_PROPPAGE_FILE DIALOG DISCARDABLE  0, 0, 210, 186
 STYLE WS_CHILD | WS_DISABLED | WS_CAPTION
 CAPTION "File"
 FONT 8, "MS Sans Serif"
@@ -72,22 +72,26 @@ BEGIN
                     BS_MULTILINE | WS_TABSTOP,7,7,172,14
     CONTROL         "&Overwrite existing tracks in the complete directory",
                     IDC_OVER_WRITE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,
-                    24,184,14
+                    22,184,14
     CONTROL         "&Add finished tracks to playlist",
                     IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,56,123,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,52,123,14
     CONTROL         "A&dd sequence numbers to tracks",IDC_COUNT_FILES,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,73,121,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,67,121,14
     CONTROL         "A&ppend the date to the directory",IDC_DATE_STAMP,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,89,121,14
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,82,121,14
     CONTROL         "Add &ID3 info to the tracks",IDC_ADD_ID3,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,108,91,14
-    EDITTEXT        IDC_OUTPUT_DIRECTORY,14,137,154,15,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_BROWSE,179,136,17,14
-    GROUPBOX        "Output Directory",IDC_STATIC,7,126,196,33
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,97,91,14
+    EDITTEXT        IDC_OUTPUT_DIRECTORY,17,160,154,15,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BROWSE_OUTDIR,178,160,17,14
     CONTROL         "&Never overwrite files from incomplete folder",
                     IDC_KEEP_INCOMPLETE,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,40,160,14
+                    WS_TABSTOP,7,37,160,14
+    CONTROL         "Rip to &single file",IDC_RIP_SINGLE_CHECK,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,112,91,14
+    EDITTEXT        IDC_RIP_SINGLE_EDIT,17,128,154,15,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BROWSE_RIPSINGLE,178,128,17,14
+    LTEXT           "Output directory:",IDC_STATIC,16,148,49,8
 END
 
 IDD_PROPPAGE_SKIN DIALOG DISCARDABLE  0, 0, 210, 154
@@ -131,7 +135,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 203
         TOPMARGIN, 7
-        BOTTOMMARGIN, 159
+        BOTTOMMARGIN, 179
     END
 
     IDD_PROPPAGE_SKIN, DIALOG
