@@ -1,6 +1,8 @@
 New for 1.61.1
 --------------
-* Regular expression matching for metadata parsing
+* Use regular expression matching for metadata parsing
+* New option -w parse-rules-file
+* Remove -f dropstring option (use -w instead)
 * Improvements to unicode support
 * Improved support for icecast2 servers
 * Fix incorrect song title on first track

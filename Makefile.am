@@ -222,6 +222,7 @@ EXTRA_DIST = \
 	config.rpath \
 	CHANGES \
 	readme_xfade.txt \
+	parse_rules.txt \
 	lib/live365info.c \
 	lib/live365info.h \
 	lib/riplive365.c \
