@@ -1,6 +1,84 @@
 Greg's notes
 -----------------------------------------
 
+HTTP HEADERS
+~~~~~~~~~~~~
+
+http://64.236.34.97/stream/1021
+===============================
+ICY 200 OK
+icy-notice1: <BR>This stream requires <a href="http://www.winamp.com/">Winamp</a><BR>
+icy-notice2: SHOUTcast Distributed Network Audio Server/SolarisSparc v1.9.4<BR>
+icy-name: Secret Agent: The soundtrack for your stylish, mysterious, dangerous life. For Spys and P.I.'s too! [SomaFM]
+icy-genre: Downtempo Lounge Spy
+icy-url: http://www.somafm.com
+icy-pub: 1
+icy-metaint: 8192
+icy-br: 128
+icy-irc: #shoutcast
+icy-icq: 0
+icy-aim: N/A
+
+"http://nsv.stream.aol.com/uvox?cachefile=/aol/us/aolmusic/artists/wmg/80spopculture/aha_takeonme_120.nsv"
+===============================
+HTTP/1.1 200 OK
+Date: Fri, 17 Sep 2004 21:15:06 GMT
+Server: MODS/1.0 (optimized-dpare-02)
+Content-Length: 2768860
+Ultravox-Max-Msg: 3080
+Ultravox-Avg-Bitrate: 98588
+Ultravox-Max-Bitrate: 98588
+Accept-Ranges: bytes
+Connection: close
+Content-Type: misc/ultravox
+
+http://64.156.25.86:8010/;stream.nsv
+===============================
+ICY 200 OK
+icy-notice1:<BR>This stream requires <a href="http://www.winamp.com/">Winamp</a><BR>
+icy-notice2:SHOUTcast Distributed Network Audio Server/FreeBSD4 v1.9.2<BR>
+icy-name:desync.com: Last Exile
+icy-genre:Anime
+icy-url:http://desync.com/
+Content-Type:video/nsv
+icy-pub:1
+icy-metaint:8192
+icy-br:500
+
+http://pubint.sc.llnwd.net:10045/
+===============================
+ICY 200 OK
+icy-notice1:<BR>This stream requires <a href="http://www.winamp.com/">Winamp</a><BR>
+icy-notice2:SHOUTcast Distributed Network Audio Server/Linux v1.9.2<BR>
+icy-name:KUVO Public Radio
+icy-genre:
+icy-url:http://www.kuvo.org
+Content-Type:audio/mpeg
+icy-pub:0
+icy-metaint:8192
+icy-br:24
+
+"http://www.live365.com/play/294341?LID=506-usa&lid=506-usa&SaneID=132.183.12.126-1095458924342&AuthType=NORMAL&VisitCount=1&bitrate=256&now=1095458993234&pid=40564"
+===============================
+---------------
+HTTP/1.1 302 Found
+Date: Fri, 17 Sep 2004 22:11:04 GMT
+Server: Apache
+Location: http://216.235.81.11:20186/play?membername=&session=velvet_ant:0&LID=506-usa&lid=506-usa&AuthType=NORMAL&SaneID=132.183.12.126-1095458924342&VisitCount=1&bitrate=256&now=1095458993234&pid=40564
+Content-Type: text/html; charset=iso-8859-1
+Connection: close
+---------------
+---------------
+HTTP/1.0 200 OK
+Server: Nanocaster/2.5.13
+Content-Type: audio/mpeg
+Cache-Control: no-cache
+Pragma: no-cache
+Connection: close
+Content-Length: 44000000
+---------------
+
+
 For [ 583191 ] can't separate tracks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Xanu
