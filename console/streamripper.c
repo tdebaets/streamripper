@@ -225,7 +225,8 @@ void print_usage()
         fprintf(stderr, "        -r <base port> - Create a relay server on base port, defaults to port 8000\n");
         fprintf(stderr, "        -z             - Don't scan for free ports if base port is not avail\n");
         fprintf(stderr, "        -p <url>       - Use HTTP proxy server at <url>\n");
-        fprintf(stderr, "        -o             - Write over tracks from incomplete\n");
+        fprintf(stderr, "        -o             - Overwrite tracks in complete\n");
+        fprintf(stderr, "        -t             - Don't overwrite tracks in incomplete\n");
         fprintf(stderr, "        -c             - Don't auto-reconnect\n");
         fprintf(stderr, "        -v             - Print version info and quite\n");
         fprintf(stderr, "        -l <seconds>   - number of seconds to run, otherwise runs forever\n");
@@ -243,27 +244,27 @@ void print_usage()
  */
 void parse_arguments(int argc, char **argv)
 {
-        int i;
-        char *c;
+    int i;
+    char *c;
 
-        if (argc < 2)
-        {
-                print_usage();
-                exit(2);
-        }
+    if (argc < 2)
+    {
+	print_usage();
+	exit(2);
+    }
 
-        // Defaults
-	m_opt.relay_port = 8000;
-	m_opt.max_port = 18000;
-	m_opt.flags = OPT_AUTO_RECONNECT | 
-		      OPT_SEPERATE_DIRS | 
-		      OPT_SEARCH_PORTS |
-			  OPT_ADD_ID3;
+    // Defaults
+    m_opt.relay_port = 8000;
+    m_opt.max_port = 18000;
+    m_opt.flags = OPT_AUTO_RECONNECT | 
+	    OPT_SEPERATE_DIRS | 
+	    OPT_SEARCH_PORTS |
+	    OPT_ADD_ID3;
 
-	strcpy(m_opt.output_directory, "./");
-	m_opt.proxyurl[0] = (char)NULL;
-	strncpy(m_opt.url, argv[1], MAX_URL_LEN);
-	strcpy(m_opt.useragent, "sr-POSIX/" SRVERSION);
+    strcpy(m_opt.output_directory, "./");
+    m_opt.proxyurl[0] = (char)NULL;
+    strncpy(m_opt.url, argv[1], MAX_URL_LEN);
+    strcpy(m_opt.useragent, "sr-POSIX/" SRVERSION);
 
     // Defaults for splitpoint
     // Times are in ms
@@ -276,78 +277,81 @@ void parse_arguments(int argc, char **argv)
     m_opt.sp_opt.xs_padding_1 = 300;
     m_opt.sp_opt.xs_padding_2 = 300;
 
-        //get arguments
+    //get arguments
     for(i = 1; i < argc; i++) {
-                if (argv[i][0] != '-')
-                        continue;
+	if (argv[i][0] != '-')
+	    continue;
 
-                c = strchr("dplu", argv[i][1]);
+	c = strchr("dplu", argv[i][1]);
         if (c != NULL) {
             if ((i == (argc-1)) || (argv[i+1][0] == '-')) {
-                                fprintf(stderr, "option %s requires an argument\n", argv[i]);
-                                exit(1);
-                        }
+		fprintf(stderr, "option %s requires an argument\n", argv[i]);
+		exit(1);
+	    }
 	}
-                switch (argv[i][1])
-                {
-                        case 'd':
-                                i++;
-                                //dynamically allocat enough space for the dest dir
-								strncpy(m_opt.output_directory, argv[i], MAX_DIR_LEN);
-                                break;
-                        case 'i':
-                                m_opt.flags ^= OPT_ADD_ID3;
-                                break;
-                        case 'q':
-                                m_opt.flags ^= OPT_COUNT_FILES;
-                                break;
-                        case 's':
-                                m_opt.flags ^= OPT_SEPERATE_DIRS;
-                                break;
-                        case 'r':
-                                m_opt.flags ^= OPT_MAKE_RELAY;
-								// Default
-								if (i == (argc-1) || argv[i+1][0] == '-')
-									break;
-								i++;
-								m_opt.relay_port = atoi(argv[i]);
-												break;
-                        case 'z':
-                                m_opt.flags ^= OPT_SEARCH_PORTS;
-			        			m_opt.max_port = m_opt.relay_port+1000;
-                                break;
-	    #if defined (commentout)
-	    case 'x':
-		m_opt.flags ^= OPT_PAD_SONGS;
+	switch (argv[i][1])
+	{
+	case 'd':
+	    i++;
+	    //dynamically allocat enough space for the dest dir
+	    strncpy(m_opt.output_directory, argv[i], MAX_DIR_LEN);
+	    break;
+	case 'i':
+	    m_opt.flags ^= OPT_ADD_ID3;
+	    break;
+	case 'q':
+	    m_opt.flags ^= OPT_COUNT_FILES;
+	    break;
+	case 's':
+	    m_opt.flags ^= OPT_SEPERATE_DIRS;
+	    break;
+	case 'r':
+	    m_opt.flags ^= OPT_MAKE_RELAY;
+	    // Default
+	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
+	    i++;
+	    m_opt.relay_port = atoi(argv[i]);
+	    break;
+	case 'z':
+	    m_opt.flags ^= OPT_SEARCH_PORTS;
+	    m_opt.max_port = m_opt.relay_port+1000;
+	    break;
+#if defined (commentout)
+	case 'x':
+	    m_opt.flags ^= OPT_PAD_SONGS;
+	    break;
 #endif
-            case '-':
-		parse_splitpoint_rules(&argv[i][2]);
-		break;
-                        case 'p':
-								i++;
-								strncpy(m_opt.proxyurl, argv[i], MAX_URL_LEN);
-                                break;
-                        case 'o':
-                                m_opt.flags |= OPT_OVER_WRITE_TRACKS;
-                                break;
-                        case 'c':
-                                m_opt.flags ^= OPT_AUTO_RECONNECT;
-                                break;
-                        case 'v':
-				printf("Streamripper %s by Jon Clegg <jonclegg@yahoo.com>\n", SRVERSION);
-				exit(0);
-                        case 'l':
-				i++;
-				time(&m_stop_time);
-				m_stop_time += atoi(argv[i]);
-				break;
-                        case 'u':
-				i++;
-				strncpy(m_opt.useragent, argv[i], MAX_USERAGENT_STR);
-				break;
-                }
-        }
+	case '-':
+	    parse_splitpoint_rules(&argv[i][2]);
+	    break;
+	case 'p':
+	    i++;
+	    strncpy(m_opt.proxyurl, argv[i], MAX_URL_LEN);
+	    break;
+	case 'o':
+	    m_opt.flags |= OPT_OVER_WRITE_TRACKS;
+	    break;
+	case 't':
+	    m_opt.flags |= OPT_KEEP_INCOMPLETE;
+	    break;
+	case 'c':
+	    m_opt.flags ^= OPT_AUTO_RECONNECT;
+	    break;
+	case 'v':
+	    printf("Streamripper %s by Jon Clegg <jonclegg@yahoo.com>\n", SRVERSION);
+	    exit(0);
+	case 'l':
+	    i++;
+	    time(&m_stop_time);
+	    m_stop_time += atoi(argv[i]);
+	    break;
+	case 'u':
+	    i++;
+	    strncpy(m_opt.useragent, argv[i], MAX_USERAGENT_STR);
+	    break;
+	}
+    }
 
     /* Need to verify that splitpoint rules were sane */
     verify_splitpoint_rules ();
