@@ -7,6 +7,7 @@
 #define IDD_OPTIONS                     102
 #define IDI_SR_ICON                     105
 #define IDD_PROPPAGE_CON                106
+#define IDD_PROPPAGE_FILE               107
 #define IDR_POPUP_MENU                  110
 #define IDC_START                       1000
 #define IDC_STATUS                      1001

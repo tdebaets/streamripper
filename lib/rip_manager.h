@@ -41,7 +41,6 @@ typedef struct RIP_MANAGER_INFOst
 } RIP_MANAGER_INFO;
 
 // Use to set and get the flags
-#define OPT_FLAG_ISSET(flags, opt)	((flags & opt) > 0)
 
 #define OPT_AUTO_RECONNECT		0x00000001		// reconnect automatticly if dropped
 #define OPT_SEPERATE_DIRS		0x00000002		// create a directory named after the server
@@ -56,6 +55,10 @@ typedef struct RIP_MANAGER_INFOst
 //
 // Helper macros for checking options
 //
+
+#define OPT_FLAG_ISSET(flags, opt)	((flags & opt) > 0)
+#define OPT_FLAG_SET(flags, opt)	(flags =| opt)
+
 #define GET_AUTO_RECONNECT(flags)			(OPT_FLAG_ISSET(flags, OPT_AUTO_RECONNECT))
 #define GET_SEPERATE_DIRS(flags)			(OPT_FLAG_ISSET(flags, OPT_SEPERATE_DIRS))
 #define GET_OVER_WRITE_TRACKS(flags)		(OPT_FLAG_ISSET(flags, OPT_OVER_WRITE_TRACKS))
@@ -66,6 +69,18 @@ typedef struct RIP_MANAGER_INFOst
 #define GET_DATE_STAMP(flags)				(OPT_FLAG_ISSET(flags, OPT_DATE_STAMP))
 #define GET_CHECK_MAX_BYTES(flags)			(OPT_FLAG_ISSET(flags, OPT_CHECK_MAX_BYTES))
 #define GET_WIPE_INCOMPLETE(flags)			(OPT_FLAG_ISSET(flags, OPT_WIPE_INCOMPLETE))
+
+#define SET_AUTO_RECONNECT(flags)			(OPT_FLAG_SET(flags, OPT_AUTO_RECONNECT))
+#define SET_SEPERATE_DIRS(flags)			(OPT_FLAG_SET(flags, OPT_SEPERATE_DIRS))
+#define SET_OVER_WRITE_TRACKS(flags)		(OPT_FLAG_SET(flags, OPT_OVER_WRITE_TRACKS))
+#define SET_SEARCH_PORTS(flags)				(OPT_FLAG_SET(flags, OPT_SEARCH_PORTS))
+#define SET_NO_RELAY(flags)					(OPT_FLAG_SET(flags, OPT_NO_RELAY))
+#define SET_COUNT_FILES(flags)				(OPT_FLAG_SET(flags, OPT_COUNT_FILES))
+#define SET_ADD_ID3(flags)					(OPT_FLAG_SET(flags, OPT_ADD_ID3))
+#define SET_DATE_STAMP(flags)				(OPT_FLAG_SET(flags, OPT_DATE_STAMP))
+#define SET_CHECK_MAX_BYTES(flags)			(OPT_FLAG_SET(flags, OPT_CHECK_MAX_BYTES))
+#define SET_WIPE_INCOMPLETE(flags)			(OPT_FLAG_SET(flags, OPT_WIPE_INCOMPLETE))
+
 
 typedef struct RIP_MANAGER_OPTIONSst
 {
