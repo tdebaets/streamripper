@@ -46,20 +46,21 @@ typedef struct SILENCETRACKERst
 
 typedef struct DECODE_STRUCTst
 {
-	unsigned char* mpgbuf;
-	long  mpgsize;
-	long  mpgpos;
-	long  psilence;
-	long  pcmpos;
-	long  samplerate; 
-	SILENCETRACKER siltrackers[NUM_SILTRACKERS];
+    unsigned char* mpgbuf;
+    long  mpgsize;
+    long  mpgpos;
+    long  psilence;
+    long  silence_ms;
+    long  silence_samples;
+    long  pcmpos;
+    long  samplerate;
+    SILENCETRACKER siltrackers[NUM_SILTRACKERS];
 } DECODE_STRUCT;
 
 
 /*********************************************************************************
  * Public functions
  *********************************************************************************/
-error_code findsep_silence(const u_char* mpgbuf, long mpgsize, u_long* psilence);
 
 /*********************************************************************************
  * Private functions
@@ -80,7 +81,8 @@ static enum mad_flow header(void *data, struct mad_header const *pheader);
  * Private Vars
  *********************************************************************************/
 
-error_code findsep_silence(const u_char* mpgbuf, long mpgsize, u_long* psilence)
+error_code findsep_silence(const u_char* mpgbuf, long mpgsize, 
+			   long silence_length, u_long* psilence)
 {
 	DECODE_STRUCT ds;
 	struct mad_decoder decoder;
@@ -94,6 +96,7 @@ error_code findsep_silence(const u_char* mpgbuf, long mpgsize, u_long* psilence)
 	ds.pcmpos = 0;
 	ds.mpgpos= 0;
 	ds.samplerate = 0;
+	ds.silence_ms = silence_length;
 
 	init_siltrackers(ds.siltrackers);
 
@@ -200,30 +203,31 @@ enum mad_flow input(void *data, struct mad_stream *ms)
 
 void search_for_silence(DECODE_STRUCT *ds, double vol)
 {
-	int i;
-	for(i = 0; i < NUM_SILTRACKERS; i++)
+    int i;
+    for(i = 0; i < NUM_SILTRACKERS; i++)
+    {
+	SILENCETRACKER *pstracker = &ds->siltrackers[i];
+
+	if (pstracker->foundsil)
+	    continue;
+
+	if (vol < pstracker->silencevol)
 	{
-		SILENCETRACKER *pstracker = &ds->siltrackers[i];
-
-		if (pstracker->foundsil)
-			continue;
-
-		if (vol < pstracker->silencevol)
-		{
-			if (pstracker->insilencecount == 0)
-				pstracker->silencestart = ds->mpgpos;
-			pstracker->insilencecount++;
-		}
-		else
-		{
-			pstracker->insilencecount = 0;
-		}
-
-		if (pstracker->insilencecount > ds->samplerate)
-		{
-			pstracker->foundsil = TRUE;
-		}
+	    if (pstracker->insilencecount == 0)
+		pstracker->silencestart = ds->mpgpos;
+	    pstracker->insilencecount++;
 	}
+	else
+	{
+	    pstracker->insilencecount = 0;
+	}
+
+	//if (pstracker->insilencecount > ds->samplerate)
+	if (pstracker->insilencecount > ds->silence_samples)
+	{
+	    pstracker->foundsil = TRUE;
+	}
+    }
 
 }
 
@@ -287,10 +291,9 @@ mad_flow header(void *data, struct mad_header const *pheader)
 {
 	DECODE_STRUCT *ds = (DECODE_STRUCT *)data;
 	if (!ds->samplerate) {
-		ds->samplerate = pheader->samplerate;
-#if defined (commentout)
-		printf ("Setting samplerate: %ld\n",ds->samplerate);
-#endif
+	    ds->samplerate = pheader->samplerate;
+	    ds->silence_samples = ds->silence_ms * (ds->samplerate/1000);
+	    debug_printf ("Setting samplerate: %ld\n",ds->samplerate);
 	}
 	return MAD_FLOW_CONTINUE;
 }

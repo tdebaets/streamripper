@@ -11,10 +11,6 @@
 #define DLEVEL	-1
 #define _DEBUG_
 
-
-// GCS DEBUGGING
-#define DLEVEL	2
-
 extern char* _varg2str(char *format, ...);
 extern void _freevargstr(char *str);
 
