@@ -262,7 +262,7 @@ void print_usage()
     fprintf(stderr, "       -P text       - Add a Prefix to each ripped file (Not shown on stdout).\n");
     fprintf(stderr, "       --quiet       - Don't print ripping status to console\n");
     fprintf(stderr, "       --debug       - Save debugging trace\n");
-    fprintf(stderr, "       --x           - Invoke splitpoint detection rules (see online guide)\n");
+    fprintf(stderr, "       --xs_???      - Invoke splitpoint detection rules (see README or man page)\n");
 }
 
 /* 
@@ -292,7 +292,7 @@ void parse_arguments(int argc, char **argv)
 	if (argv[i][0] != '-')
 	    continue;
 
-	c = strchr("dRplufmkIw", argv[i][1]);
+	c = strchr("dRplufmkIwPM", argv[i][1]);
         if (c != NULL) {
             if ((i == (argc-1)) || (argv[i+1][0] == '-')) {
 		fprintf(stderr, "option %s requires an argument\n", argv[i]);
