@@ -248,7 +248,7 @@ socklib_read_header(HSOCKET *socket_handle, char *buffer, int size,
 	return SR_ERROR_CANT_SET_SOCKET_OPTIONS;
 #endif
 
-    memset(buffer, -1, size);
+    memset(buffer, 0, size);
     for(i = 0; i < size; i++)
     {
 	if ((ret = (*myrecv)(socket_handle, &buffer[i], 1, 0)) < 0)
@@ -261,16 +261,18 @@ socklib_read_header(HSOCKET *socket_handle, char *buffer, int size,
 	    return SR_ERROR_SOCKET_CLOSED;
 
 	//look for the end of the icy-header
+	if (!strstr(buffer, "icy-"))
+	    continue;
+
 	t = buffer + (i > 3 ? i - 3: i);
 
 	if (strncmp(t, "\r\n\r\n", 4) == 0)
 	    break;
 
-	if (strncmp(t, "\n\0\r\n", 4) == 0)		// wtf? live365 seems to do this
+	if (strncmp(t, "\n\0\r\n", 4) == 0)	// wtf? live365 seems to do this
 	    break;
-
     }
-	
+
     if (i == size)
 	return SR_ERROR_NO_HTTP_HEADER;
 
