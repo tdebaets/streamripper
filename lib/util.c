@@ -150,7 +150,7 @@ int word_count(char *str)
 
 char *strip_invalid_chars(char *str)
 {
-	char invalid_chars[] = "\\/:*?\"<>|.";
+	char invalid_chars[] = "\\/:*?\"<>|.~";
 	char *oldstr = str;						
 	char *newstr = str;
 	
