@@ -503,14 +503,17 @@ end_track(u_long pos1, u_long pos2, TRACK_INFO* ti)
 error_code
 start_track (TRACK_INFO* ti)
 {
+#define HEADER_SIZE 1600
     int ret;
-    ID3V2head id3v2header;
+    int i;
+    //ID3V2head id3v2header;
     ID3V2frame id3v2frame1;
     ID3V2frame id3v2frame2;
     char comment[1024] = "Ripped with Streamripper";
-    char bigbuf[1600] = "";
+    char bigbuf[HEADER_SIZE] = "";
     int	sent = 0;
-    char buf[3] = "";
+    char header1[6] = "ID3\x03\0\0";
+    int header_size = HEADER_SIZE;
     unsigned long int framesize = 0;
     unsigned int secs;
 
@@ -530,10 +533,11 @@ start_track (TRACK_INFO* ti)
     /* Oddsock's ID3 stuff, (oddsock@oddsock.org) */
     if (m_addID3tag) {
 	memset(bigbuf, '\000', sizeof(bigbuf));
-	memset(&id3v2header, '\000', sizeof(id3v2header));
+	//memset(&id3v2header, '\000', sizeof(id3v2header));
 	memset(&id3v2frame1, '\000', sizeof(id3v2frame1));
 	memset(&id3v2frame2, '\000', sizeof(id3v2frame2));
 
+#if defined (commentout)
 	strncpy(id3v2header.tag, "ID3", 3);
 	id3v2header.size = 1599;
 	framesize = htonl(id3v2header.size);
@@ -549,6 +553,15 @@ start_track (TRACK_INFO* ti)
 	ret = rip_manager_put_data((char *)&(framesize), sizeof(framesize));
 	if (ret != SR_SUCCESS) return ret;
 	sent += sizeof(id3v2header);
+#endif
+	/* Write header */
+	ret = rip_manager_put_data(header1, 6);
+	if (ret != SR_SUCCESS) return ret;
+	for (i = 0; i < 4; i++) {
+	    char x = (header_size >> (3-i)*7) & 0x7F;
+	    ret = rip_manager_put_data((char *)&x, 1);
+	    if (ret != SR_SUCCESS) return ret;
+	}
 
 	// Write ID3V2 frame1 with data
 	strncpy(id3v2frame1.id, "TPE1", 4);
