@@ -44,6 +44,7 @@ streamripper_SOURCES = \
 	lib/ripshout.h \
 	lib/ripstream.h \
 	lib/socklib.h \
+	lib/srconfig.h \
 	lib/threadlib.h \
 	lib/types.h \
 	lib/util.h
