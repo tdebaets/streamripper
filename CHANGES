@@ -1,7 +1,8 @@
 New for 1.60.13
 ---------------
-* Add patch for skips in relay stream
-* Add track numbers & FILE attribute to cue files
+Aug 21, 2004 (GCS)
+* Fix skips in relay stream
+* Add frame numbers & FILE attribute to cue files
 * Fix file permissions on UNIX
 
 New for 1.60.12
