@@ -495,12 +495,7 @@ strip_invalid_chars_testing(char *str)
 char*
 strip_invalid_chars_stable(char *str)
 {
-    /* GCS FIX: Only the leading "." should be stripped for unix. */
-#if defined (WIN32)
     char invalid_chars[] = "\\/:*?\"<>|~";
-#else
-    char invalid_chars[] = "\\/:*?\"<>|.~";
-#endif
     char* mb_in = str;
     char* strp;
     int mb_in_len = strlen(mb_in);
@@ -547,6 +542,24 @@ strip_invalid_chars_stable(char *str)
 	    continue;
 	*wstrp = replacement;
     }
+
+#if defined (WIN32)
+    /* Strip trailing periods on windows */
+    for (wstrp = w_in + wcslen(w_in) - 1; wstrp >= 0; wstrp--) {
+	if (*wstrp == L'.')
+	    *wstrp = 0;
+	else
+	    break;
+    }
+#else
+    /* Replace leading periods on unix */
+    for (wstrp = w_in; *wstrp; wstrp++) {
+	if (*wstrp == L'.')
+	    *wstrp = replacement;
+	else
+	    break;
+    }
+#endif
 
     debug_printf ("strip_invalid_chars() w_in (post):\n");
     for (wstrp = w_in; *wstrp; wstrp++) {

@@ -70,7 +70,8 @@ int main(int argc, char* argv[])
 	signal(SIGTERM, catch_sig);
 
 	parse_arguments(argc, argv);
-	fprintf(stderr, "Connecting...\n");
+	if (!m_dont_print)
+	    fprintf(stderr, "Connecting...\n");
 	if ((ret = rip_manager_start(rip_callback, &m_opt)) != SR_SUCCESS)
 	{
 		fprintf(stderr, "Couldn't connect to %s\n", m_opt.url);
@@ -88,8 +89,10 @@ int main(int argc, char* argv[])
 		time(&temp_time);
 		if (m_stop_time && (temp_time >= m_stop_time))
 		{
-			fprintf(stderr, "\nTime to stop is here, bailing\n");
-			break; 
+		    if (!m_dont_print)
+			fprintf(stderr, "\n");
+		    fprintf(stderr, "Time to stop is here, bailing\n");
+		    break; 
 		}	
 	}
 
@@ -101,10 +104,11 @@ int main(int argc, char* argv[])
 
 void catch_sig(int code)
 {
+    if (!m_dont_print)
 	fprintf(stderr, "\n");
-	if (!m_started)
-		exit(2);
-	m_got_sig = TRUE;
+    if (!m_started)
+        exit(2);
+    m_got_sig = TRUE;
 }
 
 /* 
@@ -215,7 +219,8 @@ void rip_callback(int message, void *data)
 			m_alldone = TRUE;
 			break;
 		case RM_NEW_TRACK:
-			fprintf(stderr, "\n");
+			if (!m_dont_print)
+			    fprintf(stderr, "\n");
 			break;
 		case RM_STARTED:
 			m_started = TRUE;
@@ -255,6 +260,7 @@ void print_usage()
 #endif
     fprintf(stderr, "       -T            - Truncate duplicated tracks in incomplete\n");
     fprintf(stderr, "       -P text       - Add a Prefix to each ripped file (Not shown on stdout).\n");
+    fprintf(stderr, "       --quiet       - Don't print ripping status to console\n");
     fprintf(stderr, "       --debug       - Save debugging trace\n");
     fprintf(stderr, "       --x           - Invoke splitpoint detection rules (see online guide)\n");
 }
@@ -424,6 +430,10 @@ parse_extended_options (char* rule)
     /* Logging options */
     if (!strcmp(rule,"debug")) {
 	debug_enable();
+	return;
+    }
+    if (!strcmp(rule,"quiet")) {
+	m_dont_print = TRUE;
 	return;
     }
 

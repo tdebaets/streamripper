@@ -1,7 +1,10 @@
 New for 1.61.5
 --------------
 * Add -A flag: suppress individual files
-
+* Add --quiet flag: no ripping status sent to console
+* Fix bug #1108854, windows directory ending in periods
+* Change unix directory name rectification to replace only leading 
+  periods instead of all periods
 
 New for 1.61.4
 --------------

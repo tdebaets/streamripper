@@ -312,9 +312,9 @@ httplib_parse_sc_header(const char *url, char *header, SR_HTTP_HEADER *info)
 	}
     }
 
-    printf ("---------------\n");
-    printf (header);
-    printf ("---------------\n");
+    //printf ("---------------\n");
+    //printf (header);
+    //printf ("---------------\n");
 
     // Try to guess the server
 
