@@ -15,6 +15,7 @@
 #define _IDC_BASE                       1000
 #define IDC_ENABLE                      1090
 #define IDC_MAX_BYTES                   1120
+#define IDC_RELAY_PORT_EDIT             1121
 #define IDC_OK                          1130
 #define IDC_SEPERATE_DIRS               1150
 #define IDC_OUTPUT_DIRECTORY            1160

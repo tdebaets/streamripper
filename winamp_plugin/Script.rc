@@ -45,7 +45,7 @@ BEGIN
                     IDC_RECONNECT,"Button",BS_AUTOCHECKBOX | BS_MULTILINE | 
                     WS_TABSTOP,7,7,179,15
     CONTROL         "&Create relay stream",IDC_MAKE_RELAY,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,24,123,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,24,75,14
     CONTROL         "&Don't rip over X megs",IDC_CHECK_MAX_BYTES,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,7,43,85,14
     GROUPBOX        "Proxy Server",IDC_STATIC,7,102,196,33
@@ -53,13 +53,16 @@ BEGIN
     GROUPBOX        "Local Machine Name (for relay stream, i.e. localhost)",
                     IDC_STATIC,8,140,195,33
     EDITTEXT        IDC_LOCALHOST,15,152,181,15,ES_AUTOHSCROLL
-    EDITTEXT        IDC_MAX_BYTES,97,42,32,15,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MAX_BYTES,126,43,32,15,ES_AUTOHSCROLL
     COMBOBOX        IDC_USERAGENT,104,82,99,42,CBS_DROPDOWN | CBS_SORT | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "Pretend to be (UserAgent)",IDC_STATIC,7,82,86,11
     CONTROL         "&Use old way of retrieving the current track from winamp",
                     IDC_USE_OLD_PLAYLIST_RET,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,7,62,196,12
+    LTEXT           "Port:",IDC_STATIC,97,26,15,8
+    LTEXT           "Megs:",IDC_STATIC,97,46,20,8
+    EDITTEXT        IDC_RELAY_PORT_EDIT,126,24,32,15,ES_AUTOHSCROLL
 END
 
 IDD_PROPPAGE_FILE DIALOG DISCARDABLE  0, 0, 210, 186
@@ -87,8 +90,9 @@ BEGIN
     CONTROL         "&Never overwrite files from incomplete folder",
                     IDC_KEEP_INCOMPLETE,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,7,37,160,14
-    CONTROL         "Rip to &single file",IDC_RIP_SINGLE_CHECK,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,112,91,14
+    CONTROL         "Rip to &single file (leave name empty for automatic naming):",
+                    IDC_RIP_SINGLE_CHECK,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,7,112,196,14
     EDITTEXT        IDC_RIP_SINGLE_EDIT,17,128,154,15,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BROWSE_RIPSINGLE,178,128,17,14
     LTEXT           "Output directory:",IDC_STATIC,16,148,49,8

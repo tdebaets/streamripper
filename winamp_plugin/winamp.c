@@ -35,14 +35,14 @@ BOOL winamp_get_path(char *path);
 /*********************************************************************************
  * Private Vars
  *********************************************************************************/
-static char m_winamps_path[MAX_PATH_LEN] = {'\0'};
+static char m_winamps_path[SR_MAX_PATH] = {'\0'};
 
 // Get's winamp's path from the reg key ..
 // HKEY_CLASSES_ROOT\Applications\winamp.exe\shell\Enqueue\command
 BOOL winamp_get_path(char *path)
 {
-	DWORD size = MAX_PATH_LEN;
-	char strkey[MAX_PATH_LEN];
+	DWORD size = SR_MAX_PATH;
+	char strkey[SR_MAX_PATH];
 	char winampstr[] = "WINAMP.EXE";
 	int winampstrlen = strlen(winampstr);
 	int i;
@@ -116,7 +116,7 @@ BOOL winamp_get_info(WINAMP_INFO *info, BOOL useoldway)
 		// to a file, 'n' is the index of the currently selected item
 		// 
 		int n  = SendMessage(hwndWinamp, WM_USER, (WPARAM)NULL, 120); 
-		char m3u_path[MAX_PATH_LEN];
+		char m3u_path[SR_MAX_PATH];
 		char buf[4096] = {'\0'};
 		FILE *fp;
 
@@ -163,22 +163,21 @@ BOOL winamp_get_info(WINAMP_INFO *info, BOOL useoldway)
 BOOL winamp_add_relay_to_playlist(char *host, u_short port)
 {
 //	char host[] = "localhost";		// needs to use the machines name, for proxys
-	char relay_file[MAX_PATH_LEN];
-	char winamp_path[MAX_PATH_LEN];
+	char relay_file[SR_MAX_PATH];
+	char winamp_path[SR_MAX_PATH];
 
 	sprintf(winamp_path, "%s%s", m_winamps_path, "winamp.exe");
 	sprintf(relay_file, "/add http://%s:%d", host, port);
 	ShellExecute(NULL, "open", winamp_path,	relay_file, NULL, SW_SHOWNORMAL);
 
 	return TRUE;
-
 }
 
 
 BOOL winamp_add_track_to_playlist(char *fullpath)
 {
-	char add_track[MAX_PATH_LEN];
-	char winamp_path[MAX_PATH_LEN];
+	char add_track[SR_MAX_PATH];
+	char winamp_path[SR_MAX_PATH];
 
 	sprintf(winamp_path, "%s%s", m_winamps_path, "winamp.exe");
 	sprintf(add_track, "/add \"%s\"", fullpath);

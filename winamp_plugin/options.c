@@ -33,13 +33,15 @@
 
 #define MAX_INI_LINE_LEN	1024
 #define DEFAULT_RELAY_PORT	8000
-#define APPNAME		"sripper"
+#define APPNAME			"sripper"
 #define DEFAULT_USERAGENT	"FreeAmp/2.x"
-#define NUM_PROP_PAGES	3
+#define NUM_PROP_PAGES		3
 #define DEFAULT_SKINFILE	"srskin.bmp"
-#define SKIN_PREV_LEFT		158
-#define SKIN_PREV_TOP		79
-#define	MAX_SKINS			256
+//#define SKIN_PREV_LEFT	158
+//#define SKIN_PREV_TOP		79
+#define SKIN_PREV_LEFT		(2*110)
+#define SKIN_PREV_TOP		(2*50)
+#define	MAX_SKINS		256
 #define PROP_SHEET_CON		0
 #define PROP_SHEET_FILE		1
 #define PROP_SHEET_SKINS	2
@@ -169,7 +171,9 @@ BOOL get_desktop_folder(char *path)
 } 
 
 
-BOOL browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder, long foldersize)
+BOOL
+browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder, 
+		  long foldersize)
 {
     char *strResult = NULL;
     LPITEMIDLIST lpItemIDList;
@@ -179,10 +183,8 @@ BOOL browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder, l
     char buffer[_MAX_PATH];
     BOOL retval = FALSE;
 
-
     if (SHGetMalloc(&lpMalloc) != NOERROR)
 	return FALSE;
-
 
     browseInfo.hwndOwner = hwnd;
     // set root at Desktop
@@ -193,10 +195,8 @@ BOOL browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder, l
     browseInfo.lpfn = NULL;      // not used
     browseInfo.lParam = 0;      // not used   
 
-
     if ((lpItemIDList = SHBrowseForFolder(&browseInfo)) == NULL)
 	goto BAIL;
-
 
     // Get the path of the selected folder from the
     // item ID list.
@@ -219,6 +219,36 @@ BOOL browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder, l
 
     return retval;
 }
+
+
+BOOL
+browse_for_file(HWND hwnd, const char *title, UINT flags, 
+		     char *file_name, long file_size)
+{
+    OPENFILENAME ofn;
+    char szFile[SR_MAX_PATH] = "rip_to_single_file.mp3";
+
+    ZeroMemory(&ofn, sizeof(OPENFILENAME));
+    ofn.lStructSize = sizeof(OPENFILENAME);
+    ofn.hwndOwner = hwnd;
+    ofn.lpstrFile = szFile;
+    ofn.nMaxFile = sizeof(szFile);
+    ofn.lpstrFilter = "All\0*.*\0MP3 files\0*.MP3\0";
+    ofn.nFilterIndex = 1;
+    ofn.lpstrFileTitle = NULL;
+    ofn.nMaxFileTitle = 0;
+    ofn.lpstrInitialDir = NULL;
+    ofn.Flags = OFN_EXPLORER | OFN_NOCHANGEDIR | OFN_PATHMUSTEXIST;
+
+    // Display the Open dialog box. 
+    if (GetOpenFileName(&ofn)) {
+	strncpy (file_name, ofn.lpstrFile, file_size);
+	return TRUE;
+    } else {
+	return FALSE;
+    }
+}
+
 
 HPROPSHEETPAGE create_prop_sheet_page(HINSTANCE inst, DWORD iddres, DLGPROC dlgproc)
 {
@@ -341,10 +371,10 @@ void saveload_fileopts(HWND hWnd, BOOL saveload)
 	set_to_checkbox(hWnd, IDC_COUNT_FILES, &m_opt->flags, OPT_COUNT_FILES);
 	set_to_checkbox(hWnd, IDC_DATE_STAMP, &m_opt->flags, OPT_DATE_STAMP);
 	set_to_checkbox(hWnd, IDC_ADD_ID3, &m_opt->flags, OPT_ADD_ID3);
-	GetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory, MAX_PATH_LEN);
+	GetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory, SR_MAX_PATH);
 	set_to_checkbox(hWnd, IDC_KEEP_INCOMPLETE, &m_opt->flags, OPT_KEEP_INCOMPLETE);
 	set_to_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, &m_opt->flags, OPT_SINGLE_FILE_OUTPUT);
-	GetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->output_file, MAX_PATH_LEN);
+	GetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->output_file, SR_MAX_PATH);
     }
     else
     {
@@ -375,26 +405,31 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
       - use old way
     */
 
-    if (saveload)
-    {
+    if (saveload) {
 	set_to_checkbox(hWnd, IDC_RECONNECT, &m_opt->flags, OPT_AUTO_RECONNECT);
 	set_to_checkbox(hWnd, IDC_MAKE_RELAY, &m_opt->flags, OPT_MAKE_RELAY);
+	m_opt->relay_port = GetDlgItemInt(hWnd, IDC_RELAY_PORT_EDIT, FALSE, FALSE);
+        m_opt->max_port = m_opt->relay_port+1000;
 	set_to_checkbox(hWnd, IDC_CHECK_MAX_BYTES, &m_opt->flags, OPT_CHECK_MAX_BYTES);
 	m_opt->maxMB_rip_size = GetDlgItemInt(hWnd, IDC_MAX_BYTES, FALSE, FALSE);
 	GetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl, MAX_URL_LEN);
 	GetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost, MAX_HOST_LEN);
 	GetDlgItemText(hWnd, IDC_USERAGENT, m_opt->useragent, MAX_USERAGENT_STR);
 	m_guiOpt->use_old_playlist_ret = get_checkbox(hWnd, IDC_USE_OLD_PLAYLIST_RET);
-    }
-    else
-    {
+    } else {
 	set_checkbox(hWnd, IDC_RECONNECT, OPT_FLAG_ISSET(m_opt->flags, OPT_AUTO_RECONNECT));
 	set_checkbox(hWnd, IDC_MAKE_RELAY, OPT_FLAG_ISSET(m_opt->flags, OPT_MAKE_RELAY));
+	SetDlgItemInt(hWnd, IDC_RELAY_PORT_EDIT, m_opt->relay_port, FALSE);
+#if defined (commentout)
+	/* GCS -- why? */
 	if (OPT_FLAG_ISSET(m_opt->flags, OPT_CHECK_MAX_BYTES))
 	{
 	    set_checkbox(hWnd, IDC_CHECK_MAX_BYTES, OPT_FLAG_ISSET(m_opt->flags, OPT_CHECK_MAX_BYTES));
 	    SetDlgItemInt(hWnd, IDC_MAX_BYTES, m_opt->maxMB_rip_size, FALSE);
 	}
+#endif
+	set_checkbox(hWnd, IDC_CHECK_MAX_BYTES, OPT_FLAG_ISSET(m_opt->flags, OPT_CHECK_MAX_BYTES));
+	SetDlgItemInt(hWnd, IDC_MAX_BYTES, m_opt->maxMB_rip_size, FALSE);
 	SetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl);
 	SetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost);
 	if (!m_opt->useragent[0])
@@ -443,7 +478,6 @@ BOOL populate_skin_list(HWND dlg)
 
 LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-
     switch(message)
     {
     case WM_INITDIALOG:
@@ -464,6 +498,7 @@ LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_PAINT:
 	{
 	    PAINTSTRUCT pt;
+
 	    HDC hdc = BeginPaint(hWnd, &pt);
 	    DEBUG2(( "skin:WM_PAINT\n" ));
 	    render_create_preview(m_pskin_list[m_curskin], hdc, SKIN_PREV_LEFT, 
@@ -517,21 +552,21 @@ LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	{
 	case IDC_BROWSE_OUTDIR:
 	    {
-		char temp_dir[MAX_PATH_LEN];
-		if (browse_for_folder(hWnd, "Select a folder", 0, temp_dir, MAX_PATH_LEN))
+		char temp_dir[SR_MAX_PATH];
+		if (browse_for_folder(hWnd, "Select a folder", 0, temp_dir, SR_MAX_PATH))
 		{
-		    strncpy(m_opt->output_directory, temp_dir, MAX_PATH_LEN);
+		    strncpy(m_opt->output_directory, temp_dir, SR_MAX_PATH);
 		    SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory);
 		}
 		return TRUE;
 	    }
 	case IDC_BROWSE_RIPSINGLE:
 	    {
-		char temp_dir[MAX_PATH_LEN];
-		if (browse_for_folder(hWnd, "Select a folder", 0, temp_dir, MAX_PATH_LEN))
+		char temp_fn[SR_MAX_PATH];
+		if (browse_for_file(hWnd, "Select a file", 0, temp_fn, SR_MAX_PATH))
 		{
-		    strncpy(m_opt->output_directory, temp_dir, MAX_PATH_LEN);
-		    SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory);
+		    strncpy(m_opt->output_file, temp_fn, SR_MAX_PATH);
+		    SetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->output_file);
 		}
 		return TRUE;
 	    }
@@ -540,12 +575,23 @@ LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		BOOL isset = get_checkbox(hWnd, IDC_CHECK_MAX_BYTES);
 		HWND hwndEdit = GetDlgItem(hWnd, IDC_MAX_BYTES);
 		SendMessage(hwndEdit, EM_SETREADONLY, !isset, 0);
+		PropSheet_Changed(GetParent(hWnd), hWnd);
+		break;
+	    }
+	case IDC_MAKE_RELAY:
+	    {
+		BOOL isset = get_checkbox(hWnd, IDC_MAKE_RELAY);
+		HWND hwndEdit = GetDlgItem(hWnd, IDC_RELAY_PORT_EDIT);
+		SendMessage(hwndEdit, EM_SETREADONLY, !isset, 0);
+		PropSheet_Changed(GetParent(hWnd), hWnd);
+		break;
 	    }
 
 	case IDC_SEPERATE_DIRS:
 	case IDC_RECONNECT:
 	case IDC_OVER_WRITE:
-	case IDC_MAKE_RELAY:
+	case IDC_RELAY_PORT_EDIT:
+	case IDC_MAX_BYTES:
 	case IDC_COUNT_FILES:
 	case IDC_DATE_STAMP:
 	case IDC_ADD_ID3:
@@ -618,7 +664,7 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     GetPrivateProfileString(APPNAME, "rip_single_path", "", opt->output_file, MAX_INI_LINE_LEN, filename);
 
     seperate_dirs = GetPrivateProfileInt(APPNAME, "seperate_dirs", TRUE, filename);
-    opt->relay_port = GetPrivateProfileInt(APPNAME, "relay_port", 8000, filename);
+    opt->relay_port = GetPrivateProfileInt(APPNAME, "relay_port", DEFAULT_RELAY_PORT, filename);
     opt->max_port = opt->relay_port+1000;
     auto_reconnect = GetPrivateProfileInt(APPNAME, "auto_reconnect", TRUE, filename);
     over_write_tracks = GetPrivateProfileInt(APPNAME, "over_write_tracks", FALSE, filename);

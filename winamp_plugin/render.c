@@ -413,9 +413,9 @@ void skindata_close(SKINDATA skind)
 
 BOOL bitmapdc_from_file(const char* skinfile, BITMAPDC* bmdc)
 {
-	char tempfile[MAX_PATH_LEN*5];
+	char tempfile[SR_MAX_PATH*5];
 	
-	memset(tempfile, 0, MAX_PATH_LEN*5);
+	memset(tempfile, 0, SR_MAX_PATH*5);
 	if (!winamp_get_path(tempfile))
 		return FALSE;
 	strcat(tempfile, SKIN_PATH);
@@ -441,31 +441,31 @@ void bitmapdc_close(BITMAPDC b)
 	b.bm = NULL;
 }
 
-BOOL render_create_preview(char* skinfile, HDC hdc, long left, long right)
+BOOL render_create_preview(char* skinfile, HDC hdc, long left, long top)
 {
-	BOOL b;
-	long orig_width = WIDTH(m_rect_background);
-	long orig_hight = HEIGHT(m_rect_background);
-	SKINDATA skind;
-	BITMAPDC tempdc;
+    BOOL b;
+    long orig_width = WIDTH(m_rect_background);
+    long orig_hight = HEIGHT(m_rect_background);
+    SKINDATA skind;
+    BITMAPDC tempdc;
 
-	if (!skindata_from_file(skinfile, &skind))
-		return FALSE;
+    if (!skindata_from_file(skinfile, &skind))
+	return FALSE;
 
-	tempdc.hdc = CreateCompatibleDC(skind.bmdc.hdc);
-	tempdc.bm = CreateCompatibleBitmap(skind.bmdc.hdc, orig_width, orig_hight);
-	SelectObject(tempdc.hdc, tempdc.bm);
+    tempdc.hdc = CreateCompatibleDC(skind.bmdc.hdc);
+    tempdc.bm = CreateCompatibleBitmap(skind.bmdc.hdc, orig_width, orig_hight);
+    SelectObject(tempdc.hdc, tempdc.bm);
 
-	if (!internal_render_do_paint(skind, tempdc.hdc))
-		return FALSE;
-	b = StretchBlt(hdc, left, right, orig_width / 2, orig_hight / 2,
-					tempdc.hdc, 0, 0, orig_width, orig_hight, 
-					SRCCOPY);
-	bitmapdc_close(tempdc);
-	skindata_close(skind);
-	if (!b)
-		return FALSE;
-	return TRUE;
+    if (!internal_render_do_paint(skind, tempdc.hdc))
+	return FALSE;
+    b = StretchBlt(hdc, left, top, orig_width / 2, orig_hight / 2,
+	tempdc.hdc, 0, 0, orig_width, orig_hight, 
+	SRCCOPY);
+    bitmapdc_close(tempdc);
+    skindata_close(skind);
+    if (!b)
+	return FALSE;
+    return TRUE;
 }
 
 BOOL render_do_paint(HDC hdc)
