@@ -18,6 +18,9 @@
 
 #if WIN32
 #include <winsock2.h>
+#ifdef errno
+#undef errno
+#endif
 #define errno WSAGetLastError()
 #else
 #include <sys/time.h>
