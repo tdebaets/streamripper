@@ -285,7 +285,7 @@ clip_to_cbuffer (int pos)
 {
     if (pos < 0) {
 	return 0;
-    } else if (pos > cbuffer_get_used(&m_cbuffer)) {
+    } else if ((u_long)pos > cbuffer_get_used(&m_cbuffer)) {
 	return cbuffer_get_used(&m_cbuffer);
     } else {
 	return (u_long) pos;

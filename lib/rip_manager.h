@@ -3,6 +3,8 @@
 
 #include "types.h"
 
+#define SRVERSION	"1.60-pre2"
+
 #define MAX_STATUS_LEN		256
 #define MAX_FILENAME_LEN	255
 #define MAX_STREAMNAME_LEN	1024
@@ -134,6 +136,7 @@ extern char			*rip_manager_get_error_str(int code);
 //
 extern u_short		rip_mananger_get_relay_port();	
 
+void set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt);
 
 #endif //__RIP_MANANGER_H__
 

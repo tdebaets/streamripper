@@ -792,3 +792,29 @@ error_code rip_manager_start(void (*status_callback)(int message, void *data),
 	return SR_SUCCESS;
 }
 
+void
+set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
+{
+    m_opt->relay_port = 8000;
+    m_opt->max_port = 18000;
+    m_opt->flags = OPT_AUTO_RECONNECT | 
+	    OPT_SEPERATE_DIRS | 
+	    OPT_SEARCH_PORTS |
+	    OPT_ADD_ID3;
+
+    strcpy(m_opt->output_directory, "./");
+    m_opt->proxyurl[0] = (char)NULL;
+    m_opt->url[0] = '\0';
+    strcpy(m_opt->useragent, "sr-POSIX/" SRVERSION);
+
+    // Defaults for splitpoint
+    // Times are in ms
+    m_opt->sp_opt.xs = 1;
+    m_opt->sp_opt.xs_min_volume = 1;
+    m_opt->sp_opt.xs_silence_length = 1000;
+    m_opt->sp_opt.xs_search_window_1 = 6000;
+    m_opt->sp_opt.xs_search_window_2 = 6000;
+    m_opt->sp_opt.xs_offset = 0;
+    m_opt->sp_opt.xs_padding_1 = 300;
+    m_opt->sp_opt.xs_padding_2 = 300;
+}
