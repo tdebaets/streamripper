@@ -23,9 +23,7 @@
 #ifndef _WIN32
 #include <sys/types.h>
 #include <netinet/in.h>
-
 #endif
-
 #include "types.h"
 #include "cbuffer.h"
 #include "findsep.h"
@@ -33,6 +31,7 @@
 #include "rip_manager.h"
 #include "ripstream.h"
 #include "debug.h"
+#include "filelib.h"
 
 /*********************************************************************************
  * Public functions
@@ -49,6 +48,9 @@ static error_code start_track(char *trackname);
 static void compute_cbuffer_size (SPLITPOINT_OPTIONS *sp_opt,
 				  int bitrate, int meta_interval);
 static int ms_to_bytes (int ms, int bitrate);
+static int bytes_to_secs (unsigned int bytes);
+static void parse_artist_title (char* artist, char* title, char* album, 
+		    int bufsize, char* trackname);
 
 /*********************************************************************************
  * Private Vars
@@ -66,6 +68,7 @@ static char                     m_drop_string[MAX_DROPSTRING_LEN]={'\0'};
 static SPLITPOINT_OPTIONS	*m_sp_opt;
 static int			m_bitrate;
 static int			m_meta_interval;
+static unsigned int		m_cue_sheet_bytes = 0;
 
 static int			m_cbuffer_size;
 static int			m_mi_to_cbuffer_start;
@@ -73,6 +76,7 @@ static int			m_mi_to_cbuffer_end;
 static int			m_sw_start_to_cbuffer_end;
 static int			m_sw_end_to_cbuffer_end;
 static int			m_min_search_win;
+
 
 /*
  * oddsock's id3 tags
@@ -124,6 +128,7 @@ ripstream_init (IO_GET_STREAM *in, char *no_meta_name,
     strcpy(m_drop_string, drop_string);
     m_bitrate = bitrate;
     m_meta_interval = in->getsize;
+    m_cue_sheet_bytes = 0;
 
     if ((m_getbuffer = malloc(in->getsize)) == NULL)
 	return SR_ERROR_CANT_ALLOC_MEMORY;
@@ -225,12 +230,15 @@ ripstream_rip()
     // if this is the first time we have received a track name, then we
     // can start the track
     else if (*m_current_track && *m_last_track == '\0') {
-	// Done say set first track on, because the first track 
-	// should not be ended. It will always be incomplete.
+	char artist[1024], title[1024], album[1024];
+	// The first track should not be ended. It will always be incomplete.
 	if ((ret = rip_manager_start_track(m_current_track)) != SR_SUCCESS) {
 	    debug_printf("start_track had bad return code %d", ret);
 	    return ret;
 	}
+	/* write the cue sheet */
+	parse_artist_title (artist, title, album, 1024, m_current_track);
+	filelib_write_cue(artist,title,0);
     }
 
     /* Copy the data into cbuffer */
@@ -269,10 +277,11 @@ ripstream_rip()
 	/* Write out previous track */
 	if ((ret = end_track(pos1, pos2, m_last_track)) != SR_SUCCESS)
 	    real_ret = ret;
+        m_cue_sheet_bytes += pos2;
 	if ((ret = start_track(m_current_track)) != SR_SUCCESS)
 	    real_ret = ret;
 	m_find_silence = -1;
-    }		
+    }
     if (m_find_silence >= 0) m_find_silence --;
 
     /* If buffer almost full, then post to caller */
@@ -285,8 +294,10 @@ ripstream_rip()
 	    return ret;
 	}
         /* Post to caller */
-	if (*m_current_track)
+	if (*m_current_track) {
+	    m_cue_sheet_bytes += extract_size;
 	    rip_manager_put_data(m_getbuffer, extract_size);
+	}
     }
 
     return real_ret;
@@ -441,6 +452,45 @@ BAIL:
 }
 
 
+void
+parse_artist_title (char* artist, char* title, char* album, 
+		    int bufsize, char* trackname)
+{
+    char *p1,*p2;
+
+    /* Parse artist, album & title. Look for a '-' in the track name,
+     * i.e. Moby - sux0rs (artist/track)
+     */
+    memset(album, '\000', bufsize);
+    memset(artist, '\000', bufsize);
+    memset(title, '\000', bufsize);
+    p1 = strchr(trackname, '-');
+    if (p1) {
+	strncpy(artist, trackname, p1-trackname);
+	p1++;
+	p2 = strchr(p1, '-');
+	if (p2) {
+	    if (*p1 == ' ') {
+		p1++;
+	    }
+	    strncpy(album, p1, p2-p1);
+	    p2++;
+	    if (*p2 == ' ') {
+		p2++;
+	    }
+	    strcpy(title, p2);
+	} else {
+	    if (*p1 == ' ') {
+		p1++;
+	    }
+	    strcpy(title, p1);
+	}
+    } else {
+        strcpy(artist, trackname);
+        strcpy(title, trackname);
+    }
+}
+
 error_code
 start_track(char *trackname)
 {
@@ -453,12 +503,22 @@ start_track(char *trackname)
     char title[1024] = "";
     char album[1024] = "";
     char bigbuf[1600] = "";
-    char *p1,*p2;
+    //char *p1,*p2;
     int	sent = 0;
     char buf[3] = "";
     unsigned long int framesize = 0;
+    unsigned int secs;
 
     if ((ret = rip_manager_start_track(trackname)) != SR_SUCCESS)
+        return ret;
+
+    /* Split the trackname string */
+    parse_artist_title (artist, title, album, 1024, trackname);
+
+    /* Dump to artist/title to cue sheet */
+    secs = bytes_to_secs(m_cue_sheet_bytes);
+    ret = filelib_write_cue(artist,title,secs);
+    if (ret != SR_SUCCESS)
         return ret;
 
     /* Oddsock's ID3 stuff, (oddsock@oddsock.org) */
@@ -484,14 +544,11 @@ start_track(char *trackname)
 	    return ret;
 	sent += sizeof(id3v2header);
 
+#if defined (commentout)
 	memset(&album, '\000',sizeof(album));
 	memset(&artist, '\000',sizeof(artist));
 	memset(&title, '\000',sizeof(title));
 
-	/* 
-	 * Look for a '-' in the track name
-	 * i.e. Moby - sux0rs (artist/track)
-	 */
 	p1 = strchr(trackname, '-');
 	if (p1) {
 	    strncpy(artist, trackname, p1-trackname);
@@ -513,6 +570,7 @@ start_track(char *trackname)
 		}
 		strcpy(title, p1);
 	    }
+#endif
 
 	    // Write ID3V2 frame1 with data
 	    strncpy(id3v2frame1.id, "TPE1", 4);
@@ -582,7 +640,9 @@ start_track(char *trackname)
 
 	    if ((ret = rip_manager_put_data(bigbuf, 1600-sent)) != SR_SUCCESS)
 		return ret;
+#if defined (commentout)
 	}
+#endif
     }
     m_on_first_track = FALSE;
     return SR_SUCCESS;
@@ -618,6 +678,17 @@ ms_to_bytes (int ms, int bitrate)
 	return bits / 8;
     else
 	return -((-bits)/8);
+}
+
+/* Assume positive, round toward zero */
+static int
+bytes_to_secs (unsigned int bytes)
+{
+#if defined (commentout)
+    int secs = ((bytes / m_bitrate) * 8) / 1000;
+#endif
+    int secs = (bytes / m_bitrate) / 125;
+    return secs;
 }
 
 static void

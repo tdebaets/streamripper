@@ -29,5 +29,6 @@ void		filelib_shutdown();
 error_code	filelib_set_output_directory(char *str);
 error_code	filelib_remove(char *filename);
 void filelib_set_max_filename_length (int mfl);
+error_code filelib_write_cue(char *artist, char* title, int secs);
 
 #endif //FILELIB

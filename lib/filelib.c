@@ -59,6 +59,7 @@ static FHANDLE 	m_file;
 static FHANDLE 	m_show_file;
 static FHANDLE  m_cue_file;
 static int 	m_count;
+static int      m_do_show;
 static char 	m_output_directory[MAX_PATH];
 static char 	m_incomplete_directory[MAX_PATH];
 static char 	m_filename_format[] = "%s%s.mp3";
@@ -92,6 +93,7 @@ filelib_init(BOOL do_count, BOOL keep_incomplete, BOOL do_show_file,
     m_keep_incomplete = keep_incomplete;
     memset(&m_output_directory, 0, MAX_PATH);
     m_show_name[0] = 0;
+    m_do_show = do_show_file;
 
     if (do_show_file) {
 	if (show_file_name && *show_file_name) {
@@ -159,7 +161,8 @@ void close_files()
     close_file (&m_cue_file);
 }
 
-BOOL file_exists(char *filename)
+BOOL
+file_exists(char *filename)
 {
 #if defined (commentout)
     FHANDLE f = OpenFile(filename);
@@ -182,7 +185,39 @@ BOOL file_exists(char *filename)
     return TRUE;
 }
 
-error_code filelib_start(char *filename)
+error_code
+filelib_write_cue(char *artist, char* title, int secs)
+{
+    static int track_no = 1;
+    int rc;
+    char buf[1024];
+
+    if (!m_do_show) return SR_SUCCESS;
+    if (!m_cue_file) return SR_SUCCESS;
+
+#if defined (commentout)
+    /* Oops, forgot that Jon doesn't like the easy way... */
+    fprintf (m_cue_file, "  TRACK %02d AUDIO\n",track_no++);
+    fprintf (m_cue_file, "    TITLE \"%s\"\n",title);
+    fprintf (m_cue_file, "    PERFORMER \"%s\"\n",artist);
+    fprintf (m_cue_file, "    INDEX 01 %02d:%02d\n",
+	secs / 60, secs % 60);
+#endif
+    rc = snprintf(buf,1024,"  TRACK %02d AUDIO\n",track_no++);
+    filelib_write(m_cue_file,buf,rc);
+    rc = snprintf(buf,1024,"    TITLE \"%s\"\n",title);
+    filelib_write(m_cue_file,buf,rc);
+    rc = snprintf(buf,1024,"    PERFORMER \"%s\"\n",artist);
+    filelib_write(m_cue_file,buf,rc);
+    rc = snprintf(buf,1024,"    INDEX 01 %02d:%02d\n",
+	secs / 60, secs % 60);
+    filelib_write(m_cue_file,buf,rc);
+
+    return SR_SUCCESS;
+}
+
+error_code
+filelib_start(char *filename)
 {
     char newfile[TEMP_STR_LEN];
     char tfile[TEMP_STR_LEN];
@@ -328,12 +363,18 @@ filelib_write_track(char *buf, u_long size)
 error_code
 filelib_write_show(char *buf, u_long size)
 {
+    if (!m_do_show) return SR_SUCCESS;
     if (m_show_file != INVALID_FHANDLE) {
         return filelib_write (m_show_file, buf, size);
     }
     if (*m_show_name) {
 	int rc;
 	set_show_filenames ();
+	rc = filelib_open_for_write (&m_cue_file, m_cue_name);
+	if (rc != SR_SUCCESS) {
+	    *m_show_name = 0;
+	    return rc;
+	}
 	rc = filelib_open_for_write (&m_show_file, m_show_name);
 	if (rc != SR_SUCCESS) {
 	    *m_show_name = 0;

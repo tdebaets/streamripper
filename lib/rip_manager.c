@@ -27,14 +27,6 @@
  * "sub-systems". In the end i just called it "rip_mananger".
  */
 
-/*
- * TODO:
- *
- * Display error message when we don't support a stream, right now real icecast streams just buffer forever
- * See what the fuck is up with wolf fm and proxy's
- * fix the incomplete directory overwride directory thing.
- */
- 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
