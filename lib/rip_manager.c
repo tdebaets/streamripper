@@ -54,15 +54,7 @@
 #include "ripstream.h"
 #include "threadlib.h"
 #include "debug.h"
-
-#if __UNIX__
-	#include <unistd.h>
-	#define Sleep(x) usleep(x)
-#elif __BEOS__
-	#define Sleep(x) snooze(x)
-#elif WIN32
-#include <process.h>
-#endif
+#include "compat.h"
 
 /******************************************************************************
  * Public functions
@@ -84,7 +76,6 @@ static error_code		start_track(char *track);
 static error_code		end_track(char *track);
 static error_code		put_data(char *buf, int size);
 static error_code		start_ripping();
-static error_code		rip_stream();
 static void				destroy_subsystems();
 
 
@@ -103,7 +94,7 @@ static IO_PUT_STREAM		m_ripout;		// Generic output interface
 static void					(*m_status_callback)(int message, void *data);
 static BOOL					m_ripping = FALSE;
 static u_long				m_bytes_ripped;
-static HEVENT				m_started_event = NULL;	// to prevent deadlocks when ripping is stopped before its
+static HSEM				m_started_sem;	// to prevent deadlocks when ripping is stopped before its
 													// started.
 
 /*
@@ -222,7 +213,6 @@ error_code start_track(char *trackname)
 	char temptrack[MAX_TRACK_LEN];
 	int ret;
 	
-	char *body = _varg2str("start_track: %s\n", trackname);
 	strcpy(temptrack, trackname);
 	DEBUG0(("start_track: %s\n", trackname));
 
@@ -264,7 +254,6 @@ error_code put_data(char *buf, int size)
 {
 	relaylib_send(buf, size);
 	filelib_write(buf, size);
-//	printf(".");
 	
 	m_ripinfo.filesize += size;
 	m_bytes_ripped += size;
@@ -365,7 +354,7 @@ void ripthread(void *notused)
 	if ((ret = start_ripping()) != SR_SUCCESS)
 	{
 		DEBUG0(("ripthread:start_ripping failed!"));
-		threadlib_signel_event(&m_started_event);
+		threadlib_signel_sem(&m_started_sem);
 		DEBUG0(("ripthread:posting error"));
 		post_error(ret);
 		DEBUG0(("ripthread:done posting error"));
@@ -377,7 +366,7 @@ void ripthread(void *notused)
 	m_status_callback(RM_STARTED, (void *)NULL);
 	post_status(RM_STATUS_BUFFERING);
 
-	threadlib_signel_event(&m_started_event);
+	threadlib_signel_sem(&m_started_sem);
 
 	while(TRUE)
 	{
@@ -483,7 +472,6 @@ DONE:
 	m_status_callback(RM_DONE, &m_ripinfo);
 	DEBUG0(("ripthread:exiting thread"));
 	m_ripping = FALSE;
-	threadlib_endthread(&m_hthread);
 }
 
 
@@ -505,8 +493,8 @@ void rip_manager_stop()
 	//
 	// Make sure the ripping started before we try to stop
 	//
-	DEBUG0(("***rip_manager_stop:m_started_event"));
-	threadlib_waitfor_event(&m_started_event);
+	DEBUG0(("***rip_manager_stop:m_started_sem"));
+	threadlib_waitfor_sem(&m_started_sem);
 	DEBUG0(("***rip_manager_stop:done starting"));
 
 	m_ripping = FALSE;
@@ -519,7 +507,7 @@ void rip_manager_stop()
 	DEBUG0(("***rip_manager_stop:ripthread closed"));
 
 	destroy_subsystems();
-	threadlib_destroy_event(&m_started_event);
+	threadlib_destroy_sem(&m_started_sem);
 }
 
 void destroy_subsystems()
@@ -708,7 +696,7 @@ error_code rip_manager_start(void (*status_callback)(int message, void *data),
 
 	int ret = 0;
 	DEBUG0(("rip_manager_start:being"));
-	m_started_event = threadlib_create_event();
+	m_started_sem = threadlib_create_sem();
 	if (m_ripping)
 		return SR_SUCCESS;		// to prevent reentrenty
 
@@ -746,3 +734,4 @@ error_code rip_manager_start(void (*status_callback)(int message, void *data),
 
 	return SR_SUCCESS;
 }
+

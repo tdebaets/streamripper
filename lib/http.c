@@ -78,7 +78,8 @@ error_code httplib_parse_url(const char *url, URLINFO *urlinfo)
 	//
 	if (strchr(url, ':') != NULL)
 	{
-		ret = sscanf(url, "%[^:]:%hu/%s", urlinfo->host, (unsigned int*)&urlinfo->port, urlinfo->path+1);
+		ret = sscanf(url, "%[^:]:%hu/%s", urlinfo->host, 
+			(short unsigned int*)&urlinfo->port, urlinfo->path+1);
 		if (urlinfo->port < 1) return SR_ERROR_PARSE_FAILURE;
 		ret -= 1;
 	}
@@ -432,3 +433,4 @@ char* b64enc(const char *inbuf, int size)
 
         return string;
 }
+

@@ -162,7 +162,7 @@ void print_status()
 			   m_curinfo.server_name,
 			   m_curinfo.bitrate,
 			   m_curinfo.meta_interval);
-		if(!GET_NO_RELAY(m_opt.flags)
+		if(GET_MAKE_RELAY(m_opt.flags))
 		{
 			fprintf(stderr, "relay port: %d\n"
 					"[%14s]\r",
@@ -226,6 +226,7 @@ void print_usage()
         fprintf(stderr, "        -l <seconds>   - number of seconds to run, otherwise runs forever\n");
         fprintf(stderr, "        -q             - add sequence number to output file\n");
         fprintf(stderr, "        -i             - dont add ID3V1 Tags to output file\n");
+        fprintf(stderr, "        -u <useragent> - Use a different UserAgent then \"Streamripper\"\n");
 
 }
 
@@ -264,7 +265,7 @@ void parse_arguments(int argc, char **argv)
                 if (argv[i][0] != '-')
                         continue;
 
-                c = strchr("dpl", argv[i][1]);
+                c = strchr("dplu", argv[i][1]);
                 if (c != NULL)
                         if ((i == (argc-1)) || (argv[i+1][0] == '-'))
                         {
@@ -311,13 +312,17 @@ void parse_arguments(int argc, char **argv)
                                 m_opt.flags ^= OPT_AUTO_RECONNECT;
                                 break;
                         case 'v':
-								printf("streamripper 1.0.5 by Jon Clegg <jonclegg@yahoo.com>\n");
-								exit(0);
+				printf("streamripper 1.0.5 by Jon Clegg <jonclegg@yahoo.com>\n");
+				exit(0);
                         case 'l':
-								i++;
-								time(&m_stop_time);
-								m_stop_time += atoi(argv[i]);
-								break;
+				i++;
+				time(&m_stop_time);
+				m_stop_time += atoi(argv[i]);
+				break;
+                        case 'u':
+				i++;
+				strncpy(m_opt.useragent, argv[i], MAX_USERAGENT_STR);
+				break;
                 }
         }
 }

@@ -44,22 +44,7 @@
 #include "socklib.h"
 #include "threadlib.h"
 #include "debug.h"
-
-
-#ifdef __UNIX__
-#define Sleep		usleep
-#define closesocket	close
-#define SOCKET_ERROR	-1
-#define WSAGetLastError() errno
-#elif __BEOS__
-#define Sleep(x)	snooze(x*100)
-#define SOCKET_ERROR	-1
-#define WSAGetLastError() errno
-#define IPPROTO_IP	IPPROTO_TCP
-#elif WIN32
-#define EAGAIN		WSAEWOULDBLOCK
-#define EWOULDBLOCK	WSAEWOULDBLOCK
-#endif
+#include "compat.h"
 
 /*********************************************************************************
  * Public functions
@@ -81,11 +66,11 @@ static error_code	try_port(u_short port);
 /*********************************************************************************
  * Private vars 
  *********************************************************************************/
-static HEVENT	m_event_not_connected = NULL;
-static char		m_http_header[MAX_HEADER_LEN];
+static HSEM	m_sem_not_connected;
+static char	m_http_header[MAX_HEADER_LEN];
 static SOCKET	m_hostsock = 0;
 static SOCKET	m_listensock = 0;
-static BOOL		m_running = FALSE;
+static BOOL	m_running = FALSE;
 static THREAD_HANDLE m_hthread;
 
 BOOL relaylib_isrunning()
@@ -107,8 +92,9 @@ error_code	relaylib_set_response_header(char *http_header)
 #ifndef WIN32
 void catch_pipe(int code)
 {
-	m_hostsock = 0;
-	m_connected = FALSE;
+	//m_hostsock = 0;
+	//m_connected = FALSE;
+	// JCBUG, not sure what to do about this
 }
 #endif
 
@@ -130,14 +116,13 @@ error_code relaylib_init(BOOL search_ports, int relay_port, int max_port, int *p
 	signal(SIGPIPE, catch_pipe);
 #endif
 
-	m_event_not_connected = threadlib_create_event();
-	if (m_event_not_connected == NULL)
-		return SR_ERROR_CANT_CREATE_EVENT;
+	m_sem_not_connected = threadlib_create_sem();
+
 	//
 	// NOTE: we need to signel it here in case we try to destroy
 	// relaylib before the thread starts!
 	//
-	threadlib_signel_event(&m_event_not_connected);
+	threadlib_signel_sem(&m_sem_not_connected);
 
 	*port_used = 0;
 	if (!search_ports)
@@ -174,7 +159,6 @@ error_code try_port(u_short port)
 	
 	if (bind(m_listensock, (struct sockaddr *)&local, sizeof(local)) == SOCKET_ERROR)
 	{
-		int x = WSAGetLastError();
 		closesocket(m_listensock);
 		return SR_ERROR_CANT_BIND_ON_PORT;
 	}
@@ -198,19 +182,19 @@ void relaylib_shutdown()
 		return;
 	}
 	m_running = FALSE;
-	threadlib_signel_event(&m_event_not_connected);
+	threadlib_signel_sem(&m_sem_not_connected);
 	if (closesocket(m_listensock) == SOCKET_ERROR)
-	{
-		int x = WSAGetLastError();
+	{	
+		// JCBUG, what can we do?
 	}
 	if (m_hostsock && closesocket(m_hostsock) == SOCKET_ERROR)
 	{
-		int x = WSAGetLastError();
+		// JCBUG, what can we do?
 	}
 	memset(m_http_header, 0, MAX_HEADER_LEN);
 	DEBUG2(("waiting for relay close"));
 	threadlib_waitforclose(&m_hthread);
-	threadlib_destroy_event(&m_event_not_connected);
+	threadlib_destroy_sem(&m_sem_not_connected);
 	m_hostsock = m_listensock = 0;
 
 	DEBUG1(("relaylib_shutdown:done!"));
@@ -245,9 +229,9 @@ void thread_accept(void *notused)
 		// when a connection gets dropped, or when streamripper shuts down
 		// this event will get signaled
 		//
-		DEBUG1(("***thread_accept:threadlib_waitfor_event"));
-		threadlib_waitfor_event(&m_event_not_connected);
-		DEBUG1(("***thread_accept:threadlib_waitfor_event returned!"));
+		DEBUG1(("***thread_accept:threadlib_waitfor_sem"));
+		threadlib_waitfor_sem(&m_sem_not_connected);
+		DEBUG1(("***thread_accept:threadlib_waitfor_sem returned!"));
 		if (!m_running)
 			break;
 
@@ -266,11 +250,10 @@ void thread_accept(void *notused)
 		ret = send(m_hostsock, m_http_header, strlen(m_http_header), 0);
 		if (ret < 0)
 		{
-			threadlib_signel_event(&m_event_not_connected);	// go back to accept
+			threadlib_signel_sem(&m_sem_not_connected);	// go back to accept
 		}
 	}
 	m_running = FALSE;
-	threadlib_endthread(&m_hthread);
 }
 
 //
@@ -281,14 +264,14 @@ error_code relaylib_send(char *data, int len)
 {
 	int ret;
 
-	if (threadlib_event_signaled(&m_event_not_connected))
+	if (threadlib_sem_signaled(&m_sem_not_connected))
 		return SR_ERROR_HOST_NOT_CONNECTED;
 
 	ret = send(m_hostsock, data, len, 0);
 	if (ret < 0)
 	{
 		m_hostsock = 0;
-		threadlib_signel_event(&m_event_not_connected);
+		threadlib_signel_sem(&m_sem_not_connected);
 		return SR_ERROR_HOST_NOT_CONNECTED;
 	}
 	return SR_SUCCESS;

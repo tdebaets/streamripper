@@ -256,3 +256,4 @@ BOOL header_sane(mp3_header_t *mh)
 
 	return FALSE;	
 }
+

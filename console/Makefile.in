@@ -30,11 +30,9 @@ LIBOBJS =  $(LIBPATH)/cbuffer.o \
 	$(LIBPATH)/http.o \
 	$(LIBPATH)/inet.o \
 	$(LIBPATH)/threadlib.o \
-	$(LIBPATH)/live365info.o \
 	$(LIBPATH)/mpeg.o \
 	$(LIBPATH)/findsep.o \
 	$(LIBPATH)/ripstream.o \
-	$(LIBPATH)/riplive365.o \
 	$(LIBPATH)/ripshout.o \
 	$(LIBPATH)/relaylib.o \
 	$(LIBPATH)/rip_manager.o

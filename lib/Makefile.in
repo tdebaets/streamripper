@@ -18,11 +18,9 @@ LIBOBJS =  cbuffer.o \
 	http.o \
 	inet.o \
 	threadlib.o \
-	live365info.o \
 	mpeg.o \
 	findsep.o \
 	ripstream.o \
-	riplive365.o \
 	rip_manager.o \
 	relaylib.o \
 	ripshout.o
@@ -56,9 +54,6 @@ inet.o:	inet.c inet.h
 threadlib.o:	threadlib.c threadlib.h 
 	$(CC) $(COMPILE_CFLAGS) -c -o threadlib.o threadlib.c
 
-live365info.o:	live365info.c live365info.h 
-	$(CC) $(COMPILE_CFLAGS) -c -o live365info.o live365info.c
-
 mpeg.o:	mpeg.c mpeg.h 
 	$(CC) $(COMPILE_CFLAGS) -c -o mpeg.o mpeg.c
 
@@ -67,9 +62,6 @@ findsep.o:	findsep.c findsep.h
 
 ripstream.o:	ripstream.c ripstream.h 
 	$(CC) $(COMPILE_CFLAGS) -c -o ripstream.o ripstream.c
-
-riplive365.o: riplive365.c riplive365.h 
-	$(CC) $(COMPILE_CFLAGS) -c -o riplive365.o riplive365.c
 
 ripshout.o: ripshout.c ripshout.h 
 	$(CC) $(COMPILE_CFLAGS) -c -o ripshout.o ripshout.c

@@ -37,30 +37,9 @@
 #elif __UNIX__
     #include <unistd.h>
 	#define Sleep(x) usleep(x)
-	#define InitializeCriticalSection(mutex) \
-		pthread_mutex_init(mutex, NULL)
-	#define EnterCriticalSection(mutex) \
-		pthread_mutex_lock(mutex)
-	#define DeleteCriticalSection(mutex) \
-		pthread_mutex_destroy(mutex)
-	#define LeaveCriticalSection(mutex) \
-		pthread_mutex_unlock(mutex)
 	#define beginthread(thread, callback) \
 		pthread_create(thread, NULL, \
                           (void *)callback, (void *)NULL)
-#elif __BEOS__
-	#define Sleep(x) snooze(x*100)
-	#define InitializeCriticalSection(mutex) \
-		((*mutex) = create_sem(1, "mymutex"))
-	#define EnterCriticalSection(mutex) \
-		acquire_sem((*mutex))
-	#define LeaveCriticalSection(mutex) \
-		release_sem((*mutex))
-	#define DeleteCriticalSection(mutex) \
-		delete_sem((*mutex))
-	#define beginthread(thread, callback) \
-		resume_thread( \
-		((*thread) = spawn_thread((int32 (*)(void*))callback, "sr_thread", 60, NULL)))
 #endif
 
 
@@ -72,78 +51,58 @@ BOOL		threadlib_isrunning(THREAD_HANDLE *thread);
 void		threadlib_waitforclose(THREAD_HANDLE *thread);
 void		threadlib_endthread(THREAD_HANDLE *thread);
 
-HEVENT		threadlib_create_event();
-error_code	threadlib_waitfor_event(HEVENT *e);
-error_code	threadlib_signel_event(HEVENT *e);
-void		threadlib_destroy_event(HEVENT *e);
-BOOL		threadlib_event_signaled(HEVENT *e);
+HSEM		threadlib_create_sem();
+error_code	threadlib_waitfor_sem(HSEM *e);
+error_code	threadlib_signel_sem(HSEM *e);
+void		threadlib_destroy_sem(HSEM *e);
+BOOL		threadlib_sem_signaled(HSEM *e);
 
 
 error_code threadlib_beginthread(THREAD_HANDLE *thread, void (*callback)(void *))
 {
 	DEBUG1(("starting thread"));
 
-	thread->_event = threadlib_create_event();
-	thread->thread_handle = (HANDLE) _beginthread(callback, 0, NULL);
-	if (thread->thread_handle == NULL)
-		return SR_ERROR_CANT_CREATE_THREAD;
+	BeginThread(thread->thread_handle, callback);
+	//if (thread->thread_handle == NULL)	// don't feel like porting this
+	//	return SR_ERROR_CANT_CREATE_THREAD;
 
 	return SR_SUCCESS;
-}
-
-BOOL threadlib_isrunning(THREAD_HANDLE *thread)
-{
-	return thread->thread_handle != NULL;
 }
 
 void threadlib_waitforclose(THREAD_HANDLE *thread)
 {
-	WaitForSingleObject(thread->_event, INFINITE);
-	thread->thread_handle = NULL;
+	WaitForThread(thread->thread_handle);
 }
 
-void threadlib_endthread(THREAD_HANDLE *thread)
+HSEM threadlib_create_sem()
 {
-	SetEvent(thread->_event);
-	_endthread();
+	HSEM s;
+	SemInit(s);
+	return s;
 }
 
-
-HEVENT threadlib_create_event()
+BOOL threadlib_sem_signaled(HSEM *e)
 {
-	return CreateEvent(NULL, FALSE, FALSE, NULL);
+	int sig = 0;
+	SemIsSignaled(*e, &sig);
+	return (BOOL)sig;
 }
 
-BOOL threadlib_event_signaled(HEVENT *e)
-{
-	DWORD ret;
-	if (!e)
-		return FALSE;
-
-	ret = WaitForSingleObject(*e, 0);
-	return ret == WAIT_OBJECT_0;
-}
-
-
-error_code threadlib_waitfor_event(HEVENT *e)
+error_code threadlib_waitfor_sem(HSEM *e)
 {
 	if (!e)
 		return SR_ERROR_INVALID_PARAM;
-	if (WaitForSingleObject(*e, INFINITE) != WAIT_OBJECT_0)
-		return SR_ERROR_CANT_WAIT_ON_THREAD;
-
+	SemWait(*e);
 	return SR_SUCCESS;
 }
-error_code threadlib_signel_event(HEVENT *e)
+error_code threadlib_signel_sem(HSEM *e)
 {
 	if (!e)
 		return SR_ERROR_INVALID_PARAM;
-
-	SetEvent(*e);
-
+	SemPost(*e);
 	return SR_SUCCESS;
 }
-void threadlib_destroy_event(HEVENT *e)
+void threadlib_destroy_sem(HSEM *e)
 {
-	CloseHandle(*e);
+	DestroyThread(*e);
 }

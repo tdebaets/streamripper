@@ -31,7 +31,7 @@ if test "$THREADLIBS" = no; then
 fi
 
 if test "$THREADLIBS" = no; then
-        AC_MSG_ERROR(Your system doesn't seem to support posix threads. Icecast 1.3 and above won't work without threads support)
+        AC_MSG_ERROR(Your system doesn't seem to support posix threads)
         exit
 fi
 

@@ -16,19 +16,10 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if WIN32
-#include <direct.h>
-#include <windows.h>
-#else
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
-#endif
-
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include "compat.h"
 #include "filelib.h"
 #include "util.h"
 #include "debug.h"
@@ -56,25 +47,11 @@ static BOOL			file_exists(char *filename);
 /*********************************************************************************
  * Private Vars
  *********************************************************************************/
-#if WIN32
-#define MOVE_FILE(oldfile, newfile)	MoveFile(oldfile, newfile)
-#define CLOSE_FILE(file)			CloseHandle(file)
-#define REMOVE_FILE(file)           DeleteFile(file)
-#define HFILE						HANDLE
-#else
-#define MOVE_FILE(oldfile, newfile)	(!rename(oldfile, newfile))
-#define CLOSE_FILE(file)			close(file)
-#define REMOVE_FILE(file)           (!unlink(file))
-#define HFILE						int
-#define DWORD						unsigned long
-#endif
-
-
-static HFILE m_file;
-static int m_count;
-static char m_output_directory[MAX_PATH];
-static char m_incomplete_directory[MAX_PATH];
-static char m_filename_format[] = "%s%s.mp3";
+static FHANDLE 	m_file;
+static int 	m_count;
+static char 	m_output_directory[MAX_PATH];
+static char 	m_incomplete_directory[MAX_PATH];
+static char 	m_filename_format[] = "%s%s.mp3";
 static BOOL	m_keep_incomplete = TRUE;
 
 
@@ -94,7 +71,7 @@ error_code mkdir_if_needed(char *str)
 
 error_code filelib_init(BOOL do_count, BOOL keep_incomplete)
 {
-	m_file = (HFILE)NULL;
+	m_file = INVALID_FHANDLE;
 	m_count = do_count ? 1 : -1;
 	m_keep_incomplete = keep_incomplete;
 	memset(&m_output_directory, 0, MAX_PATH);
@@ -128,26 +105,21 @@ void close_file()
 {
 	if (m_file)
 	{
-		CLOSE_FILE(m_file);
-		m_file = (HFILE)NULL;
+		CloseFile(m_file);
+		m_file = INVALID_FHANDLE;
 	}
 }
 
 BOOL file_exists(char *filename)
 {
-	HANDLE f = CreateFile(filename, 
-					GENERIC_READ,              // open for reading 
-					FILE_SHARE_READ |           // share for reading 
-					FILE_SHARE_WRITE,
-					NULL,                      // no security 
-					OPEN_EXISTING,             // existing file only 
-					FILE_ATTRIBUTE_NORMAL,     // normal file 
-					NULL);                     // no attr. template 
-	CloseHandle(f);
+	FHANDLE f = OpenFile(filename);
 
- 	if (f == INVALID_HANDLE_VALUE)
+ 	if (f == INVALID_FHANDLE)
+	{
 		return FALSE;
+	}
 
+	CloseFile(f);
 	return TRUE;
 }
 
@@ -173,7 +145,7 @@ error_code filelib_start(char *filename)
 			n++;
 		}
 		if (strcmp(newfile, oldfile) != 0)
-			MOVE_FILE(newfile, oldfile);
+			MoveFile(newfile, oldfile);
 	}
 
 #if WIN32	
@@ -189,8 +161,8 @@ error_code filelib_start(char *filename)
 	}
 #else
 	// Needs to be better tested
-	m_file = open(newfile, O_RDWR | O_CREAT, S_IRWXU | S_IRGRP | S_IROTH);
-	if (m_file == -1)
+	m_file = OpenFile(newfile);
+	if (m_file == INVALID_FHANDLE)
 	{
 		return SR_ERROR_CANT_CREATE_FILE;
 	}
@@ -205,7 +177,7 @@ error_code filelib_start(char *filename)
 error_code filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath)
 {
 	BOOL ok_to_write = TRUE;
-	HFILE test_file;
+	FHANDLE test_file;
 	char newfile[MAX_FILENAME];
 	char oldfile[MAX_FILENAME];
 
@@ -239,14 +211,14 @@ error_code filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *f
 #endif
 			ok_to_write = TRUE;
 		else
-			CLOSE_FILE(test_file);
+			CloseFile(test_file);
 	}
 
 	if (ok_to_write)
 	{
 		// JCBUG -- clean this up
-		int x = REMOVE_FILE(newfile);
-		x = MOVE_FILE(oldfile, newfile);
+		int x = DeleteFile(newfile);
+		x = MoveFile(oldfile, newfile);
 //		if (!MOVE_FILE(oldfile, newfile))
 //		{
 //			int x = GetLastError();
@@ -301,7 +273,7 @@ error_code filelib_remove(char *filename)
 	char delfile[MAX_FILENAME];
 	
 	sprintf(delfile, m_filename_format, m_output_directory, filename);
-	if (!REMOVE_FILE(delfile))
+	if (!DeleteFile(delfile))
 		return SR_ERROR_FAILED_TO_MOVE_FILE;
 
 	return SR_SUCCESS;
