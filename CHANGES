@@ -1,3 +1,10 @@
+New for 1.60.14
+---------------
+* Add signal handler to SIGTERM.
+* Fix for SR_ERROR_NOT_SHOUTCAST_STREAM when \r\n\r\n exists before
+  icy portion of header.
+* Add check for -lsem to configure script
+
 New for 1.60.13
 ---------------
 Aug 21, 2004 (GCS)

@@ -43,6 +43,9 @@ fi
 
 AC_SUBST(THREADLIBS)
 
+dnl Check for semaphore library
+AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(sem, sem_init,))
+
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
