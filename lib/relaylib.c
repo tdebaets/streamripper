@@ -77,6 +77,7 @@ static HSEM		m_sem_not_connected;
 static char		m_http_header[MAX_HEADER_LEN];
 static SOCKET	m_listensock = SOCKET_ERROR;
 static BOOL		m_running = FALSE;
+static BOOL		m_initdone = FALSE;
 static THREAD_HANDLE m_hthread;
 static struct hostsocklist_t
 {
@@ -211,6 +212,8 @@ relaylib_init(BOOL search_ports, int relay_port, int max_port, int *port_used, c
     signal(SIGPIPE, catch_pipe);
 #endif
 
+   if (m_initdone != TRUE)
+   {
     m_sem_not_connected = threadlib_create_sem();
 
     m_sem_listlock = threadlib_create_sem();
@@ -221,6 +224,9 @@ relaylib_init(BOOL search_ports, int relay_port, int max_port, int *port_used, c
     // relaylib before the thread starts!
     //
     threadlib_signel_sem(&m_sem_not_connected);
+    
+    m_initdone = TRUE;
+   }
 
     *port_used = 0;
     if (!search_ports)
@@ -304,6 +310,7 @@ void relaylib_shutdown()
     threadlib_waitforclose(&m_hthread);
     destroy_all_hostsocks();
     threadlib_destroy_sem(&m_sem_not_connected);
+    m_initdone = FALSE;
 
     DEBUG1(("relaylib_shutdown:done!"));
 }
@@ -420,6 +427,12 @@ relaylib_send(char *data, int len)
     BOOL good;
     error_code err = SR_SUCCESS;
 
+	if (m_initdone != TRUE)
+	{
+		// Do nothing if relaylib not in use
+		return SR_ERROR_HOST_NOT_CONNECTED;
+	}
+	
     threadlib_waitfor_sem(&m_sem_listlock);
     ptr = m_hostsocklist;
     if (ptr != NULL)
