@@ -560,16 +560,6 @@ error_code start_ripping()
 	set_output_directory();
 
  	/*
- 	 * Ahh.. live365. They call there server's Nanocaster (i belive
- 	 * it's actually icecast+mods). Anyway, as of 5/10/2001 (aprox)
- 	 * I'm not allowed to let people do this, so you'll notice two
-	 * lines below which "disable" this feature. don't uncomment those 
-	 * lines :), or do, just don't tell me about it, heh.
- 	 *
- 	 * Hopefully soon i'll have a real plugin system. As I said earlyer
-	 * this file just grew out of a test harness and the plugin thing
-	 * never got finished. 
-	 * 
  	 * currently it works like this: 
 	 * ripshout and riplive are responsable for providing a track name
 	 * and pulling data. ripshout, is responsable for seeing when a track

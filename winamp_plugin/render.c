@@ -100,15 +100,15 @@ typedef struct SKINDATAst
 /*********************************************************************************
  * Private functions
  *********************************************************************************/
-BOOL internal_render_do_paint(SKINDATA skind, HDC outhdc);
+static BOOL internal_render_do_paint(SKINDATA skind, HDC outhdc);
 
-VOID CALLBACK on_timer(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
-BOOL TrimTextOut(HDC hdc, int x, int y, int maxwidth, char *str);
+static VOID CALLBACK on_timer(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
+static BOOL TrimTextOut(HDC hdc, int x, int y, int maxwidth, char *str);
 
-BOOL skindata_from_file(const char* skinfile, SKINDATA* pskind);
-void skindata_close(SKINDATA skind);
-BOOL bitmapdc_from_file(const char* skinfile, BITMAPDC* bmdc);
-void bitmapdc_close(BITMAPDC b);
+static BOOL skindata_from_file(const char* skinfile, SKINDATA* pskind);
+static void skindata_close(SKINDATA skind);
+static BOOL bitmapdc_from_file(const char* skinfile, BITMAPDC* bmdc);
+static void bitmapdc_close(BITMAPDC b);
 
 
 
