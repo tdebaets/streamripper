@@ -84,6 +84,29 @@ will be copied to both songs.
 
 
 
+Usage examples
+--------------
+1) Each of my songs contain about 5 seconds of the previous song.
+How can I fix this?
+
+./streamripper URL --xs_offset=5000
+
+2) Each of my songs contain about 5 seconds of the next song.  
+How can I fix?
+
+./streamripper URL --xs_offset=-5000
+
+3) Each of my songs contain between 5 and 10 seconds of the previous 
+song, but it depends on the song.  I want to include all of this 
+zone within both songs, and edit them later.
+
+./streamripper URL --xs_offset=7500 --xs_padding=2500:2500
+
+or
+
+./streamripper URL --xs_offset=5000 --xs_padding=0:5000
+
+
 Future plans
 ------------
 Here are some ideas that are still not implemented.
