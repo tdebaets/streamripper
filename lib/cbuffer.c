@@ -42,48 +42,49 @@ static void	increment(CBUFFER *buffer, u_long *index);
 static u_long   get_read_ptr (CBUFFER *buffer, u_long pos);
 
 
-error_code	cbuffer_init(CBUFFER *buffer, unsigned long size)
+error_code
+cbuffer_init(CBUFFER *buffer, unsigned long size)
 {
-   if (size == 0) {
-		return SR_ERROR_INVALID_PARAM;
-   }
-   if (size == 0) {
-      buffer->size = 0;
-      buffer->buf = NULL;
-      reset(buffer);
-   } else {
-      buffer->size = size;
-      buffer->buf = (char *)malloc(size);
-      reset(buffer);
-   }
+    if (size == 0) {
+        return SR_ERROR_INVALID_PARAM;
+    }
+    if (size == 0) {
+        buffer->size = 0;
+        buffer->buf = NULL;
+        reset(buffer);
+    } else {
+        buffer->size = size;
+        buffer->buf = (char *)malloc(size);
+        reset(buffer);
+    }
 
-   return SR_SUCCESS;
+    return SR_SUCCESS;
 }
 
-void cbuffer_destroy(CBUFFER *buffer)
+void
+cbuffer_destroy(CBUFFER *buffer)
 {
-	if (buffer->buf)
-	{
-		free(buffer->buf);
-		buffer->buf = NULL;
-	}
+    if (buffer->buf)
+    {
+	free(buffer->buf);
+	buffer->buf = NULL;
+    }
 }
 
 // GCS -- Inefficient
-error_code cbuffer_fastforward (CBUFFER *buffer, u_long count)
+error_code
+cbuffer_fastforward (CBUFFER *buffer, u_long count)
 {
-	u_long i;	
-	
-	for(i = 0; i < count; i++)
-	{
-		if (buffer->item_count > 0)
-			buffer->item_count--;
-		else
-			return SR_ERROR_BUFFER_EMPTY;
+    u_long i;	
 
-		increment(buffer, &buffer->read_index);
-	}
-	return SR_SUCCESS;
+    for(i = 0; i < count; i++) {
+	if (buffer->item_count > 0)
+	    buffer->item_count--;
+	else
+	    return SR_ERROR_BUFFER_EMPTY;
+	increment(buffer, &buffer->read_index);
+    }
+    return SR_SUCCESS;
 }
 
 error_code
