@@ -11,4 +11,5 @@ autoheader
 cd ..
 
 rm -f config.cache
-./configure
+## ./configure
+./configure --enable-static

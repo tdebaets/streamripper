@@ -1,6 +1,10 @@
 ## Process this file with automake to produce Makefile.in
 
+AM_CPPFLAGS = @CPPFLAGS@
+
+if STATIC
 SUBDIRS = libmad-0.15.1b
+endif
 
 bin_PROGRAMS = streamripper
 streamripper_SOURCES = \
@@ -113,12 +117,6 @@ EXTRA_DIST = \
 	$(libmad_manifest) \
 	$(man_MANS)
 
-## dist-hook:
-##	tar xzv -C $(distdir) -f ../../libmad-0.15.1b.tar.gz
-
 DIST_SUBDIRS = 
 
-AM_CPPFLAGS = -Ilib -Ilibmad-0.15.1b -D__UNIX__
-
-streamripper_LDADD = \
-	libmad-0.15.1b/.libs/libmad.a @THREADLIBS@ @LTLIBICONV@
+streamripper_LDADD = @STATIC_LIBMAD@ @THREADLIBS@ @LTLIBICONV@

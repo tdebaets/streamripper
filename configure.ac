@@ -19,10 +19,19 @@ dnl Checks for libraries.
 dnl Replace `main' with a function in -lm:
 AC_CHECK_LIB(m, main)
 
-AC_CONFIG_SUBDIRS(libmad-0.15.1b)
+dnl Configure options
+AC_ARG_ENABLE(static,
+    [  --enable-static       	link static against libmad shipped with streamripper],
+    enable_static=$enableval, enable_static=no)
+AM_CONDITIONAL(STATIC, test $enable_static = yes)
 
+if test "$enable_static" = yes
+then
+        AC_CONFIG_SUBDIRS(libmad-0.15.1b)
+fi
 
 THREADLIBS=no
+CPPFLAGS=
 
 AC_CHECK_LIB(pthread,pthread_create,THREADLIBS="-lpthread",)
 
@@ -44,6 +53,24 @@ if test "$THREADLIBS" = no; then
 fi
 
 AC_SUBST(THREADLIBS)
+
+if test "$enable_static" = yes
+then
+	CPPFLAGS="-Ilib -Ilibmad-0.15.1b -D__UNIX__"
+	AC_SUBST(CPPFLAGS)
+	STATIC_LIBMAD="libmad-0.15.1b/.libs/libmad.a"
+	AC_SUBST(STATIC_LIBMAD)
+else
+	CPPFLAGS="-Ilib -D__UNIX__"
+	AC_SUBST(CPPFLAGS)
+	STATIC_LIBMAD=""
+	AC_SUBST(STATIC_LIBMAD)
+        AC_CHECK_LIB(mad, mad_stream_buffer, LIBS="$LIBS $THREADLIBS -lmad", [
+                echo "Error! Streamripper needs libmad(-dev) installed in order to compile."
+                echo "Try --enable-static to use included libmad."
+                exit -1
+        ])
+fi
 
 dnl Check for semaphore library
 AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(sem, sem_init,))
