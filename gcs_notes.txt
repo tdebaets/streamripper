@@ -5,6 +5,30 @@ How to tag a new version (e.g. for version 1.60)
   cvs rtag -r HEAD sripper-1_60 sripper_1x
 
 -----------------------------------------
+How to revise libmad
+
+First, match the auto* versions used by libmad.  For libmad-0.15.1b, 
+this is :
+
+  - autoconf 2.59, automake 1.8.2, libtool 1.5.2.
+ 
+Next in Makefile.am, make the following modifications.
+
+  ## GCS - don't install for streamripper
+  ## lib_LTLIBRARIES =	libmad.la
+  noinst_LTLIBRARIES = libmad.la
+
+  ## GCS - don't install for streamripper
+  ## include_HEADERS =	mad.h
+  noinst_HEADERS = mad.h
+
+Next rebuild the auto* files.  Test it all out and make sure it works.
+
+Finally, in the top level Makefile.am, replace the define for 
+libmad_manifest with the latest list of original files from the 
+libmad distro.
+
+-----------------------------------------
 Console mode:
 
 main				(streamripper.c)
