@@ -1,0 +1,244 @@
+Greg's notes on reverse engineering, etc.
+-----------------------------------------
+How to tag a new version (e.g. for version 1.60)
+
+  cvs rtag -r HEAD sripper-1_60 sripper_1x
+
+-----------------------------------------
+Console mode:
+
+main				(streamripper.c)
+rip_manager_start	(rip_manager.c)
+	rip_manager::m_in.get_data <- myrecv
+threadlib_beginthread
+ripthread			(rip_manager.c)
+	start_ripping
+		rip_manager::m_in    == ripshout::m_in
+		rip_manager::m_ripin == ripstream::m_in
+		ripshout_init
+			rip_manager::m_ripin::get_data <- ripshout::getdata
+		ripstream_init
+			cbuffer_init
+	ripstream_rip
+		m_in->get_data
+		end_track
+
+ripstream::m_in::get_data == ripshout::getdata
+	ripshout::m_in::get_data == myrecv (for m_buffersize)
+	ripshout::m_in::get_data == myrecv (for metadata)
+
+The first byte of the (signed char) metadata is the length
+of the metadata string (1-127)*16.
+
+Note that rip_manager_start, console streamripper.c sets up a
+callback so that it can display track changes to console.
+	m_status_callback <- rip_callback
+
+There are two places for the bitrate/samplerate:
+	(1) In the http header
+		getsize == meta_interval ~~ 8192 (bytes)
+		bitrate = 24
+	(2) From the mp3 data
+		samplesize = 22050 (cpm data bps)
+
+---------------------------------------
+
+For n seconds, we need buffersize of b bytes:
+	b = bitrate * 1000 * n
+
+*** Default splitting
+
+
+	    /mi
+	    |           /ts
+	    |-----------|
+	      xs_offset |
+			|
+			|
+	      |---------|---------|
+		prepad    postpad
+
+
+*** Silence splitting
+
+	    /mi
+	    |  
+	    |-----------|
+	      xs_offset |
+			|
+		    ts\ |
+	      |-------+-|---------|
+	       pre_sw |   post_sw
+		      |
+		  |---+---| *silence_win
+		      |
+	|-------------|---------|
+	      prepad    postpad
+
+
+We may flush the circular buffer as soon as the earliest
+point that needs to go into the next song has passed.
+For simplicity, we also buffer up to the latest point 
+that can go into the next song.  This interval looks 
+like this for the silence splitting case.
+
+
+			|
+	      |---+-----+-----+---| search window
+		  |           |   
+		  |           |
+	      |---+---|   |---+---|
+		  |           |
+    |-------------|           |---------|
+	  prepad                postpad
+
+
+    |-----------------------------------|
+        this window will be cbuffered
+
+The circular buffer is actually extended a bit so that 
+it contains an integer number of blocks which fall 
+along meta-inf boundaries.
+
+Now, depending on the value of xs_offset, we have 3 cases.
+The mi point can be before, during or after the 
+buffer window.  
+
+
+ (1)            (2)                       (3)
+  x              x                         x
+
+    |-----------------------------------|
+    above this window will be cbuffered
+
+
+  |-------------------------------------|         (case 1)
+    |-----------------------------------|         (case 2)
+    |--------------------------------------|      (case 3)
+    but now one of these windows will be cbuffered
+
+
+Case 1:
+  mi to beginning     pos
+  mi to end           pos
+Case 2:
+  mi to beginning     neg
+  mi to end           pos
+Case 3:
+  mi to beginning     neg
+  mi to end           neg
+
+Thus, we need 3 variables:
+  m_cbuffer_size
+  m_mi_to_cbuffer_start
+  m_mi_to_cbuffer_end
+
+
+-------- OBSOLETE STUFF
+Default case, the preceding portion needs to be:
+	prepad + -xd_offset
+Default case, the subsequent portion needs to be:
+	postpad + -xd_offset
+Silence case, the preceding portion needs to be:
+	prepad + -sp + -xs_offset
+	prepad + (pre_sw-sil_win/2) + -xs_offset
+Silence case, the subsequent portion needs to be:
+	postpad + -sp + -xs_offset
+	postpad + (post_sw-sil_win/2) + -xs_offset
+
+Therefore, the buffersize is the sum of the above 2 
+portions.
+
+    /*  Compute the buffer size needed:
+	    pre_padding + (splitpoint+xs_silence_offset) + post_padding
+	Where splitpoint is within:
+	    search_win
+	Or exactly at:
+	    xd_offset
+	Question: where is getsize set?
+	Question: how to know the bitrate?
+     */
+-------- END OBSOLETE STUFF
+
+
+
+---------------------------------------
+http://www.hydrogenaudio.org/index.php?showtopic=12633&
+--
+(1) The equation:
+bitrate[kbps] = space[kbits] / time[seconds]
+
+(2) unit conversions:
+time[seconds] = time[minutes] * 60
+space[bits] = space[bytes] * 8
+space[K] = space[M] * 1024
+
+(3)The equation for other units - (1) and (2) combined:
+bitrate[kbps] = 8*1024/60 * space[MB] / time[minutes] = 136.53 * space[MB] / time[minutes]
+bitrate[kbps] = 8*1024 * space[MB] / time[seconds] = 8192 * space[MB] / time[seconds]
+
+That's the nice theory, but I'm not sure about two practical details:
+-is the Kilo/Mega conversion correct for MP3 bitrates? or is the factor 1000 instead of 1024? does anybody else know that?
+-there may be some overhead related to the actual storing of the files, so you might want to do your calculations with some "headroom". for instance, add a minute or two to the real time. this gives you a slightly lower bitrate (smaller files). just test it for yourself to see how much the "ideal" factor has to be adjusted.
+
+HDD space:
+1 MB = 1024 KB
+1 KB = 1024 Bytes
+
+Bitrate:
+1 kbps = 1000 bits/sec.
+
+=>
+bitrate[kbps] = 8*1024*1024/(60*1000) * space[MB] / time[minutes] = 139.8 * space[MB] / time[minutes]
+bitrate[kbps] = 8*1024*1024/1000 * space[MB] / time[seconds] = 8388 * space[MB] / time[seconds]
+
+--
+Also see,
+http://www.unrelatedinventions.com/Audiotools/Help/thejargonbehindmp3.htm
+
+-----------------------------------------------------------------------
+findsep.c
+-----------------------------------------------------------------------
+findsep_silence
+	Inputs mpgbuf & mpgsize, returns ptr to silence point.
+	The mpgbuf is about 24 seconds of music.
+
+init_siltrackers
+	There are 30 SILENCETRACKER's.  They contain 4 entries:
+	      foundsil
+	      silencestart
+	      insilencecount
+	      silencevol
+	These are fancy counters to find silence intervals for several 
+	different definitions of silence.
+
+mad_decoder_run
+	Pump the mpgbuf through the decoder.  Each "output" call gets 
+	about 576 samples.  For each sample, compute rms (of 2 most 
+	recent samples), and pass to search_for_silence
+
+search_for_silence
+	Finds the first interval that is longer than ds.samplerate and 
+	quieter than pstracker->silencevol.  This is done for all 30 
+	different silence volumes.
+
+Finally, back to findsep_silence.  Look for quietest chunck that 
+exceeds the silence threshold.
+
+-----------------------------------------------------------------------
+ripstream.c
+-----------------------------------------------------------------------
+ripstream_rip
+	Calls findsep_silence
+
+-----------------------------------------------------------------------
+cbuffer.c
+-----------------------------------------------------------------------
+Initialization:
+    item_count = 0,
+    read_index = write_index
+Write:
+    increment write_index, then write
+Read:
+    increment read_index, then read
+    read_index is between 0 and size-1
