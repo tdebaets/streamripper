@@ -536,7 +536,9 @@ static int
 is_absolute_path (char* fn)
 {
 #if WIN32
-    error ! /* This function is not enough (e.g. c:foo.mpg) */
+    assert(0);
+    /* This function is not enough (e.g. c:foo.mpg), but should not
+	be used in windows anyway. */
     if (strchr(fn,':')) {
 	return 1;
     }
