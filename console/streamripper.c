@@ -239,6 +239,7 @@ void print_usage()
     fprintf(stderr, "       -t            - Don't overwrite tracks in incomplete\n");
     fprintf(stderr, "       -c            - Don't auto-reconnect\n");
     fprintf(stderr, "       -l seconds    - Number of seconds to run, otherwise runs forever\n");
+    fprintf(stderr, "       -M megabytes  - Stop ripping after this many megabytes\n");
     fprintf(stderr, "       -q            - Add sequence number to output file\n");
     fprintf(stderr, "       -i            - Don't add ID3V1 Tags to output file\n");
     fprintf(stderr, "       -u useragent  - Use a different UserAgent than \"Streamripper\"\n");
@@ -377,6 +378,11 @@ void parse_arguments(int argc, char **argv)
 	    i++;
 	    strncpy(m_opt.if_name, argv[i], SR_MAX_PATH);
 	    break;
+ 	case 'M':
+ 	    i++;
+ 	    m_opt.maxMB_rip_size = atoi(argv[i]);
+ 	    m_opt.flags |= OPT_CHECK_MAX_BYTES;
+ 	    break;
 	case 'R':
 	    i++;
 	    m_opt.max_connections = atoi(argv[i]);
