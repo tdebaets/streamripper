@@ -26,6 +26,7 @@
 #include "types.h"
 #include "rip_manager.h"
 #include "util.h"
+#define SRVERSION	"1.32"
 
 /*******************************************************************************
  * Private functions
@@ -258,6 +259,7 @@ void parse_arguments(int argc, char **argv)
 	strcpy(m_opt.output_directory, "./");
 	m_opt.proxyurl[0] = (char)NULL;
 	strncpy(m_opt.url, argv[1], MAX_URL_LEN);
+	strcpy(m_opt.useragent, "sr-POSIX/1.32");
 
         //get arguments
         for(i = 1; i < argc; i++)
@@ -312,7 +314,7 @@ void parse_arguments(int argc, char **argv)
                                 m_opt.flags ^= OPT_AUTO_RECONNECT;
                                 break;
                         case 'v':
-				printf("streamripper 1.0.5 by Jon Clegg <jonclegg@yahoo.com>\n");
+				printf("Streamripper %s by Jon Clegg <jonclegg@yahoo.com>\n", SRVERSION);
 				exit(0);
                         case 'l':
 				i++;
