@@ -69,6 +69,8 @@
  *****************************************************************************/
 error_code		rip_manager_start(void (*status_callback)(int message, void *data), RIP_MANAGER_OPTIONS *options);
 void			rip_manager_stop();
+char *			rip_manager_get_error_str(error_code code);
+u_short			rip_mananger_get_relay_port();	
 
 /******************************************************************************
  * Private functions
@@ -171,9 +173,6 @@ void init_error_strings()
 	SET_ERR_STR("SR_ERROR_NOT_SHOUTCAST_STREAM",		0x36)
 	SET_ERR_STR("HTTP:407 - Proxy Authentication Required",				0x37)
 	SET_ERR_STR("HTTP:403 - Access Forbidden (try changing the UserAgent)", 0x38)
-
-	
-	
 }
 
 char *rip_manager_get_error_str(error_code code)
@@ -183,6 +182,12 @@ char *rip_manager_get_error_str(error_code code)
 
 	return m_error_str[-code];
 }
+
+u_short rip_mananger_get_relay_port()
+{
+	return m_options.relay_port;
+}
+
 
 void post_error(int err)
 {

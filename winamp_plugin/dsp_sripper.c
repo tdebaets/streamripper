@@ -140,7 +140,7 @@ int init()
 	return 0;
 }
 
-INT_PTR CALLBACK EnableProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK EnableDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
 	{
@@ -187,7 +187,7 @@ void config()
 	DialogBox(m_plugin.hDllInstance, 
 			  MAKEINTRESOURCE(IDD_ENABLE), 
 			  m_plugin.hwndParent,
-			  EnableProc);
+			  EnableDlgProc);
 
 	options_save(&m_rmoOpt, &m_guiOpt);
 	if (m_guiOpt.m_enabled)
@@ -443,7 +443,7 @@ void close_button_pressed()
 
 void relay_pressed()
 {
-	winamp_add_relay_to_playlist(m_guiOpt.localhost, (u_short)m_rmoOpt.relay_port);
+	winamp_add_relay_to_playlist(m_guiOpt.localhost, rip_mananger_get_relay_port());
 }
 
 BOOL CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)

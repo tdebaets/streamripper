@@ -102,9 +102,27 @@ typedef struct ERROR_INFOst
 } ERROR_INFO;
 
 
+//
+// Starts a 'rip', status_callback is the callback function for status messages
+// RIP_MANAGER_OPTIONS is the above struct of rip options
+//
 extern error_code	rip_manager_start(void (*status_callback)(int message, void *data), RIP_MANAGER_OPTIONS *options);
+
+//
+// tell the rip_mananger to stop :)
+//
 extern void			rip_manager_stop();
+
+//
+// translats a error code into a string
+//
 extern char			*rip_manager_get_error_str(int code);
+
+//
+// used to find out what the relay port is, being that 
+// the relay might search for one
+//
+extern u_short		rip_mananger_get_relay_port();	
 
 
 #endif //__RIP_MANANGER_H__

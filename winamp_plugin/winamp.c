@@ -139,8 +139,9 @@ BOOL winamp_get_info(WINAMP_INFO *info)
 		int data = 0;
 		int pos = (int)SendMessage(hwndWinamp, WM_USER, data, get_position);
 		char* fname = (char*)SendMessage(hwndWinamp, WM_USER, pos, get_filename);
-		if (strncmp(fname, "http://", strlen("http://")) == 0)
-			strcpy(info->url, fname);
+		char *purl = strstr(fname, "http://");
+		if (purl)
+			strcpy(info->url, purl);
 	}
 
 	return TRUE;
