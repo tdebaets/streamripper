@@ -35,7 +35,7 @@
 /*********************************************************************************
  * Public functions
  *********************************************************************************/
-error_code	filelib_init();
+error_code	filelib_init(BOOL do_count);
 error_code	filelib_start(char *filename);
 error_code	filelib_end(char *filename, BOOL over_write_existing);
 error_code	filelib_write(char *buf, u_long size);
@@ -90,10 +90,10 @@ error_code mkdir_if_needed(char *str)
 
 }
 
-error_code filelib_init()
+error_code filelib_init(BOOL do_count)
 {
 	m_file = (HFILE)NULL;
-	m_count = 0;
+	m_count = do_count ? 1 : -1;
 	memset(&m_output_directory, 0, MAX_PATH);
 
 	return SR_SUCCESS;
@@ -174,7 +174,11 @@ error_code filelib_end(char *filename, BOOL over_write_existing)
 	memset(newfile, 0, MAX_FILENAME);
 	memset(oldfile, 0, MAX_FILENAME);
 	sprintf(oldfile, m_filename_format, m_incomplete_directory, filename);
-	sprintf(newfile, m_filename_format, m_output_directory, filename);
+	
+	if (m_count != -1)
+		sprintf(newfile, m_filename_format, m_output_directory, filename);
+	else
+		sprintf(newfile, "%s%03d_%s.mp3", m_output_directory, m_count, filename);
 
 	// If we are over writing exsiting tracks
 	if (!over_write_existing)
@@ -199,8 +203,8 @@ error_code filelib_end(char *filename, BOOL over_write_existing)
 	if (ok_to_write)
 		if (!MOVE_FILE(oldfile, newfile))
 			return SR_ERROR_FAILED_TO_MOVE_FILE;
-
-	m_count++;
+	if (m_count != -1)
+		m_count++;
 	return SR_SUCCESS;
 }
 
@@ -230,7 +234,12 @@ error_code filelib_write(char *buf, u_long size)
 void filelib_shutdown()
 {
 	close_file();
-	filelib_init();
+
+	/* 
+    	 * We're just calling this to zero out 
+	 * the vars, it's not really nessasary.
+	 */
+	filelib_init(FALSE);
 }
 
 error_code filelib_remove(char *filename)

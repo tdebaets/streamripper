@@ -382,12 +382,26 @@ void set_output_directory()
 	}
 	if (OPT_FLAG_ISSET(m_options.flags, OPT_SEPERATE_DIRS))
 	{
-		striped_icy_name = malloc(strlen(m_info.icy_name)+1);
+		/* felix@blasphemo.net: insert date after icy_name for per-session directories */
+		char *timestring  ;
+		time_t timestamp;
+		struct tm *theTime;
+		int time_len;
+
+		timestring = malloc(36);
+		time(&timestamp);
+		theTime = localtime(&timestamp);
+		time_len = strftime(timestring, 35, "%Y-%B-%d_%k:%M", theTime);
+
+		striped_icy_name = malloc(strlen(m_info.icy_name)+ 1);
 		strcpy(striped_icy_name, m_info.icy_name);
 		strip_invalid_chars(striped_icy_name);
 		left_str(striped_icy_name, MAX_DIR_LEN);
 		trim(striped_icy_name);
 		strcat(newpath, striped_icy_name);
+		strcat(newpath, "_");
+		strcat(newpath, timestring);
+		free(timestring);
 		free(striped_icy_name);
 	}
 	filelib_set_output_directory(newpath);
@@ -476,7 +490,7 @@ error_code rip_manager_start(void (*status_callback)(int message, void *data),
 		return SR_ERROR_INVALID_PARAM;
 
 	one_time_init();
-	filelib_init();
+	filelib_init(!OPT_FLAG_ISSET(options->flags, OPT_COUNT_FILES));
 	socklib_init();
 	m_status_callback = status_callback;
 	m_told_to_stop = FALSE;
