@@ -305,7 +305,7 @@ void relaylib_shutdown()
     debug_printf("relaylib_shutdown:start\n");
     if (!relaylib_isrunning())
     {
-        debug_printf("***relaylib_shutdown:return");
+        debug_printf("***relaylib_shutdown:return\n");
         return;
     }
     m_running = FALSE;
@@ -316,13 +316,13 @@ void relaylib_shutdown()
     }
     m_listensock = SOCKET_ERROR;                // Accept thread will watch for this and not try to accept anymore
     memset(m_http_header, 0, MAX_HEADER_LEN);
-    debug_printf("waiting for relay close");
+    debug_printf("waiting for relay close\n");
     threadlib_waitforclose(&m_hthread);
     destroy_all_hostsocks();
     threadlib_destroy_sem(&m_sem_not_connected);
     m_initdone = FALSE;
 
-    debug_printf("relaylib_shutdown:done!");
+    debug_printf("relaylib_shutdown:done!\n");
 }
 
 
@@ -351,7 +351,7 @@ void thread_accept(void *notused)
     int iAddrSize = sizeof(client);
     struct hostsocklist_t *newhostsock;
 
-    debug_printf("***thread_accept:start");
+    debug_printf("***thread_accept:start\n");
 
     while(m_running)
     {

@@ -56,12 +56,9 @@ static int bytes_to_secs (unsigned int bytes);
  *********************************************************************************/
 static CBUFFER			m_cbuffer;
 static IO_GET_STREAM	*m_in;
-#if defined (commentout)
-//static char			m_last_track[MAX_TRACK_LEN] = {'\0'};
-//static char			m_current_track[MAX_TRACK_LEN] = {'\0'};
-#endif
 static TRACK_INFO m_last_track;
 static TRACK_INFO m_current_track;
+static int m_first_time_through;
 static char			m_no_meta_name[MAX_TRACK_LEN] = {'\0'};
 static char			*m_getbuffer = NULL;
 static int			m_find_silence = -1;
@@ -136,7 +133,10 @@ ripstream_init (IO_GET_STREAM *in, char *no_meta_name,
     m_cue_sheet_bytes = 0;
 
     m_last_track.raw_metadata[0] = '\0';
+    m_last_track.have_track_info = 0;
     m_current_track.raw_metadata[0] = '\0';
+    m_current_track.have_track_info = 0;
+    m_first_time_through = 1;
 
     if ((m_getbuffer = malloc(in->getsize)) == NULL)
 	return SR_ERROR_CANT_ALLOC_MEMORY;
@@ -152,12 +152,13 @@ ripstream_destroy()
     m_in = NULL;
     m_cbuffer_size = 0;
     cbuffer_destroy(&m_cbuffer);
-#if defined (commentout)
-    m_last_track[0] = '\0';
-    m_current_track[0] = '\0';
-#endif
+
     m_last_track.raw_metadata[0] = '\0';
+    m_last_track.have_track_info = 0;
     m_current_track.raw_metadata[0] = '\0';
+    m_current_track.have_track_info = 0;
+    m_first_time_through = 1;
+
     m_no_meta_name[0] = '\0';
     m_track_count = 0;
     m_addID3tag = TRUE;
@@ -272,9 +273,10 @@ ripstream_rip()
     }
 
     /* First time through, so start a track. */
-    if (!m_last_track.have_track_info) {
+    if (m_first_time_through) {
 	int ret;
-	if (! m_current_track.have_track_info) {
+	debug_printf ("First time through...\n");
+	if (!m_current_track.have_track_info) {
 	    strcpy (m_current_track.raw_metadata, m_no_meta_name);
 	}
 	ret = rip_manager_start_track (&m_current_track, m_track_count);
@@ -286,32 +288,9 @@ ripstream_rip()
 	filelib_write_cue (&m_current_track, 0);
 	/* set last track info */
 	strcpy (m_last_track.raw_metadata, m_current_track.raw_metadata);
-	m_last_track.have_track_info = 1;
+	
+	m_first_time_through = 0;
     }
-
-#if defined (commentout)
-    /* GCS - This is only true once? */
-    // if this is the first time we have received a track name, then we
-    // can start the track
-    if (*m_current_track.raw_metadata && *m_last_track.raw_metadata == '\0') {
-	char artist[1024], title[1024], album[1024];
-	// The first track should not be ended. It will always be incomplete.
-	debug_printf ("calling rip_manager_start_track(#1)\n");
-#if defined (commentout)
-	ret = rip_manager_start_track(m_no_meta_name, m_track_count);
-#endif
-	ret = rip_manager_start_track(m_current_track.raw_metadata,
-				      m_track_count);
-	if (ret != SR_SUCCESS) {
-	    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
-	    return ret;
-	}
-	/* write the cue sheet */
-	parse_artist_title (artist, title, album, 1024,
-			    m_current_track.raw_metadata);
-	filelib_write_cue(artist,title,0);
-    }
-#endif
 
     /* Copy the data into cbuffer */
     ret = cbuffer_insert(&m_cbuffer, m_getbuffer, m_in->getsize);
