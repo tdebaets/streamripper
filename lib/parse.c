@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "srconfig.h"
 #include "debug.h"
 #include "types.h"
@@ -114,7 +115,15 @@ compile_rule (Parse_Rule* pr, char* rule_string)
 static void
 use_default_rules (void)
 {
+    Parse_Rule* rulep;
+
+    /* set global rule list to default */
     m_global_rule_list = m_default_rule_list;
+
+    /* compile regular expressions */
+    for (rulep = m_global_rule_list; rulep->cmd; rulep++) {
+	compile_rule (rulep, rulep->match);
+    }
 }
 
 static void
@@ -132,7 +141,7 @@ parse_flags (Parse_Rule* pr, char* flags)
 {
     char flag1;
 
-    while (flag1 = *flags++) {
+    while ((flag1 = *flags++)) {
         int* tag = 0;
 	switch (flag1) {
 	case 'e':
@@ -326,7 +335,6 @@ init_metadata_parser (char* rules_file)
 void
 parse_metadata (TRACK_INFO* ti)
 {
-    char* regex1 = "^J";
     int eflags;
     int rc;
     char query_string[MAX_TRACK_LEN];

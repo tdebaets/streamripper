@@ -30,6 +30,7 @@ streamripper_SOURCES = \
 	lib/http.c \
 	lib/inet.c \
 	lib/mpeg.c \
+	lib/parse.c \
 	lib/relaylib.c \
 	lib/rip_manager.c \
 	lib/ripshout.c \
@@ -45,6 +46,7 @@ streamripper_SOURCES = \
 	lib/http.h \
 	lib/inet.h \
 	lib/mpeg.h \
+	lib/parse.h \
 	lib/relaylib.h \
 	lib/rip_manager.h \
 	lib/ripshout.h \

@@ -231,6 +231,8 @@ filelib_set_output_directory (char* output_directory,
     } else {
 	strcpy (m_output_directory, base_dir);
     }
+    debug_printf ("Trying to make m_output_directory: %s\n",
+		  m_output_directory);
     mkdir_if_needed(m_output_directory);
 
     /* Next, make the incomplete directory */
@@ -441,6 +443,7 @@ filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath)
 static error_code
 filelib_open_for_write(FHANDLE* fp, char* filename)
 {
+    debug_printf ("filelib_open_for_write: %s\n", filename);
 #if WIN32	
     *fp = CreateFile(filename, GENERIC_WRITE,    // open for reading 
 			FILE_SHARE_READ,           // share for reading 
@@ -460,6 +463,7 @@ filelib_open_for_write(FHANDLE* fp, char* filename)
     *fp = OpenFile(filename);
     if (*fp == INVALID_FHANDLE)
     {
+	printf ("ERROR creating file: %s\n",filename);
 	return SR_ERROR_CANT_CREATE_FILE;
     }
 #endif

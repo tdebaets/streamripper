@@ -534,10 +534,6 @@ strip_invalid_chars_stable(char *str)
     for (wstrp = w_in; *wstrp; wstrp++) {
 	debug_printf ("%04x ",*wstrp&0x0ffff);
     }
-    debug_printf ("strip_invalid_chars() w_in (pre #2):\n");
-    for (i = 0; i < t; i++) {
-	debug_printf ("%04x ",*wstrp&0x0ffff);
-    }
     debug_printf ("\n");
     debug_printf ("strip_invalid_chars() w_invalid:\n");
     for (wstrp = w_invalid; *wstrp; wstrp++) {
