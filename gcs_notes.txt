@@ -32,7 +32,8 @@ Accept-Ranges: bytes
 Connection: close
 Content-Type: misc/ultravox
 
-http://64.156.25.86:8010/;stream.nsv
+http://64.156.25.86:8010/;stream.nsv  (last exile)
+http://64.156.25.86:8000/;stream.nsv  (love hina)
 ===============================
 ICY 200 OK
 icy-notice1:<BR>This stream requires <a href="http://www.winamp.com/">Winamp</a><BR>
