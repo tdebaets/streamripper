@@ -1,5 +1,5 @@
 // tracksplitter.cpp : Defines the entry point for the console application.
-//
+// Console verison.
 
 #include "stdafx.h"
 #include "TrackSplitter.h"
@@ -13,6 +13,7 @@ void usage()
 				"\n"
 				" -v	Silence Volume (0 .. %d)\n"
 				" -d	Silence Duration (float)\n"
+				" -l	Minimum Track Length (seconds)\n"
 				"\n"
 				"FILE must be a valid path to a mp3 file\n"
 				"Report bugs to <jonclegg@yahoo.com>\n",
@@ -24,14 +25,24 @@ void usage()
 #define DEFAULT_DURATION		1
 #define DEFAULT_MIN_TRACK_LEN	60
 
+class CEventPrinter : public ITrackSplitterEvents
+{
+	virtual void OnNewTrack(const char* trackname, long start, long end)
+	{
+		printf("- Creating track:\t%s\t[%d - %d]\n", trackname, start, end);
+	}
+};
+
 int main(int argc, char* argv[])
 {
 	CTrackSplitter	ts;
+	CEventPrinter	eventprinter;
 	char			c;
 	int				tempint;
 	float			tempfloat;
 
 	// defaults
+	ts.SetEventHandler(eventprinter);
 	ts.SetSilenceVol(DEFAULT_VOLUME);
 	ts.SetSilenceDur(DEFAULT_DURATION);					
 	ts.SetMinTrackLen(DEFAULT_MIN_TRACK_LEN);
@@ -54,7 +65,7 @@ int main(int argc, char* argv[])
 
 			case 'd':						// silence duration
 				tempfloat = atof(optarg);
-				ts.SetSilenceVol(tempfloat);
+				ts.SetSilenceDur(tempfloat);
 				break;
 
 			case 'l':						// min track len

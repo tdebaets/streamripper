@@ -16,7 +16,8 @@ CTrackSplitter::CTrackSplitter()
 	m_foundSilence(false),
 	m_insilencecount(0),
 	m_minTrackLen(MIN_TRACK_LEN),
-	m_silencevol(DEFAULT_RMS_SILENCE)
+	m_silencevol(DEFAULT_RMS_SILENCE),
+	m_pEventHandler(NULL)
 {
 
 }
@@ -28,6 +29,10 @@ void CTrackSplitter::SplitTrack (const char* track)
 {
 
 	long			bytesread = 0;
+	if (!track || !track[0])
+	{
+		throw CTrackSplitter_CantOpenFile();
+	}
 
 	m_decoder.SetDecodeHandler(*this);
 	m_fpIn = fopen(track, "rb");
@@ -54,6 +59,9 @@ void CTrackSplitter::SplitTrack (const char* track)
 			bytesread += ret;
 			m_decoder.FeedStream(buf, ret);
 		}
+		if (m_pEventHandler)
+			m_pEventHandler->OnDataRead(bytesread);
+		
 		m_decoder.Decode();
 		
 		if (m_foundSilence)
@@ -65,8 +73,8 @@ void CTrackSplitter::SplitTrack (const char* track)
 				m_minSilCountDown = m_minTrackLen * m_decoder.GetSampleRate();
 			}
 		}
-		LogMessage(LOG_DEBUG, "Current Pos: %d\n", 
-				bytesread);
+//		LogMessage(LOG_DEBUG, "Current Pos: %d\n", 
+//				bytesread);
 	}
 	CreateNextFile(track, bytesread);					// make the last track
 	fclose(m_fpIn);
@@ -90,7 +98,8 @@ void CTrackSplitter::CreateNextFile(const char* fromtrack, long pos)
 	if (fseek(m_fpIn, lastpos, SEEK_SET) != 0)
 		throw CTrackSplitter_InvalidFilePosition();
 
-	printf("- Creating track:\t%s\t[%d - %d]\n", newtrack, lastpos, pos);
+	if (m_pEventHandler)
+		m_pEventHandler->OnNewTrack(newtrack, lastpos, pos);
 
 	char rbuf[0xFFFF];
 	int readsize = 0xFFFF;

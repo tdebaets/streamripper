@@ -5,7 +5,6 @@
 #include "stdafx.h"
 #include "Mp3Decoder.h"
 #include <assert.h>
-#include "log.h"
 #include <string.h>
 
 //////////////////////////////////////////////////////////////////////
@@ -31,7 +30,6 @@ CMp3Decoder::~CMp3Decoder()
 void CMp3Decoder::FeedStream(char *pdata, long size)
 {
 	assert(pdata);
-	LogMessage(LOG_DEBUG, "feed_stream: size=%d, mp3pos=%d", size, m_mp3BufPos);
 	if (m_mp3BufPos+size > MP3BUFSIZE)
 	{
 		assert(0);
@@ -93,7 +91,6 @@ void CMp3Decoder::HandleMp3Output()
 			samplecount++;
 		}
 	}
-	LogMessage(LOG_DEBUG, "handle_output - nsamples = %d, nchannels = %d, in_samplerate = %d, in_nch = %d", nsamples, nchannels, in_samplerate, in_nch);
 	if (m_pdecodeHandler)
 	{
 		m_pdecodeHandler->OnMp3Data((signed short*)&samples, nsamples, nchannels, in_samplerate, GetBitRate());
@@ -157,8 +154,6 @@ int CMp3Decoder::Decode()
 			&m_pmp3Buf[m_mp3BufPos-bufferleft], 
 			bufferleft);
 	m_mp3BufPos = bufferleft;
-	LogMessage(LOG_DEBUG, "---------");
-
 	return ret;
 }
 

@@ -11,7 +11,6 @@
 
 #include "mp3decoder.h"
 #include <assert.h>
-#include "log.h"
 #include <math.h>
 #include "common.h"
 
@@ -33,11 +32,18 @@ DECL_ERROR_DESC(CTrackSplitter_CantOpenFile,		"Can't open file")
 DECL_ERROR_DESC(CTrackSplitter_CantOpenTrackFile,	"Can't open track file")
 DECL_ERROR_DESC(CTrackSplitter_InvalidFilePosition,	"Invalid file position")
 
+struct ITrackSplitterEvents
+{
+	virtual void OnNewTrack(const char* trackname, long start, long end) = 0;
+	virtual void OnDataRead(long bytepos) = 0;
+};
+
 class CTrackSplitter : public IDecodeHandler
 {
 public:
 	CTrackSplitter();
 
+	void			SetEventHandler	(ITrackSplitterEvents& e)	{m_pEventHandler = &e;}
 	void			SetSilenceVol	(unsigned short silvol) {m_silencevol = silvol;}
 	void			SetSilenceDur	(float sildur)			{m_silencedur = sildur;}
 	void			SetMinTrackLen	(long mintracklen)		{m_minTrackLen = mintracklen;}
@@ -64,6 +70,7 @@ private:
 	long			m_minTrackLen;
 	long			m_minSilCountDown;
 	float			m_silencedur;
+	ITrackSplitterEvents*	m_pEventHandler;
 };
 
 

@@ -93,10 +93,6 @@ SOURCE=.\getopt.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\log.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\main.cpp
 # End Source File
 # Begin Source File
@@ -118,10 +114,6 @@ SOURCE=.\common.h
 # Begin Source File
 
 SOURCE=.\getopt.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\log.h
 # End Source File
 # Begin Source File
 
