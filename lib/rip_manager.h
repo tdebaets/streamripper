@@ -135,6 +135,3 @@ extern u_short		rip_mananger_get_relay_port();
 void set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt);
 
 #endif //__RIP_MANANGER_H__
-
-
- 
