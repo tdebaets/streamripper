@@ -237,7 +237,11 @@ filelib_set_output_directory (char* output_directory,
 
 	/* Truncate the icy name if it's too long */
 	length_available = SR_MAX_COMPLETE-length_used-strlen("/");
-	stripped_icy_name[length_available] = 0;
+	printf ("length_available = %d, buf_len = %d\n",
+		length_available, strlen(stripped_icy_name));
+	if (strlen(stripped_icy_name) > length_available) {
+	    stripped_icy_name[length_available] = 0;
+	}
 
 	rc = snprintf (m_output_directory, SR_MAX_COMPLETE, "%s%s%s%c",
 	    base_dir,stripped_icy_name,timestring,PATH_SLASH);
