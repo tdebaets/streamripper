@@ -12,6 +12,30 @@
 #define PATH_SLASH '/'
 #endif
 
+
+/* Pathname support.
+   Copyright (C) 1995-1999, 2000-2003 Free Software Foundation, Inc.
+   Contributed by Ulrich Drepper <drepper@gnu.ai.mit.edu>, 1995.
+   Licence: GNU LGPL */
+/* ISSLASH(C)           tests whether C is a directory separator character.
+   IS_ABSOLUTE_PATH(P)  tests whether P is an absolute path.  If it is not,
+                        it may be concatenated to a directory pathname.
+ */
+#if defined _WIN32 || defined __WIN32__ || defined __EMX__ || defined __DJGPP__
+  /* Win32, OS/2, DOS */
+# define ISSLASH(C) ((C) == '/' || (C) == '\\')
+# define HAS_DEVICE(P) \
+    ((((P)[0] >= 'A' && (P)[0] <= 'Z') || ((P)[0] >= 'a' && (P)[0] <= 'z')) \
+     && (P)[1] == ':')
+# define IS_ABSOLUTE_PATH(P) (ISSLASH ((P)[0]) || HAS_DEVICE (P))
+#else
+  /* Unix */
+# define ISSLASH(C) ((C) == '/')
+# define IS_ABSOLUTE_PATH(P) ISSLASH ((P)[0])
+#endif
+
+
+
 #if defined (commentout)
 #ifndef WIN32
 #define MAX_PATH 256

@@ -53,33 +53,38 @@ char		*add_trailing_slash(char *str);
 void		trim(char *str);
 void 		null_printf(char *s, ...);
 
+wchar_t backslash;
+wchar_t fwdslash;
+wchar_t colon;
+
+
 char *add_trailing_slash(char *str)
 {
 #if WIN32
-	if (str[strlen(str)-1] != '\\')
-		strcat(str, "\\");
+    if (str[strlen(str)-1] != '\\')
+	strcat(str, "\\");
 #else
-	if (str[strlen(str)-1] != '/')
-		strcat(str, "/");
+    if (str[strlen(str)-1] != '/')
+	strcat(str, "/");
 #endif
-	
-	return str;
+
+    return str;
 }
 
 
 char *subnstr_until(const char *str, char *until, char *newstr, int maxlen)
 {
-	const char *p = str;
-	int len = 0;
+    const char *p = str;
+    int len = 0;
 
-	for(len = 0; strncmp(p, until, strlen(until)) != 0 && len < maxlen; p++)
-	{
-		newstr[len] = *p;
-		len++;
-	}
-	newstr[len] = '\0';
+    for(len = 0; strncmp(p, until, strlen(until)) != 0 && len < maxlen; p++)
+    {
+	newstr[len] = *p;
+	len++;
+    }
+    newstr[len] = '\0';
 
-	return newstr;
+    return newstr;
 }
 
 
@@ -93,13 +98,13 @@ char *escape_string_alloc(const char *str)
 
     while ((c = *spStr)) {
         if (c < 'A' || c > 'z') 
-		{
-			*spNewStr++ = '%';
-			*spNewStr++ = c2x_table[c >> 4];
-			*spNewStr++ = c2x_table[c & 0xf];
+	{
+	    *spNewStr++ = '%';
+	    *spNewStr++ = c2x_table[c >> 4];
+	    *spNewStr++ = c2x_table[c & 0xf];
         }
         else 
-		{
+	{
             *spNewStr++ = c;
         }
         ++spStr;
@@ -110,39 +115,39 @@ char *escape_string_alloc(const char *str)
 
 char *left_str(char *str, int len)
 {
-	int slen = strlen(str);
+    int slen = strlen(str);
 
-	if (slen <= len)
-		return str;
-
-	str[len] = '\0';
+    if (slen <= len)
 	return str;
+
+    str[len] = '\0';
+    return str;
 }
 
 char *strip_last_word(char *str)
 {
-	int len = strlen(str)-1;
+    int len = strlen(str)-1;
 
-	while(str[len] != ' ' && len != 0)
-		len--;
+    while(str[len] != ' ' && len != 0)
+	len--;
 
-	str[len] = '\0';
-	return str;
+    str[len] = '\0';
+    return str;
 }
 
 int word_count(char *str)
 {
-	int n = 0;
-	char *p = str;
+    int n = 0;
+    char *p = str;
 
-	if (!*p)
-		return 0; 
+    if (!*p)
+	return 0; 
 
-	while(*p++)
-		if (*p == ' ')
-			n++;
+    while(*p++)
+	if (*p == ' ')
+	    n++;
 
-	return n+1;
+    return n+1;
 }
 
 void
@@ -163,6 +168,14 @@ initialize_locale (void)
 #endif
     if (fromcode) {
         debug_printf ("LOCALE CODESET is %s\n", fromcode);
+    }
+
+    /* Once locale is initialized, we can make the needed wide strings 
+       for parsing. */
+    if (fromcode) {
+	string_to_wide(&backslash, "\\");
+	string_to_wide(&fwdslash, "/");
+	string_to_wide(&colon, ":");
     }
 }
 
@@ -450,38 +463,38 @@ strip_invalid_chars_stable(char *str)
 char* 
 strip_invalid_chars(char *str)
 {
-    return strip_invalid_chars_stable(str);
+    return strip_invalid_chars_testing(str);
 }
 
 
 char *format_byte_size(char *str, long size)
 {
-	const long ONE_K = 1024;
-	const long ONE_M = ONE_K*ONE_K;
+    const long ONE_K = 1024;
+    const long ONE_M = ONE_K*ONE_K;
 
-	if (size < ONE_K)
-		sprintf(str, "%ldb", size);
-	else if (size < ONE_M)
-		sprintf(str, "%ldkb", size/ONE_K);
-	else 
-		sprintf(str, "%.2fM", (float)size/(ONE_M));
+    if (size < ONE_K)
+	sprintf(str, "%ldb", size);
+    else if (size < ONE_M)
+	sprintf(str, "%ldkb", size/ONE_K);
+    else 
+	sprintf(str, "%.2fM", (float)size/(ONE_M));
 	
-	return str;
+    return str;
 }
 
 void trim(char *str)
 {
-	int size = strlen(str)-1;
-	while(str[size] == 13 || str[size] == 10 || str[size] == ' ')
-	{
-		str[size] = '\0';
-		size--;
-	}
-	size = strlen(str);
-	while(str[0] == ' ')
-	{
-		size--;
-		memmove(str, str+1, size);
-	}
+    int size = strlen(str)-1;
+    while(str[size] == 13 || str[size] == 10 || str[size] == ' ')
+    {
 	str[size] = '\0';
+	size--;
+    }
+    size = strlen(str);
+    while(str[0] == ' ')
+    {
+	size--;
+	memmove(str, str+1, size);
+    }
+    str[size] = '\0';
 }
