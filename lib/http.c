@@ -220,6 +220,11 @@ httplib_parse_sc_header(const char *url, char *header, SR_HTTP_HEADER *info)
     if (!header || !info)
 	return SR_ERROR_INVALID_PARAM;
 
+    /* Parse the url here, before doing memset, because in the 
+       recursive case, it is the location referrer */
+    rc = httplib_parse_url (url, &url_info);
+    if (rc != SR_SUCCESS) return rc;
+
     memset(info, 0, sizeof(SR_HTTP_HEADER));
 
     debug_printf("http header:\n%s\n", header);
@@ -293,8 +298,6 @@ httplib_parse_sc_header(const char *url, char *header, SR_HTTP_HEADER *info)
     }
 
     /* Look at url for more content type hints */
-    rc = httplib_parse_url (url, &url_info);
-    if (rc != SR_SUCCESS) return rc;
     url_path_len = strlen(url_info.path);
     content_type_by_url = CONTENT_TYPE_UNKNOWN;
     if (url_path_len >= 4) {
