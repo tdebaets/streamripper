@@ -1,4 +1,58 @@
-Greg's notes on reverse engineering, etc.
+Greg's notes
+-----------------------------------------
+* The dependencies for version 1.54
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Dump of file gen_sripper.dll
+
+File Type: DLL
+
+  Image has the following dependencies:
+
+    KERNEL32.dll
+    USER32.dll
+    GDI32.dll
+    ADVAPI32.dll
+    SHELL32.dll
+    WS2_32.dll
+    COMCTL32.dll
+    MSVCRT.dll
+
+Dump of file consolewin32.exe
+
+File Type: EXECUTABLE IMAGE
+
+  Image has the following dependencies:
+
+    KERNEL32.dll
+    WS2_32.dll
+
+* The dependencies for version 1.60 plugin, 1.60.5 console
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Dump of file gen_sripper.dll
+
+File Type: DLL
+
+  Image has the following dependencies:
+
+    WS2_32.dll
+    COMCTL32.dll
+    KERNEL32.dll
+    USER32.dll
+    GDI32.dll
+    ADVAPI32.dll
+    SHELL32.dll
+    MSVCR70.dll
+
+Dump of file sripper-1.60.5.exe
+
+File Type: EXECUTABLE IMAGE
+
+  Image has the following dependencies:
+
+    KERNEL32.dll
+    WS2_32.dll
+
+
 -----------------------------------------
 How to tag a new version (e.g. for version 1.60)
 
