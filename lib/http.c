@@ -33,20 +33,48 @@
  *********************************************************************************/
 error_code	httplib_parse_url(const char *url, URLINFO *urlinfo);
 error_code	httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info);
-error_code	httplib_construct_sc_request(const char *url, BOOL proxyformat, char *buffer, BOOL fakewinamp);
+error_code	httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, BOOL fakewinamp);
 error_code	httplib_construct_page_request(const char *url, BOOL proxyformat, char *buffer);
 error_code	httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size);
 
+/*********************************************************************************
+ * Private functions
+ *********************************************************************************/
+char* b64enc(const char *buf, int size);
+
+
 /*
  * Parse's a url as in http://host:port/path or host/path, etc..
+ * and now http://username:password@server:4480
  */
 error_code httplib_parse_url(const char *url, URLINFO *urlinfo)
 { 
+	//
+	// see if we have a proto 
+	// 
 	char *s = strstr(url, "://");
 	int ret;
 
+	//
+	// if we have a proto, just skip it
+	// JCBUG -- should we care about the proto? like fail if it's not http?
+	//
 	if (s) url = s + strlen("://");
 	memcpy(urlinfo->path, (void *)"/\0", 2);
+
+	//
+	// search for a login '@' token
+	//
+	if (strchr(url, '@') != NULL)
+	{
+		ret = sscanf(url, "%[^:]:%[^@]", urlinfo->username, urlinfo->password);
+		if (ret < 2) return SR_ERROR_PARSE_FAILURE;
+		url = strchr(url, '@') + 1;
+	}
+
+	//
+	// search for a port seperator
+	//
 	if (strchr(url, ':') != NULL)
 	{
 		ret = sscanf(url, "%[^:]:%hu/%s", urlinfo->host, (unsigned int*)&urlinfo->port, urlinfo->path+1);
@@ -63,17 +91,21 @@ error_code httplib_parse_url(const char *url, URLINFO *urlinfo)
 	return SR_SUCCESS;
 }
 
-// This pretends to be WinAmp
-error_code httplib_construct_sc_request(const char *url, BOOL proxyformat, char *buffer, BOOL fakewinamp)
+error_code httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, BOOL fakewinamp)
 {
 	int ret;
 	URLINFO ui;
+	URLINFO proxyui;
 	char myurl[MAX_URL_LEN];
 	if ((ret = httplib_parse_url(url, &ui)) != SR_SUCCESS)
 		return ret;
 
-	if (proxyformat)
+	if (proxyurl)
+	{
 		sprintf(myurl, "http://%s:%d%s", ui.host, ui.port, ui.path);
+		if ((ret = httplib_parse_url(proxyurl, &proxyui)) != SR_SUCCESS)
+			return ret;
+	}
 	else
 		strcpy(myurl, ui.path);
 
@@ -82,11 +114,28 @@ error_code httplib_construct_sc_request(const char *url, BOOL proxyformat, char 
 					"Host: %s:%d\r\n"
 					"User-Agent: %s\r\n"
 					"Icy-MetaData:1\r\n"
-					"Accept: */*\r\n\r\n", 
+					"Accept: */*\r\n", 
 					myurl, 
 					ui.host, 
 					ui.port, 
 					fakewinamp ? "WinampMPEG/2.7" : "Streamripper/1.x");
+
+	//
+	// proxy auth stuff
+	//
+	if (proxyurl && proxyui.username[0] && proxyui.password[0])
+	{
+		char *authbuf = malloc(strlen(proxyui.username)+strlen(proxyui.password)+MAX_URI_STRING);
+		char *auth64;
+
+		sprintf(authbuf, "%s:%s", proxyui.username, proxyui.password);
+		auth64= b64enc(authbuf, strlen(authbuf));
+		sprintf(authbuf, "Proxy-Authorization: Basic %s\r\n", auth64);
+
+		strcat(buffer, authbuf);
+	}
+
+	strcat(buffer, "\r\n");
 
     return SR_SUCCESS;
 }
@@ -153,6 +202,8 @@ error_code	httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
 				return SR_ERROR_HTTP_404_ERROR;
 			case 401:
 				return SR_ERROR_HTTP_401_ERROR;
+			case 407:
+				return SR_ERROR_HTTP_407_ERROR;
 			case 502:
 				return SR_ERROR_HTTP_502_ERROR;
 			default:
@@ -308,3 +359,76 @@ error_code httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int
 	return SR_SUCCESS;
 }
 
+
+//
+// taken from:
+// Copyright (c) 2000 Virtual Unlimited B.V.
+// Author: Bob Deblier <bob@virtualunlimited.com>
+// thanks bob ;)
+//
+#define CHARS_PER_LINE  72
+char* b64enc(const char *inbuf, int size)
+{
+
+		static const char* to_b64 =
+				 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+		  /* encode 72 characters per line */
+
+        int div = size / 3;
+        int rem = size % 3;
+        int chars = div*4 + rem + 1;
+        int newlines = (chars + CHARS_PER_LINE - 1) / CHARS_PER_LINE;
+
+        const char* data = inbuf;
+        char* string = (char*) malloc(chars + newlines + 1);
+
+        if (string)
+        {
+                register char* buf = string;
+
+                chars = 0;
+
+                /*@+charindex@*/
+                while (div > 0)
+                {
+                        buf[0] = to_b64[ (data[0] >> 2) & 0x3f];
+                        buf[1] = to_b64[((data[0] << 4) & 0x30) + ((data[1] >> 4) & 0xf)];
+                        buf[2] = to_b64[((data[1] << 2) & 0x3c) + ((data[2] >> 6) & 0x3)];
+                        buf[3] = to_b64[  data[2] & 0x3f];
+                        data += 3;
+                        buf += 4;
+                        div--;
+                        chars += 4;
+                        if (chars == CHARS_PER_LINE)
+                        {
+                                chars = 0;
+                                *(buf++) = '\n';
+                        }
+                }
+
+                switch (rem)
+                {
+                case 2:
+                        buf[0] = to_b64[ (data[0] >> 2) & 0x3f];
+                        buf[1] = to_b64[((data[0] << 4) & 0x30) + ((data[1] >> 4) & 0xf)];
+                        buf[2] = to_b64[ (data[1] << 2) & 0x3c];
+                        buf[3] = '=';
+                        buf += 4;
+                        chars += 4;
+                        break;
+                case 1:
+                        buf[0] = to_b64[ (data[0] >> 2) & 0x3f];
+                        buf[1] = to_b64[ (data[0] << 4) & 0x30];
+                        buf[2] = '=';
+                        buf[3] = '=';
+                        buf += 4;
+                        chars += 4;
+                        break;
+                }
+
+        /*      *(buf++) = '\n'; This would result in a buffer overrun */
+                *buf = '\0';
+        }
+
+        return string;
+}

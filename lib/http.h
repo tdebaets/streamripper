@@ -20,11 +20,13 @@ typedef struct URLINFOst
 	char host[MAX_HOST_LEN];
 	char path[MAX_PATH_LEN];
 	u_short port;
+	char username[MAX_URI_STRING];
+	char password[MAX_URI_STRING];
 } URLINFO;
 
 extern error_code	httplib_parse_url(const char *url, URLINFO *urlinfo);
 extern error_code	httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info);
-extern error_code	httplib_construct_sc_request(const char *url, BOOL proxyformat, char *buffer, BOOL fakewinamp);
+extern error_code	httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, BOOL fakewinamp);
 extern error_code	httplib_construct_page_request(const char *url, BOOL proxyformat, char *buffer);
 extern error_code	httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size);
 

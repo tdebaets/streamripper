@@ -62,7 +62,7 @@ error_code inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl,
 	if ((ret = socklib_open(sock, url_info.host, url_info.port)) != SR_SUCCESS)
 		return ret;
 
-	if ((ret = httplib_construct_sc_request(url, proxyurl != NULL, headbuf, fakewinamp)) != SR_SUCCESS)
+	if ((ret = httplib_construct_sc_request(url, proxyurl, headbuf, fakewinamp)) != SR_SUCCESS)
 		return ret;
 
 	if ((ret = socklib_sendall(sock, headbuf, strlen(headbuf))) < 0)

@@ -1,4 +1,4 @@
-Streamripper for Winamp 1.2.6
+Streamripper for Winamp 1.30b
 
 This is the quick and dirty HOWTO for the Winamp plug-in of Streamripper.
 

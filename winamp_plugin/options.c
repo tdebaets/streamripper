@@ -422,7 +422,7 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	opt->max_port = opt->relay_port+1000;
 	auto_reconnect = GetPrivateProfileInt(APPNAME, "auto_reconnect", TRUE, filename);
 	over_write_tracks = GetPrivateProfileInt(APPNAME, "over_write_tracks", FALSE, filename);
-	make_relay = GetPrivateProfileInt(APPNAME, "no_relay", FALSE, filename);
+	make_relay = GetPrivateProfileInt(APPNAME, "make_relay", FALSE, filename);
 	count_files = GetPrivateProfileInt(APPNAME, "count_files", FALSE, filename);
 	date_stamp = GetPrivateProfileInt(APPNAME, "date_stamp", FALSE, filename);
 	add_id3 = GetPrivateProfileInt(APPNAME, "add_id3", TRUE, filename);
