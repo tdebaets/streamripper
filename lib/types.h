@@ -70,7 +70,7 @@ typedef struct IO_GET_STREAMst{
 } IO_GET_STREAM;
 
 
-
+#if defined (commentout)
 /* 
  * IO_PUT_STREAM is the 'output final shit' interface. effectivly however 
  * it's just a interface for filelib. it's only called from ripstream.c
@@ -80,7 +80,8 @@ typedef struct IO_PUT_STREAMst{
 	error_code (*start_track)(char* trackname);			// track name or '\0'
 	error_code (*end_track)(char* trackname);			// track name or '\0'
 } IO_PUT_STREAM;
-	
+#endif
+
 /* 
  * SPLITPOINT_OPTIONS are the options used to tweek how the silence 
  * separation is done.

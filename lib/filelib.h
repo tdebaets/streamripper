@@ -19,15 +19,15 @@
 #define MAX_DIR_LEN		248
 #define MAX_BASE_DIR_LEN (248-strlen("/incomplete/"))
 
-extern error_code
-filelib_init(BOOL do_count, BOOL keep_incomplete, BOOL do_single_file,
-	     char* single_file_name);
-extern error_code	filelib_start(char *filename);
-extern error_code	filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath);
-extern error_code	filelib_write(char *buf, u_long size);
-extern void			filelib_shutdown();
-extern error_code	filelib_set_output_directory(char *str);
-extern error_code	filelib_remove(char *filename);
+error_code filelib_init(BOOL do_count, BOOL keep_incomplete, 
+			BOOL do_single_file, char* single_file_name);
+error_code	filelib_start(char *filename);
+error_code	filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath);
+error_code	filelib_write_track(char *buf, u_long size);
+error_code	filelib_write_show(char *buf, u_long size);
+void		filelib_shutdown();
+error_code	filelib_set_output_directory(char *str);
+error_code	filelib_remove(char *filename);
 void filelib_set_max_filename_length (int mfl);
 
 #endif //FILELIB
