@@ -28,8 +28,8 @@
 		FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 	\
 		FILE_ATTRIBUTE_NORMAL, NULL)
 #define CloseFile(_fhandle_) 	CloseHandle(_fhandle_)
-#define MoveFile(_oldfile_, _newfile_)     MoveFile(_oldfile_, _newfile_)
-#define CloseFile(_file_)   	CloseHandle(file)
+//#define MoveFile(_oldfile_, _newfile_)     MoveFile(_oldfile_, _newfile_)
+//#define CloseFile(_file_)   	CloseHandle(file)
 #define INVALID_FHANDLE 	INVALID_HANDLE_VALUE
 #elif __UNIX__
 
@@ -47,9 +47,17 @@
 #if WIN32
 #define THANDLE	HANDLE
 #define BeginThread(_thandle_, callback) \
-               {_thandle_ = _beginthread((void *)callback, 0, (void *)NULL)}
+               {_thandle_ = (THANDLE)_beginthread((void *)callback, 0, (void *)NULL);}
 #define WaitForThread(_thandle_)	WaitForSingleObject(_thandle_, INFINITE);
 #define DestroyThread(_thandle_)	CloseHandle(_thandle_)
+
+#define HSEM			HANDLE
+#define	SemInit(_s_)	{_s_ = CreateEvent(NULL, TRUE, FALSE, NULL);}
+#define	SemWait(_s_)	{WaitForSingleObject(_s_, INFINITE); ResetEvent(_s_);}
+#define	SemPost(_s_)	SetEvent(_s_)
+#define	SemDestroy(_s_)	CloseHandle(_s_)
+#define SemIsSignaled(_s_, _b_)	{*_b_ = (WaitForSingleObject(_s_, 0) == WAIT_OBJECT_0);}
+
 
 #elif __UNIX__
 
@@ -57,7 +65,7 @@
 #define BeginThread(_thandle_, callback) pthread_create(&_thandle_, NULL, \
                           (void *)callback, (void *)NULL)
 #define WaitForThread(_thandle_)	pthread_join(_thandle_, NULL)
-#define DestroyThread(_thandle_)	// is their one for unix?
+#define DestroyThread(_thandle_)	// is there one for unix?
 #define HSEM		sem_t
 #define	SemInit(_s_)	sem_init(&(_s_), 0, 0)
 #define	SemWait(_s_)	sem_wait(&(_s_))
@@ -72,7 +80,7 @@
 ////////////////////////////////////////// 
 
 #if WIN32
-#define EAGAIN          WSAEWOULDBLOCK
+//#define EAGAIN          WSAEWOULDBLOCK
 #define EWOULDBLOCK     WSAEWOULDBLOCK
 #elif __UNIX__
 #define closesocket     close

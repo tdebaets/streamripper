@@ -213,6 +213,10 @@ SOURCE=..\lib\cbuffer.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\lib\compat.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\lib\debug.c
 # End Source File
 # Begin Source File

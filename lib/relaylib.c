@@ -66,11 +66,11 @@ static error_code	try_port(u_short port);
 /*********************************************************************************
  * Private vars 
  *********************************************************************************/
-static HSEM	m_sem_not_connected;
-static char	m_http_header[MAX_HEADER_LEN];
+static HSEM		m_sem_not_connected;
+static char		m_http_header[MAX_HEADER_LEN];
 static SOCKET	m_hostsock = 0;
 static SOCKET	m_listensock = 0;
-static BOOL	m_running = FALSE;
+static BOOL		m_running = FALSE;
 static THREAD_HANDLE m_hthread;
 
 BOOL relaylib_isrunning()
