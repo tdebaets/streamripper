@@ -25,11 +25,6 @@ AC_ARG_ENABLE(static,
     enable_static=$enableval, enable_static=no)
 AM_CONDITIONAL(STATIC, test $enable_static = yes)
 
-if test "$enable_static" = yes
-then
-        AC_CONFIG_SUBDIRS(libmad-0.15.1b)
-fi
-
 THREADLIBS=no
 CPPFLAGS=
 
@@ -54,23 +49,32 @@ fi
 
 AC_SUBST(THREADLIBS)
 
-if test "$enable_static" = yes
-then
-	CPPFLAGS="-Ilib -Ilibmad-0.15.1b -D__UNIX__"
-	AC_SUBST(CPPFLAGS)
-	STATIC_LIBMAD="libmad-0.15.1b/.libs/libmad.a"
-	AC_SUBST(STATIC_LIBMAD)
-else
-	CPPFLAGS="-Ilib -D__UNIX__"
-	AC_SUBST(CPPFLAGS)
-	STATIC_LIBMAD=""
-	AC_SUBST(STATIC_LIBMAD)
-        AC_CHECK_LIB(mad, mad_stream_buffer, LIBS="$LIBS $THREADLIBS -lmad", [
-                echo "Error! Streamripper needs libmad(-dev) installed in order to compile."
-                echo "Try --enable-static to use included libmad."
-                exit -1
-        ])
+dnl -------- Tests for using included libmad ------
+echo ENABLE_STATIC is $enable_static
+LIBMAD=""
+AC_SUBST(LIBMAD)
+if test "$enable_static" = no; then
+  CPPFLAGS="-Ilib -D__UNIX__"
+  AC_SUBST(CPPFLAGS)
+  AC_CHECK_LIB(mad, mad_stream_buffer,
+    enable_static=no,
+    enable_static=yes)
 fi
+if test "$enable_static" = yes; then
+  LIBMAD="libmad-0.15.1b/.libs/libmad.a"
+  AC_SUBST(LIBMAD)
+  CPPFLAGS="-Ilib -Ilibmad-0.15.1b -D__UNIX__"
+  AC_SUBST(CPPFLAGS)
+else
+  LIBMAD=-lmad
+  AC_SUBST(LIBMAD)
+  CPPFLAGS="-Ilib -D__UNIX__"
+  AC_SUBST(CPPFLAGS)
+fi
+if test "$enable_static" = yes; then
+        AC_CONFIG_SUBDIRS(libmad-0.15.1b)
+fi
+
 
 dnl Check for semaphore library
 AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(sem, sem_init,))
@@ -78,8 +82,12 @@ AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(sem, sem_init,))
 dnl Check for iconv & related
 AM_ICONV
 AM_LANGINFO_CODESET
+SR_FIND_LOCALE_CHARSET
 
-AC_CHECK_LIB(dce,pthread_create,THREADLIBS="-ldce",)
+dnl SR_TEST_DECL
+
+dnl ** GCS Why testing twice??
+dnl AC_CHECK_LIB(dce,pthread_create,THREADLIBS="-ldce",)
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
