@@ -102,11 +102,13 @@ error_code findsep_silence(const u_char *buffer, const u_long size, u_long *pos)
 	 * decoders cough*mpglib*cough are pron to failure  and any 
 	 * help they can get in figuring out what to do is a good thing
 	 */
+#ifndef WIN32
 	if (mpeg_find_first_header(buffer, size, MIN_GOOD_FRAMES*2, &offset) != SR_SUCCESS)
 	{
 		*pos = 0;
 		return SR_ERROR_CANT_DECODE_MP3; // Not really, but what else can we do?
 	}
+#endif
 
 	/*
 	 * Try to decode the mp3 data, currently on Wintel boxens we use xaudio

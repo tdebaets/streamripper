@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <time.h>
 #include "types.h"
 
 /*********************************************************************************
@@ -55,9 +56,13 @@ void debug_printf(char *str, ...)
 #if DEBUG_TO_FILE
 	
 	{
+	char datebuf[50];
+	time_t now = time(NULL);
 	FILE *fp = fopen("debugdump.txt", "a");
+
+	strftime(datebuf, 50, "%m/%d/%y:%H:%M:%S", localtime(&now));
 	vsnprintf(buf, MAX_ERROR_STR, str, va);
-	fprintf(fp, "%s", buf);
+	fprintf(fp, "%s - %s", datebuf, buf);
 	fflush(fp);
 	fclose(fp);
 	}

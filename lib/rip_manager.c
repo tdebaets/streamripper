@@ -214,6 +214,7 @@ error_code start_track(char *trackname)
 	int ret;
 	
 	strcpy(temptrack, trackname);
+	debug_printf("start_track: %s\n", trackname);
 
 	strip_invalid_chars(temptrack);
 	if ((ret = filelib_start(temptrack)) != SR_SUCCESS)
