@@ -103,6 +103,7 @@ man_MANS = \
 	streamripper.1
 
 EXTRA_DIST = \
+	CHANGES \
 	readme_xfade.txt \
 	lib/live365info.c \
 	lib/live365info.h \

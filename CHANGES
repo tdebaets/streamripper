@@ -4,7 +4,7 @@ Sat Jun  5 12:53:36 EDT 2004 (GCS)
 * Fix streamripper hang when not using -r flag
 * Fix error codes not being propagated from socklib
 * Add error check in rip_manager::myrecv for incompletely received
-  buffers to fix SR_ERROR_INVALID_METADATA messages
+  buffers (to fix SR_ERROR_INVALID_METADATA messages)
 
 New for 1.60.9
 --------------
