@@ -79,7 +79,7 @@ typedef struct IO_DATA_INPUTst{
  * does the "find silent point" shit.
  */
 typedef struct IO_GET_STREAMst{
-	int (*get_stream_data)(char* data_buf, int* track_status, char *track_buf);
+	int (*get_stream_data)(char* data_buf, char *track_buf);
 	u_long getsize;
 } IO_GET_STREAM;
 

@@ -51,14 +51,16 @@ static void compute_cbuffer_size (SPLITPOINT_OPTIONS *sp_opt,
 				  int bitrate, int meta_interval);
 static int ms_to_bytes (int ms, int bitrate);
 static int bytes_to_secs (unsigned int bytes);
+static void clear_track_info (TRACK_INFO* ti);
 
 /*********************************************************************************
  * Private Vars
  *********************************************************************************/
 static CBUFFER			m_cbuffer;
 static IO_GET_STREAM	*m_in;
-static TRACK_INFO m_last_track;
-static TRACK_INFO m_current_track;
+static TRACK_INFO m_old_track;	    /* The track that's being ripped now */
+static TRACK_INFO m_new_track;	    /* The track that's gonna start soon */
+static TRACK_INFO m_current_track;  /* The metadata as I'm parsing it */
 static int m_first_time_through;
 static char			m_no_meta_name[MAX_TRACK_LEN] = {'\0'};
 static char			*m_getbuffer = NULL;
@@ -135,10 +137,9 @@ ripstream_init (IO_GET_STREAM *in, char *no_meta_name,
     m_meta_interval = in->getsize;
     m_cue_sheet_bytes = 0;
 
-    m_last_track.raw_metadata[0] = '\0';
-    m_last_track.have_track_info = 0;
-    m_current_track.raw_metadata[0] = '\0';
-    m_current_track.have_track_info = 0;
+    clear_track_info (&m_old_track);
+    clear_track_info (&m_new_track);
+    clear_track_info (&m_current_track);
     m_first_time_through = 1;
 
     if ((m_getbuffer = malloc(in->getsize)) == NULL)
@@ -156,10 +157,9 @@ ripstream_destroy()
     m_cbuffer_size = 0;
     cbuffer_destroy(&m_cbuffer);
 
-    m_last_track.raw_metadata[0] = '\0';
-    m_last_track.have_track_info = 0;
-    m_current_track.raw_metadata[0] = '\0';
-    m_current_track.have_track_info = 0;
+    clear_track_info (&m_old_track);
+    clear_track_info (&m_new_track);
+    clear_track_info (&m_current_track);
     m_first_time_through = 1;
 
     m_no_meta_name[0] = '\0';
@@ -172,42 +172,43 @@ BOOL is_buffer_full()
     return (cbuffer_get_free(&m_cbuffer) - m_in->getsize) < m_in->getsize;
 }
 
-BOOL is_track_changed()
+BOOL
+is_track_changed()
 {
-#if defined (commentout)
-    debug_printf ("is_track_changed\n"
-		  "|%s|\n|%s|\n",m_last_track, m_current_track);
-
-    /* GCS: this is obsolete */
-    if (strstr(m_current_track,m_drop_string) && *m_drop_string) {
-	strcpy(m_current_track,m_last_track);
-	return 0;
-    }
-
-    return strcmp(m_last_track, m_current_track) != 0 && *m_last_track;
-#endif
-
-    /* Not sure about this one.  (GCS FIX) */
-    if (!(*m_last_track.raw_metadata))
-	return 0;
-
     /* If metadata is duplicate of previous, then no change. */
-    if (!strcmp(m_last_track.raw_metadata, m_current_track.raw_metadata))
+    if (!strcmp(m_old_track.raw_metadata, m_current_track.raw_metadata))
 	return 0;
 
     /* Otherwise, there was a change. */
     return 1;
 }
 
-#if defined (commentout)
-/* GCS April 17, 2004 - This never happens.  It is leftover from 
-   the live365 stuff */
-BOOL
-is_no_meta_track()
+static void
+format_track_info (TRACK_INFO* ti, char* tag)
 {
-    return strcmp(m_current_track, NO_TRACK_STR) == 0;
+    debug_printf ("----- TRACK_INFO %s\n"
+	"HAVETI: %d\n"
+	"RAW_MD: %s\n"
+	"ARTIST: %s\n"
+	"TITLE:  %s\n"
+	"ALBUM:  %s\n",
+	tag,
+        ti->have_track_info,
+	ti->raw_metadata,
+	ti->artist,
+	ti->title,
+	ti->album);
 }
-#endif
+
+static void
+clear_track_info (TRACK_INFO* ti)
+{
+    ti->have_track_info = 0;
+    ti->raw_metadata[0] = 0;
+    ti->artist[0] = 0;
+    ti->title[0] = 0;
+    ti->album[0] = 0;
+}
 
 static void
 copy_track_info (TRACK_INFO* dest, TRACK_INFO* src)
@@ -224,42 +225,36 @@ ripstream_rip()
 {
     int ret;
     int real_ret = SR_SUCCESS;
-    int track_status;
     u_long extract_size;
 
-    // only copy over the last track name if 
-    // we are not waiting to buffer for a silent point
-    if (m_find_silence < 0) {
-#if defined (commentout)
-	strcpy(m_last_track, m_current_track);
-#endif
-	copy_track_info (&m_last_track, &m_current_track);
-	strcpy(m_last_track.raw_metadata, m_current_track.raw_metadata);
-    }
-
-    // get the data
-    ret = m_in->get_stream_data(m_getbuffer, &track_status, m_current_track.raw_metadata);
+    /* get the data & title */
+    debug_printf ("RIPSTREAM_RIP: get_stream_data\n");
+    ret = m_in->get_stream_data(m_getbuffer, m_current_track.raw_metadata);
     if (ret != SR_SUCCESS) {
 	debug_printf("m_in->get_stream_data bad return code: %d\n", ret);
 	return ret;
     }
 
-    /* Immediately dump to relay & show file */
+    /* Immediately dump data to relay & show file */
     rip_manager_put_raw_data (m_getbuffer, m_meta_interval);
 
-    /* Query stream for bitrate, but only first time through. */
+    /* First time through, determine the bitrate. 
+       The bitrate is needed to do the track splitting parameters 
+       properly in seconds.  See the readme file for details.  */
     if (m_bitrate == -1) {
         unsigned long test_bitrate;
 	debug_printf("Querying stream for bitrate - first time.\n");
-        find_bitrate(&test_bitrate, m_getbuffer, m_meta_interval);
-	m_bitrate = test_bitrate / 1000;
+	if (m_content_type == CONTENT_TYPE_MP3) {
+	    find_bitrate(&test_bitrate, m_getbuffer, m_meta_interval);
+	    m_bitrate = test_bitrate / 1000;
+	    debug_printf("Got bitrate: %d\n",m_bitrate);
+	} else {
+	    m_bitrate = 0;
+	}
 
-        /* The bitrate is needed to do the track splitting parameters 
-	 * properly in seconds.  See the readme file for details.  */
-	debug_printf("Got bitrate: %d\n",m_bitrate);
 	if (m_bitrate == 0) {
-	    /* I'm not sure what this means, but let's go with 
-	     * what the http header says... */
+	    /* Couldn't decode from mp3, so let's go with what the 
+	       http header says, or fallback to 24.  */
 	    if (m_http_bitrate > 0)
 		m_bitrate = m_http_bitrate;
 	    else
@@ -271,14 +266,17 @@ ripstream_rip()
     }
 
     /* Parse metadata */
-    if (track_status == 1) {
+    if (m_current_track.raw_metadata[0]) {
         parse_metadata (&m_current_track);
+    } else {
+        clear_track_info (&m_current_track);
     }
 
     /* First time through, so start a track. */
     if (m_first_time_through) {
 	int ret;
 	debug_printf ("First time through...\n");
+	m_first_time_through = 0;
 	if (!m_current_track.have_track_info) {
 	    strcpy (m_current_track.raw_metadata, m_no_meta_name);
 	}
@@ -287,12 +285,8 @@ ripstream_rip()
 	    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
 	    return ret;
 	}
-	/* write the cue sheet */
 	filelib_write_cue (&m_current_track, 0);
-	/* set last track info */
-	strcpy (m_last_track.raw_metadata, m_current_track.raw_metadata);
-	
-	m_first_time_through = 0;
+	copy_track_info (&m_old_track, &m_current_track);
     }
 
     /* Copy the data into cbuffer */
@@ -302,30 +296,29 @@ ripstream_rip()
 	return ret;
     }													
 
-    /* Send meta-data & check track change.  Note, m_content_type 
-       isn't quite the best way to check.  Instead we should check 
-       if there is meta-data, but this information isn't available
-       in this routine without some code reorganization - GCS */
-    if (m_content_type == CONTENT_TYPE_MP3
-	|| m_content_type == CONTENT_TYPE_NSV
-	|| m_content_type == CONTENT_TYPE_AAC) {
-	if (is_track_changed()) {
-	    /* Set m_find_silence equal to the number of additional blocks 
-	       needed until we can do silence separation. */
-	    debug_printf ("is_track_changed: m_find_silence = %d\n",
-			  m_find_silence);
-	    relay_send_meta_data (m_current_track.raw_metadata);
-	    if (m_find_silence < 0) {
-		if (m_mi_to_cbuffer_end > 0) {
-		    m_find_silence = m_mi_to_cbuffer_end;
-		} else {
-		    m_find_silence = 0;
-		}
+    /* Check for track change. */
+    if (m_current_track.have_track_info && is_track_changed()) {
+	/* Set m_find_silence equal to the number of additional blocks 
+	   needed until we can do silence separation. */
+	debug_printf ("VERIFIED TRACK CHANGE (m_find_silence = %d)\n",
+		      m_find_silence);
+	copy_track_info (&m_new_track, &m_current_track);
+	relay_send_meta_data (m_current_track.raw_metadata);
+	if (m_find_silence < 0) {
+	    if (m_mi_to_cbuffer_end > 0) {
+		m_find_silence = m_mi_to_cbuffer_end;
+	    } else {
+		m_find_silence = 0;
 	    }
-	} else {
-	    relay_send_meta_data (0);
 	}
+    } else {
+	relay_send_meta_data (0);
     }
+
+    debug_printf ("Checking for silence\n");
+    format_track_info (&m_old_track, "old");
+    format_track_info (&m_new_track, "new");
+    format_track_info (&m_current_track, "current");
 
     if (m_find_silence == 0) {
 	/* Find separation point */
@@ -337,19 +330,22 @@ ripstream_rip()
 	}
 
 	/* Write out previous track */
-	ret = end_track(pos1, pos2, &m_last_track);
+	ret = end_track(pos1, pos2, &m_old_track);
 	if (ret != SR_SUCCESS)
 	    real_ret = ret;
         m_cue_sheet_bytes += pos2;
-	//ret = start_track(m_current_track.raw_metadata);
-	ret = start_track (&m_current_track);
+
+	/* Start next track */
+	ret = start_track (&m_new_track);
 	if (ret != SR_SUCCESS)
 	    real_ret = ret;
 	m_find_silence = -1;
+
+	copy_track_info (&m_old_track, &m_new_track);
     }
     if (m_find_silence >= 0) m_find_silence --;
 
-    /* If buffer almost full, then post to caller */
+    /* If buffer almost full, dump extra to current song. */
     if (cbuffer_get_free(&m_cbuffer) < m_in->getsize) {
         /* Extract only as much as needed */
 	extract_size = m_in->getsize - cbuffer_get_free(&m_cbuffer);
@@ -358,11 +354,9 @@ ripstream_rip()
 	    debug_printf("cbuffer_extract had bad return code %d\n", ret);
 	    return ret;
 	}
-        /* Post to caller */
-	if (*m_current_track.raw_metadata) {
-	    m_cue_sheet_bytes += extract_size;
-	    rip_manager_put_data(m_getbuffer, extract_size);
-	}
+	/* Post to caller */
+	m_cue_sheet_bytes += extract_size;
+	rip_manager_put_data(m_getbuffer, extract_size);
     }
 
     return real_ret;
@@ -505,87 +499,6 @@ end_track(u_long pos1, u_long pos2, TRACK_INFO* ti)
     free(buf);
     return ret;
 }
-
-#if defined (commentout)
-error_code
-end_track(u_long pos1, u_long pos2, TRACK_INFO* ti)
-{
-    // pos1 is end of prev track
-    // pos2 is beginning of next track
-    int ret;
-    ID3Tag	id3;
-    char	*p1;
-
-    // I think pos can be zero if the silence is right at the beginning
-    // i.e. it is a bug in s.r.
-    u_char *buf = (u_char *)malloc(pos1);
-
-    if (m_addID3tag) {
-	char    artist[1024] = "";
-	char    title[1024] = "";
-
-	memset(&id3, '\000',sizeof(id3));
-	strncpy(id3.tag, "TAG", strlen("TAG"));
-	//   strncpy(id3.comment, "Streamripper!", strlen("Streamripper!"));
-
-	memset(&artist, '\000',sizeof(artist));
-	memset(&title, '\000',sizeof(title));
-	p1 = strchr(trackname, '-');
-	if (p1) {
-            strncpy(artist, trackname, p1-trackname);
-            p1++;
-	    if (*p1 == ' ') {
-		p1++;
-	    }
-	    strcpy(title, p1);
-	    strncpy(id3.artist, artist, sizeof(id3.artist));
-	    strncpy(id3.songtitle, title, sizeof(id3.songtitle));
-	    //fprintf(stdout, "Adding ID3 (%s) (%s)\n", artist, title);
-        }
-    }
-
-    // pos1 is end of prev track
-    // pos2 is beginning of next track
-
-    // First, dump the part only in prev track
-    if (pos1 <= pos2) {
-	if ((ret = cbuffer_extract(&m_cbuffer, buf, pos1)) != SR_SUCCESS)
-	    goto BAIL;
-	// Next, skip past portion not in either track
-	if (pos1 < pos2) {
-	    if ((ret = cbuffer_fastforward(&m_cbuffer, pos2-pos1)) != SR_SUCCESS)
-		goto BAIL;
-	}
-    } else {
-	if ((ret = cbuffer_extract(&m_cbuffer, buf, pos2)) != SR_SUCCESS)
-	    goto BAIL;
-	// Next, grab, but don't skip, past portion in both tracks
-	if ((ret = cbuffer_peek(&m_cbuffer, buf+pos2, pos1-pos2)) != SR_SUCCESS)
-	    goto BAIL;
-    }
-
-    // Write that out to the current file
-    if ((ret = rip_manager_put_data(buf, pos1)) != SR_SUCCESS)
-	goto BAIL;
-
-    if (m_addID3tag) {
-	if ((ret = rip_manager_put_data((char *)&id3, sizeof(id3))) != SR_SUCCESS)
-	    goto BAIL;
-    }
-
-    // Only save this track if we've skipped over enough cruft 
-    // at the beginning of the stream
-    debug_printf("Current track number %d (skipping if %d or less)\n", 
-		 m_track_count, m_drop_count);
-    if (m_track_count > m_drop_count)
-	if ((ret = rip_manager_end_track(trackname)) != SR_SUCCESS)
-	    goto BAIL;
-
- BAIL:
-    free(buf);
-    return ret;
-}
-#endif
 
 error_code
 start_track (TRACK_INFO* ti)
@@ -748,9 +661,7 @@ ms_to_bytes (int ms, int bitrate)
 static int
 bytes_to_secs (unsigned int bytes)
 {
-#if defined (commentout)
-    int secs = ((bytes / m_bitrate) * 8) / 1000;
-#endif
+    /* divided by 125 because 125 = 1000 / 8 */
     int secs = (bytes / m_bitrate) / 125;
     return secs;
 }

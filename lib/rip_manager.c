@@ -224,7 +224,7 @@ rip_manager_start_track (TRACK_INFO* ti, int track_count)
     /* GCS FIX */
     char* trackname = ti->raw_metadata;
 
-    debug_printf("start_track: %s\n", trackname);
+    debug_printf("rip_manager_start_track: %s\n", trackname);
 
     if ((ret = filelib_start(trackname)) != SR_SUCCESS) {
         return ret;
@@ -528,8 +528,7 @@ start_ripping()
     }
 
     /* prepares the ripshout lib for ripping */
-    ret = ripshout_init(&m_in, &m_ripin, m_info.meta_interval, 
-	    m_info.icy_name);
+    ret = ripshout_init(&m_in, &m_ripin, m_info.meta_interval);
     if (ret != SR_SUCCESS)
 	goto RETURN_ERR;
     m_destroy_func = ripshout_destroy;

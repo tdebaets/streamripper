@@ -379,6 +379,8 @@ parse_metadata (TRACK_INFO* ti)
 		copy_rule_result (ti->album, query_string, pmatch, rulep->album_idx);
 		/* GCS FIX: We don't have a track no */
 		ti->have_track_info = 1;
+		debug_printf ("Parsed track info.\nARTIST: %s\nTITLE: %s\nALBUM: %s\n",
+			ti->artist, ti->title, ti->album);
 		return;
 	    }
 	}
