@@ -1,0 +1,11 @@
+config.cache
+config.log
+config.status
+dump.mp3
+gcs.txt
+console/Makefile
+consoleWin32/consoleWin32.ncb
+consoleWin32/consoleWin32.sln
+consoleWin32/consoleWin32.suo
+consoleWin32/consoleWin32.vcproj
+consoleWin32/Debug
