@@ -34,7 +34,7 @@
 #elif __UNIX__
 
 #define FHANDLE	int
-#define OpenFile(_filename_)	open(_filename_, O_RDWR | O_CREAT, S_IRWXU | S_IRGRP | S_IROTH)
+#define OpenFile(_filename_)	open(_filename_, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)
 #define CloseFile(_fhandle_) 	close(_fhandle_)
 #define MoveFile(_oldfile_, _newfile_)     rename(_oldfile_, _newfile_)
 #define DeleteFile(_file_)  	(!unlink(_file_))
