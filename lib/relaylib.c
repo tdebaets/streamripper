@@ -466,10 +466,11 @@ relaylib_send(char *data, int len)
         prev = NULL;
         while(ptr != NULL)
         {
+	    int bsz;
             next = ptr->m_next;
 
 	    //Up to two full packets
-	    int bsz= ( 8*len > BUFSIZE ) ? 8*len : BUFSIZE;
+	    bsz= ( 8*len > BUFSIZE ) ? 8*len : BUFSIZE;
 	    if( bsz > ptr->m_BufferSize ) {
 		ptr->m_Buffer= realloc( ptr->m_Buffer, bsz );
 		ptr->m_BufferSize= bsz;
@@ -570,96 +571,100 @@ relay_send_meta_data(char *track)
 
 void thread_send(void *notused)
 {
-struct hostsocklist_t *prev;
-struct hostsocklist_t *ptr;
-struct hostsocklist_t *next;
-int sock;
-int ret;
-BOOL good;
-error_code err = SR_SUCCESS;
+    struct hostsocklist_t *prev;
+    struct hostsocklist_t *ptr;
+    struct hostsocklist_t *next;
+    int sock;
+    int ret;
+    BOOL good;
+    error_code err = SR_SUCCESS;
+    int err_errno;
 
     while(m_running)
     {
+	threadlib_waitfor_sem(&m_sem_listlock);
+	ptr = m_hostsocklist;
+	if (ptr != NULL)
+	{
+	    prev = NULL;
+	    while(ptr != NULL)
+	    {
+		sock = ptr->m_hostsock;
+		next = ptr->m_next;
+		good = TRUE;
 
-      threadlib_waitfor_sem(&m_sem_listlock);
-      ptr = m_hostsocklist;
-      if (ptr != NULL)
-      {
-         prev = NULL;
-         while(ptr != NULL)
-         {
-               sock = ptr->m_hostsock;
-               next = ptr->m_next;
-               good = TRUE;
+		// Replicate the same data to each socket
+		if (swallow_receive(sock) != 0)
+		{
+		    good = FALSE;
+		}
+		else
+		{
+		    if( ptr->m_LeftToSend > 0 ) {
+			debug_printf("Relay: Sending Client %d to the client\n", ptr->m_LeftToSend );
+			ret = send(sock, ptr->m_Buffer+ptr->m_Offset, ptr->m_LeftToSend, 0);
+			debug_printf("Relay: Sending to Client returned %d\n", ret );
+			if (ret == SOCKET_ERROR)
+			{
+			    /* Sometimes windows gives me an errno of 0
+			       Sometimes windows gives me an errno of 183 
+			       See this thread for details: 
+				http://groups.google.com/groups?hl=en&lr=&ie=UTF-8&selm=8956d3e8.0309100905.6ba60e7f%40posting.google.com
+				*/
+			    err_errno = errno;
+			    if (err_errno == EWOULDBLOCK || err_errno == 0 || err_errno == 183) {
+				WSASetLastError (0);
+				// Client is slow.  Retry later.
+			    } else {
+				debug_printf ("Relay: socket error is %d\n",errno);
+				good = FALSE;
+			    }
+			} else { 
+			    // Client is slow.  Retry later.
+			    ptr->m_Offset+= ret;
+			    ptr->m_LeftToSend-=ret;
+			    if( ptr->m_LeftToSend < 0 )
+				ptr->m_LeftToSend=0;
 
-               // Replicate the same data to each socket
-               if (swallow_receive(sock) != 0)
-               {
-                  good = FALSE;
-               }
-               else
-               {
-                  if( ptr->m_LeftToSend > 0 ) {
-                     debug_printf("Relay: Sending Client %d to the client\n", ptr->m_LeftToSend );
-                     ret = send(sock, ptr->m_Buffer+ptr->m_Offset, ptr->m_LeftToSend, 0);
-                     debug_printf("Relay: Sending to Client returned %d\n", ret );
-                     if (ret == SOCKET_ERROR)
-                     {
-                        if (errno != EWOULDBLOCK)
-                        {
-                           good = FALSE;
-                        }
-                        else
-                        {
-                           // debug_printf("Relay: Client %d too slow (dropped %d bytes)\n", sock, ptr->m_LeftToSend);
-                        }
-                     } else { 
-                        //if (ret < len) {
-                        //   debug_printf("Relay: Client %d too slow (dropped %d of %d bytes)\n", sock, (len - ret), len);
-                        //}
-                        ptr->m_Offset+= ret;
-                        ptr->m_LeftToSend-=ret;
-                        if( ptr->m_LeftToSend < 0 )
-                           ptr->m_LeftToSend=0;
+			}
+		    }        
+		}
 
-                     }
-                  }        
-               }
-                           
-               if (!good)
-               {
-                  debug_printf("Relay: Client %d disconnected (%s)\n", sock, strerror(errno));
-                  closesocket(sock);
+	       
+		if (!good)
+		{
+		    debug_printf("Relay: Client %d disconnected (%s)\n", sock, strerror(errno));
+		    closesocket(sock);
                                    
-                  // Carefully delete this client from list without affecting list order
-                  if (prev != NULL)
-                  {
-                     prev->m_next = next;
-                  }
-                  else
-                  {
-                     m_hostsocklist = next;
-                  }
-                  if( ptr->m_Buffer != NULL )
-                     free( ptr->m_Buffer );
+		    // Carefully delete this client from list without affecting list order
+		    if (prev != NULL)
+		    {
+			prev->m_next = next;
+		    }
+		    else
+		    {
+			m_hostsocklist = next;
+		    }
+		    if( ptr->m_Buffer != NULL )
+			free( ptr->m_Buffer );
 
-                  free(ptr);
-                  ptr = NULL;
-                  m_hostsocklist_len --;
-               }
+		    free(ptr);
+		    ptr = NULL;
+		    m_hostsocklist_len --;
+		}
                            
-               if (ptr != NULL)
-               {
-                  prev = ptr;
-               }
-               ptr = next;
-         }
-      }
-      else
-      {
-         err = SR_ERROR_HOST_NOT_CONNECTED;
-      }
-      threadlib_signel_sem(&m_sem_listlock);
-      usleep( 50000 );
+		if (ptr != NULL)
+		{
+		    prev = ptr;
+		}
+		ptr = next;
+	    }
+	}
+	else
+	{
+	    err = SR_ERROR_HOST_NOT_CONNECTED;
+	}
+	threadlib_signel_sem(&m_sem_listlock);
+	Sleep( 50 );
     }
 }

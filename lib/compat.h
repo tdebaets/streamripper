@@ -69,7 +69,7 @@
 #define	SemWait(_s_)	sem_wait(&(_s_))
 #define	SemPost(_s_)	sem_post(&(_s_))
 #define	SemDestroy(_s_)	sem_destroy(&(_s_))
-#define Sleep(x) 	usleep(x)	
+#define Sleep(x) 	usleep(1000*x)	
 
 #endif
 

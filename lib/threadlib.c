@@ -36,7 +36,6 @@
 		_beginthread((void *)callback, 0, (void *)NULL)
 #elif __UNIX__
     #include <unistd.h>
-	#define Sleep(x) usleep(x)
 	#define beginthread(thread, callback) \
 		pthread_create(thread, NULL, \
                           (void *)callback, (void *)NULL)
