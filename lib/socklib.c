@@ -251,9 +251,12 @@ socklib_read_header(HSOCKET *socket_handle, char *buffer, int size,
 	if (socket_handle->closed)
 	    return SR_ERROR_SOCKET_CLOSED;
 
+	/* GCS: This patch is too restrictive. */
+#if defined (commentout)
 	//look for the end of the icy-header
 	if (!strstr(buffer, "icy-") && !strstr(buffer,"ice-"))
 	    continue;
+#endif
 
 	t = buffer + (i > 3 ? i - 3: i);
 
