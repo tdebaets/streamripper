@@ -514,12 +514,12 @@ start_ripping()
 	goto RETURN_ERR;
     }
 
-	/* prepares the ripshout lib for ripping */
-	ret = ripshout_init(&m_in, &m_ripin, m_info.meta_interval, 
-		m_info.icy_name);
-	if (ret != SR_SUCCESS)
-	    goto RETURN_ERR;
-	m_destroy_func = ripshout_destroy;
+    /* prepares the ripshout lib for ripping */
+    ret = ripshout_init(&m_in, &m_ripin, m_info.meta_interval, 
+	    m_info.icy_name);
+    if (ret != SR_SUCCESS)
+	goto RETURN_ERR;
+    m_destroy_func = ripshout_destroy;
 
     /*
      * ripstream is good to go, it knows how to get data, and where
@@ -529,6 +529,7 @@ start_ripping()
     ret = ripstream_init(&m_ripin, 
 			 m_info.icy_name, m_options.dropcount,
 			 &m_options.sp_opt, m_ripinfo.bitrate, 
+			 m_info.content_type, 
 			 GET_ADD_ID3(m_options.flags));
     if (ret != SR_SUCCESS) {
 	ripstream_destroy();

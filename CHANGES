@@ -1,3 +1,9 @@
+New for 1.61.2
+--------------
+* Differentiate between different stream types: mp3, ogg, aac, 
+  nsv, and ultravox.
+
+
 New for 1.61.1
 --------------
 * Use regular expression matching for metadata parsing

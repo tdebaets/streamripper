@@ -30,7 +30,6 @@
  * Public functions
  *********************************************************************************/
 error_code	httplib_parse_url(const char *url, URLINFO *urlinfo);
-error_code	httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info);
 error_code	httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, char *useragent);
 error_code	httplib_construct_page_request(const char *url, BOOL proxyformat, char *buffer);
 error_code	httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size);
@@ -215,14 +214,16 @@ extract_header_value(char *header, char *dest, char *match)
     }
 }
 
-
 error_code
-httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
+httplib_parse_sc_header(const char *url, char *header, SR_HTTP_HEADER *info)
 {
     int rc;
     char *start;
     char versionbuf[64];
     char stempbr[50];
+    URLINFO url_info;
+    int url_path_len;
+    int content_type_by_url;
 
     if (!header || !info)
 	return SR_ERROR_INVALID_PARAM;
@@ -235,9 +236,8 @@ httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
     start = (char *)strstr(header, "ICY ");
     if (!start) {
 	start = (char *)strstr(header, "HTTP/1.");
-	if (!start)	return SR_ERROR_NO_RESPOSE_HEADER;
+	if (!start) return SR_ERROR_NO_RESPOSE_HEADER;
     }
-
     start = strstr(start, " ") + 1;
     sscanf(start, "%i", &info->icy_code);
     if (info->icy_code >= 400) {
@@ -260,57 +260,116 @@ httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
 	}
     }
 
-    // read the Shoutcast headers
-    // apparently some icecast streams use different headers
-    // but other then that it always works like this
+    // read generic headers
     extract_header_value(header, info->http_location, "Location:");
     extract_header_value(header, info->server, "Server:");
     rc = extract_header_value(header, info->icy_name, "icy-name:");
+    info->have_icy_name = rc;
     extract_header_value(header, info->icy_url, "icy-url:");
     extract_header_value(header, stempbr, "icy-br:");
     info->icy_bitrate = atoi(stempbr);
-    info->have_icy_name = rc;
+
+    /* interpret the content type from http header */
+    rc = extract_header_value(header, stempbr, "Content-Type:");
+    if (rc == 0) {
+	info->content_type = CONTENT_TYPE_UNKNOWN;
+    }
+    else if (strstr(stempbr,"audio/mpeg")) {
+	info->content_type = CONTENT_TYPE_MP3;
+    }
+    else if (strstr(stempbr,"video/nsv")) {
+	info->content_type = CONTENT_TYPE_NSV;
+    }
+    else if (strstr(stempbr,"misc/ultravox")) {
+	info->content_type = CONTENT_TYPE_ULTRAVOX;
+    }
+    else if (strstr(stempbr,"application/ogg")) {
+	info->content_type = CONTENT_TYPE_OGG;
+    }
+    else if (strstr(stempbr,"audio/aac")) {
+	info->content_type = CONTENT_TYPE_AAC;
+    }
+    else {
+	info->content_type = CONTENT_TYPE_UNKNOWN;
+    }
+
+    /* Look at url for more content type hints */
+    rc = httplib_parse_url (url, &url_info);
+    if (rc != SR_SUCCESS) return rc;
+    url_path_len = strlen(url_info.path);
+    content_type_by_url = CONTENT_TYPE_UNKNOWN;
+    if (url_path_len >= 4) {
+	if (!strcmp (&url_info.path[url_path_len-4], ".aac")) {
+	    content_type_by_url = CONTENT_TYPE_AAC;
+	} else if (!strcmp (&url_info.path[url_path_len-4], ".ogg")) {
+	    content_type_by_url = CONTENT_TYPE_OGG;
+	} else if (!strcmp (&url_info.path[url_path_len-4], ".mp3")) {
+	    content_type_by_url = CONTENT_TYPE_MP3;
+	} else if (!strcmp (&url_info.path[url_path_len-4], ".nsv")) {
+	    content_type_by_url = CONTENT_TYPE_NSV;
+	}
+    }
 
     printf ("---------------\n");
     printf (header);
     printf ("---------------\n");
-    // Lets try to guess the server :)
-    // Try Shoutcast
+
+    // Try to guess the server
+
+    // Check for Streamripper relay
     if ((start = (char *)strstr(header, "[relay stream]")) != NULL) {
 	strcpy(info->server, "Streamripper relay server");
-    } else if ((start = (char *)strstr(header, "SHOUTcast")) != NULL) {
+    }
+    // Check for Shoutcast
+    else if ((start = (char *)strstr(header, "SHOUTcast")) != NULL) {
 	strcpy(info->server, "SHOUTcast/");
-	if ((start = (char *)strstr(start, "Server/")) != NULL)
-	{
+	if ((start = (char *)strstr(start, "Server/")) != NULL) {
 	    sscanf(start, "Server/%[^<]<", versionbuf);
 	    strcat(info->server, versionbuf);
 	}
 
     }
-    else if ((start = (char *)strstr(header, "icecast")) != NULL)
-    {
-	if (!info->server[0])
-	{
+    // Check for Icecast 2
+    else if ((start = (char *)strstr(header, "Icecast 2")) != NULL) {
+	/* aac on icecast 2.0-2.1 declares content type of audio/mpeg */
+	if (info->content_type == CONTENT_TYPE_MP3 && 
+	    content_type_by_url != CONTENT_TYPE_UNKNOWN) {
+	    info->content_type = content_type_by_url;
+	}
+    }
+    // Check for Icecast 1
+    else if ((start = (char *)strstr(header, "icecast")) != NULL) {
+	if (!info->server[0]) {
 	    strcpy(info->server, "icecast/");
-	    if ((start = (char *)strstr(start, "version ")) != NULL)
-	    {
+	    if ((start = (char *)strstr(start, "version ")) != NULL) {
 		sscanf(start, "version %[^<]<", versionbuf);
 		strcat(info->server, versionbuf);
 	    }
 	}
 
-	// icecast headers.
+	// icecast 1.x headers.
 	extract_header_value(header, info->icy_url, "x-audiocast-server-url:");
 	rc = extract_header_value(header, info->icy_name, "x-audiocast-name:");
+	info->have_icy_name |= rc;
 	extract_header_value(header, info->icy_genre, "x-audiocast-genre:");
 	extract_header_value(header, stempbr, "x-audiocast-bitrate:");
 	info->icy_bitrate = atoi(stempbr);
-	info->have_icy_name |= rc;
     }
-    else if ((start = (char *)strstr(header, "Zwitterion v")) != NULL)
-    {
+    // WTF is Zwitterion?
+    else if ((start = (char *)strstr(header, "Zwitterion v")) != NULL) {
 	sscanf(start, "%[^<]<", info->server);
     }
+
+    /* Last chance to deduce content type */
+    if (info->content_type == CONTENT_TYPE_UNKNOWN) {
+	if (content_type_by_url == CONTENT_TYPE_UNKNOWN) {
+	    info->content_type = CONTENT_TYPE_MP3;
+	} else {
+	    info->content_type = content_type_by_url;
+	}
+    }
+
+    debug_printf ("Deduced content type: %d\n", info->content_type);
 
     // Make sure we don't have any CRLF's at the end of our strings
     trim(info->icy_url);

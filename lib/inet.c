@@ -26,17 +26,9 @@
 #include "debug.h"
 
 /*********************************************************************************
- * Public functions
- *********************************************************************************/
-error_code	inet_get_webpage_alloc(HSOCKET *sock, const char *url, const char *proxyurl,
-								   char **buffer, unsigned long *size);
-error_code	inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl, 
-							SR_HTTP_HEADER *info, char *useragent, char *if_name);
-
-/*********************************************************************************
  * Private functions
  *********************************************************************************/
-static error_code get_sc_header(HSOCKET *sock, SR_HTTP_HEADER *info);
+static error_code get_sc_header(const char* url, HSOCKET *sock, SR_HTTP_HEADER *info);
 
 /*
  * Connects to a shoutcast type stream, leaves when it's about to get the header info
@@ -77,7 +69,7 @@ inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl,
 	return ret;
 
     debug_printf("inet_sc_connect(): calling get_sc_header\n");
-    if ((ret = get_sc_header(sock, info)) != SR_SUCCESS)
+    if ((ret = get_sc_header(url, sock, info)) != SR_SUCCESS)
 	return ret;
 
     if (*info->http_location) {
@@ -88,7 +80,8 @@ inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl,
     return SR_SUCCESS;
 }
 
-error_code get_sc_header(HSOCKET *sock, SR_HTTP_HEADER *info)
+error_code
+get_sc_header(const char* url, HSOCKET *sock, SR_HTTP_HEADER *info)
 {
 	int ret;
 	char headbuf[MAX_HEADER_LEN] = {'\0'};
@@ -96,7 +89,7 @@ error_code get_sc_header(HSOCKET *sock, SR_HTTP_HEADER *info)
 	if ((ret = socklib_read_header(sock, headbuf, MAX_HEADER_LEN, NULL)) != SR_SUCCESS)
 		return ret;
 
-	if ((ret = httplib_parse_sc_header(headbuf, info)) != SR_SUCCESS)
+	if ((ret = httplib_parse_sc_header(url, headbuf, info)) != SR_SUCCESS)
 		return ret;
 
 	return SR_SUCCESS;

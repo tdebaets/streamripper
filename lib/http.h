@@ -5,6 +5,7 @@
 
 typedef struct SR_HTTP_HEADERst
 {
+    int content_type;
     int meta_interval;
     int have_icy_name;
     char icy_name[MAX_ICY_STRING];
@@ -25,10 +26,10 @@ typedef struct URLINFOst
 	char password[MAX_URI_STRING];
 } URLINFO;
 
-extern error_code	httplib_parse_url(const char *url, URLINFO *urlinfo);
-extern error_code	httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info);
-extern error_code	httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, char *useragent);
-extern error_code	httplib_construct_page_request(const char *url, BOOL proxyformat, char *buffer);
-extern error_code	httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size);
+error_code httplib_parse_url(const char *url, URLINFO *urlinfo);
+error_code httplib_parse_sc_header(const char* url, char *header, SR_HTTP_HEADER *info);
+error_code httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, char *useragent);
+error_code httplib_construct_page_request(const char *url, BOOL proxyformat, char *buffer);
+error_code httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size);
 
 #endif //__HTTP_H__

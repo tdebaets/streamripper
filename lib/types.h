@@ -53,7 +53,15 @@ typedef unsigned long u_long;
 typedef unsigned char u_char;
 typedef unsigned short u_short;
 #endif
- 
+
+/* Different types of streams */
+#define CONTENT_TYPE_MP3		1
+#define CONTENT_TYPE_NSV		2
+#define CONTENT_TYPE_OGG    		3
+#define CONTENT_TYPE_ULTRAVOX		4
+#define CONTENT_TYPE_AAC		5
+#define CONTENT_TYPE_UNKNOWN		99
+
 /* 
  * IO_DATA_INPUT is a interface for socket input data, it has one 
  * method 'get_data' and is called by a "ripper" which is effectivly 

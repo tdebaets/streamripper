@@ -18,10 +18,6 @@
 
 #if WIN32
 #include <winsock2.h>
-#ifdef errno
-#undef errno
-#endif
-#define errno WSAGetLastError()
 #else
 #include <sys/time.h>
 #include <sys/types.h>
@@ -52,6 +48,13 @@
 #include "threadlib.h"
 #include "debug.h"
 #include "compat.h"
+
+#if defined (WIN32)
+#ifdef errno
+#undef errno
+#endif
+#define errno WSAGetLastError()
+#endif
 
 /*********************************************************************************
  * Public functions

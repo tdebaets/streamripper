@@ -4,6 +4,56 @@ Greg's notes
 HTTP HEADERS
 ~~~~~~~~~~~~
 
+http://stream.orban.com:8006 (Shoutcast/aac)
+===============================
+ICY 200 OK
+icy-notice1:<BR>This stream requires <a href="http://www.winamp.com/">Winamp</a>
+<BR>
+icy-notice2:SHOUTcast Distributed Network Audio Server/win32 v1.9.4<BR>
+icy-name:Nap's Jazz and Smooth Jazz
+icy-genre:Jazz
+icy-url:http://www.orban.com
+content-type:audio/aac
+icy-pub:1
+icy-metaint:8192
+icy-br:32
+
+http://inet.orban.com:8010/test.aac (icecast2/aac)
+===============================
+HTTP/1.0 200 OK
+Content-Type: audio/mpeg
+icy-metaint:16000
+icy-br:32
+icy-description:Hi-Fi Internet Audio
+icy-genre:Various
+icy-name:Orban Opticodec-PC Encoder - aacPlus v2 Evaluation Stream
+icy-pub:1
+icy-url:http://www.orban.com
+Server: Icecast 2.1.0
+
+http://stream2.noise.net.nz:8000/twisted-lofi.ogg (icecast2/ogg)
+===============================
+HTTP/1.0 200 OK
+Content-Type: application/ogg
+ice-audio-info: samplerate=22000
+icy-description:More than just great dance music!
+icy-genre:Dance
+icy-name:Twisted 107.7FM
+icy-pub:1
+icy-url:http://www.twisted.co.nz
+Server: Icecast 2.0-kh58
+
+http://rstream.xmission.com:8000/krcl-low.ogg (icecast2/ogg)
+===============================
+HTTP/1.0 200 OK
+Content-Type: application/ogg
+icy-br:0
+icy-genre:ecclectic
+icy-name:KRCL Community Radio
+icy-pub:1
+icy-url:http://www.krcl.org
+Server: Icecast 2.1.0
+
 http://64.236.34.97/stream/1021
 ===============================
 ICY 200 OK

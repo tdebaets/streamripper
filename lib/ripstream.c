@@ -78,6 +78,7 @@ static int			m_sw_end_to_cbuffer_end;
 static int			m_min_search_win;
 static int			m_drop_count;
 static int			m_track_count = 0;
+static int m_content_type;
 
 /*
  * oddsock's id3 tags
@@ -112,7 +113,9 @@ error_code
 ripstream_init (IO_GET_STREAM *in, char *no_meta_name, 
 		int drop_count,
 		SPLITPOINT_OPTIONS *sp_opt, 
-		int bitrate, BOOL addID3tag)
+		int bitrate, 
+		int content_type, 
+		BOOL addID3tag)
 {
     if (!in || !sp_opt || !no_meta_name) {
 	printf ("Error: invalid ripstream parameters\n");
@@ -127,6 +130,7 @@ ripstream_init (IO_GET_STREAM *in, char *no_meta_name,
     m_drop_count = drop_count;
     m_http_bitrate = bitrate;
     m_bitrate = -1;
+    m_content_type = content_type;
     /* GCS RMK: If no meta data, then this is the default chunk size. */
     m_meta_interval = in->getsize;
     m_cue_sheet_bytes = 0;
@@ -387,7 +391,12 @@ find_sep (u_long *pos1, u_long *pos2)
     debug_printf ("search window (bytes): %d,%d,%d\n", sw_start, sw_end,
 		  cbuffer_get_used(&m_cbuffer));
 
-    if (sw_end - sw_start < m_min_search_win) {
+    if (m_content_type != CONTENT_TYPE_MP3) {
+        /* If the search region is too small, take the middle. */
+	sw_sil = (sw_end + sw_start) / 2;
+	debug_printf ("(not mp3) taking middle: sw_sil=%d\n", sw_sil);
+    }
+    else if (sw_end - sw_start < m_min_search_win) {
         /* If the search region is too small, take the middle. */
 	sw_sil = (sw_end + sw_start) / 2;
 	debug_printf ("taking middle: sw_sil=%d\n", sw_sil);

@@ -6,7 +6,9 @@
 error_code
 ripstream_init (IO_GET_STREAM *in, char *no_meta_name, 
 		int drop_count, SPLITPOINT_OPTIONS *sp_opt, 
-		int bitrate, BOOL addID3tag);
+		int bitrate, 
+		int content_type, 
+		BOOL addID3tag);
 error_code ripstream_rip();
 void ripstream_destroy();
 
