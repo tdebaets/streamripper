@@ -147,7 +147,7 @@ get_trackname(int size, char *newtrack)
 
     debug_printf ("METADATA TITLE\n");
     for (i=0; i<size; i++) {
-	debug_printf ("%2x ",(unsigned int)namebuf[i]);
+	debug_printf ("%2x ",(unsigned char)namebuf[i]);
 	if (i % 20 == 19) {
 	    debug_printf ("\n");
 	}

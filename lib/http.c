@@ -229,6 +229,8 @@ httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
 
     memset(info, 0, sizeof(SR_HTTP_HEADER));
 
+    debug_printf("http header:\n %s", header);
+
     // Get the ICY code.
     start = (char *)strstr(header, "ICY ");
     if (!start) {
@@ -238,11 +240,7 @@ httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
 
     start = strstr(start, " ") + 1;
     sscanf(start, "%i", &info->icy_code);
-
-    DEBUG2(("header:\n %s", header));
-
-    if (info->icy_code >= 400)
-    {
+    if (info->icy_code >= 400) {
 	switch (info->icy_code)
 	{
 	case 400:

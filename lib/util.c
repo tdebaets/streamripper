@@ -154,6 +154,7 @@ strip_invalid_chars(char *str)
     char invalid_chars[] = "\\/:*?\"<>|.~";
 #endif
     char* mb_in = str;
+    char* strp;
     int mb_in_len = strlen(mb_in);
     wchar_t *w_in = (wchar_t*) malloc (sizeof(wchar_t)*mb_in_len+2);
     wchar_t *w_invalid = (wchar_t*) malloc(sizeof(wchar_t)
@@ -161,14 +162,13 @@ strip_invalid_chars(char *str)
     wchar_t replacement;
     wchar_t *wstrp;
 
-#if defined (commentout)
-    printf (mb_in);
-    printf ("\n");
+    debug_printf ("strip_invalid_chars() mb_in:\n");
+    debug_printf (mb_in);
+    debug_printf ("\n");
     for (strp = mb_in; *strp; strp++) {
-	printf ("%02x ",*strp&0x0ff);
+	debug_printf ("%02x ",*strp&0x0ff);
     }
-    printf ("\n");
-#endif
+    debug_printf ("\n");
 
     /* Convert invalid chars to wide char */
     mbstowcs(w_invalid,invalid_chars,strlen(invalid_chars)+1);
@@ -179,12 +179,16 @@ strip_invalid_chars(char *str)
     /* Convert "replacement" to wide */
     mbtowc (&replacement,"-",1);
 
-#if defined (commentout)
+    debug_printf ("strip_invalid_chars() w_in (pre):\n");
     for (wstrp = w_in; *wstrp; wstrp++) {
-	printf ("%04x ",*wstrp&0x0ffff);
+	debug_printf ("%04x ",*wstrp&0x0ffff);
     }
-    printf ("\n");
-#endif
+    debug_printf ("\n");
+    debug_printf ("strip_invalid_chars() w_invalid:\n");
+    for (wstrp = w_invalid; *wstrp; wstrp++) {
+	debug_printf ("%04x ",*wstrp&0x0ffff);
+    }
+    debug_printf ("\n");
 
     /* Replace illegals to legal */
     for (wstrp = w_in; *wstrp; wstrp++) {
@@ -193,13 +197,24 @@ strip_invalid_chars(char *str)
 	*wstrp = replacement;
     }
 
+    debug_printf ("strip_invalid_chars() w_in (post):\n");
+    for (wstrp = w_in; *wstrp; wstrp++) {
+	debug_printf ("%04x ",*wstrp&0x0ffff);
+    }
+    debug_printf ("\n");
+
     /* Convert back to multibyte */
     wcstombs(mb_in,w_in,mb_in_len);
-    return str;
 
-#if defined (commentout)    
-    printf (mb_in);
-#endif
+    debug_printf ("strip_invalid_chars() mb_in (post):\n");
+    debug_printf (mb_in);
+    debug_printf ("\n");
+    for (strp = mb_in; *strp; strp++) {
+	debug_printf ("%02x ",*strp&0x0ff);
+    }
+    debug_printf ("\n");
+
+    return str;
 
 #if defined (commentout)
     /* GCS - This is the old code.  Keep for reference until the

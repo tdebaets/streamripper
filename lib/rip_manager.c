@@ -500,10 +500,14 @@ start_ripping()
 	goto RETURN_ERR;
     }
 
+#if defined (COMMENTOUT_FOR_OGG)
+    /* GCS 09/10/04 - I wonder if this is worth doing */
     if (!m_info.have_icy_name) {
 	ret = SR_ERROR_NOT_SHOUTCAST_STREAM;
 	goto RETURN_ERR;
     }
+#endif
+
     /* If the icy_name exists, but is empty, set to a bogus name so 
        that we can create the directory correctly, etc. */
     if (strlen(m_info.icy_name) == 0) {

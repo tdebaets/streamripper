@@ -261,7 +261,7 @@ socklib_read_header(HSOCKET *socket_handle, char *buffer, int size,
 	    return SR_ERROR_SOCKET_CLOSED;
 
 	//look for the end of the icy-header
-	if (!strstr(buffer, "icy-"))
+	if (!strstr(buffer, "icy-") && !strstr(buffer,"ice-"))
 	    continue;
 
 	t = buffer + (i > 3 ? i - 3: i);
