@@ -78,6 +78,15 @@
 /* Define to 1 if you have the `vprintf' function. */
 #define HAVE_VPRINTF 1
 
+/* Define to 1 if you have the <wchar.h> header file. */
+#define HAVE_WCHAR_H 1
+
+/* Define to 1 if the system has the type `wchar_t'. */
+#define HAVE_WCHAR_T 1
+
+/* Define to 1 if you have the <wctype.h> header file. */
+#define HAVE_WCTYPE_H 1
+
 /* Define as const if the declaration of iconv() needs const. */
 #define ICONV_CONST 
 

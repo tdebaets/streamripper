@@ -48,7 +48,7 @@
 #include "types.h"
 
 /* uncomment to use new i18n code */
-#define NEW_I18N_CODE 1
+/* #define NEW_I18N_CODE 1 */
 
 /*****************************************************************************
  * Public functions
@@ -114,7 +114,8 @@ char *left_str(char *str, int len)
     return str;
 }
 
-#if defined (HAVE_ICONV)
+#if HAVE_WCHAR_T
+# if HAVE_ICONV
 int 
 iconv_convert_string (char* dst, int dst_len, char* src,
 		      const char* dst_codeset, const char* src_codeset)
@@ -150,7 +151,7 @@ iconv_convert_string (char* dst, int dst_len, char* src,
     iconv_close (ict);
     return 0;
 }
-#endif
+# endif
 
 /* What does the rc mean here? */
 int 
@@ -158,11 +159,11 @@ string_from_wstring (char* c, int clen, wchar_t* w, const char* codeset)
 {
     int rc;
 
-#if HAVE_ICONV
+# if HAVE_ICONV
     rc = iconv_convert_string (c, clen, (char*) w, codeset, "WCHAR_T");
     if (rc == 0) return 0;
     /* Otherwise, fall through to wcstombs method */
-#endif
+# endif
 
     rc = wcstombs(c,w,clen);
     if (rc == -1) {
@@ -177,11 +178,11 @@ wstring_from_string (wchar_t* w, int wlen, char* c, const char* codeset)
 {
     int rc;
 
-#if HAVE_ICONV
+# if HAVE_ICONV
     rc = iconv_convert_string ((char*) w, wlen, c, "WCHAR_T", codeset);
     if (rc == 0) return 0;
     /* Otherwise, fall through to mbstowcs method */
-#endif
+# endif
 
     rc = mbstowcs(w,c,wlen);
     if (rc == -1) {
@@ -189,6 +190,7 @@ wstring_from_string (wchar_t* w, int wlen, char* c, const char* codeset)
     }
     return 0;
 }
+#endif /* HAVE_WCHAR_T */
 
 void
 set_codeset (char* codeset_type, const char* codeset)
@@ -274,7 +276,6 @@ initialize_default_locale (CODESET_OPTIONS* cs_opt)
 	set_codeset ("CODESET_ALL", cs_opt->codeset);
     }
 }
-
 
 /*
   metadata     -> wchar }       { wchar -> filename
@@ -372,6 +373,7 @@ initialize_default_locale (CODESET_OPTIONS* cs_opt)
    Note that even the above doesn't consider what 
    to do about the id3 information. :-)
 */
+#if defined (commentout)
 void
 suggest_filenames (char *input_string, char *utf8_name, char *wchar_name, 
 		   char *locale_mbcs_name, char *ascii_name,
@@ -386,7 +388,9 @@ suggest_filenames (char *input_string, char *utf8_name, char *wchar_name,
     if (!input_string) return;
     if (buflen <= 1) return;
 }
+#endif
 
+#if HAVE_WCHAR_T
 char*
 strip_invalid_chars_testing(char *str)
 {
@@ -488,7 +492,6 @@ strip_invalid_chars_testing(char *str)
     return str;
 }
 
-
 char*
 strip_invalid_chars_stable(char *str)
 {
@@ -570,29 +573,30 @@ strip_invalid_chars_stable(char *str)
     free (w_invalid);
 
     return str;
+}
+#endif /* HAVE_WCHAR_T */
 
-#if defined (commentout)
-    /* GCS - This is the old code.  Keep for reference until the
-       above code is well tested */
-	char invalid_chars[] = "\\/:*?\"<>|.~";
-	char *oldstr = str;						
-	char *newstr = str;
-	
-	if (!str)
-		return NULL;
-
-	for(;*oldstr; oldstr++)
-	{
-		if (strchr(invalid_chars, *oldstr) != NULL)
-			continue;
-
-		*newstr = *oldstr;
-		newstr++;
-	}
-	*newstr = '\0';
-
-	return str;
+char*
+strip_invalid_chars_no_wchar(char *str)
+{
+#if defined (WIN32)
+    char invalid_chars[] = "\\/:*?\"<>|~";
+#else
+    char invalid_chars[] = "\\/:*?\"<>|.~";
 #endif
+    char *oldstr = str;						
+    char *newstr = str;
+
+    if (!str) return NULL;
+
+    for (;*oldstr; oldstr++) {
+	if (strchr(invalid_chars, *oldstr) != NULL)
+		continue;
+	*newstr = *oldstr;
+	newstr++;
+    }
+    *newstr = '\0';
+    return str;
 }
 
 void
@@ -637,13 +641,16 @@ parse_artist_title (char* artist, char* title, char* album,
 char* 
 strip_invalid_chars(char *str)
 {
+#if HAVE_WCHAR_T
 #if defined (NEW_I18N_CODE)
     return strip_invalid_chars_testing(str);
 #else
     return strip_invalid_chars_stable(str);
 #endif
+#else
+    return strip_invalid_chars_no_wchar(str);
+#endif
 }
-
 
 char *format_byte_size(char *str, long size)
 {

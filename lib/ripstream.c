@@ -190,6 +190,8 @@ BOOL is_track_changed()
     if (!strcmp(m_last_track.raw_metadata, m_current_track.raw_metadata))
 	return 0;
 
+    /* Here we could put in the pattern matching rules. */
+
     /* Otherwise, there was a change. */
     return 1;
 }
@@ -217,6 +219,7 @@ ripstream_rip()
 #if defined (commentout)
 	strcpy(m_last_track, m_current_track);
 #endif
+	strcpy(m_last_track.raw_metadata, m_current_track.raw_metadata);
     }
 
     // get the data
