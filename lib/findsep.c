@@ -36,6 +36,9 @@
 #define NUM_SILTRACKERS		30
 #define READSIZE	2000
 
+/* Uncomment to dump an mp3 of the search window. */
+//   #define MAKE_DUMP_MP3 1
+
 typedef struct SILENCETRACKERst
 {
 	long insilencecount;
