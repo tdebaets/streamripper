@@ -64,42 +64,45 @@ time_t				m_stop_time = 0;
 
 int main(int argc, char* argv[])
 {
-	int ret;
-	time_t temp_time;
-	signal(SIGINT, catch_sig);
-	signal(SIGTERM, catch_sig);
+    int ret;
+    time_t temp_time;
+    signal(SIGINT, catch_sig);
+    signal(SIGTERM, catch_sig);
 
-	parse_arguments(argc, argv);
-	if (!m_dont_print)
-	    fprintf(stderr, "Connecting...\n");
-	if ((ret = rip_manager_start(rip_callback, &m_opt)) != SR_SUCCESS)
-	{
-		fprintf(stderr, "Couldn't connect to %s\n", m_opt.url);
-		exit(1);
-	}
+    parse_arguments(argc, argv);
+    if (!m_dont_print)
+	fprintf(stderr, "Connecting...\n");
+    if ((ret = rip_manager_start(rip_callback, &m_opt)) != SR_SUCCESS) {
+	fprintf(stderr, "Couldn't connect to %s\n", m_opt.url);
+	exit(1);
+    }
 
-	/* 
- 	 * The m_got_sig thing is because you can't call into a thread 
-  	 * (i.e. rip_manager_stop) from a signal handler.. or at least not
-  	 * in FreeBSD 3.4, i don't know about linux or NT.
-	 */
-	while(!m_got_sig && !m_alldone)
-	{
-		sleep(1);
-		time(&temp_time);
-		if (m_stop_time && (temp_time >= m_stop_time))
-		{
-		    if (!m_dont_print)
-			fprintf(stderr, "\n");
-		    fprintf(stderr, "Time to stop is here, bailing\n");
-		    break; 
-		}	
-	}
+    /* 
+     * The m_got_sig thing is because you can't call into a thread 
+     * (i.e. rip_manager_stop) from a signal handler.. or at least not
+     * in FreeBSD 3.4, i don't know about linux or NT.
+     */
+    while(!m_got_sig && !m_alldone) {
+	sleep(1);
+	time(&temp_time);
+	if (m_stop_time && (temp_time >= m_stop_time)) {
+	    if (!m_dont_print) {
+		fprintf(stderr, "\n");
+		fprintf(stderr, "Time to stop is here, bailing\n");
+	    }
+	    break; 
+	}	
+    }
 
-	m_dont_print = TRUE;
+    if (!m_dont_print) {
 	fprintf(stderr, "shutting down\n");
-	rip_manager_stop();
-	return 0;
+    }
+    /* GCS: Why? */
+#if defined (commentout)
+    m_dont_print = TRUE;
+#endif
+    rip_manager_stop();
+    return 0;
 }
 
 void catch_sig(int code)
@@ -119,75 +122,71 @@ void catch_sig(int code)
  */
 void print_status()
 {
-	char status_str[128];
-	char filesize_str[64];
-	static int buffering_tick = 0;
-	BOOL static printed_fullinfo = FALSE;
+    char status_str[128];
+    char filesize_str[64];
+    static int buffering_tick = 0;
+    BOOL static printed_fullinfo = FALSE;
 
-	if (m_dont_print)
-		return;
+    if (m_dont_print)
+	return;
 
-	if (printed_fullinfo && m_curinfo.filename[0])
+    if (printed_fullinfo && m_curinfo.filename[0]) {
+
+	switch(m_curinfo.status)
 	{
+	case RM_STATUS_BUFFERING:
+	    buffering_tick++;
+	    if (buffering_tick == 5)
+		buffering_tick = 0;
 
-		switch(m_curinfo.status)
-		{
-			case RM_STATUS_BUFFERING:
-				buffering_tick++;
-				if (buffering_tick == 5)
-					buffering_tick = 0;
+	    sprintf(status_str,"buffering - %c ",
+		    m_buffer_chars[buffering_tick]);
 
-				sprintf(status_str,"buffering - %c ",
-					m_buffer_chars[buffering_tick]);
+	    fprintf(stderr, "[%14s] %.50s\r",
+		    status_str,
+		    m_curinfo.filename);
+	    break;
 
-				fprintf(stderr, "[%14s] %.50s\r",
-			   			status_str,
-			   			m_curinfo.filename);
-				break;
-
-			case RM_STATUS_RIPPING:
-				if (m_curinfo.track_count < m_opt.dropcount)
-				{
-					strcpy(status_str, "skipping...   ");
-				}
-				else
-				{
-					strcpy(status_str, "ripping...    ");
-				}
-				format_byte_size(filesize_str, m_curinfo.filesize);
-                                fprintf(stderr, "[%14s] %.50s [%7s]\r",
-                                                status_str,
-                                                m_curinfo.filename,
-                                		filesize_str);
-				break;
-			case RM_STATUS_RECONNECTING:
-				strcpy(status_str, "re-connecting..");
-                                fprintf(stderr, "[%14s]\r", status_str);
-				break;
-		}
+	case RM_STATUS_RIPPING:
+	    if (m_curinfo.track_count < m_opt.dropcount) {
+		strcpy(status_str, "skipping...   ");
+	    } else {
+		strcpy(status_str, "ripping...    ");
+	    }
+	    format_byte_size(filesize_str, m_curinfo.filesize);
+	    fprintf(stderr, "[%14s] %.50s [%7s]\r",
+		    status_str,
+		    m_curinfo.filename,
+		    filesize_str);
+	    break;
+	case RM_STATUS_RECONNECTING:
+	    strcpy(status_str, "re-connecting..");
+	    fprintf(stderr, "[%14s]\r", status_str);
+	    break;
+	}
 			
-	}
-	if (!printed_fullinfo)
+    }
+    if (!printed_fullinfo)
+    {
+	fprintf(stderr, 
+		"stream: %s\n"
+		"server name: %s\n"
+		"bitrate: %d\n"
+		"meta interval: %d\n",
+		m_curinfo.streamname,
+		m_curinfo.server_name,
+		m_curinfo.bitrate,
+		m_curinfo.meta_interval);
+	if(GET_MAKE_RELAY(m_opt.flags))
 	{
-		fprintf(stderr, 
-			   "stream: %s\n"
-			   "server name: %s\n"
-			   "bitrate: %d\n"
-			   "meta interval: %d\n",
-			   m_curinfo.streamname,
-			   m_curinfo.server_name,
-			   m_curinfo.bitrate,
-			   m_curinfo.meta_interval);
-		if(GET_MAKE_RELAY(m_opt.flags))
-		{
-			fprintf(stderr, "relay port: %d\n"
-					"[%14s]\r",
-					m_opt.relay_port,
-					"getting track name... ");
-		}
-
-		printed_fullinfo = TRUE;
+	    fprintf(stderr, "relay port: %d\n"
+		    "[%14s]\r",
+		    m_opt.relay_port,
+		    "getting track name... ");
 	}
+
+	printed_fullinfo = TRUE;
+    }
 }
 
 /*
@@ -200,32 +199,33 @@ void print_status()
  */
 void rip_callback(int message, void *data)
 {
-	RIP_MANAGER_INFO *info;
-	ERROR_INFO *err;
-	switch(message)
-	{
-		case RM_UPDATE:
-			info = (RIP_MANAGER_INFO*)data;
-			memcpy(&m_curinfo, info, sizeof(RIP_MANAGER_INFO));
-			print_status();
-			break;
-		case RM_ERROR:
-			err = (ERROR_INFO*)data;
-			fprintf(stderr, "\nerror %d [%s]\n", err->error_code, err->error_str);
-			m_alldone = TRUE;
-			break;
-		case RM_DONE:
-			fprintf(stderr, "bye..\n");
-			m_alldone = TRUE;
-			break;
-		case RM_NEW_TRACK:
-			if (!m_dont_print)
-			    fprintf(stderr, "\n");
-			break;
-		case RM_STARTED:
-			m_started = TRUE;
-			break;
-	}
+    RIP_MANAGER_INFO *info;
+    ERROR_INFO *err;
+    switch(message)
+    {
+    case RM_UPDATE:
+	info = (RIP_MANAGER_INFO*)data;
+	memcpy(&m_curinfo, info, sizeof(RIP_MANAGER_INFO));
+	print_status();
+	break;
+    case RM_ERROR:
+	err = (ERROR_INFO*)data;
+	fprintf(stderr, "\nerror %d [%s]\n", err->error_code, err->error_str);
+	m_alldone = TRUE;
+	break;
+    case RM_DONE:
+	if (!m_dont_print)
+	    fprintf(stderr, "bye..\n");
+	m_alldone = TRUE;
+	break;
+    case RM_NEW_TRACK:
+	if (!m_dont_print)
+	    fprintf(stderr, "\n");
+	break;
+    case RM_STARTED:
+	m_started = TRUE;
+	break;
+    }
 }
 
 void print_usage()
@@ -390,12 +390,12 @@ void parse_arguments(int argc, char **argv)
 	    m_opt.flags ^= OPT_SEARCH_PORTS;
 	    m_opt.max_port = m_opt.relay_port+1000;
 	    break;
+	case 'A':
+	    m_opt.flags ^= OPT_INDIVIDUAL_TRACKS;
+	    break;
 	case 'I':
 	    i++;
 	    strncpy(m_opt.if_name, argv[i], SR_MAX_PATH);
-	    break;
-	case 'A':
-	    m_opt.flags ^= OPT_INDIVIDUAL_TRACKS;
 	    break;
  	case 'M':
  	    i++;
