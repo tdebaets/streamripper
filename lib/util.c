@@ -31,7 +31,9 @@
 #if defined HAVE_ICONV
 #include <iconv.h>
 #endif
-#if defined HAVE_LANGINFO_CODESET
+#if defined HAVE_LOCALE_CHARSET
+#include <localcharset.h>
+#elif defined HAVE_LANGINFO_CODESET
 #include <langinfo.h>
 #endif
 #include "debug.h"
@@ -146,15 +148,22 @@ int word_count(char *str)
 void
 initialize_locale (void)
 {
-    char* locale_codeset = 0;
+    const char* fromcode = 0;
     setlocale (LC_ALL, "");
     setlocale (LC_CTYPE, "");
     debug_printf ("LOCALE is %s\n",setlocale(LC_ALL,NULL));
-#if defined (FOOBAR)
-    locale_codeset = nl_langinfo(CODESET);
+#if defined HAVE_LOCALE_CHARSET
+    debug_printf ("Using locale_charset() to get system codeset.\n");
+    fromcode = locale_charset ();
+#elif defined HAVE_LANGINFO_CODESET
+    debug_printf ("Using nl_langinfo() to get system codeset.\n");
+    fromcode = nl_langinfo (CODESET);
+#else
+    debug_printf ("No way to get system codeset.\n");
 #endif
-    debug_printf ("LOCALE CODESET is %s\n", 
-	locale_codeset ? locale_codeset : "(null)");
+    if (fromcode) {
+        debug_printf ("LOCALE CODESET is %s\n", fromcode);
+    }
 }
 
 
@@ -247,12 +256,17 @@ strip_invalid_chars_testing(char *str)
 					   *strlen(invalid_chars)+2);
     wchar_t replacement;
     wchar_t *wstrp;
-    int i;
+    unsigned int i;
     size_t t;
 
     iconv_t ict;
     size_t inleft, outleft;
-    char *fromcode = nl_langinfo(CODESET);
+    const char* fromcode = 0;
+#if defined HAVE_LOCALE_CHARSET
+    fromcode = locale_charset ();
+#elif defined HAVE_LANGINFO_CODESET
+    fromcode = nl_langinfo (CODESET);
+#endif
 
     debug_printf ("strip_invalid_chars() mb_in:\n");
     debug_printf (mb_in);

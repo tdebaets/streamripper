@@ -15,7 +15,11 @@
 #define HAVE_INTTYPES_H 1
 
 /* Define if you have <langinfo.h> and nl_langinfo(CODESET). */
-#define HAVE_LANGINFO_CODESET 1
+/* #define HAVE_LANGINFO_CODESET 1 */
+#undef HAVE_LANGINFO_CODESET
+
+/* Define if you have <localcharset.h> and locale_charset(). */
+#define HAVE_LOCALE_CHARSET 1
 
 /* Define to 1 if you have the `m' library (-lm). */
 #define HAVE_LIBM 1
