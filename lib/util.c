@@ -152,18 +152,13 @@ char*
 strip_invalid_chars(char *str)
 {
     //    int i;
-    char invalid_chars[] = "\\/:*?\"<>|.~@";
+    char invalid_chars[] = "\\/:*?\"<>|.~";
     char* mb_in = str;
     int mb_in_len = strlen(mb_in);
     wchar_t *w_in = (wchar_t*) malloc (2*mb_in_len+2);
     wchar_t *w_invalid = (wchar_t*) malloc(2*strlen(invalid_chars)+2);
     wchar_t replacement;
     wchar_t *wstrp;
-
-#if defined (commentout)
-    /* GCS: Moved to program initialization */
-    initialize_locale();
-#endif
 
 #if defined (commentout)
     printf (mb_in);
@@ -192,7 +187,7 @@ strip_invalid_chars(char *str)
 
     /* Replace illegals to legal */
     for (wstrp = w_in; *wstrp; wstrp++) {
-	if (wcschr(w_invalid, *wstrp) == NULL)
+	if ((wcschr(w_invalid, *wstrp) == NULL) && (!iswcntrl(*wstrp)))
 	    continue;
 	*wstrp = replacement;
     }
