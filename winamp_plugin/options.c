@@ -35,7 +35,7 @@
 #define DEFAULT_RELAY_PORT	8000
 #define APPNAME			"sripper"
 #define DEFAULT_USERAGENT	"FreeAmp/2.x"
-#define NUM_PROP_PAGES		3
+#define NUM_PROP_PAGES		4
 #define DEFAULT_SKINFILE	"srskin.bmp"
 //#define SKIN_PREV_LEFT	158
 //#define SKIN_PREV_TOP		79
@@ -63,6 +63,7 @@ static BOOL				get_desktop_folder(char *path);
 static LRESULT CALLBACK file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK con_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK splitting_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, BOOL confile);
 static void				saveload_fileopts(HWND hWnd, BOOL saveload);
 static void				saveload_conopts(HWND hWnd, BOOL saveload);
@@ -278,6 +279,7 @@ void options_dialog_show(HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, 
     hPage[0] = create_prop_sheet_page(inst, IDD_PROPPAGE_CON, con_dlg);
     hPage[1] = create_prop_sheet_page(inst, IDD_PROPPAGE_FILE, file_dlg);
     hPage[2] = create_prop_sheet_page(inst, IDD_PROPPAGE_SKIN, skin_dlg);
+    hPage[3] = create_prop_sheet_page(inst, IDD_PROPPAGE_SPLITTING, splitting_dlg);
     memset(&psh, 0, sizeof(PROPSHEETHEADER));
     psh.dwSize = sizeof(PROPSHEETHEADER);
     psh.dwFlags = PSH_DEFAULT;
@@ -439,7 +441,34 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
     }
 }
 
-//
+void
+saveload_splittingopts(HWND hWnd, BOOL saveload)
+{
+    /*
+      - skew
+      - silence_len
+      - search_pre
+      - search_post
+      - padding_pre
+      - padding_post
+    */
+    if (saveload) {
+	m_opt->sp_opt.xs_offset = GetDlgItemInt(hWnd, IDC_XS_OFFSET, FALSE, TRUE);
+	m_opt->sp_opt.xs_silence_length = GetDlgItemInt(hWnd, IDC_XS_SILENCE_LENGTH, FALSE, FALSE);
+	m_opt->sp_opt.xs_search_window_1 = GetDlgItemInt(hWnd, IDC_XS_SEARCH_WIN_PRE, FALSE, TRUE);
+	m_opt->sp_opt.xs_search_window_2 = GetDlgItemInt(hWnd, IDC_XS_SEARCH_WIN_POST, FALSE, TRUE);
+	m_opt->sp_opt.xs_padding_1 = GetDlgItemInt(hWnd, IDC_XS_PADDING_PRE, FALSE, TRUE);
+	m_opt->sp_opt.xs_padding_2 = GetDlgItemInt(hWnd, IDC_XS_PADDING_POST, FALSE, TRUE);
+    } else {
+	SetDlgItemInt(hWnd, IDC_XS_OFFSET, m_opt->sp_opt.xs_offset, TRUE);
+	SetDlgItemInt(hWnd, IDC_XS_SILENCE_LENGTH, m_opt->sp_opt.xs_silence_length, FALSE);
+	SetDlgItemInt(hWnd, IDC_XS_SEARCH_WIN_PRE, m_opt->sp_opt.xs_search_window_1, TRUE);
+	SetDlgItemInt(hWnd, IDC_XS_SEARCH_WIN_POST, m_opt->sp_opt.xs_search_window_2, TRUE);
+	SetDlgItemInt(hWnd, IDC_XS_PADDING_PRE, m_opt->sp_opt.xs_padding_1, TRUE);
+	SetDlgItemInt(hWnd, IDC_XS_PADDING_POST, m_opt->sp_opt.xs_padding_2, TRUE);
+    }
+}
+
 // These are wrappers for property page callbacks
 // bassicly i didn't want to copy past the entire dialog proc 
 // it'll dispatch the calls forward with a confile boolean which tells if
@@ -447,11 +476,15 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 //
 LRESULT CALLBACK file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    return options_dlg(hWnd, message, wParam, lParam, FALSE);
+    return options_dlg(hWnd, message, wParam, lParam, 0);
 }
 LRESULT CALLBACK con_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    return options_dlg(hWnd, message, wParam, lParam, TRUE);
+    return options_dlg(hWnd, message, wParam, lParam, 1);
+}
+LRESULT CALLBACK splitting_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    return options_dlg(hWnd, message, wParam, lParam, 2);
 }
 
 BOOL populate_skin_list(HWND dlg)
@@ -528,17 +561,23 @@ LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 
-LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, BOOL confile)
+/* confile == 0  -> file_dlg */
+/* confile == 1  -> con_dlg */
+/* confile == 2  -> splitting_dlg */
+LRESULT CALLBACK
+options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 {
     int wmId, wmEvent;
 
     switch(message)
     {
     case WM_INITDIALOG:
-	if (confile)
+	if (confile == 0)
 	    saveload_conopts(hWnd, FALSE);
-	else
+	else if (confile == 1)
 	    saveload_fileopts(hWnd, FALSE);
+	else if (confile == 2)
+	    saveload_splittingopts(hWnd, FALSE);
 
 	PropSheet_UnChanged(GetParent(hWnd), hWnd);
 
@@ -605,6 +644,12 @@ LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	case IDC_USE_OLD_PLAYLIST_RET:
 	case IDC_RIP_SINGLE_CHECK:
 	case IDC_RIP_SINGLE_EDIT:
+	case IDC_XS_OFFSET:
+	case IDC_XS_SILENCE_LENGTH:
+	case IDC_XS_SEARCH_WIN_PRE:
+	case IDC_XS_SEARCH_WIN_POST:
+	case IDC_XS_PADDING_PRE:
+	case IDC_XS_PADDING_POST:
 	    PropSheet_Changed(GetParent(hWnd), hWnd);
 	    break;
 	}
@@ -615,10 +660,12 @@ LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	    switch ( phdr->code )
 	    {
 	    case PSN_APPLY:
-		if (confile)
+		if (confile == 0)
 		    saveload_conopts(hWnd, TRUE);
-		else
+		else if (confile == 1)
 		    saveload_fileopts(hWnd, TRUE);
+		else if (confile == 2)
+		    saveload_splittingopts(hWnd, TRUE);
 		break;
 	    }
 	}
@@ -677,13 +724,25 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     keep_incomplete = GetPrivateProfileInt(APPNAME, "keep_incomplete", TRUE, filename);
     rip_single_file = GetPrivateProfileInt(APPNAME, "rip_single_file", FALSE, filename);
 
+    opt->sp_opt.xs_offset = GetPrivateProfileInt(APPNAME, "xs_offset", 
+	opt->sp_opt.xs_offset, filename);
+    opt->sp_opt.xs_silence_length = GetPrivateProfileInt(APPNAME, "xs_silence_length", 
+	opt->sp_opt.xs_silence_length, filename);
+    opt->sp_opt.xs_search_window_1 = GetPrivateProfileInt(APPNAME, "xs_search_window_1", 
+	opt->sp_opt.xs_search_window_1, filename);
+    opt->sp_opt.xs_search_window_2 = GetPrivateProfileInt(APPNAME, "xs_search_window_2", 
+	opt->sp_opt.xs_search_window_2, filename);
+    opt->sp_opt.xs_padding_1 = GetPrivateProfileInt(APPNAME, "xs_padding_1", 
+	opt->sp_opt.xs_padding_1, filename);
+    opt->sp_opt.xs_padding_2 = GetPrivateProfileInt(APPNAME, "xs_padding_2", 
+	opt->sp_opt.xs_padding_2, filename);
+
     guiOpt->m_add_finshed_tracks_to_playlist = GetPrivateProfileInt(APPNAME, "add_tracks_to_playlist", FALSE, filename);
     guiOpt->m_start_minimized = GetPrivateProfileInt(APPNAME, "start_minimized", FALSE, filename);
     guiOpt->oldpos.x = GetPrivateProfileInt(APPNAME, "window_x", 0, filename);
     guiOpt->oldpos.y = GetPrivateProfileInt(APPNAME, "window_y", 0, filename);
     guiOpt->m_enabled = GetPrivateProfileInt(APPNAME, "enabled", 1, filename);
     guiOpt->use_old_playlist_ret = GetPrivateProfileInt(APPNAME, "use_old_playlist_ret", 0, filename);
-
 
     if (guiOpt->oldpos.x < 0 || guiOpt->oldpos.y < 0)
 	guiOpt->oldpos.x = guiOpt->oldpos.y = 0;
@@ -735,6 +794,13 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     fprintf(fp, "keep_incomplete=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_KEEP_INCOMPLETE));
     fprintf(fp, "rip_single_file=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_SINGLE_FILE_OUTPUT));
     fprintf(fp, "rip_single_path=%s\n", opt->output_file);
+
+    fprintf(fp, "xs_offset=%d\n", opt->sp_opt.xs_offset);
+    fprintf(fp, "xs_silence_length=%d\n", opt->sp_opt.xs_silence_length);
+    fprintf(fp, "xs_search_window_1=%d\n", opt->sp_opt.xs_search_window_1);
+    fprintf(fp, "xs_search_window_2=%d\n", opt->sp_opt.xs_search_window_2);
+    fprintf(fp, "xs_padding_1=%d\n", opt->sp_opt.xs_padding_1);
+    fprintf(fp, "xs_padding_2=%d\n", opt->sp_opt.xs_padding_2);
 
     fprintf(fp, "add_tracks_to_playlist=%d\n", guiOpt->m_add_finshed_tracks_to_playlist);
     fprintf(fp, "start_minimized=%d\n", guiOpt->m_start_minimized);

@@ -11,12 +11,18 @@
 #define IDD_PROPPAGE_CON                106
 #define IDD_PROPPAGE_FILE               107
 #define IDD_PROPPAGE_SKIN               108
+#define IDD_PROPPAGE_SPLITTING          109
 #define IDR_POPUP_MENU                  110
 #define _IDC_BASE                       1000
 #define IDC_ENABLE                      1090
 #define IDC_MAX_BYTES                   1120
 #define IDC_RELAY_PORT_EDIT             1121
+#define IDC_XS_SEARCH_WIN_POST          1124
+#define IDC_XS_SEARCH_WIN_PRE           1125
+#define IDC_XS_SILENCE_LENGTH           1126
+#define IDC_XS_PADDING_POST             1129
 #define IDC_OK                          1130
+#define IDC_XS_PADDING_PRE              1130
 #define IDC_SEPERATE_DIRS               1150
 #define IDC_OUTPUT_DIRECTORY            1160
 #define IDC_RIP_SINGLE_EDIT             1161
@@ -39,6 +45,7 @@
 #define IDC_USERAGENT                   1370
 #define IDC_SKIN_LIST                   1371
 #define IDC_USE_OLD_PLAYLIST_RET        1372
+#define IDC_XS_OFFSET                   1373
 #define ID_MENU_STARTRIPPING            40001
 #define ID_MENU_STOPRIPPING             40003
 #define ID_MENU_OPTIONS                 40004
@@ -50,7 +57,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        119
 #define _APS_NEXT_COMMAND_VALUE         40006
-#define _APS_NEXT_CONTROL_VALUE         1373
+#define _APS_NEXT_CONTROL_VALUE         1374
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -1,22 +1,27 @@
 
+New for 1.60.7
+--------------
+* Send metadata to relay stream
+* Add plugin gui prop page for splitpoints options
+
 New for 1.60.6
 --------------
-2004/05/09
+2004/05/09 (GCS)
 * Re-fix crashes on very long file names, because the previous fix
   didn't work in some cases
-* Upgrade winamp plugin gui: rip to single file, specify relay port,
-  fix GUI bug with skin preview
+* Add plugin gui options: rip to single file, specify relay port
+* Fix plugin gui bug with skin preview
 * Add -h option (display help)
 
 New for 1.60.5
 --------------
-2004/04/26
+2004/04/26 (GCS)
 * Upgrade to libmad version 0.15.1b (windows)
 * Improvements to -a flag
 
 New for 1.60.4
 --------------
-2004/04/22
+2004/04/22 (GCS)
 * Fix program termination condition to exit properly on certain errors.
 
 New for 1.60.3
