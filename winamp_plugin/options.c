@@ -32,6 +32,7 @@
 #define DEFAULT_RELAY_PORT	8000
 #define APPNAME		"sripper"
 #define DEFAULT_USERAGENT	"FreeAmp/2.x"
+#define SRVERSION			"1.32"
 
 /**********************************************************************************
  * Public functions
@@ -161,12 +162,13 @@ void options_dialog_show(HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, 
 {
 	HPROPSHEETPAGE hPage[2];	
 	int ret;
-	static char szCaption[] = "Streamripper Settings";
+	char szCaption[256];
 	PROPSHEETHEADER psh;
 
 	m_opt = opt;
 	m_guiOpt = guiOpt;
 
+	sprintf(szCaption, "Streamripper Settings v%s", SRVERSION);
 	options_load(m_opt, m_guiOpt);
 	hPage[0] = create_prop_sheet_page(inst, IDD_PROPPAGE_CON, con_dlg);
 	hPage[1] = create_prop_sheet_page(inst, IDD_PROPPAGE_FILE, file_dlg);
