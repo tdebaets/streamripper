@@ -101,12 +101,12 @@ void post_error(int error)
 
 void live365info_terminate()
 {
-	debug_printf("live365info_terminate()\n");
+	DEBUG1(("live365info_terminate()\n"));
 	threadlib_stop(&m_thread);
 	socklib_close(&m_sock);
-	debug_printf("live365info_terminate() waitforclose\n");
+	DEBUG1(("live365info_terminate() waitforclose\n"));
 	threadlib_waitforclose(&m_thread);
-	debug_printf("live365info_terminate() done!\n");
+	DEBUG1(("live365info_terminate() done!\n"));
 }
 
 error_code live365info_track_nofity(const char *url, const char *proxyurl, const char *stream_name, 
@@ -149,35 +149,35 @@ void thread_track_notify(void *notused)
 		// Hit until the track has changed
 		do 
 		{
-debug_printf("live:sleep\n");
+			DEBUG1(("live:sleep\n"));
 			threadlib_sleep(&m_thread, 1);
 			if (!threadlib_isrunning(&m_thread))
 				break;
-debug_printf("live: done sleeping\n");
+			DEBUG1(("live: done sleeping\n"));
 			strcpy(last_track, track);
-debug_printf("live: getting track\n");
+			DEBUG1(("live: getting track\n"));
 			ret = get_current_track(m_url, m_stream_name, track, &track_len);
-debug_printf("live: done getting track\n");
+			DEBUG1(("live: done getting track\n"));
 			if (!threadlib_isrunning(&m_thread))
 				break;
 
 			if(ret == SR_ERROR_RECV_FAILED || 
 			   ret == SR_ERROR_SOCKET_CLOSED)
 			{
-				debug_printf("\nFailed to get live365 track info");
+				DEBUG1(("\nFailed to get live365 track info"));
 				post_error(SR_ERROR_NO_TRACK_INFO);
 				continue;
 			}
 
 			else if (ret != SR_SUCCESS)
 			{
-				debug_printf("ret: %x\n", ret);
+				DEBUG1(("ret: %x\n", ret));
 				post_error(SR_ERROR_NO_TRACK_INFO);	// Maybe a different error for this.
 				continue;
 			}
-//debug_printf("got track ok: %s\n", track);
+			DEBUG1(("got track ok: %s\n", track));
 
-			debug_printf(">\n");
+			DEBUG1((">\n"));
 
 			// This will just post the first one
 			if (!*last_track)
@@ -192,12 +192,12 @@ debug_printf("live: done getting track\n");
 		post_track_changed(track, track_len);
 		if (track_len > 15)
 		{
-//debug_printf("live: long sleep %d\n", track_len-15);
+			DEBUG1(live: long sleep %d\n", track_len-15));
 			threadlib_sleep(&m_thread, (track_len - 15));
-debug_printf("live: done long, sleep\n");
+			DEBUG1(("live: done long, sleep"));
 		}
 	}
-	debug_printf("Leaving Live365info thread\n");
+	DEBUG1(("Leaving Live365info thread"));
 	threadlib_close(&m_thread);
 }
 
@@ -243,7 +243,7 @@ error_code page_get_current_track(char *track, int *len)
 
 	sprintf(tempurl, m_track_cgi, m_membername);
 
-	debug_printf(tempurl);
+	DEBUG1((tempurl));
 	if ((ret = get_webpage_alloc(tempurl, &html, &size)) != SR_SUCCESS)
 		return ret;
 
@@ -314,7 +314,7 @@ error_code page_get_membername(const char *host, const int port, const char *str
 
 	for(i = 0; i < num_ids && threadlib_isrunning(&m_thread); i++)
 	{
-		debug_printf("%ld\n", ids[i]);
+		DEBUG1(("%ld\n", ids[i]));
 		sprintf(tempurl, m_ratings_cgi, ids[i]);
 		if ((ret = get_webpage_alloc(tempurl, &html, &size)) != SR_SUCCESS)
 		{
@@ -362,7 +362,7 @@ error_code parse_live365_ids(char *source, char *match, unsigned long **ids, int
 	if (!list_size || !source || !match)
 		return -1;
 
-	//debug_printf(source);
+	DEBUG1((source));
 	pIdPos = source;
 
 	while(threadlib_isrunning(&m_thread))

@@ -36,6 +36,7 @@
 #include "util.h"
 #include "types.h"
 #include "cbuffer.h"
+#include "debug.h"
 
 
 #define MP3_BUFFER_SIZE			(1024*10)
@@ -117,13 +118,13 @@ error_code findsep_silence(const u_char *buffer, const u_long size, u_long *pos)
 	 * themselfs so i'm using mpglib, which really sux. however i think i've done
 	 * enough massaging now to make it somewhat stable.
 	 */
-	debug_printf("\nstart decode\n");
+	DEBUG1(("start decode"));
 	if ((ret = decode_buffer(buffer+offset, size-offset, &pcm_buffer, &pcmsize)) != SR_SUCCESS)
 	{
 		*pos = offset; // better then nothing.
 		return ret; 
 	}
-	debug_printf("end decode\n");
+	DEBUG1(("end decode"));
 
 	// Convert to mono
 	convert_to_mono(pcm_buffer, pcmsize, &monosize);
@@ -223,7 +224,7 @@ u_long find_silence(const short *buffer, const u_long size, const int numwindows
 
 
 	free(rms_vals);
-//	debug_printf("\npcmpos: %ld\n", pos);
+	DEBUG1(("\npcmpos: %ld\n", pos));
 	return pos;
 }
 

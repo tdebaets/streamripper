@@ -43,6 +43,7 @@
 #include "http.h"
 #include "socklib.h"
 #include "threadlib.h"
+#include "debug.h"
 
 
 #ifdef __UNIX__
@@ -190,10 +191,10 @@ error_code try_port(u_short port)
 
 void relaylib_shutdown()
 {
-debug_printf("***relaylib_shutdown:start\n");
+	DEBUG1(("***relaylib_shutdown:start"));
 	if (!relaylib_isrunning())
 	{
-debug_printf("***relaylib_shutdown:return'd\n");
+	DEBUG1(("***relaylib_shutdown:return"));
 
 		return;
 	}
@@ -210,7 +211,7 @@ debug_printf("***relaylib_shutdown:return'd\n");
 	memset(m_http_header, 0, MAX_HEADER_LEN);
 	threadlib_waitforclose(&m_hthread);
 	threadlib_destroy_event(&m_event_not_connected);
-debug_printf("***relaylib_shutdown:done\n");
+	DEBUG1(("***relaylib_shutdown:done"));
 	m_hostsock = m_listensock = 0;
 
 }
@@ -234,7 +235,7 @@ void thread_accept(void *notused)
 	int iAddrSize = sizeof(client);
 	char headbuf;
 
-debug_printf("***thread_accept:start\n");
+	DEBUG1(("***thread_accept:start"));
 
 	while(m_running)
 	{
@@ -244,9 +245,9 @@ debug_printf("***thread_accept:start\n");
 		// when a connection gets dropped, or when streamripper shuts down
 		// this event will get signaled
 		//
-debug_printf("***thread_accept:threadlib_waitfor_event\n");
+		DEBUG1(("***thread_accept:threadlib_waitfor_event"));
 		threadlib_waitfor_event(&m_event_not_connected);
-debug_printf("***thread_accept:threadlib_waitfor_event returned!\n");
+		DEBUG1(("***thread_accept:threadlib_waitfor_event returned!"));
 		if (!m_running)
 			break;
 

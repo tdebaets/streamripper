@@ -36,43 +36,6 @@ char		*format_byte_size(char *str, long size);
 char		*add_trailing_slash(char *str);
 void		trim(char *str);
 void 		null_printf(char *s, ...);
-void		debug_printf(char *str, ...);
-
-#if WIN32
-	#define vsnprintf _vsnprintf
-#endif
-
-void debug_printf(char *str, ...)
-{
-#if DEBUG
-        va_list va;
-	char buf[MAX_ERROR_STR];
-
-	va_start (va, str);
-	vsnprintf(buf, MAX_ERROR_STR, str, va);
-	fprintf(stderr, "%s", buf);
-	fflush(stderr);
-
-#if DEBUG_TO_FILE
-	
-	{
-	char datebuf[50];
-	time_t now = time(NULL);
-	FILE *fp = fopen("debugdump.txt", "a");
-
-	strftime(datebuf, 50, "%m/%d/%y:%H:%M:%S", localtime(&now));
-	vsnprintf(buf, MAX_ERROR_STR, str, va);
-	fprintf(fp, "%s - %s", datebuf, buf);
-	fflush(fp);
-	fclose(fp);
-	}
-
-	va_end(va);
-#endif
-
-#endif
-}
-
 
 char *add_trailing_slash(char *str)
 {

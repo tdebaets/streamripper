@@ -31,6 +31,7 @@
 #include "findsep.h"
 #include "util.h"
 #include "ripstream.h"
+#include "debug.h"
 
 /*********************************************************************************
  * Public functions
@@ -263,7 +264,7 @@ error_code find_sep(u_long *pos)
 	
 	if (*pos > cbuffer_get_used(&m_cbuffer))
 	{
-		debug_printf("pos bigger then buffer!!!");
+		DEBUG1(("pos bigger then buffer!!!"));
 		free(buf);
 		return SR_ERROR_CANT_FIND_TRACK_SEPERATION;
 	}

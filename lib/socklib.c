@@ -44,6 +44,7 @@
 #include "util.h"
 #include "socklib.h"
 #include "threadlib.h"
+#include "debug.h"
 
 #if WIN32
 #define DEFAULT_TIMEOUT		15
@@ -162,7 +163,7 @@ void socklib_cleanup()
 
 void socklib_close(HSOCKET *socket_handle)
 {
-	debug_printf("socklib: closeing socket\n");
+	DEBUG1(("socklib: closeing socket"));
 	closesocket(socket_handle->s);
 	socket_handle->closed = TRUE;
 }
@@ -238,8 +239,10 @@ int socklib_recvall(HSOCKET *socket_handle, char* buffer, int size)
     {
 		if (socket_handle->closed)
 			return SR_ERROR_SOCKET_CLOSED;
-		
+	
+		DEBUG2(("calling recv for %d bytes", size));
         ret = recv(socket_handle->s, &buffer[read], size, 0);
+		DEBUG2(("recv: %d", ret));
         if (ret == SOCKET_ERROR)
 			return SOCKET_ERROR;
 				
@@ -263,7 +266,9 @@ int socklib_sendall(HSOCKET *socket_handle, char* buffer, int size)
 		if (socket_handle->closed)
 			return SR_ERROR_SOCKET_CLOSED;
 
+		DEBUG2(("calling send for %d bytes", size));
         ret = send(socket_handle->s, &buffer[sent], size, 0);
+		DEBUG2(("send ret = %d", ret));
         if (ret == SOCKET_ERROR)
 			return SOCKET_ERROR;
 		

@@ -29,6 +29,7 @@
 #include "types.h"
 #include "util.h"
 #include "threadlib.h"
+#include "debug.h"
 
 #if WIN32
 	#define beginthread(thread, callback) \
@@ -80,7 +81,7 @@ BOOL		threadlib_event_signaled(HEVENT *e);
 
 error_code threadlib_beginthread(THREAD_HANDLE *thread, void (*callback)(void *))
 {
-	debug_printf("starting thread\n");
+	DEBUG1(("starting thread"));
 
 	thread->_event = threadlib_create_event();
 	thread->thread_handle = (HANDLE) _beginthread(callback, 0, NULL);

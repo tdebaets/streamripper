@@ -27,7 +27,7 @@ typedef int error_code;
 #define MAX_SERVER_LEN		1024
 #define MAX_TRACK_LEN		1024
 #define MAX_URI_STRING		1024
-#define MAX_ERROR_STR       (1024)
+#define MAX_ERROR_STR       (4096)
 
 
 #ifdef WIN32

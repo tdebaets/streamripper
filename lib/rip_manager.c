@@ -53,6 +53,7 @@
 #include "rip_manager.h"
 #include "ripstream.h"
 #include "threadlib.h"
+#include "debug.h"
 
 #if __UNIX__
 	#include <unistd.h>
@@ -116,7 +117,8 @@ void init_error_strings()
 	SET_ERR_STR("SR_ERROR_DECODE_FAILURE",				0x02)
 	SET_ERR_STR("SR_ERROR_INVALID_URL",					0x03)
 	SET_ERR_STR("SR_ERROR_WIN32_INIT_FAILURE",			0x04)
-	SET_ERR_STR("SR_ERROR_CONNECT_FAILED",				0x05)
+	SET_ERR_STR("Could not connect to the stream. Try checking that the stream is up\n"
+	            "and your proxy settings and internet connection.",				0x05)
 	SET_ERR_STR("SR_ERROR_CANT_RESOLVE_HOSTNAME",		0x06)
 	SET_ERR_STR("SR_ERROR_RECV_FAILED",					0x07)
 	SET_ERR_STR("SR_ERROR_SEND_FAILED",					0x08)
@@ -214,8 +216,9 @@ error_code start_track(char *trackname)
 	char temptrack[MAX_TRACK_LEN];
 	int ret;
 	
+	char *body = _varg2str("start_track: %s\n", trackname);
 	strcpy(temptrack, trackname);
-	debug_printf("start_track: %s\n", trackname);
+	DEBUG0(("start_track: %s\n", trackname));
 
 	strip_invalid_chars(temptrack);
 	if ((ret = filelib_start(temptrack)) != SR_SUCCESS)
@@ -350,18 +353,18 @@ void ripthread(void *notused)
 {
 	error_code ret;
 
-debug_printf("***ripthread:begin\n");
+	DEBUG0(("ripthread:begin"));
 
 	if ((ret = start_ripping()) != SR_SUCCESS)
 	{
-		debug_printf("***ripthread:start_ripping failed!\n");
+		DEBUG0(("ripthread:start_ripping failed!"));
 		threadlib_signel_event(&m_started_event);
-		debug_printf("***ripthread:posting error\n");
+		DEBUG0(("ripthread:posting error"));
 		post_error(ret);
-		debug_printf("***ripthread:done posting error\n");
+		DEBUG0(("ripthread:done posting error"));
 		goto DONE;
 	}
-debug_printf("***ripthread:ripping\n");
+	DEBUG0(("ripthread:ripping"));
 
 
 	m_status_callback(RM_STARTED, (void *)NULL);
@@ -415,7 +418,7 @@ debug_printf("***ripthread:ripping\n");
 			/*
 			 * Try to reconnect, if thats what the user wants
 			 */
-debug_printf("***ripthread:re-connecting\n");
+			DEBUG0(("ripthread:re-connecting"));
 
 			post_status(RM_STATUS_RECONNECTING);
 			while(m_ripping)
@@ -465,9 +468,9 @@ debug_printf("***ripthread:re-connecting\n");
 	// or when we have been told to stop, via the m_ripping flag
 	//
 DONE:
-debug_printf("***ripthread:sending done message\n");
+	DEBUG0(("ripthread:sending done message"));
 	m_status_callback(RM_DONE, &m_ripinfo);
-debug_printf("***ripthread:exiting thread\n");
+	DEBUG0(("ripthread:exiting thread"));
 	m_ripping = FALSE;
 	threadlib_endthread(&m_hthread);
 }
@@ -480,7 +483,7 @@ debug_printf("***ripthread:exiting thread\n");
 void rip_manager_stop()
 {
 
-debug_printf("***rip_manager_stop:begin\n");
+	DEBUG0(("***rip_manager_stop:begin"));
 
 	//
 	// Make sure this function isn't getting called twice
@@ -491,9 +494,9 @@ debug_printf("***rip_manager_stop:begin\n");
 	//
 	// Make sure the ripping started before we try to stop
 	//
-debug_printf("***rip_manager_stop:m_started_event\n");
+	DEBUG0(("***rip_manager_stop:m_started_event"));
 	threadlib_waitfor_event(&m_started_event);
-debug_printf("***rip_manager_stop:done starting\n");
+	DEBUG0(("***rip_manager_stop:done starting"));
 
 	m_ripping = FALSE;
 
@@ -502,7 +505,7 @@ debug_printf("***rip_manager_stop:done starting\n");
 
 	// blocks until everything is ok and closed
 	threadlib_waitforclose(&m_hthread);
-debug_printf("***rip_manager_stop:ripthread closed\n");
+	DEBUG0(("***rip_manager_stop:ripthread closed"));
 
 	destroy_subsystems();
 	threadlib_destroy_event(&m_started_event);
@@ -514,11 +517,7 @@ void destroy_subsystems()
 	ripstream_destroy();
 	if (m_destroy_func)
 	{
-		debug_printf("***about to call destroy_func\n");
-		if (m_destroy_func == NULL)
-			debug_printf("***m_destroy_func == NULL\n");
-
-
+		DEBUG0(("about to call destroy_func"));
 		m_destroy_func();
 	}
 	relaylib_shutdown();
@@ -696,7 +695,7 @@ error_code rip_manager_start(void (*status_callback)(int message, void *data),
 {
 
 	int ret = 0;
-debug_printf("***rip_manager_start:being\n");
+	DEBUG0(("rip_manager_start:being"));
 	m_started_event = threadlib_create_event();
 	if (m_ripping)
 		return SR_SUCCESS;		// to prevent reentrenty
@@ -728,10 +727,10 @@ debug_printf("***rip_manager_start:being\n");
 	 * Start the ripping thread
 	 */
 	m_ripping = TRUE;
-debug_printf("***rip_manager_start:firing thread\n");
+	DEBUG0(("rip_manager_start:firing thread"));
 	if ((ret = threadlib_beginthread(&m_hthread, ripthread)) != SR_SUCCESS)
 		return ret;
-debug_printf("***rip_manager_start:done\n");
+	DEBUG0(("rip_manager_start:done"));
 
 	return SR_SUCCESS;
 }

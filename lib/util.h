@@ -13,7 +13,6 @@ extern char		*format_byte_size(char *str, long size);
 extern char		*add_trailing_slash(char *str);
 extern void		trim(char *str);
 extern void		null_printf(char *str, ...);
-extern void		debug_printf(char *str, ...);
 
 
 #endif //__UTIL_H__

@@ -35,6 +35,7 @@
 #include "dock.h"
 #include "filelib.h"
 #include "commctrl.h"
+#include "debug.h"
 
 #define ID_TRAY	1
 
@@ -283,7 +284,7 @@ void UpdateRippingDisplay()
 				strcpy(sStatusStr, "Re-connecting..");
 				break;
 		default:
-			debug_printf("************ what am i doing here?");
+			DEBUG1(("************ what am i doing here?"));
 	}
 	render_set_display_data(IDR_STATUS, "%s", sStatusStr);
 
@@ -345,9 +346,9 @@ void RipCallback(int message, void *data)
 			break;
 		case RM_ERROR:
 			err = (ERROR_INFO*)data;
-debug_printf("***RipCallback: about to post error dialog\n");
+			DEBUG1(("***RipCallback: about to post error dialog"));
 			MessageBox(m_hWnd, err->error_str, "Streamripper", MB_SETFOREGROUND);
-debug_printf("***RipCallback: done posting error dialog\n");
+			DEBUG1(("***RipCallback: done posting error dialog"));
 			break;
 		case RM_DONE:
 			//stop_button_pressed();
@@ -382,7 +383,7 @@ debug_printf("***RipCallback: done posting error dialog\n");
 void start_button_pressed()
 {
 	int ret;
-	debug_printf("start\n");
+	DEBUG0(("start"));
 
 	assert(!m_bRipping);
 	render_clear_all_data();
@@ -403,7 +404,7 @@ void start_button_pressed()
 
 void stop_button_pressed()
 {
-	debug_printf("stop\n");
+	DEBUG0(("stop"));
 
 	stop_button_disable();
 	assert(m_bRipping);

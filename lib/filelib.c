@@ -31,6 +31,7 @@
 #include <errno.h>
 #include "filelib.h"
 #include "util.h"
+#include "debug.h"
 
 /*********************************************************************************
  * Public functions
@@ -110,10 +111,10 @@ error_code filelib_set_output_directory(char *str)
 		return SR_SUCCESS;
 	}
 	mkdir_if_needed(str);
-//debug_printf(str);
+	DEBUG1((str));
 	strcpy(m_output_directory, str);
 	add_trailing_slash(m_output_directory);
-//debug_printf(m_output_directory);
+	DEBUG1((m_output_directory));
 
 	// Make the incomplete directory
 	sprintf(m_incomplete_directory, "%s%s", m_output_directory, "incomplete");
@@ -262,7 +263,7 @@ error_code filelib_write(char *buf, u_long size)
 {
 	if (!m_file)
 	{
-		debug_printf("trying to write to a non file\n");
+		DEBUG1(("trying to write to a non file"));
 		return SR_ERROR_CANT_WRITE_TO_FILE;
 	}
 #if WIN32
