@@ -8,7 +8,7 @@
 extern error_code	inet_get_webpage_alloc(HSOCKET *sock, const char *url, const char *proxyurl, 
 								   char **buffer, unsigned long *size);
 extern error_code	inet_sc_connect(HSOCKET *sock, const char *url, 
-									const char *proxyurl, SR_HTTP_HEADER *info, BOOL fakewinamp);
+									const char *proxyurl, SR_HTTP_HEADER *info, char *useragent);
 
 #endif //__INET_H__
 

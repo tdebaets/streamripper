@@ -247,20 +247,20 @@ void stop_button_disable()
 void UpdateNotRippingDisplay(HWND hwnd)
 {
 	WINAMP_INFO winfo;
-	HWND hwndStart = GetDlgItem(hwnd, IDC_START);
+//	HWND hwndStart = GetDlgItem(hwnd, IDC_START);		// JCBUG, why was this here?
 	winamp_get_info(&winfo);
 	assert(winfo.is_running);
 	strcpy(m_rmoOpt.url, winfo.url);
 
 	if (strchr(m_rmoOpt.url, ':'))
 	{
-		EnableWindow(hwndStart, TRUE);
+//		EnableWindow(hwndStart, TRUE);
 		render_set_display_data(IDR_STREAMNAME, "Press start to rip %s", m_rmoOpt.url);
 		start_button_enable();
 	}
 	else
 	{
-		EnableWindow(hwndStart, FALSE);
+//		EnableWindow(hwndStart, FALSE);
 		render_set_display_data(IDR_STREAMNAME, "Winamp is not listening to a stream");
 		start_button_disable();
 	}

@@ -28,7 +28,7 @@ typedef int error_code;
 #define MAX_TRACK_LEN		1024
 #define MAX_URI_STRING		1024
 #define MAX_ERROR_STR       (4096)
-
+#define MAX_USERAGENT_STR	1024
 
 #ifdef WIN32
 	#ifndef _WINSOCKAPI_
@@ -83,7 +83,7 @@ typedef struct IO_PUT_STREAMst{
 // are not organized at all, should have space to insert in places.
 //
 /* ******************** IMPORTANT IF YOU ADD ERROR CODES!!!! *****************************/
-#define NUM_ERROR_CODES					0x37+1
+#define NUM_ERROR_CODES					0x38+1
 /* ******************** IMPORTANT IF YOU ADD ERROR CODES!!!! *****************************/
 #define SR_SUCCESS					0x00
 #define SR_SUCCESS_BUFFERING				0x01
@@ -142,5 +142,6 @@ typedef struct IO_PUT_STREAMst{
 #define SR_ERROR_CANT_CREATE_EVENT			-	0x35
 #define SR_ERROR_NOT_SHOUTCAST_STREAM		-	0x36
 #define SR_ERROR_HTTP_407_ERROR				-	0x37
+#define	SR_ERROR_HTTP_403_ERROR				-	0x38
 
 #endif //__SRIPPER_H__

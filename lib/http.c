@@ -33,7 +33,7 @@
  *********************************************************************************/
 error_code	httplib_parse_url(const char *url, URLINFO *urlinfo);
 error_code	httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info);
-error_code	httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, BOOL fakewinamp);
+error_code	httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, char *useragent);
 error_code	httplib_construct_page_request(const char *url, BOOL proxyformat, char *buffer);
 error_code	httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size);
 
@@ -91,7 +91,7 @@ error_code httplib_parse_url(const char *url, URLINFO *urlinfo)
 	return SR_SUCCESS;
 }
 
-error_code httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, BOOL fakewinamp)
+error_code httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, char *useragent)
 {
 	int ret;
 	URLINFO ui;
@@ -118,7 +118,7 @@ error_code httplib_construct_sc_request(const char *url, const char* proxyurl, c
 					myurl, 
 					ui.host, 
 					ui.port, 
-					fakewinamp ? "WinampMPEG/2.7" : "Streamripper/1.x");
+					useragent[0] ? useragent : "Streamripper/1.x");
 
 	//
 	// proxy auth stuff
@@ -202,6 +202,8 @@ error_code	httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
 				return SR_ERROR_HTTP_404_ERROR;
 			case 401:
 				return SR_ERROR_HTTP_401_ERROR;
+			case 403:
+				return SR_ERROR_HTTP_403_ERROR;
 			case 407:
 				return SR_ERROR_HTTP_407_ERROR;
 			case 502:

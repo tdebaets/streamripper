@@ -80,6 +80,7 @@ error_code getdata(char *data, char *track)
 	int ret = 0;
 	char c;
 	char newtrack[MAX_TRACK_LEN];
+	static BOOL firsttime = TRUE;
 
 	if ((ret = m_in->get_data(data, m_buffersize)) <= 0)
 		return SR_ERROR_RECV_FAILED;
@@ -94,9 +95,22 @@ error_code getdata(char *data, char *track)
 		return SR_ERROR_RECV_FAILED;
 
 	if (c < 0)
+	{
 		return SR_ERROR_INVALID_METADATA;
+	}
 	else if (c == 0)
+	{
+		//
+		// around christmas time 2001 someone noticed that 1.8.7 shoutcast
+		// none-meta servers now just send a '0' if they have no meta data
+		// anyway, bassicly if the first meta capture is null then we assume
+		// that the stream does not have metadata
+		//
+		if (firsttime)
+			strcpy(track, m_no_meta_name);
+
 		return SR_SUCCESS;
+	}
 	else
 	{
 		if ((ret = get_trackname(c * 16, newtrack)) != SR_SUCCESS)

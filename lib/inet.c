@@ -29,7 +29,8 @@
  *********************************************************************************/
 error_code	inet_get_webpage_alloc(HSOCKET *sock, const char *url, const char *proxyurl,
 								   char **buffer, unsigned long *size);
-error_code	inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl, SR_HTTP_HEADER *info, BOOL fakewinamp);
+error_code	inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl, 
+							SR_HTTP_HEADER *info, char *useragent);
 
 /*********************************************************************************
  * Private functions
@@ -40,7 +41,7 @@ static error_code get_sc_header(HSOCKET *sock, SR_HTTP_HEADER *info);
  * Connects to a shoutcast type stream, leaves when it's about to get the header info
  */
 error_code inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl, 
-						   SR_HTTP_HEADER *info, BOOL fakewinamp)
+						   SR_HTTP_HEADER *info, char *useragent)
 {
 	char headbuf[MAX_HEADER_LEN];
 	URLINFO url_info;
@@ -62,7 +63,7 @@ error_code inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl,
 	if ((ret = socklib_open(sock, url_info.host, url_info.port)) != SR_SUCCESS)
 		return ret;
 
-	if ((ret = httplib_construct_sc_request(url, proxyurl, headbuf, fakewinamp)) != SR_SUCCESS)
+	if ((ret = httplib_construct_sc_request(url, proxyurl, headbuf, useragent)) != SR_SUCCESS)
 		return ret;
 
 	if ((ret = socklib_sendall(sock, headbuf, strlen(headbuf))) < 0)
@@ -74,7 +75,7 @@ error_code inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl,
 	if (*info->http_location)
 	{
 		/* RECURSIVE CASE */
-		inet_sc_connect(sock, info->http_location, proxyurl, info, fakewinamp);
+		inet_sc_connect(sock, info->http_location, proxyurl, info, useragent);
 	}
 
 	return SR_SUCCESS;

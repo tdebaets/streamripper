@@ -31,6 +31,7 @@
 #define MAX_INI_LINE_LEN	1024
 #define DEFAULT_RELAY_PORT	8000
 #define APPNAME		"sripper"
+#define DEFAULT_USERAGENT	"FreeAmp/2.x"
 
 /**********************************************************************************
  * Public functions
@@ -51,6 +52,7 @@ static LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPAR
 static void				saveload_fileopts(HWND hWnd, BOOL saveload);
 static void				saveload_conopts(HWND hWnd, BOOL saveload);
 static HPROPSHEETPAGE	create_prop_sheet_page(HINSTANCE inst, DWORD iddres, DLGPROC dlgproc);
+static void				add_useragent_strings();
 
 
 /**********************************************************************************
@@ -62,7 +64,6 @@ typedef HRESULT (__stdcall * PFNSHGETFOLDERPATHA)(HWND, int, HANDLE, DWORD, LPST
 
 static RIP_MANAGER_OPTIONS *m_opt;
 static GUI_OPTIONS *m_guiOpt;
-
 
 BOOL get_desktop_folder(char *path)
 {
@@ -217,6 +218,17 @@ void set_to_checkbox(HWND parent, int id, u_short* popt, u_short flag)
 	}
 }
 
+void add_useragent_strings(HWND hdlg)
+{
+	HWND hcombo = GetDlgItem(hdlg, IDC_USERAGENT);
+
+	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"Streamripper/1.x");
+	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"WinampMPEG/2.7");
+	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"FreeAmp/2.x");
+	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"XMMS/1.x");
+	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"UnknownPlayer/1.x");
+}
+
 void saveload_fileopts(HWND hWnd, BOOL saveload)
 {
 
@@ -267,7 +279,7 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 	- anon usage
 	- proxy server
 	- local machine name
-	- fake winamp/winamp useragent
+	- useragent
 	*/
 
 	if (saveload)
@@ -279,7 +291,7 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 		m_guiOpt->m_allow_touch = get_checkbox(hWnd, IDC_ALLOW_TOUCH);
 		GetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl, MAX_URL_LEN);
 		GetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost, MAX_HOST_LEN);
-		set_to_checkbox(hWnd, IDC_WINAMP_USERAGENT, &m_opt->flags, OPT_WINAMP_USERAGENT);
+		GetDlgItemText(hWnd, IDC_USERAGENT, m_opt->useragent, MAX_USERAGENT_STR);
 	}
 	else
 	{
@@ -293,7 +305,9 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 		set_checkbox(hWnd, IDC_ALLOW_TOUCH, m_guiOpt->m_allow_touch);
 		SetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl);
 		SetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost);
-		set_checkbox(hWnd, IDC_WINAMP_USERAGENT, OPT_FLAG_ISSET(m_opt->flags, OPT_WINAMP_USERAGENT));
+		if (!m_opt->useragent[0])
+			strcpy(m_opt->useragent, DEFAULT_USERAGENT);
+		SetDlgItemText(hWnd, IDC_USERAGENT, m_opt->useragent);
 	}
 
 }
@@ -326,6 +340,9 @@ LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 				saveload_fileopts(hWnd, FALSE);
 
 			PropSheet_UnChanged(GetParent(hWnd), hWnd);
+
+			add_useragent_strings(hWnd);
+
 			return TRUE;
 		case WM_COMMAND:
 			wmId    = LOWORD(wParam); 
@@ -362,7 +379,7 @@ LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 				case IDC_LOCALHOST:
 				case IDC_ALLOW_TOUCH:
 				case IDC_KEEP_INCOMPLETE:
-				case IDC_WINAMP_USERAGENT:
+				case IDC_USERAGENT:
 					PropSheet_Changed(GetParent(hWnd), hWnd);
 					break;
 			}
@@ -396,8 +413,7 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 			date_stamp,
 			add_id3,
 			check_max_btyes,
-			keep_incomplete,
-			fake_winamp;
+			keep_incomplete;
 
 	if (!get_desktop_folder(desktop_path))
 	{
@@ -417,6 +433,8 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	GetPrivateProfileString(APPNAME, "proxy", "", opt->proxyurl, MAX_INI_LINE_LEN, filename);
 	GetPrivateProfileString(APPNAME, "output_dir", desktop_path, opt->output_directory, MAX_INI_LINE_LEN, filename);
 	GetPrivateProfileString(APPNAME, "localhost", "localhost", guiOpt->localhost, MAX_INI_LINE_LEN, filename);
+	GetPrivateProfileString(APPNAME, "useragent", DEFAULT_USERAGENT, opt->useragent, MAX_INI_LINE_LEN, filename);
+
 	seperate_dirs = GetPrivateProfileInt(APPNAME, "seperate_dirs", TRUE, filename);
 	opt->relay_port = GetPrivateProfileInt(APPNAME, "relay_port", 8000, filename);
 	opt->max_port = opt->relay_port+1000;
@@ -429,7 +447,6 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	check_max_btyes = GetPrivateProfileInt(APPNAME, "check_max_bytes", FALSE, filename);
 	opt->maxMB_rip_size = GetPrivateProfileInt(APPNAME, "maxMB_bytes", 0, filename);
 	keep_incomplete = GetPrivateProfileInt(APPNAME, "keep_incomplete", TRUE, filename);
-	fake_winamp = GetPrivateProfileInt(APPNAME, "fake_winamp", FALSE, filename);
 
 	guiOpt->m_add_finshed_tracks_to_playlist = GetPrivateProfileInt(APPNAME, "add_tracks_to_playlist", FALSE, filename);
 	guiOpt->m_start_minimized = GetPrivateProfileInt(APPNAME, "start_minimized", FALSE, filename);
@@ -452,7 +469,6 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	if (add_id3) opt->flags |= OPT_ADD_ID3;
 	if (check_max_btyes) opt->flags |= OPT_CHECK_MAX_BYTES;
 	if (keep_incomplete) opt->flags |= OPT_KEEP_INCOMPLETE;
-	if (fake_winamp) opt->flags |= OPT_WINAMP_USERAGENT;
 
 	return TRUE;
 }
@@ -474,6 +490,7 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	fprintf(fp, "proxy=%s\n", opt->proxyurl);
 	fprintf(fp, "output_dir=%s\n", opt->output_directory);
 	fprintf(fp, "localhost=%s\n", guiOpt->localhost);
+	fprintf(fp, "useragent=%s\n", opt->useragent);
 	fprintf(fp, "seperate_dirs=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_SEPERATE_DIRS));
 	fprintf(fp, "relay_port=%d\n", opt->relay_port);
 	fprintf(fp, "auto_reconnect=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_AUTO_RECONNECT));
@@ -485,7 +502,6 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	fprintf(fp, "check_max_bytes=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_CHECK_MAX_BYTES));
 	fprintf(fp, "maxMB_bytes=%d\n", opt->maxMB_rip_size);
 	fprintf(fp, "keep_incomplete=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_KEEP_INCOMPLETE));
-	fprintf(fp, "fake_winamp=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_WINAMP_USERAGENT));
 
 
 	fprintf(fp, "add_tracks_to_playlist=%d\n", guiOpt->m_add_finshed_tracks_to_playlist);

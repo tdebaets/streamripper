@@ -52,7 +52,6 @@ typedef struct RIP_MANAGER_INFOst
 #define OPT_DATE_STAMP			0x00000100		// add a date stamp to the output directory
 #define OPT_CHECK_MAX_BYTES		0x00000200		// use the maxMB_rip_size value to know how much to rip
 #define OPT_KEEP_INCOMPLETE		0x00000400		// overwrite files in the incomplete directory, add counter instead
-#define OPT_WINAMP_USERAGENT	0x00000800		// use the same UserAgent winamp does, for picky shoutcast emu streams
 
 //
 // Helper macros for checking options
@@ -71,7 +70,6 @@ typedef struct RIP_MANAGER_INFOst
 #define GET_DATE_STAMP(flags)				(OPT_FLAG_ISSET(flags, OPT_DATE_STAMP))
 #define GET_CHECK_MAX_BYTES(flags)			(OPT_FLAG_ISSET(flags, OPT_CHECK_MAX_BYTES))
 #define GET_KEEP_INCOMPLETE(flags)			(OPT_FLAG_ISSET(flags, OPT_KEEP_INCOMPLETE))
-#define GET_WINAMP_USERAGENT(flags)			(OPT_FLAG_ISSET(flags, OPT_WINAMP_USERAGENT))
 
 #define SET_AUTO_RECONNECT(flags)			(OPT_FLAG_SET(flags, OPT_AUTO_RECONNECT))
 #define SET_SEPERATE_DIRS(flags)			(OPT_FLAG_SET(flags, OPT_SEPERATE_DIRS))
@@ -83,7 +81,6 @@ typedef struct RIP_MANAGER_INFOst
 #define SET_DATE_STAMP(flags)				(OPT_FLAG_SET(flags, OPT_DATE_STAMP))
 #define SET_CHECK_MAX_BYTES(flags)			(OPT_FLAG_SET(flags, OPT_CHECK_MAX_BYTES))
 #define SET_KEEP_INCOMPLETE(flags)			(OPT_FLAG_SET(flags, OPT_KEEP_INCOMPLETE))
-#define SET_WINAMP_USERAGENT(flags)			(OPT_FLAG_SET(flags, OPT_WINAMP_USERAGENT))
 
 
 typedef struct RIP_MANAGER_OPTIONSst
@@ -95,6 +92,7 @@ typedef struct RIP_MANAGER_OPTIONSst
 	u_short	max_port;							// highest port the relay server can look if it needs to search
 	u_long	maxMB_rip_size;						// max number of megabytes that can by writen out before we stop
 	u_short	flags;								// all booleans logically OR'd together (see above)
+	char	useragent[MAX_USERAGENT_STR];		// optional, use a different useragent
 } RIP_MANAGER_OPTIONS;
 
 typedef struct ERROR_INFOst

@@ -124,7 +124,7 @@ void init_error_strings()
 	SET_ERR_STR("SR_ERROR_SEND_FAILED",					0x08)
 	SET_ERR_STR("SR_ERROR_PARSE_FAILURE",				0x09)
 	SET_ERR_STR("SR_ERROR_NO_RESPOSE_HEADER",			0x0a)
-	SET_ERR_STR("SR_ERROR_NO_ICY_CODE",					0x0b)
+	SET_ERR_STR("Server returned an unknown error code",0x0b)
 	SET_ERR_STR("SR_ERROR_NO_META_INTERVAL",			0x0c)
 	SET_ERR_STR("SR_ERROR_INVALID_PARAM",				0x0d)
 	SET_ERR_STR("SR_ERROR_NO_HTTP_HEADER",				0x0e)
@@ -170,6 +170,7 @@ void init_error_strings()
 	SET_ERR_STR("SR_ERROR_CANT_CREATE_EVENT",			0x35)
 	SET_ERR_STR("SR_ERROR_NOT_SHOUTCAST_STREAM",		0x36)
 	SET_ERR_STR("HTTP:407 - Proxy Authentication Required",				0x37)
+	SET_ERR_STR("HTTP:403 - Access Forbidden (try changing the UserAgent)", 0x38)
 
 	
 	
@@ -547,7 +548,7 @@ error_code start_ripping()
 								m_options.url,
 								pproxy, 
 								&m_info,
-								GET_WINAMP_USERAGENT(m_options.flags))) != SR_SUCCESS)
+								m_options.useragent)) != SR_SUCCESS)
 	{
 		goto RETURN_ERR;
 	}
