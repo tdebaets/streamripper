@@ -1,0 +1,46 @@
+.TH "STREAMRIPPER" "1" "March  21, 2004" "Michael Ablassmeier" "sound"
+.SH "NAME"
+streamripper \- rip radio streams to mp3 files
+.SH "SYNOPSIS"
+.B streamripper URL [options]
+
+.SH "DESCRIPTION"
+Streamripper started as a way to separate tracks via Shoutcast's title\-streaming feature. 
+This has now been expanded into a much more generic feature, where part of the program only 
+tries to "hint" at where one track starts and another ends, thus allowing a mp3 decoding engine
+to scan for a silent mark, which is used to find an exact track separation.
+
+Streamripper allows you to download an entire station of music. Many of these mp3 radio 
+stations only play certain genres, so you can now download an entire collection of goa/trance 
+music, an entire collection of jazz, punk rock, whatever you want. 
+.SH "OPTIONS"
+.IP "\fB\-d <directory>\fR" 4
+The destination directory
+.IP "\fB\-s \fR" 4
+Don't create a directory for each stream
+.IP "\fB\-r <base port>\fR" 4
+Create a relay server on base port, defaults to port 80
+.IP "\fB\-z\fR" 4
+Don't scan for free ports if base port is not avail
+.IP "\fB\-p <url>\fR" 4
+Use HTTP proxy server at <url>
+.IP "\fB\-o\fR" 4
+Overwrite tracks in complete
+.IP "\fB\-t\fR" 4
+Don't overwrite tracks in incomplete
+.IP "\fB\-c\fR" 4
+Don't auto\-reconnect
+.IP "\fB\-v\fR" 4
+Print version info and quite
+.IP "\fB\-l <seconds>\fR" 4
+number of seconds to run, otherwise runs forever
+.IP "\fB\-q\fR" 4
+add sequence number to output file
+.IP "\fB\-i\fR" 4
+dont add ID3V1 Tags to output file
+.IP "\fB\-u <useragent>\fR" 4
+Use a different UserAgent then "Streamripper"
+.IP "\fB\-\-x\fR" 4
+Invoke splitpoint detection rules
+.SH "AUTHOR"
+2003 \- Created by Michael Ablassmeier (abi@grinser.de)
