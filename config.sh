@@ -1,7 +1,7 @@
 aclocal -I m4
 automake --add-missing --foreign Makefile
 autoconf
-# autoheader
+autoheader
 
 cd libmad-0.15.1b
 aclocal
