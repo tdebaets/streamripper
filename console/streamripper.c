@@ -257,11 +257,6 @@ void parse_arguments(int argc, char **argv)
 	exit(2);
     }
 
-    if (argv[1][0] == '-') {
-	fprintf(stderr, "*** The first parameter MUST be the URL\n\n");
-	exit(2);
-    }
-
     // Set default options
     set_rip_manager_options_defaults (&m_opt);
 
@@ -359,6 +354,12 @@ void parse_arguments(int argc, char **argv)
 
     /* Need to verify that splitpoint rules were sane */
     verify_splitpoint_rules ();
+
+    /* Verify that first parameter is URL */
+    if (argv[1][0] == '-') {
+	fprintf(stderr, "*** The first parameter MUST be the URL\n\n");
+	exit(2);
+    }
 }
 
 static void
