@@ -271,6 +271,13 @@ How to tag a new version (e.g. for version 1.60)
   cvs rtag -r HEAD sripper-1_60 sripper_1x
 
 -----------------------------------------
+Autoconf versions
+
+Recently (Mon Feb 21 15:23:32 EST 2005) upgraded to:
+
+  - autoconf 2.59, automake 1.9.2, libtool 1.5.10.
+
+-----------------------------------------
 How to revise libmad
 
 First, match the auto* versions used by libmad.  For libmad-0.15.1b, 
