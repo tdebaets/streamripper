@@ -312,7 +312,7 @@ void parse_arguments(int argc, char **argv)
                                 m_opt.flags ^= OPT_AUTO_RECONNECT;
                                 break;
                         case 'v':
-								printf("streamripper 1.0.4 by Jon Clegg <jonclegg@yahoo.com>\n");
+								printf("streamripper 1.0.5 by Jon Clegg <jonclegg@yahoo.com>\n");
 								exit(0);
                         case 'l':
 								i++;
