@@ -354,48 +354,5 @@ Also see,
 http://www.unrelatedinventions.com/Audiotools/Help/thejargonbehindmp3.htm
 
 -----------------------------------------------------------------------
-findsep.c
------------------------------------------------------------------------
-findsep_silence
-	Inputs mpgbuf & mpgsize, returns ptr to silence point.
-	The mpgbuf is about 24 seconds of music.
+How to open a new file (start track)
 
-init_siltrackers
-	There are 30 SILENCETRACKER's.  They contain 4 entries:
-	      foundsil
-	      silencestart
-	      insilencecount
-	      silencevol
-	These are fancy counters to find silence intervals for several 
-	different definitions of silence.
-
-mad_decoder_run
-	Pump the mpgbuf through the decoder.  Each "output" call gets 
-	about 576 samples.  For each sample, compute rms (of 2 most 
-	recent samples), and pass to search_for_silence
-
-search_for_silence
-	Finds the first interval that is longer than ds.samplerate and 
-	quieter than pstracker->silencevol.  This is done for all 30 
-	different silence volumes.
-
-Finally, back to findsep_silence.  Look for quietest chunck that 
-exceeds the silence threshold.
-
------------------------------------------------------------------------
-ripstream.c
------------------------------------------------------------------------
-ripstream_rip
-	Calls findsep_silence
-
------------------------------------------------------------------------
-cbuffer.c
------------------------------------------------------------------------
-Initialization:
-    item_count = 0,
-    read_index = write_index
-Write:
-    increment write_index, then write
-Read:
-    increment read_index, then read
-    read_index is between 0 and size-1

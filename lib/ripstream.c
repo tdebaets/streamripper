@@ -231,7 +231,10 @@ ripstream_rip()
 	char artist[1024], title[1024], album[1024];
 	// The first track should not be ended. It will always be incomplete.
 	debug_printf ("calling rip_manager_start_track(#1)\n");
+#if defined (commentout)
 	ret = rip_manager_start_track(m_no_meta_name, m_track_count);
+#endif
+	ret = rip_manager_start_track(m_current_track, m_track_count);
 	if (ret != SR_SUCCESS) {
 	    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
 	    return ret;

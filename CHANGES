@@ -1,7 +1,8 @@
 New for 1.61.1
 --------------
 * Improved support for icecast2 servers
-* Preliminary support for ogg streams
+* Fix incorrect song title on first track
+* Very preliminary support for ogg streams
 * Remove vestigial DEBUG functions
 
 New for 1.61.0
