@@ -593,33 +593,31 @@ void thread_send(void *notused)
 		good = TRUE;
 
 		// Replicate the same data to each socket
-		if (swallow_receive(sock) != 0)
-		{
+		if (swallow_receive(sock) != 0) {
 		    good = FALSE;
-		}
-		else
-		{
+		} else {
 		    if( ptr->m_LeftToSend > 0 ) {
 			debug_printf("Relay: Sending Client %d to the client\n", ptr->m_LeftToSend );
 			ret = send(sock, ptr->m_Buffer+ptr->m_Offset, ptr->m_LeftToSend, 0);
 			debug_printf("Relay: Sending to Client returned %d\n", ret );
-			if (ret == SOCKET_ERROR)
-			{
+			if (ret == SOCKET_ERROR) {
 			    /* Sometimes windows gives me an errno of 0
 			       Sometimes windows gives me an errno of 183 
 			       See this thread for details: 
-				http://groups.google.com/groups?hl=en&lr=&ie=UTF-8&selm=8956d3e8.0309100905.6ba60e7f%40posting.google.com
-				*/
+			       http://groups.google.com/groups?hl=en&lr=&ie=UTF-8&selm=8956d3e8.0309100905.6ba60e7f%40posting.google.com
+			    */
 			    err_errno = errno;
 			    if (err_errno == EWOULDBLOCK || err_errno == 0 || err_errno == 183) {
-				WSASetLastError (0);
+#if defined (WIN32)
 				// Client is slow.  Retry later.
+				WSASetLastError (0);
+#endif
 			    } else {
 				debug_printf ("Relay: socket error is %d\n",errno);
 				good = FALSE;
 			    }
 			} else { 
-			    // Client is slow.  Retry later.
+			    // Send was successful
 			    ptr->m_Offset+= ret;
 			    ptr->m_LeftToSend-=ret;
 			    if( ptr->m_LeftToSend < 0 )
@@ -628,20 +626,15 @@ void thread_send(void *notused)
 			}
 		    }        
 		}
-
 	       
-		if (!good)
-		{
+		if (!good) {
 		    debug_printf("Relay: Client %d disconnected (%s)\n", sock, strerror(errno));
 		    closesocket(sock);
                                    
 		    // Carefully delete this client from list without affecting list order
-		    if (prev != NULL)
-		    {
+		    if (prev != NULL) {
 			prev->m_next = next;
-		    }
-		    else
-		    {
+		    } else {
 			m_hostsocklist = next;
 		    }
 		    if( ptr->m_Buffer != NULL )
@@ -652,8 +645,7 @@ void thread_send(void *notused)
 		    m_hostsocklist_len --;
 		}
                            
-		if (ptr != NULL)
-		{
+		if (ptr != NULL) {
 		    prev = ptr;
 		}
 		ptr = next;
