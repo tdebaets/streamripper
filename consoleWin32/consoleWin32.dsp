@@ -112,14 +112,6 @@ SOURCE=..\lib\cbuffer.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\lib\debug.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\lib\debug.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\lib\filelib.c
 # End Source File
 # Begin Source File

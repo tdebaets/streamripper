@@ -428,6 +428,8 @@ test -n "$profile"  && CFLAGS="$CFLAGS $profile" LDFLAGS="$LDFLAGS $profile"
 dnl LTLIBOBJS=`echo "$LIBOBJS" | sed -e 's/\.o/.lo/g'`
 dnl AC_SUBST(LTLIBOBJS)
 
-AC_CONFIG_FILES([Makefile msvc++/Makefile  \
+dnl AC_CONFIG_FILES([Makefile msvc++/Makefile  \
+dnl 	libmad.list])
+AC_CONFIG_FILES([Makefile \
 	libmad.list])
 AC_OUTPUT

@@ -30,7 +30,6 @@
 #include "cbuffer.h"
 #include "findsep.h"
 #include "util.h"
-#include "rip_manager.h"
 #include "ripstream.h"
 #include "debug.h"
 
@@ -42,7 +41,7 @@
 /*********************************************************************************
  * Private functions
  *********************************************************************************/
-static error_code find_sep (u_long *pos1, u_long *pos2);
+static error_code	find_sep (u_long *pos1, u_long *pos2);
 static error_code end_track(u_long pos1, u_long pos2, char *trackname);
 static error_code start_track(char *trackname);
 
@@ -55,6 +54,7 @@ static int ms_to_bytes (int ms, int bitrate);
  *********************************************************************************/
 static CBUFFER			m_cbuffer;
 static IO_GET_STREAM	*m_in;
+static IO_PUT_STREAM	*m_out;
 static char			m_last_track[MAX_TRACK_LEN] = {'\0'};
 static char			m_current_track[MAX_TRACK_LEN] = {'\0'};
 static char			m_no_meta_name[MAX_TRACK_LEN] = {'\0'};
@@ -104,19 +104,17 @@ typedef struct ID3V2framest {
 
 
 error_code
-ripstream_init (IO_GET_STREAM *in, char *no_meta_name, 
+ripstream_init (IO_GET_STREAM *in, IO_PUT_STREAM *out, char *no_meta_name, 
 		char *drop_string, SPLITPOINT_OPTIONS *sp_opt, 
 		int bitrate, BOOL addID3tag)
 {
-    if (!in || !sp_opt || !no_meta_name) {
+    if (!in || !out || !sp_opt || !no_meta_name) {
 	printf ("Error: invalid ripstream parameters\n");
 	return SR_ERROR_INVALID_PARAM;
     }
 
     m_in = in;
-#if defined (commentout)
     m_out = out;
-#endif
     m_sp_opt = sp_opt;
     m_on_first_track = TRUE;
     m_addID3tag = addID3tag;
@@ -137,21 +135,22 @@ ripstream_init (IO_GET_STREAM *in, char *no_meta_name,
 
 void ripstream_destroy()
 {
-    if (m_getbuffer) {free(m_getbuffer); m_getbuffer = NULL;}
+	if (m_getbuffer) {free(m_getbuffer); m_getbuffer = NULL;}
     m_find_silence = -1;
-    m_in = NULL;
+	m_in = NULL;
+	m_out = NULL;
     m_cbuffer_size = 0;
-    cbuffer_destroy(&m_cbuffer);
-    m_last_track[0] = '\0';
-    m_current_track[0] = '\0';
-    m_no_meta_name[0] = '\0';
-    m_on_first_track = TRUE;
-    m_addID3tag = TRUE;
+	cbuffer_destroy(&m_cbuffer);
+	m_last_track[0] = '\0';
+	m_current_track[0] = '\0';
+	m_no_meta_name[0] = '\0';
+	m_on_first_track = TRUE;
+	m_addID3tag = TRUE;
 }
 
 BOOL is_buffer_full()
 {
-    return (cbuffer_get_free(&m_cbuffer) - m_in->getsize) < m_in->getsize;
+	return (cbuffer_get_free(&m_cbuffer) - m_in->getsize) < m_in->getsize;
 }
 
 BOOL is_track_changed()
@@ -168,16 +167,12 @@ BOOL is_track_changed()
     return strcmp(m_last_track, m_current_track) != 0 && *m_last_track;
 }
 
-/* GCS April 17, 2004 - This never happens.  It is leftover from 
-   the live365 stuff */
-BOOL
-is_no_meta_track()
+BOOL is_no_meta_track()
 {
-    return strcmp(m_current_track, NO_TRACK_STR) == 0;
+	return strcmp(m_current_track, NO_TRACK_STR) == 0;
 }
 
-error_code
-ripstream_rip()
+error_code ripstream_rip()
 {
     int ret;
     int real_ret = SR_SUCCESS;
@@ -192,9 +187,9 @@ ripstream_rip()
     if ((ret = m_in->get_data(m_getbuffer, m_current_track)) != SR_SUCCESS)
     {
 	debug_printf("m_in->get_data bad return code(?) %d", ret);
+	// GCS - presumably we still want to return the original error 
 	// If it is a single track recording, finish the track
 	// if end_track is successful
-        /* GCS - This test is never true. */
 	if (is_no_meta_track()) {
 	    int ret2;
 	    ret2 = end_track(cbuffer_get_used(&m_cbuffer),
@@ -206,28 +201,26 @@ ripstream_rip()
 	}
 	return ret;
     }
-
-    /* Immediately dump to relay & show file */
-    rip_manager_put_raw_data (m_getbuffer, m_meta_interval);
-
-    /* GCS - This test is never true. */
+	
+    /* GCS - The next two tests will both happen at most once each, right? */
     // if the current track matchs with the special no track info 
     // name we declair that we are no longer on the first track 
     // (or the last for that matter)
     // this is so end_track will actually call end.
-    if (is_no_meta_track() && m_on_first_track) {
+    if (is_no_meta_track() && m_on_first_track)
+    {
 	if ((ret = start_track(m_no_meta_name)) != SR_SUCCESS) {
 	    debug_printf("start_track had bad return code %d", ret);
 	    return ret;
-	}
+	} 
     }
-    /* GCS - This is only true once? */
     // if this is the first time we have received a track name, then we
     // can start the track
-    else if (*m_current_track && *m_last_track == '\0') {
+    else if	(*m_current_track && *m_last_track == '\0')
+    {
 	// Done say set first track on, because the first track 
 	// should not be ended. It will always be incomplete.
-	if ((ret = rip_manager_start_track(m_current_track)) != SR_SUCCESS) {
+	if ((ret = m_out->start_track(m_current_track)) != SR_SUCCESS) {
 	    debug_printf("start_track had bad return code %d", ret);
 	    return ret;
 	}
@@ -286,7 +279,7 @@ ripstream_rip()
 	}
         /* Post to caller */
 	if (*m_current_track)
-	    rip_manager_put_data(m_getbuffer, extract_size);
+	    m_out->put_data(m_getbuffer, extract_size);
     }
 
     return real_ret;
@@ -366,41 +359,44 @@ find_sep (u_long *pos1, u_long *pos2)
     return SR_SUCCESS;
 }
 
-error_code
-end_track(u_long pos1, u_long pos2, char *trackname)
+error_code end_track(u_long pos1, u_long pos2, char *trackname)
 {
     // pos1 is end of prev track
     // pos2 is beginning of next track
-    int ret;
-    ID3Tag	id3;
-    char	*p1;
+	int ret;
+	ID3Tag	id3;
+	char	*p1;
 
     // I think pos can be zero if the silence is right at the beginning
     // i.e. it is a bug in s.r.
     u_char *buf = (u_char *)malloc(pos1);
 
-    if (m_addID3tag) {
-	char    artist[1024] = "";
-	char    title[1024] = "";
+    if (m_addID3tag) 
+	{
+            char    artist[1024] = "";
+            char    title[1024] = "";
 
-	memset(&id3, '\000',sizeof(id3));
-	strncpy(id3.tag, "TAG", strlen("TAG"));
+            memset(&id3, '\000',sizeof(id3));
+            strncpy(id3.tag, "TAG", strlen("TAG"));
 	//            strncpy(id3.comment, "Streamripper!", strlen("Streamripper!"));
 
-	memset(&artist, '\000',sizeof(artist));
-	memset(&title, '\000',sizeof(title));
-	p1 = strchr(trackname, '-');
-	if (p1) {
-            strncpy(artist, trackname, p1-trackname);
-            p1++;
-	    if (*p1 == ' ') {
-		p1++;
-	    }
-	    strcpy(title, p1);
-	    strncpy(id3.artist, artist, sizeof(id3.artist));
-	    strncpy(id3.songtitle, title, sizeof(id3.songtitle));
-	    //fprintf(stdout, "Adding ID3 (%s) (%s)\n", artist, title);
-        }
+            memset(&artist, '\000',sizeof(artist));
+            memset(&title, '\000',sizeof(title));
+			p1 = strchr(trackname, '-');
+            if (p1) 
+			{
+                    strncpy(artist, trackname, p1-trackname);
+                    p1++;
+				if (*p1 == ' ') 
+				{
+					p1++;
+				}
+				strcpy(title, p1);
+				strncpy(id3.artist, artist, sizeof(id3.artist));
+				strncpy(id3.songtitle, title, sizeof(id3.songtitle));
+				//fprintf(stdout, "Adding ID3 (%s) (%s)\n", artist, title);
+            }
+
     }
 
     // pos1 is end of prev track
@@ -424,168 +420,183 @@ end_track(u_long pos1, u_long pos2, char *trackname)
     }
 
 	// Write that out to the current file
-    if ((ret = rip_manager_put_data(buf, pos1)) != SR_SUCCESS)
-	goto BAIL;
+    if ((ret = m_out->put_data(buf, pos1)) != SR_SUCCESS)
+		goto BAIL;
 
-    if (m_addID3tag) {
-	if ((ret = rip_manager_put_data((char *)&id3, sizeof(id3))) != SR_SUCCESS)
-	    goto BAIL;
-    }
-    if (!m_on_first_track)
-	if ((ret = rip_manager_end_track(trackname)) != SR_SUCCESS)
-	    goto BAIL;
+        if (m_addID3tag) {
+		if ((ret = m_out->put_data((char *)&id3, sizeof(id3))) != SR_SUCCESS)
+			goto BAIL;
+	}
+	if (!m_on_first_track)
+		if ((ret = m_out->end_track(trackname)) != SR_SUCCESS)
+			goto BAIL;
 
-BAIL:
-    free(buf);
-    return ret;
+ BAIL:
+	free(buf);
+	return ret;
 }
 
 
-error_code
-start_track(char *trackname)
+error_code start_track(char *trackname)
 {
-    int ret;
-    ID3V2head id3v2header;
-    ID3V2frame id3v2frame1;
-    ID3V2frame id3v2frame2;
-    char comment[1024] = "Ripped with Streamripper";
-    char artist[1024] = "";
-    char title[1024] = "";
-    char album[1024] = "";
-    char bigbuf[1600] = "";
-    char *p1,*p2;
-    int	sent = 0;
-    char buf[3] = "";
-    unsigned long int framesize = 0;
+	int ret;
+	ID3V2head	id3v2header;
+	ID3V2frame	id3v2frame1;
+	ID3V2frame	id3v2frame2;
+	char    comment[1024] = "Ripped with Streamripper";
+	char    artist[1024] = "";
+	char    title[1024] = "";
+	char    album[1024] = "";
+	char    bigbuf[1600] = "";
+	char	*p1,*p2;
+	int	sent = 0;
+	char	buf[3] = "";
+	unsigned long int framesize = 0;
 
-    if ((ret = rip_manager_start_track(trackname)) != SR_SUCCESS)
-        return ret;
+	if ((ret = m_out->start_track(trackname)) != SR_SUCCESS)
+		return ret;
 
-    /* Oddsock's ID3 stuff, (oddsock@oddsock.org) */
-    if (m_addID3tag) {
-	memset(bigbuf, '\000', sizeof(bigbuf));
-	memset(&id3v2header, '\000', sizeof(id3v2header));
-	memset(&id3v2frame1, '\000', sizeof(id3v2frame1));
-	memset(&id3v2frame2, '\000', sizeof(id3v2frame2));
-
-	strncpy(id3v2header.tag, "ID3", 3);
-	id3v2header.size = 1599;
-	framesize = htonl(id3v2header.size);
-	id3v2header.version = 3;
-	buf[0] = 3;
-	buf[1] = '\000';
-	if ((ret = rip_manager_put_data((char *)&(id3v2header.tag), 3)) != SR_SUCCESS)
-	    return ret;
-	if ((ret = rip_manager_put_data((char *)&buf, 2)) != SR_SUCCESS)
-	    return ret;
-	if ((ret = rip_manager_put_data((char *)&(id3v2header.flags), 1)) != SR_SUCCESS)
-	    return ret;
-	if ((ret = rip_manager_put_data((char *)&(framesize), sizeof(framesize))) != SR_SUCCESS)
-	    return ret;
-	sent += sizeof(id3v2header);
-
-	memset(&album, '\000',sizeof(album));
-	memset(&artist, '\000',sizeof(artist));
-	memset(&title, '\000',sizeof(title));
-
-	/* 
-	 * Look for a '-' in the track name
-	 * i.e. Moby - sux0rs (artist/track)
+	/*
+	 * Oddsock's ID3 stuff, (oddsock@oddsock.org)
 	 */
-	p1 = strchr(trackname, '-');
-	if (p1) {
-	    strncpy(artist, trackname, p1-trackname);
-	    p1++;
-	    p2 = strchr(p1, '-');
-	    if (p2) {
-		if (*p1 == ' ') {
-		    p1++;
+    if (m_addID3tag) 
+	{
+		memset(bigbuf, '\000', sizeof(bigbuf));
+		memset(&id3v2header, '\000', sizeof(id3v2header));
+		memset(&id3v2frame1, '\000', sizeof(id3v2frame1));
+		memset(&id3v2frame2, '\000', sizeof(id3v2frame2));
+
+		strncpy(id3v2header.tag, "ID3", 3);
+		id3v2header.size = 1599;
+		framesize = htonl(id3v2header.size);
+		id3v2header.version = 3;
+		buf[0] = 3;
+		buf[1] = '\000';
+		if ((ret = m_out->put_data((char *)&(id3v2header.tag), 3)) != SR_SUCCESS)
+			return ret;
+		if ((ret = m_out->put_data((char *)&buf, 2)) != SR_SUCCESS)
+			return ret;
+		if ((ret = m_out->put_data((char *)&(id3v2header.flags), 1)) != SR_SUCCESS)
+			return ret;
+		if ((ret = m_out->put_data((char *)&(framesize), sizeof(framesize))) != SR_SUCCESS)
+			return ret;
+		sent += sizeof(id3v2header);
+
+		memset(&album, '\000',sizeof(album));
+		memset(&artist, '\000',sizeof(artist));
+		memset(&title, '\000',sizeof(title));
+
+		/* 
+		 * Look for a '-' in the track name
+		 * i.e. Moby - sux0rs (artist/track)
+		 */
+		p1 = strchr(trackname, '-');
+		if (p1) 
+		{
+			strncpy(artist, trackname, p1-trackname);
+			p1++;
+			p2 = strchr(p1, '-');
+			if (p2) 
+			{
+				if (*p1 == ' ') 
+				{
+					p1++;
+				}
+				strncpy(album, p1, p2-p1);
+				p2++;
+				if (*p2 == ' ') 
+				{
+					p2++;
+				}
+				strcpy(title, p2);
+			}
+			else 
+			{
+				if (*p1 == ' ') 
+				{
+					p1++;
+				}
+				strcpy(title, p1);
+			}
+
+			strncpy(id3v2frame1.id, "TPE1", 4);
+			framesize = htonl(strlen(artist)+1);
+
+			// Write ID3V2 frame1 with data
+			if ((ret = m_out->put_data((char *)&(id3v2frame1.id), 4)) != SR_SUCCESS)
+				return ret;
+			sent += 4;
+			if ((ret = m_out->put_data((char *)&(framesize), sizeof(framesize))) != SR_SUCCESS)
+				return ret;
+			sent += sizeof(framesize);
+			if ((ret = m_out->put_data((char *)&(id3v2frame1.pad), 3)) != SR_SUCCESS)
+				return ret;
+			sent += 3;
+			if ((ret = m_out->put_data(artist, strlen(artist))) != SR_SUCCESS)
+				return ret;
+			sent += strlen(artist);
+		
+			strncpy(id3v2frame2.id, "TIT2", 4);
+			framesize = htonl(strlen(title)+1);
+			// Write ID3V2 frame2 with data
+			if ((ret = m_out->put_data((char *)&(id3v2frame2.id), 4)) != SR_SUCCESS)
+				return ret;
+			sent += 4;
+			if ((ret = m_out->put_data((char *)&(framesize), sizeof(framesize))) != SR_SUCCESS)
+				return ret;
+			sent += sizeof(framesize);
+			if ((ret = m_out->put_data((char *)&(id3v2frame2.pad), 3)) != SR_SUCCESS)
+				return ret;
+			sent += 3;
+			if ((ret = m_out->put_data(title, strlen(title))) != SR_SUCCESS)
+				return ret;
+			sent += strlen(title);
+
+			
+			strncpy(id3v2frame2.id, "TENC", 4);
+			framesize = htonl(strlen(comment)+1);
+			// Write ID3V2 frame2 with data
+			if ((ret = m_out->put_data((char *)&(id3v2frame2.id), 4)) != SR_SUCCESS)
+				return ret;
+			sent += 4;
+			if ((ret = m_out->put_data((char *)&(framesize), sizeof(framesize))) != SR_SUCCESS)
+				return ret;
+			sent += sizeof(framesize);
+			if ((ret = m_out->put_data((char *)&(id3v2frame2.pad), 3)) != SR_SUCCESS)
+				return ret;
+			sent += 3;
+			sent += sizeof(id3v2frame2);
+			if ((ret = m_out->put_data(comment, strlen(comment))) != SR_SUCCESS)
+				return ret;
+			sent += strlen(comment);
+		
+			memset(&id3v2frame2, '\000', sizeof(id3v2frame2));
+			strncpy(id3v2frame2.id, "TALB", 4);
+			framesize = htonl(strlen(album)+1);
+			// Write ID3V2 frame2 with data
+			if ((ret = m_out->put_data((char *)&(id3v2frame2.id), 4)) != SR_SUCCESS)
+				return ret;
+			sent += 4;
+			if ((ret = m_out->put_data((char *)&(framesize), sizeof(framesize))) != SR_SUCCESS)
+				return ret;
+			sent += sizeof(framesize);
+			if ((ret = m_out->put_data((char *)&(id3v2frame2.pad), 3)) != SR_SUCCESS)
+				return ret;
+			sent += 3;
+			if ((ret = m_out->put_data(album, strlen(album))) != SR_SUCCESS)
+				return ret;
+			sent += strlen(album);
+
+			if ((ret = m_out->put_data(bigbuf, 1600-sent)) != SR_SUCCESS)
+				return ret;
+			
 		}
-		strncpy(album, p1, p2-p1);
-		p2++;
-		if (*p2 == ' ') {
-		    p2++;
-		}
-		strcpy(title, p2);
-	    } else {
-		if (*p1 == ' ') {
-		    p1++;
-		}
-		strcpy(title, p1);
-	    }
-
-	    // Write ID3V2 frame1 with data
-	    strncpy(id3v2frame1.id, "TPE1", 4);
-	    framesize = htonl(strlen(artist)+1);
-	    if ((ret = rip_manager_put_data((char *)&(id3v2frame1.id), 4)) != SR_SUCCESS)
-		return ret;
-	    sent += 4;
-	    if ((ret = rip_manager_put_data((char *)&(framesize), sizeof(framesize))) != SR_SUCCESS)
-		return ret;
-	    sent += sizeof(framesize);
-	    if ((ret = rip_manager_put_data((char *)&(id3v2frame1.pad), 3)) != SR_SUCCESS)
-		return ret;
-	    sent += 3;
-	    if ((ret = rip_manager_put_data(artist, strlen(artist))) != SR_SUCCESS)
-		return ret;
-	    sent += strlen(artist);
-
-	    // Write ID3V2 frame2 with data
-	    strncpy(id3v2frame2.id, "TIT2", 4);
-	    framesize = htonl(strlen(title)+1);
-	    if ((ret = rip_manager_put_data((char *)&(id3v2frame2.id), 4)) != SR_SUCCESS)
-		return ret;
-	    sent += 4;
-	    if ((ret = rip_manager_put_data((char *)&(framesize), sizeof(framesize))) != SR_SUCCESS)
-		return ret;
-	    sent += sizeof(framesize);
-	    if ((ret = rip_manager_put_data((char *)&(id3v2frame2.pad), 3)) != SR_SUCCESS)
-		return ret;
-	    sent += 3;
-	    if ((ret = rip_manager_put_data(title, strlen(title))) != SR_SUCCESS)
-		return ret;
-	    sent += strlen(title);
-
-	    // Write ID3V2 frame2 with data
-	    strncpy(id3v2frame2.id, "TENC", 4);
-	    framesize = htonl(strlen(comment)+1);
-	    if ((ret = rip_manager_put_data((char *)&(id3v2frame2.id), 4)) != SR_SUCCESS)
-		return ret;
-	    sent += 4;
-	    if ((ret = rip_manager_put_data((char *)&(framesize), sizeof(framesize))) != SR_SUCCESS)
-		return ret;
-	    sent += sizeof(framesize);
-	    if ((ret = rip_manager_put_data((char *)&(id3v2frame2.pad), 3)) != SR_SUCCESS)
-		return ret;
-	    sent += 3;
-	    sent += sizeof(id3v2frame2);
-	    if ((ret = rip_manager_put_data(comment, strlen(comment))) != SR_SUCCESS)
-		return ret;
-	    sent += strlen(comment);
-
-	    // Write ID3V2 frame2 with data
-	    memset(&id3v2frame2, '\000', sizeof(id3v2frame2));
-	    strncpy(id3v2frame2.id, "TALB", 4);
-	    framesize = htonl(strlen(album)+1);
-	    if ((ret = rip_manager_put_data((char *)&(id3v2frame2.id), 4)) != SR_SUCCESS)
-		return ret;
-	    sent += 4;
-	    if ((ret = rip_manager_put_data((char *)&(framesize), sizeof(framesize))) != SR_SUCCESS)
-		return ret;
-	    sent += sizeof(framesize);
-	    if ((ret = rip_manager_put_data((char *)&(id3v2frame2.pad), 3)) != SR_SUCCESS)
-		return ret;
-	    sent += 3;
-	    if ((ret = rip_manager_put_data(album, strlen(album))) != SR_SUCCESS)
-		return ret;
-	    sent += strlen(album);
-
-	    if ((ret = rip_manager_put_data(bigbuf, 1600-sent)) != SR_SUCCESS)
-		return ret;
 	}
-    }
-    m_on_first_track = FALSE;
-    return SR_SUCCESS;
+
+	
+	m_on_first_track = FALSE;
+
+	return SR_SUCCESS;
 }
 
 /* GCS: This converts either positive or negative ms to blocks,

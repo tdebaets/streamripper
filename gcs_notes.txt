@@ -1,8 +1,322 @@
-Greg's notes on reverse engineering, etc.
+Greg's notes
+-----------------------------------------
+
+HTTP HEADERS
+~~~~~~~~~~~~
+
+http://141.211.232.136:8000/wcbn-lo.ogg
+===============================
+
+http://stream.orban.com:8006 (Shoutcast/aac)
+===============================
+ICY 200 OK
+icy-notice1:<BR>This stream requires <a href="http://www.winamp.com/">Winamp</a>
+<BR>
+icy-notice2:SHOUTcast Distributed Network Audio Server/win32 v1.9.4<BR>
+icy-name:Nap's Jazz and Smooth Jazz
+icy-genre:Jazz
+icy-url:http://www.orban.com
+content-type:audio/aac
+icy-pub:1
+icy-metaint:8192
+icy-br:32
+
+http://inet.orban.com:8010/test.aac (icecast2/aac)
+===============================
+HTTP/1.0 200 OK
+Content-Type: audio/mpeg
+icy-metaint:16000
+icy-br:32
+icy-description:Hi-Fi Internet Audio
+icy-genre:Various
+icy-name:Orban Opticodec-PC Encoder - aacPlus v2 Evaluation Stream
+icy-pub:1
+icy-url:http://www.orban.com
+Server: Icecast 2.1.0
+
+http://stream2.noise.net.nz:8000/twisted-lofi.ogg (icecast2/ogg)
+===============================
+HTTP/1.0 200 OK
+Content-Type: application/ogg
+ice-audio-info: samplerate=22000
+icy-description:More than just great dance music!
+icy-genre:Dance
+icy-name:Twisted 107.7FM
+icy-pub:1
+icy-url:http://www.twisted.co.nz
+Server: Icecast 2.0-kh58
+
+http://rstream.xmission.com:8000/krcl-low.ogg (icecast2/ogg)
+===============================
+HTTP/1.0 200 OK
+Content-Type: application/ogg
+icy-br:0
+icy-genre:ecclectic
+icy-name:KRCL Community Radio
+icy-pub:1
+icy-url:http://www.krcl.org
+Server: Icecast 2.1.0
+
+http://64.236.34.97/stream/1021
+===============================
+ICY 200 OK
+icy-notice1: <BR>This stream requires <a href="http://www.winamp.com/">Winamp</a><BR>
+icy-notice2: SHOUTcast Distributed Network Audio Server/SolarisSparc v1.9.4<BR>
+icy-name: Secret Agent: The soundtrack for your stylish, mysterious, dangerous life. For Spys and P.I.'s too! [SomaFM]
+icy-genre: Downtempo Lounge Spy
+icy-url: http://www.somafm.com
+icy-pub: 1
+icy-metaint: 8192
+icy-br: 128
+icy-irc: #shoutcast
+icy-icq: 0
+icy-aim: N/A
+
+"http://nsv.stream.aol.com/uvox?cachefile=/aol/us/aolmusic/artists/wmg/80spopculture/aha_takeonme_120.nsv"
+===============================
+HTTP/1.1 200 OK
+Date: Fri, 17 Sep 2004 21:15:06 GMT
+Server: MODS/1.0 (optimized-dpare-02)
+Content-Length: 2768860
+Ultravox-Max-Msg: 3080
+Ultravox-Avg-Bitrate: 98588
+Ultravox-Max-Bitrate: 98588
+Accept-Ranges: bytes
+Connection: close
+Content-Type: misc/ultravox
+
+http://64.156.25.86:8010/;stream.nsv  (last exile)
+http://64.156.25.86:8000/;stream.nsv  (love hina)
+===============================
+ICY 200 OK
+icy-notice1:<BR>This stream requires <a href="http://www.winamp.com/">Winamp</a><BR>
+icy-notice2:SHOUTcast Distributed Network Audio Server/FreeBSD4 v1.9.2<BR>
+icy-name:desync.com: Last Exile
+icy-genre:Anime
+icy-url:http://desync.com/
+Content-Type:video/nsv
+icy-pub:1
+icy-metaint:8192
+icy-br:500
+
+http://pubint.sc.llnwd.net:10045/
+===============================
+ICY 200 OK
+icy-notice1:<BR>This stream requires <a href="http://www.winamp.com/">Winamp</a><BR>
+icy-notice2:SHOUTcast Distributed Network Audio Server/Linux v1.9.2<BR>
+icy-name:KUVO Public Radio
+icy-genre:
+icy-url:http://www.kuvo.org
+Content-Type:audio/mpeg
+icy-pub:0
+icy-metaint:8192
+icy-br:24
+
+"http://www.live365.com/play/294341?LID=506-usa&lid=506-usa&SaneID=132.183.12.126-1095458924342&AuthType=NORMAL&VisitCount=1&bitrate=256&now=1095458993234&pid=40564"
+===============================
+---------------
+HTTP/1.1 302 Found
+Date: Fri, 17 Sep 2004 22:11:04 GMT
+Server: Apache
+Location: http://216.235.81.11:20186/play?membername=&session=velvet_ant:0&LID=506-usa&lid=506-usa&AuthType=NORMAL&SaneID=132.183.12.126-1095458924342&VisitCount=1&bitrate=256&now=1095458993234&pid=40564
+Content-Type: text/html; charset=iso-8859-1
+Connection: close
+---------------
+---------------
+HTTP/1.0 200 OK
+Server: Nanocaster/2.5.13
+Content-Type: audio/mpeg
+Cache-Control: no-cache
+Pragma: no-cache
+Connection: close
+Content-Length: 44000000
+---------------
+
+
+Shoutcast vs streamripper headers
+=================================
+ICY 200 OK
+icy-notice1:<BR>This stream requires <a href="http://www.winamp.com/">Winamp</a><BR>
+icy-notice2:SHOUTcast Distributed Network Audio Server/Linux v1.9.4<BR>
+icy-name:[JAPANESE R&B, HIPHOP, JROCK, JPOP & NEW RELEASES] SeiyaUsagi.Net Radio wo kiite kudasai!: SeiyaUsagi.Net Radio
+icy-genre:World
+icy-url:http://www.seiyausagi.net
+content-type:audio/mpeg
+icy-pub:1
+icy-metaint:8192
+icy-br:32
+---------
+HTTP/1.0 200 OK
+Server:SHOUTcast/Linux v1.9.4
+icy-name:[relay stream] [JAPANESE R&B, HIPHOP, JROCK, JPOP & NEW RELEASES] SeiyaUsagi.Net Radio wo kiite kudasai!: SeiyaUsagi.Net Radio
+icy-url:http://www.seiyausagi.net
+icy-br:32
+icy-metaint:8192
+Content-Type: audio/mpeg
+---------
+
+
+* How to upgrade the version number
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1)  configure.ac
+2)  lib/rip_manager.h
+3)  winamp_plugin/sr2x.nsi
+4)  makedist_win.bat
+
+* Generated files
+~~~~~~~~~~~~~~~~~
+I deleted the automatically generated files from CVS.  The people 
+who download from CVS should be advanced enough to figure out 
+how to build.  Just in case, I included a config.sh file to show 
+how it is done.
+
+Note the Windows mad.h should be coming from the msvc++ directory 
+anyways, so there is no need to keep the version built on unix.
+
+CVS: 	Makefile.in configure libmad/Makefile.in 
+CVS: 	libmad-0.15.1b/Makefile.in libmad-0.15.1b/mad.h 
+CVS: 	libmad-0.15.1b/msvc++/Makefile.in 
+
+
+* More problems
+~~~~~~~~~~~~~~~
+Bitrate = 0 stuff:
+http://www.mperia.com:8000/content/1569.mp3
+
+* MP3 utilities
+~~~~~~~~~~~~~~~
+MP3TRIM
+~~~~~~~
+http://www.logiccell.com/~mp3trim/
+(win only - did not seem to fix/detect prob)
+
+ENCSPOT
+~~~~~~~
+http://www.guerillasoft.nstemp.com/EncSpot2/download.html
+(win only - did not seem to fix/detect prob)
+
+DR TAG/MP3 Repair Tool
+~~~~~~~~~~~~~~~~~~~~~~
+http://www.drtag.de/en/description_mp3rt.htm
+(win only - did seem to fix/detect prob)
+
+mp3_check
+~~~~~~~~~
+(unix command line/see freshmeat)
+
+* The dependencies for version 1.54
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Dump of file gen_sripper.dll
+
+File Type: DLL
+
+  Image has the following dependencies:
+
+    KERNEL32.dll
+    USER32.dll
+    GDI32.dll
+    ADVAPI32.dll
+    SHELL32.dll
+    WS2_32.dll
+    COMCTL32.dll
+    MSVCRT.dll
+
+Dump of file consolewin32.exe
+
+File Type: EXECUTABLE IMAGE
+
+  Image has the following dependencies:
+
+    KERNEL32.dll
+    WS2_32.dll
+
+* The dependencies for version 1.60 plugin, 1.60.5 console
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Dump of file gen_sripper.dll
+
+File Type: DLL
+
+  Image has the following dependencies:
+
+    WS2_32.dll
+    COMCTL32.dll
+    KERNEL32.dll
+    USER32.dll
+    GDI32.dll
+    ADVAPI32.dll
+    SHELL32.dll
+    MSVCR70.dll
+
+Dump of file sripper-1.60.5.exe
+
+File Type: EXECUTABLE IMAGE
+
+  Image has the following dependencies:
+
+    KERNEL32.dll
+    WS2_32.dll
+
+* As of 1.61.1, I'm switching to MSVCRT.DLL linking (-MD)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 -----------------------------------------
 How to tag a new version (e.g. for version 1.60)
 
   cvs rtag -r HEAD sripper-1_60 sripper_1x
+
+-----------------------------------------
+Autoconf versions
+
+Recently (Mon Feb 21 15:23:32 EST 2005) upgraded to:
+
+  - autoconf 2.59, automake 1.9.2, libtool 1.5.10.
+
+-----------------------------------------
+How to revise libmad
+
+First, match the auto* versions used by libmad.  For libmad-0.15.1b, 
+this is :
+
+  - autoconf 2.59, automake 1.8.2, libtool 1.5.2.
+
+Next in libmad/Makefile.am, make the following modifications.
+
+  ## GCS - don't install for streamripper
+  ## lib_LTLIBRARIES =	libmad.la
+  noinst_LTLIBRARIES = libmad.la
+
+  ## GCS - don't install for streamripper
+  ## include_HEADERS =	mad.h
+  noinst_HEADERS = mad.h
+
+In Makefile.am & configure.ac, comment out the msvc++ stuff.  No need 
+to build makefiles, nor to distribute.
+
+Next rebuild the auto* files.  Test it all out and make sure it works.
+
+Finally, in the top level Makefile.am, replace the define for 
+libmad_manifest with the latest list of original files from the 
+libmad distro.
+
+-----------------------------------------
+How to revise libtre
+
+Check to make sure my versions work.  Here is what I use for tre-0.7.0:
+
+  - autoconf 2.59, automake 1.8.2, libtool 1.5.2.
+
+Next, in libtre/configure.ac, comment out the disable static line:
+
+dnl AM_DISABLE_STATIC
+
+Next rebuild the auto* files.  Test it all out and make sure it works.
+
+To be finished:
+
+a) which files to remove from cvs?  (e.g. configure)
+b) get rid of installation from Makefile.am's
+c) add manifest to distro
 
 -----------------------------------------
 Console mode:
@@ -197,48 +511,135 @@ Also see,
 http://www.unrelatedinventions.com/Audiotools/Help/thejargonbehindmp3.htm
 
 -----------------------------------------------------------------------
-findsep.c
------------------------------------------------------------------------
-findsep_silence
-	Inputs mpgbuf & mpgsize, returns ptr to silence point.
-	The mpgbuf is about 24 seconds of music.
+How to create a sjis locale
 
-init_siltrackers
-	There are 30 SILENCETRACKER's.  They contain 4 entries:
-	      foundsil
-	      silencestart
-	      insilencecount
-	      silencevol
-	These are fancy counters to find silence intervals for several 
-	different definitions of silence.
+localedef -v -c -i ja_JP -f SHIFT_JIS ja_JP.SJIS
+localedef -v -c -i ja_JP -f EUC-JP ja_JP.EUC-JP
 
-mad_decoder_run
-	Pump the mpgbuf through the decoder.  Each "output" call gets 
-	about 576 samples.  For each sample, compute rms (of 2 most 
-	recent samples), and pass to search_for_silence
+Here is how to display
 
-search_for_silence
-	Finds the first interval that is longer than ds.samplerate and 
-	quieter than pstracker->silencevol.  This is done for all 30 
-	different silence volumes.
+export LANG=ja_JP.SJIS
+xterm -fn -misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-iso10646-1
 
-Finally, back to findsep_silence.  Look for quietest chunck that 
-exceeds the silence threshold.
 
 -----------------------------------------------------------------------
-ripstream.c
------------------------------------------------------------------------
-ripstream_rip
-	Calls findsep_silence
+How to open a new file (start track)
+
+1) Use wfopen with utf8
+2) Use open with local encoding
+3) Use open with utf8
+4) Recoded
 
 -----------------------------------------------------------------------
-cbuffer.c
+How to build libiconv on windows
+
+
+STEP 1: Make config.h.msvc
+--------------------------
+
+/* Define as good substitute value for EILSEQ. */
+/* #undef EILSEQ */
+#define      EILSEQ          42
+
+/* Define to 1 if the package shall run at any location in the filesystem. */
+/* #define ENABLE_RELOCATABLE 1 */
+#undef ENABLE_RELOCATABLE
+
+/* Define to the value of ${prefix}, as a string. */
+#define INSTALLPREFIX "c:\\usr"
+
+/* Define as const if the declaration of iconv() needs const. */
+/* #undef ICONV_CONST */
+#define ICONV_CONST const
+
+
+STEP 2: Build dll's
+-------------------
+
+copy /y config.h.msvc config.h
+copy /y config.h libcharset
+copy /y config.h lib
+//nmake -f Makefile.msvc NO_NLS=1 DLL=1 MFLAGS=-MD
+nmake -f Makefile.msvc NO_NLS=1 MFLAGS=-MD
+
+STEP 3: Gather files
+--------------------
+
+mkdir iconv-win32
+
+//copy lib\iconv.lib iconv-win32
+//copy lib\iconv.dll iconv-win32
+//copy libcharset\lib\charset.lib iconv-win32
+//copy libcharset\lib\charset.dll iconv-win32
+//copy libcharset\include\localcharset.h iconv-win32
+//copy include\iconv.h iconv-win32
+
+copy /y lib\iconv.lib iconv-win32
+copy /y libcharset\lib\charset.lib iconv-win32
+copy /y libcharset\include\localcharset.h iconv-win32
+copy /y include\iconv.h iconv-win32
+
+
 -----------------------------------------------------------------------
-Initialization:
-    item_count = 0,
-    read_index = write_index
-Write:
-    increment write_index, then write
-Read:
-    increment read_index, then read
-    read_index is between 0 and size-1
+A possible macro for detecting locale_charset()
+
+I'm going to call mine "HAVE_LOCALE_CHARSET"
+
+AC_DEFUN(AC_FIND_LOCALE_CHARSET,
+[
+have_locale_charset='no'
+have_localcharset_h='no'
+AC_CHECK_HEADER(localcharset.h,have_localcharset_h='yes',have_localcharset_h='no')
+if test "$have_localcharset_h" = 'yes'; then
+  have_libcharset='no'
+  AC_CHECK_LIB(charset,locale_charset,have_libcharset='yes',have_libcharset='no')
+  if test "$have_libcharset" = 'yes'; then
+    LIBCHARSET="-lcharset"
+    AC_SUBST(LIBCHARSET)
+    AC_DEFINE(HAVE_LIBCHARSET,,Define if you have libcharset)
+    have_locale_charset='yes'
+  fi
+fi
+
+AC_CHECK_HEADER(langinfo.h,have_langinfo_h='yes',have_langinfo_h='no')
+if test "$have_langinfo_h" = 'yes'; then
+    AC_DEFINE(HAVE_LANGINFO_H,,Define if you have langinfo.h)
+fi
+])
+
+-----------------------------------------------------------------------
+How to connect to cf servers:
+
+(UNIX)
+roy@mesmer ~ $ eval `ssh-agent`
+Agent pid 4760
+roy@mesmer ~ $ ssh-add .ssh/sf_dsa
+Enter passphrase for .ssh/sf_dsa:
+Identity added: .ssh/sf_dsa (.ssh/sf_dsa)
+roy@mesmer ~ $ ssh cf.sourceforge.net -l codewhacker
+
+(PUTTY)
+C:\gsharp\my_putty_key\3>plink -v -i cf.ppk -l gregsharp -2 cf-shell.sf.net ls
+
+
+-----------------------------------------------------------------------
+Bootleg sites
+
+Torrent/web sites:
+www.archive.org
+bt.etree.org
+www.easytree.org
+purelivegigs.com
+http://www.thetradersden.org/index.php?
+www.filesoup.com
+www.sharingthegroove.org (couldn't connect)
+
+Band specific sites:
+trading.countingcrows.com (Counting crows, B&P)
+antsmarching.org (Dave Matthews)
+http://royal-orleans.com/ (Led Zeppelin)
+
+Links to BT sites:
+Smiler's links (http://smiler.no-ip.org/BT/BTlinks.php
+
+-----------------------------------------------------------------------

@@ -219,26 +219,25 @@ void print_usage()
 {
         fprintf(stderr, "Usage: streamripper URL [OPTIONS]\n");
         fprintf(stderr, "Options:\n");
-        fprintf(stderr, "        -a <file>      - Rip to single file, default name is timestamped\n");
         fprintf(stderr, "        -d <dir>       - The destination directory\n");
         fprintf(stderr, "        -s             - Don't create a directory for each stream\n");
-        fprintf(stderr, "        -r <base port> - Create relay server on base port, default port 8000\n");
+        fprintf(stderr, "        -r <base port> - Create a relay server on base port, defaults to port 8000\n");
         fprintf(stderr, "        -z             - Don't scan for free ports if base port is not avail\n");
         fprintf(stderr, "        -p <url>       - Use HTTP proxy server at <url>\n");
         fprintf(stderr, "        -o             - Overwrite tracks in complete\n");
         fprintf(stderr, "        -t             - Don't overwrite tracks in incomplete\n");
         fprintf(stderr, "        -c             - Don't auto-reconnect\n");
-        fprintf(stderr, "        -v             - Print version info and quit\n");
+        fprintf(stderr, "        -v             - Print version info and quite\n");
         fprintf(stderr, "        -l <seconds>   - number of seconds to run, otherwise runs forever\n");
-        fprintf(stderr, "        -q             - Add sequence number to output file\n");
-        fprintf(stderr, "        -i             - Don't add ID3V1 Tags to output file\n");
-        fprintf(stderr, "        -u <useragent> - Use a different UserAgent than \"Streamripper\"\n");
+        fprintf(stderr, "        -q             - add sequence number to output file\n");
+        fprintf(stderr, "        -i             - dont add ID3V1 Tags to output file\n");
+        fprintf(stderr, "        -u <useragent> - Use a different UserAgent then \"Streamripper\"\n");
         fprintf(stderr, "        -f <dstring>   - Don't create new track if metainfo contains <dstring>\n");
-        fprintf(stderr, "        --x            - Invoke splitpoint detection rules (see online guide)\n");
+        fprintf(stderr, "        --x            - Invoke splitpoint detection rules\n");
 }
 
 /* 
- * Bla, boring agument parsing crap, only reason i didn't use getopt
+ * Bla, boreing agument parsing crap, only reason i didn't use getopt
  * (which i did for an earlyer version) is because i couldn't find a good
  * port of it under Win32.. there probably is one, maybe i didn't look 
  * hard enough. 
@@ -248,18 +247,44 @@ void parse_arguments(int argc, char **argv)
     int i;
     char *c;
 
-    if (argc < 2) {
+    if (argc < 2)
+    {
 	print_usage();
 	exit(2);
     }
 
-    // Set default options
+    // Defaults
     set_rip_manager_options_defaults (&m_opt);
 
-    // Get URL
+#if defined (commentout)
+    m_opt.relay_port = 8000;
+    m_opt.max_port = 18000;
+    m_opt.flags = OPT_AUTO_RECONNECT | 
+	    OPT_SEPERATE_DIRS | 
+	    OPT_SEARCH_PORTS |
+	    OPT_ADD_ID3;
+
+    strcpy(m_opt.output_directory, "./");
+    m_opt.proxyurl[0] = (char)NULL;
+    strncpy(m_opt.url, argv[1], MAX_URL_LEN);
+    strcpy(m_opt.useragent, "sr-POSIX/" SRVERSION);
+
+    // Defaults for splitpoint
+    // Times are in ms
+    m_opt.sp_opt.xs = 1;
+    m_opt.sp_opt.xs_min_volume = 1;
+    m_opt.sp_opt.xs_silence_length = 1000;
+    m_opt.sp_opt.xs_search_window_1 = 6000;
+    m_opt.sp_opt.xs_search_window_2 = 6000;
+    m_opt.sp_opt.xs_offset = 0;
+    m_opt.sp_opt.xs_padding_1 = 300;
+    m_opt.sp_opt.xs_padding_2 = 300;
+#endif
+
+    // get URL
     strncpy(m_opt.url, argv[1], MAX_URL_LEN);
 
-    // Parse arguments
+    //get arguments
     for(i = 1; i < argc; i++) {
 	if (argv[i][0] != '-')
 	    continue;
@@ -273,70 +298,68 @@ void parse_arguments(int argc, char **argv)
 	}
 	switch (argv[i][1])
 	{
-	case 'a':
-	    /* Create single file output + cue sheet */
-	    m_opt.flags |= OPT_SINGLE_FILE_OUTPUT;
-	    m_opt.output_file[0] = 0;
-	    if (i == (argc-1) || argv[i+1][0] == '-')
-		break;
-	    i++;
-	    strncpy (m_opt.output_file, argv[i], MAX_PATH_LEN);
-	    break;
-	case 'c':
-	    m_opt.flags ^= OPT_AUTO_RECONNECT;
-	    break;
 	case 'd':
 	    i++;
+	    //dynamically allocat enough space for the dest dir
 	    strncpy(m_opt.output_directory, argv[i], MAX_DIR_LEN);
-	    break;
-	case 'f':
-	    i++;
-	    strncpy(m_opt.dropstring, argv[i], MAX_DROPSTRING_LEN);
 	    break;
 	case 'i':
 	    m_opt.flags ^= OPT_ADD_ID3;
 	    break;
-	case 'l':
-	    i++;
-	    time(&m_stop_time);
-	    m_stop_time += atoi(argv[i]);
-	    break;
-	case 'o':
-	    m_opt.flags |= OPT_OVER_WRITE_TRACKS;
-	    break;
-	case 'p':
-	    i++;
-	    strncpy(m_opt.proxyurl, argv[i], MAX_URL_LEN);
-	    break;
 	case 'q':
 	    m_opt.flags ^= OPT_COUNT_FILES;
 	    break;
+	case 's':
+	    m_opt.flags ^= OPT_SEPERATE_DIRS;
+	    break;
 	case 'r':
 	    m_opt.flags ^= OPT_MAKE_RELAY;
+	    // Default
 	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
 	    i++;
 	    m_opt.relay_port = atoi(argv[i]);
 	    break;
-	case 's':
-	    m_opt.flags ^= OPT_SEPERATE_DIRS;
+	case 'z':
+	    m_opt.flags ^= OPT_SEARCH_PORTS;
+	    m_opt.max_port = m_opt.relay_port+1000;
+	    break;
+#if defined (commentout)
+	case 'x':
+	    m_opt.flags ^= OPT_PAD_SONGS;
+	    break;
+#endif
+	case '-':
+	    parse_splitpoint_rules(&argv[i][2]);
+	    break;
+	case 'p':
+	    i++;
+	    strncpy(m_opt.proxyurl, argv[i], MAX_URL_LEN);
+	    break;
+	case 'o':
+	    m_opt.flags |= OPT_OVER_WRITE_TRACKS;
 	    break;
 	case 't':
 	    m_opt.flags |= OPT_KEEP_INCOMPLETE;
+	    break;
+	case 'c':
+	    m_opt.flags ^= OPT_AUTO_RECONNECT;
+	    break;
+	case 'v':
+	    printf("Streamripper %s by Jon Clegg <jonclegg@yahoo.com>\n", SRVERSION);
+	    exit(0);
+	case 'l':
+	    i++;
+	    time(&m_stop_time);
+	    m_stop_time += atoi(argv[i]);
 	    break;
 	case 'u':
 	    i++;
 	    strncpy(m_opt.useragent, argv[i], MAX_USERAGENT_STR);
 	    break;
-	case 'v':
-	    printf("Streamripper %s by Jon Clegg <jonclegg@yahoo.com>\n", SRVERSION);
-	    exit(0);
-	case 'z':
-	    m_opt.flags ^= OPT_SEARCH_PORTS;
-	    m_opt.max_port = m_opt.relay_port+1000;
-	    break;
-	case '-':
-	    parse_splitpoint_rules(&argv[i][2]);
+	case 'f':
+	    i++;
+	    strncpy(m_opt.dropstring, argv[i], MAX_DROPSTRING_LEN);
 	    break;
 	}
     }
@@ -391,8 +414,8 @@ parse_splitpoint_rules (char* rule)
 static void
 verify_splitpoint_rules (void)
 {
-    /* I think I got most of them... */
-    fprintf (stderr, "Warning: splitpoint sanity check not yet complete.\n");
+    fprintf (stderr, "Warning: splitpoint sanity check not yet implemented.\n");
+    /* OK, maybe just a few */
     
     /* xs_silence_length must be non-negative and divisible by two */
     if (m_opt.sp_opt.xs_silence_length < 0) {

@@ -1,0 +1,29 @@
+# This is an example of a file that can be customized for parsing metadata
+# Use it this like this:
+#     streamripper URL -w parse_rules.txt
+
+# Lines that start with '#' are comments, and blank lines are ignored.
+
+# Ignore metadata that begins with "A suivre"
+# The leading "m" says this is a match rule
+# The trailing "e" means drop the metadata
+m/^A suivre:/e
+
+# Strip off anything like "- Mp3Pro" from the end of the string
+# The leading "s" says this is a substitution rule
+# The trailing "i" means case insensitive matching
+s/[[:space:]]*-?[[:space:]]*mp3pro$//i
+
+# Strip off something like "- " from the beginning of the string
+s/^[[:space:]]*-[[:space:]]*//
+
+# This is the normal parsing rule: "Artist - Title"
+# The trailing "A1" means that the artist (A) matches subpattern 1
+# The trailing "T2" means that the title (T) matches subpattern 2
+m/^[[:space:]]*([^-]*?)[[:space:]]*-[[:space:]]*(.*?)[[:space:]]*$/A1T2
+
+# This is slightly different parsing rule: "Artist, Title"
+m/^[[:space:]]*([^,]*?)[[:space:]]*,[[:space:]]*(.*?)[[:space:]]*$/A1T2
+
+# If the metadata doesn't match any of the "m" rules, then the remaining 
+# metadata string (with substitutions) is entered into the "Title" field.

@@ -22,7 +22,7 @@
 ## Process this file with automake to produce Makefile.in
 
 SUBDIRS =		
-DIST_SUBDIRS =		msvc++
+## DIST_SUBDIRS =		msvc++
 
 ## GCS - don't install for streamripper
 ## lib_LTLIBRARIES =	libmad.la
