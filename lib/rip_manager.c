@@ -271,7 +271,7 @@ rip_manager_put_data(char *buf, int size)
 error_code
 rip_manager_put_raw_data(char *buf, int size)
 {
-    relaylib_send(buf, size);
+    relaylib_send(buf, size, 1);
     filelib_write_show (buf, size);
     return SR_SUCCESS;
 }

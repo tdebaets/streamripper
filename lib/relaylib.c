@@ -57,14 +57,6 @@
 #endif
 
 /*********************************************************************************
- * Public functions
- *********************************************************************************/
-void            relaylib_shutdown();
-error_code      relaylib_start();
-error_code      relaylib_send(char *data, int len);
-BOOL            relaylib_isrunning();
-
-/*********************************************************************************
  * Private functions
  *********************************************************************************/
 static void                     thread_accept(void *notused);
@@ -85,12 +77,13 @@ static THREAD_HANDLE m_hthread2;
 
 static struct hostsocklist_t
 {
-        SOCKET m_hostsock;
-        int   m_Offset;
-        int   m_LeftToSend;
-        char* m_Buffer;
-        int   m_BufferSize;
-        struct hostsocklist_t *m_next;
+    SOCKET m_hostsock;
+    int    m_is_new;
+    int    m_Offset;
+    int    m_LeftToSend;
+    char*  m_Buffer;
+    int    m_BufferSize;
+    struct hostsocklist_t *m_next;
 } *m_hostsocklist = NULL;
 
 unsigned long m_hostsocklist_len = 0;
@@ -404,9 +397,10 @@ void thread_accept(void *notused)
                             {
                                 // Add new client to list (headfirst)
                                 threadlib_waitfor_sem(&m_sem_listlock);
-                                newhostsock->m_Offset= 0;
-                                newhostsock->m_LeftToSend=0;
-                                newhostsock->m_BufferSize=0;
+                                newhostsock->m_is_new = 1;
+                                newhostsock->m_Offset = 0;
+                                newhostsock->m_LeftToSend = 0;
+                                newhostsock->m_BufferSize = 0;
                                 newhostsock->m_Buffer=NULL;
 
                                 newhostsock->m_hostsock = newsock;
@@ -439,10 +433,11 @@ void thread_accept(void *notused)
     m_running = FALSE;
 }
 
-// this function will be called for us, if we're connected then we send 
-// some data otherwise we just return with not connected
+// Send data to all the relay clients.  The "accept_new" parameter 
+// should be set for when it's ok to send the data to new clients.
+// This keeps us from sending metadata before data
 error_code
-relaylib_send(char *data, int len)
+relaylib_send(char *data, int len, int accept_new)
 {
     struct hostsocklist_t *prev;
     struct hostsocklist_t *ptr;
@@ -469,43 +464,48 @@ relaylib_send(char *data, int len)
 	    int bsz;
             next = ptr->m_next;
 
+	    if (accept_new) {
+		ptr->m_is_new = 0;
+	    }
+	    if (!ptr->m_is_new) {
+		/* GCS: Increase buffer size.  What happens is that
+		   at the beginning, right after connecting with the 
+		   shoutcast server, shoutcast pumps out a lot of data.
+		   If winamp (or possibly other clients) connects to the
+		   relay right away, they don't request as much as 
+		   the shoutcast server pumps out.  So we need to 
+		   buffer it here (or stop requesting so much). */
 #if defined (commentout)
-	    //Up to two full packets
-	    bsz= ( 8*len > BUFSIZE ) ? 8*len : BUFSIZE;
+		bsz= ( 8*len > BUFSIZE ) ? 8*len : BUFSIZE;
 #endif
-	    /* GCS: Increase buffer size.  What happens is that
-	       at the beginning, right after connecting with the 
-	       shoutcast server, shoutcast pumps out a lot of data.
-	       If winamp (or possibly other clients) connects to the
-	       relay right away, they don't request as much as 
-	       the shoutcast server pumps out.  So we need to 
-	       buffer it here (or stop requesting so much). */
-	    bsz= ( 24*len > BUFSIZE ) ? 24*len : BUFSIZE;
-	    if( bsz > ptr->m_BufferSize ) {
-		ptr->m_Buffer= realloc( ptr->m_Buffer, bsz );
-		ptr->m_BufferSize= bsz;
+		bsz= ( 24*len > BUFSIZE ) ? 24*len : BUFSIZE;
+		if( bsz > ptr->m_BufferSize ) {
+		    ptr->m_Buffer= realloc( ptr->m_Buffer, bsz );
+		    ptr->m_BufferSize= bsz;
+		}
+
+		if( ptr->m_Buffer != NULL ) {
+		    if( ptr->m_LeftToSend < 0 )
+			ptr->m_LeftToSend=0;
+
+		    if( ( ptr->m_Offset > 0 )&&( ptr->m_LeftToSend > 0 ) ) {
+			memmove (ptr->m_Buffer, ptr->m_Buffer+ptr->m_Offset, 
+				 ptr->m_LeftToSend);
+			ptr->m_Offset=0;
+		    }
+		    ptr->m_Offset=0;
+		    if( ptr->m_LeftToSend + len < ptr->m_BufferSize ) {
+			memcpy( ptr->m_Buffer + ptr->m_LeftToSend, data, len );
+			ptr->m_LeftToSend+= len;
+		    } else {
+			debug_printf("Relay: overflow copying %d data bytes to %d\n", len , ptr->m_BufferSize-len );
+			memcpy( ptr->m_Buffer + ptr->m_BufferSize-len, data, len );
+			ptr->m_LeftToSend = ptr->m_BufferSize;
+		    }
+		}
 	    }
 
-	    if( ptr->m_Buffer != NULL ) {
-		if( ptr->m_LeftToSend < 0 )
-		    ptr->m_LeftToSend=0;
-
-		if( ( ptr->m_Offset > 0 )&&( ptr->m_LeftToSend > 0 ) ) {
-		    memmove( ptr->m_Buffer, ptr->m_Buffer+ptr->m_Offset, ptr->m_LeftToSend );
-		    ptr->m_Offset=0;
-		}
-		ptr->m_Offset=0;
-		if( ptr->m_LeftToSend + len < ptr->m_BufferSize ) {
-		    memcpy( ptr->m_Buffer + ptr->m_LeftToSend, data, len );
-		    ptr->m_LeftToSend+= len;
-		} else {
-		    debug_printf("Relay: overflow copying %d data bytes to %d\n", len , ptr->m_BufferSize-len );
-		    memcpy( ptr->m_Buffer + ptr->m_BufferSize-len, data, len );
-		    ptr->m_LeftToSend = ptr->m_BufferSize;
-		}
-	    }         
-            if (ptr != NULL)
-            {
+            if (ptr != NULL) {
                 prev = ptr;
             }
             ptr = next;
@@ -523,7 +523,7 @@ relaylib_send(char *data, int len)
 }
 
 error_code
-relay_send_meta_data(char *track)
+relaylib_send_meta_data(char *track)
 {
     int track_len, meta_len, extra_len, chunks, header_len, footer_len;
     char zerobuf[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -539,7 +539,7 @@ relay_send_meta_data(char *track)
     buflen = 1;
 
     if (!track || !*track) {
-        return relaylib_send(buf, 1);
+        return relaylib_send(buf, 1, 0);
     }
     track_len = strlen(track);
     header_len = strlen(header);
@@ -549,7 +549,7 @@ relay_send_meta_data(char *track)
     /* GCS the following test is because c is assumed unsigned when read 
        (see above code) */
     if (chunks > 127) {
-        return relaylib_send(buf, 1);
+        return relaylib_send(buf, 1, 0);
     }
 
     c = chunks;
@@ -561,7 +561,7 @@ relay_send_meta_data(char *track)
     {
         // Avoid buffer overflow by just sending zero metadata instead
         debug_printf("Relay: Metadata overflow (%d bytes)\n", buflen);
-        return relaylib_send(buf, 1);
+        return relaylib_send(buf, 1, 0);
     }
         
     memcpy(bufptr, &c, 1);
@@ -575,7 +575,7 @@ relay_send_meta_data(char *track)
     memcpy(bufptr, zerobuf, extra_len);
     bufptr += extra_len;
         
-    return relaylib_send(buf, buflen);
+    return relaylib_send(buf, buflen, 0);
 }
 
 void thread_send(void *notused)

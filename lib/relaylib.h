@@ -8,8 +8,8 @@ error_code relaylib_init(BOOL search_ports, int relay_port, int max_port,
 void relaylib_shutdown();
 error_code relaylib_set_response_header(char *http_header);
 error_code relaylib_start();
-error_code relaylib_send(char *data, int len);
+error_code relaylib_send(char *data, int len, int accept_new);
 BOOL relaylib_isrunning();
-error_code relay_send_meta_data(char *track);
+error_code relaylib_send_meta_data(char *track);
 
 #endif //__RELAYLIB__

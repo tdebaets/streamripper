@@ -303,7 +303,7 @@ ripstream_rip()
 	debug_printf ("VERIFIED TRACK CHANGE (m_find_silence = %d)\n",
 		      m_find_silence);
 	copy_track_info (&m_new_track, &m_current_track);
-	relay_send_meta_data (m_current_track.raw_metadata);
+	relaylib_send_meta_data (m_current_track.raw_metadata);
 	if (m_find_silence < 0) {
 	    if (m_mi_to_cbuffer_end > 0) {
 		m_find_silence = m_mi_to_cbuffer_end;
@@ -312,7 +312,7 @@ ripstream_rip()
 	    }
 	}
     } else {
-	relay_send_meta_data (0);
+	relaylib_send_meta_data (0);
     }
 
     debug_printf ("Checking for silence\n");

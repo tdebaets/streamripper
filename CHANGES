@@ -1,8 +1,12 @@
 New for 1.61.4
 --------------
+Wed Feb 23 00:51:11 EST 2005
+* Fix for relay stream popping on xmms
 * Add Les's patch for the -M flag.
 * Add Obiguan's patch for the -T flag.
 * Add Aussie's patch for the -P flag.
+* Upgrades for new version of autoconf
+* And something else, what was it???
 
 New for 1.61.3
 --------------
