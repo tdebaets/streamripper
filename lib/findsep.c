@@ -134,6 +134,8 @@ error_code findsep_silence(const u_char* mpgbuf, long mpgsize, u_long* psilence)
 	}
 
 	assert(i != NUM_SILTRACKERS);
+	if (i == NUM_SILTRACKERS)
+		printf("\nwarning: no silence found between tracks\n");
 	*psilence = silstart;
 	return SR_SUCCESS;
 

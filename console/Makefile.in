@@ -34,7 +34,7 @@ all: madlib libripper console
 
 madlib:
 	@echo "Compiling madlib library"
-	@cd $(MADLIBPATH); ./configure; make
+	@cd $(MADLIBPATH); make
 
 libripper:
 	@echo "Compiling streamripper library functions -"
