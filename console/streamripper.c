@@ -219,6 +219,7 @@ void print_usage()
 {
         fprintf(stderr, "Usage: streamripper URL [OPTIONS]\n");
         fprintf(stderr, "Options:\n");
+        fprintf(stderr, "        -h             - Print this listing\n");
         fprintf(stderr, "        -a <file>      - Rip to single file, default name is timestamped\n");
         fprintf(stderr, "        -d <dir>       - The destination directory\n");
         fprintf(stderr, "        -s             - Don't create a directory for each stream\n");
@@ -292,6 +293,10 @@ void parse_arguments(int argc, char **argv)
 	case 'f':
 	    i++;
 	    strncpy(m_opt.dropstring, argv[i], MAX_DROPSTRING_LEN);
+	    break;
+	case 'h':
+	    print_usage();
+            exit(0);
 	    break;
 	case 'i':
 	    m_opt.flags ^= OPT_ADD_ID3;
