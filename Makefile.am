@@ -91,12 +91,14 @@ libmad_manifest = \
 	libmad-0.15.1b/COPYRIGHT \
 	libmad-0.15.1b/CREDITS \
 	libmad-0.15.1b/VERSION \
-	libmad-0.15.1b/msvc++/ \
 	libmad-0.15.1b/msvc++/Makefile.am \
 	libmad-0.15.1b/msvc++/Makefile.in \
 	libmad-0.15.1b/msvc++/mad.h \
 	libmad-0.15.1b/msvc++/config.h \
 	libmad-0.15.1b/msvc++/libmad.dsp
+
+man_MANS = \
+	streamripper.1
 
 EXTRA_DIST = \
 	readme_xfade.txt \
@@ -104,10 +106,8 @@ EXTRA_DIST = \
 	lib/live365info.h \
 	lib/riplive365.c \
 	lib/riplive365.h \
-	$(libmad_manifest)
-
-man1_MANS = \
-	streamripper.1
+	$(libmad_manifest) \
+	$(man_MANS)
 
 ## dist-hook:
 ##	tar xzv -C $(distdir) -f ../../libmad-0.15.1b.tar.gz
