@@ -51,7 +51,7 @@
 /*********************************************************************************
  * Public functions
  *********************************************************************************/
-error_code	relaylib_init(BOOL search_ports, int base_port, int max_port, int *port_used, char *ifr_name);
+error_code	relaylib_init(BOOL search_ports, int base_port, int max_port, int *port_used, char *if_name);
 void		relaylib_shutdown();
 error_code	relaylib_set_response_header(char *http_header);
 error_code	relaylib_start();
@@ -62,7 +62,7 @@ BOOL		relaylib_isrunning();
  * Private functions
  *********************************************************************************/
 static void			thread_accept(void *notused);
-static error_code	try_port(u_short port, char *ifr_name);
+static error_code	try_port(u_short port, char *if_name);
 
 
 /*********************************************************************************
@@ -101,7 +101,7 @@ void catch_pipe(int code)
 #endif
 
 error_code
-relaylib_init(BOOL search_ports, int relay_port, int max_port, int *port_used, char *ifr_name)
+relaylib_init(BOOL search_ports, int relay_port, int max_port, int *port_used, char *if_name)
 {
     int ret;
 #ifdef WIN32
@@ -132,7 +132,7 @@ relaylib_init(BOOL search_ports, int relay_port, int max_port, int *port_used, c
 	max_port = relay_port;
 
     for(;relay_port <= max_port; relay_port++) {
-	ret = try_port((u_short)relay_port, ifr_name);
+	ret = try_port((u_short)relay_port, if_name);
 	if (ret == SR_ERROR_CANT_BIND_ON_PORT)
 	    continue;		// Keep searching.
 
@@ -148,7 +148,7 @@ relaylib_init(BOOL search_ports, int relay_port, int max_port, int *port_used, c
 }
 
 error_code
-try_port(u_short port, char *ifr_name)
+try_port(u_short port, char *if_name)
 {
 	struct sockaddr_in local;
 
@@ -156,7 +156,7 @@ try_port(u_short port, char *ifr_name)
 	if (m_listensock == SOCKET_ERROR)
 		return SR_ERROR_SOCK_BASE;
 
-	if (read_interface(ifr_name,&local.sin_addr.s_addr) != 0)
+	if (read_interface(if_name,&local.sin_addr.s_addr) != 0)
 		local.sin_addr.s_addr = htonl(INADDR_ANY);
 	local.sin_family = AF_INET;
 	local.sin_port = htons(port);

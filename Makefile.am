@@ -90,7 +90,9 @@ libmad_manifest = \
 	libmad-0.15.1b/CHANGES \
 	libmad-0.15.1b/COPYRIGHT \
 	libmad-0.15.1b/CREDITS \
-	libmad-0.15.1b/VERSION \
+	libmad-0.15.1b/VERSION
+
+dont_need_these = \
 	libmad-0.15.1b/msvc++/Makefile.am \
 	libmad-0.15.1b/msvc++/Makefile.in \
 	libmad-0.15.1b/msvc++/mad.h \

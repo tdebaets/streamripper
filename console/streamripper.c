@@ -349,7 +349,7 @@ void parse_arguments(int argc, char **argv)
 	    m_opt.max_port = m_opt.relay_port+1000;
 	    break;
 	case 'I':
-	    strncpy(m_opt.ifr_name, argv[i], SR_MAX_PATH);
+	    strncpy(m_opt.if_name, argv[i], SR_MAX_PATH);
 	    break;
 	case '-':
 	    parse_splitpoint_rules(&argv[i][2]);

@@ -31,7 +31,7 @@
 error_code	inet_get_webpage_alloc(HSOCKET *sock, const char *url, const char *proxyurl,
 								   char **buffer, unsigned long *size);
 error_code	inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl, 
-							SR_HTTP_HEADER *info, char *useragent, char *ifr_name);
+							SR_HTTP_HEADER *info, char *useragent, char *if_name);
 
 /*********************************************************************************
  * Private functions
@@ -43,7 +43,7 @@ static error_code get_sc_header(HSOCKET *sock, SR_HTTP_HEADER *info);
  */
 error_code
 inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl, 
-		SR_HTTP_HEADER *info, char *useragent, char *ifr_name)
+		SR_HTTP_HEADER *info, char *useragent, char *if_name)
 {
     char headbuf[MAX_HEADER_LEN];
     URLINFO url_info;
@@ -64,7 +64,7 @@ inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl,
 	return ret;
 
     DEBUG2(( "calling sock_open: host=%s, port=%d\n", url_info.host, url_info.port ));
-    if ((ret = socklib_open(sock, url_info.host, url_info.port, ifr_name)) != SR_SUCCESS)
+    if ((ret = socklib_open(sock, url_info.host, url_info.port, if_name)) != SR_SUCCESS)
 	return ret;
 
     DEBUG2(( "calling httplib_construct_sc_request\n" ));
@@ -81,7 +81,7 @@ inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl,
 
     if (*info->http_location) {
 	/* RECURSIVE CASE */
-	inet_sc_connect(sock, info->http_location, proxyurl, info, useragent, ifr_name);
+	inet_sc_connect(sock, info->http_location, proxyurl, info, useragent, if_name);
     }
 
     return SR_SUCCESS;
