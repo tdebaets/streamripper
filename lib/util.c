@@ -20,11 +20,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#if defined (__UNIX__)
 #include <unistd.h>
+#endif
 #include <wchar.h>
 #include <wctype.h>
 #include <locale.h>
 #include <time.h>
+#include "debug.h"
 #include "types.h"
 
 /*********************************************************************************
