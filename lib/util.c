@@ -25,8 +25,14 @@
 #if defined HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#if defined HAVE_WCHAR_T
+#if defined HAVE_WCHAR_H
 #include <wchar.h>
+#endif
+#if defined HAVE_WCTYPE_H
 #include <wctype.h>
+#endif
+#endif
 #include <locale.h>
 #include <time.h>
 #include <errno.h>
@@ -587,6 +593,45 @@ strip_invalid_chars_stable(char *str)
 
 	return str;
 #endif
+}
+
+void
+parse_artist_title (char* artist, char* title, char* album, 
+		    int bufsize, char* trackname)
+{
+    char *p1,*p2;
+
+    /* Parse artist, album & title. Look for a '-' in the track name,
+     * i.e. Moby - sux0rs (artist/track)
+     */
+    memset(album, '\000', bufsize);
+    memset(artist, '\000', bufsize);
+    memset(title, '\000', bufsize);
+    p1 = strchr(trackname, '-');
+    if (p1) {
+	strncpy(artist, trackname, p1-trackname);
+	p1++;
+	p2 = strchr(p1, '-');
+	if (p2) {
+	    if (*p1 == ' ') {
+		p1++;
+	    }
+	    strncpy(album, p1, p2-p1);
+	    p2++;
+	    if (*p2 == ' ') {
+		p2++;
+	    }
+	    strcpy(title, p2);
+	} else {
+	    if (*p1 == ' ') {
+		p1++;
+	    }
+	    strcpy(title, p1);
+	}
+    } else {
+        strcpy(artist, trackname);
+        strcpy(title, trackname);
+    }
 }
 
 char* 

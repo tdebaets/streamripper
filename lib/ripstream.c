@@ -50,16 +50,18 @@ static void compute_cbuffer_size (SPLITPOINT_OPTIONS *sp_opt,
 				  int bitrate, int meta_interval);
 static int ms_to_bytes (int ms, int bitrate);
 static int bytes_to_secs (unsigned int bytes);
-static void parse_artist_title (char* artist, char* title, char* album, 
-		    int bufsize, char* trackname);
 
 /*********************************************************************************
  * Private Vars
  *********************************************************************************/
 static CBUFFER			m_cbuffer;
 static IO_GET_STREAM	*m_in;
+#if defined (commentout)
 static char			m_last_track[MAX_TRACK_LEN] = {'\0'};
 static char			m_current_track[MAX_TRACK_LEN] = {'\0'};
+#endif
+static TRACK_INFO m_last_track;
+static TRACK_INFO m_current_track;
 static char			m_no_meta_name[MAX_TRACK_LEN] = {'\0'};
 static char			*m_getbuffer = NULL;
 static int			m_find_silence = -1;
@@ -132,21 +134,29 @@ ripstream_init (IO_GET_STREAM *in, char *no_meta_name,
     m_meta_interval = in->getsize;
     m_cue_sheet_bytes = 0;
 
+    m_last_track.raw_metadata[0] = '\0';
+    m_current_track.raw_metadata[0] = '\0';
+
     if ((m_getbuffer = malloc(in->getsize)) == NULL)
 	return SR_ERROR_CANT_ALLOC_MEMORY;
 
     return SR_SUCCESS;
 }
 
-void ripstream_destroy()
+void
+ripstream_destroy()
 {
     if (m_getbuffer) {free(m_getbuffer); m_getbuffer = NULL;}
     m_find_silence = -1;
     m_in = NULL;
     m_cbuffer_size = 0;
     cbuffer_destroy(&m_cbuffer);
+#if defined (commentout)
     m_last_track[0] = '\0';
     m_current_track[0] = '\0';
+#endif
+    m_last_track.raw_metadata[0] = '\0';
+    m_current_track.raw_metadata[0] = '\0';
     m_no_meta_name[0] = '\0';
     m_track_count = 0;
     m_addID3tag = TRUE;
@@ -162,15 +172,29 @@ BOOL is_track_changed()
 #if defined (commentout)
     debug_printf ("is_track_changed\n"
 		  "|%s|\n|%s|\n",m_last_track, m_current_track);
-#endif
+
+    /* GCS: this is obsolete */
     if (strstr(m_current_track,m_drop_string) && *m_drop_string) {
 	strcpy(m_current_track,m_last_track);
 	return 0;
     }
 
     return strcmp(m_last_track, m_current_track) != 0 && *m_last_track;
+#endif
+
+    /* Not sure about this one.  (GCS FIX) */
+    if (!(*m_last_track.raw_metadata))
+	return 0;
+
+    /* If metadata is duplicate of previous, then no change. */
+    if (!strcmp(m_last_track.raw_metadata, m_current_track.raw_metadata))
+	return 0;
+
+    /* Otherwise, there was a change. */
+    return 1;
 }
 
+#if defined (commentout)
 /* GCS April 17, 2004 - This never happens.  It is leftover from 
    the live365 stuff */
 BOOL
@@ -178,6 +202,7 @@ is_no_meta_track()
 {
     return strcmp(m_current_track, NO_TRACK_STR) == 0;
 }
+#endif
 
 error_code
 ripstream_rip()
@@ -188,11 +213,14 @@ ripstream_rip()
 
     // only copy over the last track name if 
     // we are not waiting to buffer for a silent point
-    if (m_find_silence < 0)
+    if (m_find_silence < 0) {
+#if defined (commentout)
 	strcpy(m_last_track, m_current_track);
+#endif
+    }
 
     // get the data
-    ret = m_in->get_stream_data(m_getbuffer, m_current_track);
+    ret = m_in->get_stream_data(m_getbuffer, m_current_track.raw_metadata);
     if (ret != SR_SUCCESS) {
 	debug_printf("m_in->get_stream_data bad return code: %d\n", ret);
 	return ret;
@@ -227,20 +255,22 @@ ripstream_rip()
     /* GCS - This is only true once? */
     // if this is the first time we have received a track name, then we
     // can start the track
-    if (*m_current_track && *m_last_track == '\0') {
+    if (*m_current_track.raw_metadata && *m_last_track.raw_metadata == '\0') {
 	char artist[1024], title[1024], album[1024];
 	// The first track should not be ended. It will always be incomplete.
 	debug_printf ("calling rip_manager_start_track(#1)\n");
 #if defined (commentout)
 	ret = rip_manager_start_track(m_no_meta_name, m_track_count);
 #endif
-	ret = rip_manager_start_track(m_current_track, m_track_count);
+	ret = rip_manager_start_track(m_current_track.raw_metadata,
+				      m_track_count);
 	if (ret != SR_SUCCESS) {
 	    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
 	    return ret;
 	}
 	/* write the cue sheet */
-	parse_artist_title (artist, title, album, 1024, m_current_track);
+	parse_artist_title (artist, title, album, 1024,
+			    m_current_track.raw_metadata);
 	filelib_write_cue(artist,title,0);
     }
 
@@ -256,7 +286,7 @@ ripstream_rip()
 	   needed until we can do silence separation. */
 	debug_printf ("is_track_changed: m_find_silence = %d\n",
 		      m_find_silence);
-        relay_send_meta_data (m_current_track);
+        relay_send_meta_data (m_current_track.raw_metadata);
 	if (m_find_silence < 0) {
 	    if (m_mi_to_cbuffer_end > 0) {
 		m_find_silence = m_mi_to_cbuffer_end;
@@ -278,10 +308,12 @@ ripstream_rip()
 	}
 
 	/* Write out previous track */
-	if ((ret = end_track(pos1, pos2, m_last_track)) != SR_SUCCESS)
+	ret = end_track(pos1, pos2, m_last_track.raw_metadata);
+	if (ret != SR_SUCCESS)
 	    real_ret = ret;
         m_cue_sheet_bytes += pos2;
-	if ((ret = start_track(m_current_track)) != SR_SUCCESS)
+	ret = start_track(m_current_track.raw_metadata);
+	if (ret != SR_SUCCESS)
 	    real_ret = ret;
 	m_find_silence = -1;
     }
@@ -297,7 +329,7 @@ ripstream_rip()
 	    return ret;
 	}
         /* Post to caller */
-	if (*m_current_track) {
+	if (*m_current_track.raw_metadata) {
 	    m_cue_sheet_bytes += extract_size;
 	    rip_manager_put_data(m_getbuffer, extract_size);
 	}
@@ -459,45 +491,6 @@ end_track(u_long pos1, u_long pos2, char *trackname)
     return ret;
 }
 
-
-void
-parse_artist_title (char* artist, char* title, char* album, 
-		    int bufsize, char* trackname)
-{
-    char *p1,*p2;
-
-    /* Parse artist, album & title. Look for a '-' in the track name,
-     * i.e. Moby - sux0rs (artist/track)
-     */
-    memset(album, '\000', bufsize);
-    memset(artist, '\000', bufsize);
-    memset(title, '\000', bufsize);
-    p1 = strchr(trackname, '-');
-    if (p1) {
-	strncpy(artist, trackname, p1-trackname);
-	p1++;
-	p2 = strchr(p1, '-');
-	if (p2) {
-	    if (*p1 == ' ') {
-		p1++;
-	    }
-	    strncpy(album, p1, p2-p1);
-	    p2++;
-	    if (*p2 == ' ') {
-		p2++;
-	    }
-	    strcpy(title, p2);
-	} else {
-	    if (*p1 == ' ') {
-		p1++;
-	    }
-	    strcpy(title, p1);
-	}
-    } else {
-        strcpy(artist, trackname);
-        strcpy(title, trackname);
-    }
-}
 
 error_code
 start_track(char *trackname)

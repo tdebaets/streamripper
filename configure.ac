@@ -78,6 +78,24 @@ fi
 dnl Check for semaphore library
 AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(sem, sem_init,))
 
+dnl Checks for header files.
+AC_HEADER_DIRENT
+AC_HEADER_STDC
+AC_CHECK_HEADERS(unistd.h)
+
+dnl Check for wchar_t
+dnl It seems that it could be in wchar.h, stddef.h, or builtin
+AC_CHECK_HEADERS(wchar.h)
+AC_CHECK_HEADERS(wctype.h)
+AC_CHECK_TYPES([wchar_t],[],[],[
+#if HAVE_WCHAR_H
+#include <wchar.h>
+#endif
+#if STDC_HEADERS
+#include <stddef.h>
+#endif
+])
+
 dnl Check for iconv & related
 AM_ICONV
 AM_LANGINFO_CODESET
@@ -87,11 +105,6 @@ dnl SR_TEST_DECL
 
 dnl ** GCS Why testing twice??
 dnl AC_CHECK_LIB(dce,pthread_create,THREADLIBS="-ldce",)
-
-dnl Checks for header files.
-AC_HEADER_DIRENT
-AC_HEADER_STDC
-AC_CHECK_HEADERS(unistd.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T

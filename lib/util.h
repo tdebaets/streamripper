@@ -16,5 +16,7 @@ void null_printf(char *str, ...);
 int dir_max_filename_length (char* dirname);
 void initialize_default_locale (CODESET_OPTIONS* cs_opt);
 void set_codeset (char* codeset_type, const char* codeset);
+void parse_artist_title (char* artist, char* title, char* album, 
+			 int bufsize, char* trackname);
 
 #endif //__UTIL_H__

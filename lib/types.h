@@ -68,19 +68,6 @@ typedef struct IO_GET_STREAMst{
 	u_long getsize;
 } IO_GET_STREAM;
 
-
-#if defined (commentout)
-/* 
- * IO_PUT_STREAM is the 'output final shit' interface. effectivly however 
- * it's just a interface for filelib. it's only called from ripstream.c
- */
-typedef struct IO_PUT_STREAMst{
-	error_code (*put_data)(char* buffer, int size);
-	error_code (*start_track)(char* trackname);			// track name or '\0'
-	error_code (*end_track)(char* trackname);			// track name or '\0'
-} IO_PUT_STREAM;
-#endif
-
 /* 
  * SPLITPOINT_OPTIONS are the options used to tweek how the silence 
  * separation is done.
@@ -100,7 +87,6 @@ typedef struct SPLITPOINT_OPTIONSst
     int xs_padding_2;
 } SPLITPOINT_OPTIONS;
 
-
 /* 
  * CODESET_OPTIONS are the options used to decide how to parse
  * and convert the metadata
@@ -109,6 +95,17 @@ typedef struct CODESET_OPTIONSst
 {
     char* codeset;
 } CODESET_OPTIONS;
+
+/* 
+ * TRACK_INFO is the parsed metadata
+ */
+typedef struct TRACK_INFOst
+{
+    char raw_metadata[MAX_TRACK_LEN];
+    wchar_t artist[MAX_TRACK_LEN];
+    wchar_t title[MAX_TRACK_LEN];
+    wchar_t album[MAX_TRACK_LEN];
+} TRACK_INFO;
 
 
 ////////////////////////////////////////////////
