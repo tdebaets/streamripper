@@ -6,7 +6,6 @@
 #define SRVERSION	"1.60.5"
 
 #define MAX_STATUS_LEN		256
-#define MAX_FILENAME_LEN	255
 #define MAX_STREAMNAME_LEN	1024
 #define MAX_SERVER_LEN		1024
 
@@ -35,7 +34,7 @@ typedef struct RIP_MANAGER_INFOst
     char server_name[MAX_SERVER_LEN];
     int	bitrate;
     int	meta_interval;
-    char filename[MAX_FILENAME_LEN];		// JCBUG -- it's not the filename, it's the trackname
+    char filename[SR_MAX_PATH];		// JCBUG -- it's not the filename, it's the trackname
     u_long filesize;
     int	status;
 } RIP_MANAGER_INFO;
@@ -84,17 +83,17 @@ typedef struct RIP_MANAGER_INFOst
 
 typedef struct RIP_MANAGER_OPTIONSst
 {
-    char url[MAX_URL_LEN];			// url of the stream to connect to
-    char proxyurl[MAX_URL_LEN];			// url of a http proxy server, '\0' otherwise
-    char output_directory[MAX_PATH_LEN];	// base directory to output files too
-    char output_file[MAX_PATH_LEN];		// filename base when ripping without splitting
-    int relay_port;				// port to use for the relay server
-    u_short max_port;				// highest port the relay server can look if it needs to search
-    u_long maxMB_rip_size;			// max number of megabytes that can by writen out before we stop
-    u_short flags;				// all booleans logically OR'd together (see above)
-    char useragent[MAX_USERAGENT_STR];		// optional, use a different useragent
-    char dropstring[MAX_DROPSTRING_LEN];	// optional dropstring to be searched in metainfo;if found: metainfo dropped
-    SPLITPOINT_OPTIONS sp_opt;			// More options concerning splitpoint rules
+    char url[MAX_URL_LEN];		// url of the stream to connect to
+    char proxyurl[MAX_URL_LEN];		// url of a http proxy server, '\0' otherwise
+    char output_directory[SR_MAX_PATH];	// base directory to output files too
+    char output_file[SR_MAX_PATH];	// filename base when ripping without splitting
+    int relay_port;			// port to use for the relay server
+    u_short max_port;			// highest port the relay server can look if it needs to search
+    u_long maxMB_rip_size;		// max number of megabytes that can by writen out before we stop
+    u_short flags;			// all booleans logically OR'd together (see above)
+    char useragent[MAX_USERAGENT_STR];	// optional, use a different useragent
+    char dropstring[MAX_DROPSTRING_LEN];// optional dropstring to be searched in metainfo;if found: metainfo dropped
+    SPLITPOINT_OPTIONS sp_opt;		// More options concerning splitpoint rules
 } RIP_MANAGER_OPTIONS;
 
 typedef struct ERROR_INFOst

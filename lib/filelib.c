@@ -25,7 +25,7 @@
 #include "debug.h"
 #include <assert.h>
 
-#define TEMP_STR_LEN	(MAX_FILENAME*2)
+#define TEMP_STR_LEN	(SR_MAX_PATH*2)
 
 /*********************************************************************************
  * Public functions
@@ -34,7 +34,6 @@ error_code filelib_start(char *filename);
 error_code filelib_write_track(char *buf, u_long size);
 error_code filelib_write_show(char *buf, u_long size);
 error_code filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath);
-error_code filelib_set_output_directory(char *str);
 void filelib_shutdown();
 error_code filelib_remove(char *filename);
 
@@ -120,6 +119,178 @@ filelib_init(BOOL do_count, BOOL keep_incomplete, BOOL do_show_file,
     return SR_SUCCESS;
 }
 
+char* 
+filelib_get_output_directory ()
+{
+    return m_output_directory;
+}
+
+error_code
+filelib_set_output_directory (char* output_directory, 
+	int get_separate_dirs, int get_date_stamp, char* icy_name)
+{
+    char base_dir[SR_MAX_PATH];
+    char *stripped_icy_name;
+    unsigned int base_dir_len = 0;
+
+    /* First, get full path to base directory */
+    if (output_directory && *output_directory) {
+#if defined (WIN32)
+	if (_fullpath (base_dir, output_directory, SR_MAX_PATH) == NULL) {
+	    return SR_ERROR_DIR_PATH_TOO_LONG;
+	}
+#else
+	/* DO SOMETHING HERE */
+	error !
+#endif
+    } else {
+	/* If no output dir specified, the base dir is pwd */
+#if defined (WIN32)
+	if (!_getcwd (base_dir, SR_MAX_PATH)) {
+	    return SR_ERROR_DIR_PATH_TOO_LONG;
+	}
+#else
+	if (!getcwd (full, SR_MAX_PATH)) {
+	    debug_printf ("getcwd returned zero?\n");
+	    return SR_ERROR_DIR_PATH_TOO_LONG;
+	}
+#endif
+    }
+    add_trailing_slash (base_dir);
+    debug_printf("Base_dir is: %s\n", base_dir);
+
+    /* GCS FIX: Here is where I would actually recursively create the 
+     * base directories */
+    mkdir_if_needed(base_dir);
+
+    /* Next, get full path to station directory.  If !get_separate_dir,
+     * then the station directory is just the base directory. */
+    base_dir_len = strlen(base_dir);
+    if (base_dir_len > SR_MAX_COMPLETE) {
+	return SR_ERROR_DIR_PATH_TOO_LONG;
+    }
+    if (get_separate_dirs) {
+	char timestring[SR_DATE_LEN+1];
+	time_t timestamp;
+	struct tm *theTime;
+	int time_len = 0;
+	int length_used = base_dir_len;
+	int length_available;
+	int rc;
+
+	if (base_dir_len > SR_MAX_BASE) {
+	    return SR_ERROR_DIR_PATH_TOO_LONG;
+	}
+	timestring[0] = '\0';
+	if (get_date_stamp) {
+	    if (base_dir_len > SR_MAX_BASE_W_DATE) {
+		return SR_ERROR_DIR_PATH_TOO_LONG;
+	    }
+	    time(&timestamp);
+	    theTime = localtime(&timestamp);
+	    time_len = strftime(timestring, SR_DATE_LEN+1, "_%Y-%m-%d", theTime);
+	    if (time_len != SR_DATE_LEN) {
+		/* If my arithmetic is correct, this should never happen. */
+		return SR_ERROR_PROGRAM_ERROR;
+	    }
+	    length_used += SR_DATE_LEN;
+	}
+
+	stripped_icy_name = strdup(icy_name);
+	strip_invalid_chars(stripped_icy_name);
+	left_str(stripped_icy_name, SR_MAX_PATH);
+	trim(stripped_icy_name);
+
+	/* Truncate the icy name if it's too long */
+	length_available = SR_MAX_COMPLETE-length_used-strlen("/");
+	stripped_icy_name[length_available] = 0;
+
+	rc = snprintf (m_output_directory, SR_MAX_COMPLETE, "%s%s%s%c",
+	    base_dir,stripped_icy_name,timestring,PATH_SLASH);
+	free(stripped_icy_name);
+	if (rc < 0) {
+	    /* If my arithmetic is correct, this should never happen. */
+	    return SR_ERROR_PROGRAM_ERROR;
+	}
+    } else {
+	strcpy (m_output_directory, base_dir);
+    }
+    mkdir_if_needed(m_output_directory);
+
+    /* Next, make the incomplete directory */
+    sprintf(m_incomplete_directory, "%s%s", m_output_directory,
+	    "incomplete");
+    mkdir_if_needed(m_incomplete_directory);
+    add_trailing_slash(m_incomplete_directory);
+
+    /* Finally, compute the amount of remaining path length for the 
+     * music filenames */
+    m_max_filename_length = SR_MAX_PATH - strlen(m_incomplete_directory);
+
+    return SR_SUCCESS;
+}
+
+#if defined (commentout)
+int
+set_output_directory()
+{
+    char newpath[MAX_PATH_LEN] = {'\0'};
+    char newpath_test[MAX_PATH_LEN];
+    char *striped_icy_name;
+    int min_mfl = 54; /* mfl: max_filename_length */
+    int min_stublen = 8;
+
+    if (*m_options.output_directory) {
+	snprintf (newpath, MAX_PATH_LEN, "%s%c",
+		  m_options.output_directory, PATH_SLASH);
+	debug_printf ("OUTDIR: |%s|\n",newpath);
+	if (dir_max_filename_length (newpath) < min_mfl)
+	    return SR_ERROR_DIR_PATH_TOO_LONG;
+    }
+    if (GET_SEPERATE_DIRS(m_options.flags)) {
+	char timestring[36];
+	time_t timestamp;
+	struct tm *theTime;
+	int time_len = 0;
+	timestring[0] = '\0';
+	if (GET_DATE_STAMP(m_options.flags)) {
+	    time(&timestamp);
+	    theTime = localtime(&timestamp);
+	    time_len = strftime(timestring, 35, "_%Y-%m-%d", theTime);
+	}
+
+	striped_icy_name = malloc(strlen(m_info.icy_name)+ 1);
+	strcpy(striped_icy_name, m_info.icy_name);
+	strip_invalid_chars(striped_icy_name);
+	left_str(striped_icy_name, MAX_DIR_LEN);
+	trim(striped_icy_name);
+	snprintf (newpath_test, MAX_DIR_LEN, "%s%s%s", newpath,
+		  striped_icy_name, timestring);
+	debug_printf ("OUTDIR(2): |%s|\n",newpath_test);
+	if (dir_max_filename_length (newpath_test) < min_mfl) {
+	    /* Try to shorten it */
+	    int icylen = strlen(striped_icy_name);
+	    int dml = dir_max_filename_length (newpath);
+	    if (icylen + dml - min_mfl < min_stublen) {
+		return SR_ERROR_DIR_PATH_TOO_LONG;
+	    }
+	    icylen = strlen(newpath) + dml - min_mfl - time_len;
+	    striped_icy_name[icylen] = '\0';
+	    snprintf (newpath_test,MAX_DIR_LEN,"%s%s%s",newpath,
+		      striped_icy_name,timestring);
+	    debug_printf ("OUTDIR(3): |%s|\n",newpath_test);
+	    if (dir_max_filename_length (newpath_test) < min_mfl) {
+		return SR_ERROR_DIR_PATH_TOO_LONG;
+	    }
+	}
+	strcpy (newpath,newpath_test);
+    }
+    filelib_set_output_directory (newpath);
+    filelib_set_max_filename_length (dir_max_filename_length (newpath));
+    m_status_callback(RM_OUTPUT_DIR, (void*)newpath);
+    return SR_SUCCESS;
+}
+
 error_code
 filelib_set_output_directory(char *str)
 {
@@ -128,7 +299,22 @@ filelib_set_output_directory(char *str)
 	memset(&m_output_directory, 0, MAX_DIR_LEN);	
 	return SR_SUCCESS;
     }
+
+    /* GCS - convert to absolute path */
+#if defined (WIN32)
+    {
+        char full[2*MAX_PATH];
+	if (_fullpath (full, part, 2*MAX_PATH) == NULL) {
+	    return SR_BLAH; //kkk
+	}
+         printf( "Full path is: %s\n", full );
+      else
+         printf( "Invalid path\n" );
+    }
+#else
     strncpy(m_output_directory, str, MAX_BASE_DIR_LEN);
+#endif
+
     mkdir_if_needed(m_output_directory);
     add_trailing_slash(m_output_directory);
 
@@ -140,11 +326,36 @@ filelib_set_output_directory(char *str)
     return SR_SUCCESS;
 }
 
+int
+dir_max_filename_length (char* dirname)
+{
+#if WIN32
+    char full[_MAX_PATH];
+    if (_fullpath( full, dirname, _MAX_PATH ) == NULL) {
+	debug_printf ("_fullpath returned zero?\n");
+	return 0;
+    }
+    debug_printf ("strlen(full) == %d\n",strlen(full));
+    return _MAX_PATH - strlen(full) - 1;
+#else
+    char full[MAX_PATH_LEN];
+    if (*dirname == '/') {
+	return MAX_PATH_LEN - strlen(dirname) - 1;
+    }
+    if (!getcwd (full,MAX_PATH_LEN)) {
+	debug_printf ("getcwd returned zero?\n");
+	return 0;
+    }
+    return MAX_PATH_LEN - strlen(full) - strlen(dirname) - 2;
+#endif
+}
+
 void
 filelib_set_max_filename_length (int mfl)
 {
     m_max_filename_length = mfl - strlen("incomplete") - 1;
 }
+#endif
 
 void close_file(FHANDLE* fp)
 {
@@ -228,7 +439,7 @@ filelib_start(char *filename)
     sprintf(newfile, m_filename_format, m_incomplete_directory, tfile);
     temp = strlen(newfile);
     temp = strlen(tfile);
-    temp = MAX_PATH_LEN;
+    temp = SR_MAX_PATH;
     temp = strlen(m_incomplete_directory);
 
     if (m_keep_incomplete) {
@@ -404,7 +615,7 @@ filelib_shutdown()
 error_code
 filelib_remove(char *filename)
 {
-    char delfile[MAX_FILENAME];
+    char delfile[SR_MAX_PATH];
 	
     sprintf(delfile, m_filename_format, m_output_directory, filename);
     if (!DeleteFile(delfile))
@@ -413,6 +624,7 @@ filelib_remove(char *filename)
     return SR_SUCCESS;
 }
 
+/* GCS: This should get only the name, not the directory */
 static void
 trim_filename(char *filename, char* out)
 {

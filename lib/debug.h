@@ -14,27 +14,27 @@
 extern char* _varg2str(char *format, ...);
 extern void _freevargstr(char *str);
 
-#define _DPRINT(_x_, _level_)										\
-{																	\
-	char *body = _varg2str _x_;										\
-	char str[MAX_ERROR_STR];										\
-	char datebuf[50];												\
-	time_t now = time(NULL);										\
-	strftime(datebuf, 50, "%m/%d/%Y:%H:%M:%S", localtime(&now));	\
-	sprintf(str, "L%d [%s] %s:%d -- %s\n",							\
-				 _level_,											\
-				 datebuf,											\
-				 __FILE__,											\
-				 __LINE__,											\
-				 body);												\
-	if (DLEVEL >= _level_)											\
-	{																\
-		/* OutputDebugString(str); */									\
-		fprintf(stderr, "%s", str);									\
-	}																\
-	_freevargstr(body);												\
-}																	
-	
+#define _DPRINT(_x_, _level_)						\
+{									\
+    char *body = _varg2str _x_;						\
+    char str[MAX_ERROR_STR];						\
+    char datebuf[50];							\
+    time_t now = time(NULL);						\
+    strftime(datebuf, 50, "%m/%d/%Y:%H:%M:%S", localtime(&now));	\
+    sprintf(str, "L%d [%s] %s:%d -- %s\n",				\
+			 _level_,					\
+			 datebuf,					\
+			 __FILE__,					\
+			 __LINE__,					\
+			 body);						\
+    if (DLEVEL >= _level_)						\
+    {									\
+	/* OutputDebugString(str); */					\
+	fprintf(stderr, "%s", str);					\
+    }									\
+    _freevargstr(body);							\
+}
+
 
 #ifdef _DEBUG_
 #define DEBUG0(_x_)	_DPRINT(_x_, 0)

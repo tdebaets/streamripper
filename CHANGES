@@ -1,4 +1,11 @@
 
+New for 1.60.6
+--------------
+2004/05/08
+* Re-fix crashes on very long file names, because the previous fix
+  didn't work in some cases
+* Upgrade winamp plugin gui
+
 New for 1.60.5
 --------------
 2004/04/26

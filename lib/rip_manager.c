@@ -157,6 +157,7 @@ void init_error_strings()
 	SET_ERR_STR("HTTP:407 - Proxy Authentication Required",				0x37)
 	SET_ERR_STR("HTTP:403 - Access Forbidden (try changing the UserAgent)", 0x38)
 	SET_ERR_STR("The output directory length is too long", 0x39)
+	SET_ERR_STR("SR_ERROR_PROGRAM_ERROR", 0x3a)
 }
 
 char*
@@ -231,7 +232,7 @@ rip_manager_start_track(char *trackname)
 error_code
 rip_manager_end_track(char *trackname)
 {
-    char fullpath[MAX_FILENAME];
+    char fullpath[SR_MAX_PATH];
 
     filelib_end(trackname, GET_OVER_WRITE_TRACKS(m_options.flags), fullpath);
     post_status(0);
@@ -269,6 +270,22 @@ rip_manager_put_raw_data(char *buf, int size)
    But "for now", I've hacked it to do better truncation at least in this 
    limited circumstance: ASCII streams with MAX_PATH == NAME_MAX.
 */
+int
+set_output_directory()
+{
+    int rc;
+    rc = filelib_set_output_directory (m_options.output_directory, 
+	GET_SEPERATE_DIRS(m_options.flags),
+	GET_DATE_STAMP(m_options.flags),
+	m_info.icy_name);
+    if (rc != SR_SUCCESS)
+	return rc;
+//    m_status_callback(RM_OUTPUT_DIR, (void*)newpath);
+    m_status_callback(RM_OUTPUT_DIR, (void*)filelib_get_output_directory);
+    return rc;
+}
+
+#if defined (commentout)
 int
 set_output_directory()
 {
@@ -328,7 +345,7 @@ set_output_directory()
     m_status_callback(RM_OUTPUT_DIR, (void*)newpath);
     return SR_SUCCESS;
 }
-
+#endif
 
 /* 
  * Fires up the relaylib stuff. Most of it is so relaylib 

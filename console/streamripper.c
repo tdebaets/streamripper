@@ -280,14 +280,14 @@ void parse_arguments(int argc, char **argv)
 	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
 	    i++;
-	    strncpy (m_opt.output_file, argv[i], MAX_PATH_LEN);
+	    strncpy (m_opt.output_file, argv[i], SR_MAX_PATH);
 	    break;
 	case 'c':
 	    m_opt.flags ^= OPT_AUTO_RECONNECT;
 	    break;
 	case 'd':
 	    i++;
-	    strncpy(m_opt.output_directory, argv[i], MAX_DIR_LEN);
+	    strncpy(m_opt.output_directory, argv[i], SR_MAX_PATH);
 	    break;
 	case 'f':
 	    i++;

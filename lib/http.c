@@ -115,7 +115,7 @@ error_code httplib_construct_sc_request(const char *url, const char* proxyurl, c
     else
 	strcpy(myurl, ui.path);
 
-    snprintf(buffer, MAX_HEADER_LEN + MAX_HOST_LEN + MAX_PATH_LEN,
+    snprintf(buffer, MAX_HEADER_LEN + MAX_HOST_LEN + SR_MAX_PATH,
 	     "GET %s HTTP/1.0\r\n"
 	     "Host: %s:%d\r\n"
 	     "User-Agent: %s\r\n"
@@ -185,7 +185,7 @@ error_code httplib_construct_page_request(const char *url, BOOL proxyformat, cha
 	else
 		strcpy(myurl, ui.path);
 
-	snprintf(buffer, MAX_HEADER_LEN + MAX_HOST_LEN + MAX_PATH_LEN,
+	snprintf(buffer, MAX_HEADER_LEN + MAX_HOST_LEN + SR_MAX_PATH,
 			"GET %s HTTP/1.0\r\n"
 			"Host: %s:%d\r\n"
 			"Accept: */*\r\n"

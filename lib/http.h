@@ -19,7 +19,7 @@ typedef struct SR_HTTP_HEADERst
 typedef struct URLINFOst
 {
 	char host[MAX_HOST_LEN];
-	char path[MAX_PATH_LEN];
+	char path[SR_MAX_PATH];
 	u_short port;
 	char username[MAX_URI_STRING];
 	char password[MAX_URI_STRING];

@@ -144,30 +144,6 @@ initialize_locale (void)
     debug_printf ("LOCALE is %s\n",setlocale(LC_ALL,NULL));
 }
 
-int
-dir_max_filename_length (char* dirname)
-{
-#if WIN32
-    char full[_MAX_PATH];
-    if (_fullpath( full, dirname, _MAX_PATH ) == NULL) {
-	debug_printf ("_fullpath returned zero?\n");
-	return 0;
-    }
-    debug_printf ("strlen(full) == %d\n",strlen(full));
-    return _MAX_PATH - strlen(full) - 1;
-#else
-    char full[MAX_PATH_LEN];
-    if (*dirname == '/') {
-	return MAX_PATH_LEN - strlen(dirname) - 1;
-    }
-    if (!getcwd (full,MAX_PATH_LEN)) {
-	debug_printf ("getcwd returned zero?\n");
-	return 0;
-    }
-    return MAX_PATH_LEN - strlen(full) - strlen(dirname) - 2;
-#endif
-}
-
 char*
 strip_invalid_chars(char *str)
 {

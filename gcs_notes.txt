@@ -1,5 +1,14 @@
 Greg's notes
 -----------------------------------------
+* More problems
+~~~~~~~~~~~~~~~
+Still have file length too long:
+http://66.54.65.166:8026
+
+Bitrate = 0 stuff:
+http://www.mperia.com:8000/content/1569.mp3
+
+
 * The dependencies for version 1.54
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Dump of file gen_sripper.dll

@@ -232,7 +232,8 @@ ripstream_rip()
     else if (*m_current_track && *m_last_track == '\0') {
 	char artist[1024], title[1024], album[1024];
 	// The first track should not be ended. It will always be incomplete.
-	if ((ret = rip_manager_start_track(m_current_track)) != SR_SUCCESS) {
+	//if ((ret = rip_manager_start_track(m_current_track)) != SR_SUCCESS) {
+	if ((ret = rip_manager_start_track(m_no_meta_name)) != SR_SUCCESS) {
 	    debug_printf("start_track had bad return code %d", ret);
 	    return ret;
 	}
