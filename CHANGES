@@ -1,6 +1,23 @@
-New for 1.60 (By GCS - gregsharp@geocities.com)
------------------------------------------------
-2004/03/10
+
+New for 1.60
+------------
+2004/04/04 (GCS - gregsharp@users.sourceforge.net)
+* No changes.
+
+New for 1.60-pre3
+-----------------
+2004/03/27 (GCS - gregsharp@users.sourceforge.net)
+* Fix the bug: error -22 [SR_ERROR_BUFFER_EMPTY]
+
+New for 1.60-pre2
+-----------------
+2004/03/24 (GCS - gregsharp@users.sourceforge.net)
+* Add Johannes Buettner's drop patch
+* Fixes for compiling winamp 2 plugin
+
+New for 1.60-pre1
+-----------------
+2004/03/10 (GCS - gregsharp@users.sourceforge.net)
 * Track splitting enhancements - see readme_xfade.txt
 * Partial multibyte character support
 * Fix crashes on very long file names
