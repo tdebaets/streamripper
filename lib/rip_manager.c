@@ -382,7 +382,9 @@ ripthread(void *notused)
 	    post_error(ret);
 	    continue;
 	}
-	else if ((ret == SR_ERROR_RECV_FAILED || ret == SR_ERROR_TIMEOUT ||
+	else if ((ret == SR_ERROR_RECV_FAILED || 
+		  ret == SR_ERROR_TIMEOUT || 
+		  ret == SR_ERROR_NO_TRACK_INFO || 
 		  ret == SR_ERROR_SELECT_FAILED) && 
 		 GET_AUTO_RECONNECT(m_options.flags)) {
 	    /*
