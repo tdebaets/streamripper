@@ -99,12 +99,18 @@ typedef struct CODESET_OPTIONSst
 /* 
  * TRACK_INFO is the parsed metadata
  */
+#if HAVE_WCHAR_T
+typedef char mchar;
+#else
+typedef wchar_t mchar;
+#endif
 typedef struct TRACK_INFOst
 {
+    int have_track_info;
     char raw_metadata[MAX_TRACK_LEN];
-    wchar_t artist[MAX_TRACK_LEN];
-    wchar_t title[MAX_TRACK_LEN];
-    wchar_t album[MAX_TRACK_LEN];
+    mchar artist[MAX_TRACK_LEN];
+    mchar title[MAX_TRACK_LEN];
+    mchar album[MAX_TRACK_LEN];
 } TRACK_INFO;
 
 

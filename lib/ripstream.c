@@ -113,7 +113,8 @@ typedef struct ID3V2framest {
 
 error_code
 ripstream_init (IO_GET_STREAM *in, char *no_meta_name, 
-		char *drop_string, int drop_count, SPLITPOINT_OPTIONS *sp_opt, 
+		char *drop_string, int drop_count,
+		SPLITPOINT_OPTIONS *sp_opt, 
 		int bitrate, BOOL addID3tag)
 {
     if (!in || !sp_opt || !no_meta_name) {
@@ -254,6 +255,9 @@ ripstream_rip()
 	ret = cbuffer_init(&m_cbuffer, m_in->getsize * m_cbuffer_size);
 	if (ret != SR_SUCCESS) return ret;
     }
+
+    /* Parse metadata <new stuff starts here> */
+    parse_metadata (&m_current_track);
 
     /* GCS - This is only true once? */
     // if this is the first time we have received a track name, then we
