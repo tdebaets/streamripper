@@ -620,3 +620,24 @@ roy@mesmer ~ $ ssh cf.sourceforge.net -l codewhacker
 C:\gsharp\my_putty_key\3>plink -v -i cf.ppk -l gregsharp -2 cf-shell.sf.net ls
 
 
+-----------------------------------------------------------------------
+Bootleg sites
+
+Torrent/web sites:
+www.archive.org
+bt.etree.org
+www.easytree.org
+purelivegigs.com
+http://www.thetradersden.org/index.php?
+www.filesoup.com
+www.sharingthegroove.org (couldn't connect)
+
+Band specific sites:
+trading.countingcrows.com (Counting crows, B&P)
+antsmarching.org (Dave Matthews)
+http://royal-orleans.com/ (Led Zeppelin)
+
+Links to BT sites:
+Smiler's links (http://smiler.no-ip.org/BT/BTlinks.php
+
+-----------------------------------------------------------------------
