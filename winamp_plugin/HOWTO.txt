@@ -1,4 +1,4 @@
-Streamripper for Winamp 1.30b
+Streamripper for Winamp 1.30
 
 This is the quick and dirty HOWTO for the Winamp plug-in of Streamripper.
 
@@ -12,7 +12,7 @@ If are upgrading from version 1.0 BETA of Streamripper it is advised that you di
 The following steps should get you going to ripping a stream.
 
 
-1. Go to shoutcast.com, icecast.com, or live365.com and click on a stream 
+1. Go to shoutcast.com and click on a stream 
 2. The stream should be playing in Winamp, if it's not, click play. On the top of Streamripper you should notice it says like "Press start to rip http://something:port"
 3. Click "start"; hope it works.
 
