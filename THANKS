@@ -1,7 +1,16 @@
-Special thanks goes out to:
+THANKS (v.1.6X.X)
+---------------------
+"Mike Frysinger" <vapier@gentoo.org> for a patch to control streaming 
+for multiple ethernet connections.
+"Michael Ablassmeier" <abi@grinser.de> for the man page.
+"darrick" <darrick@dcn.org> for fixing the CTRL-C bug.
 
-Oddsock (oddsock@oddsock.org) for his Streamripper32 Win32 version and ID3 addition.
-Felix (felix@blasphemo.net) for the file counting and date/time directory addition.
+THANKS (up to v.1.54)
+---------------------
+Oddsock (oddsock@oddsock.org) for his Streamripper32 Win32 version and 
+ID3 addition.
+Felix (felix@blasphemo.net) for the file counting and date/time 
+directory addition.
 Mark Lacas (mark@lacas.com) for OSX porting.
 Robin P. Blanchard <Robin_Blanchard@gactr.uga.edu> - FreeBSD compatability :)
 Jeff Lexington <aremont6639vze@excite.com> for the spanish translation
