@@ -55,7 +55,6 @@ HSEM		threadlib_create_sem();
 error_code	threadlib_waitfor_sem(HSEM *e);
 error_code	threadlib_signel_sem(HSEM *e);
 void		threadlib_destroy_sem(HSEM *e);
-BOOL		threadlib_sem_signaled(HSEM *e);
 
 
 error_code threadlib_beginthread(THREAD_HANDLE *thread, void (*callback)(void *))
@@ -79,13 +78,6 @@ HSEM threadlib_create_sem()
 	HSEM s;
 	SemInit(s);
 	return s;
-}
-
-BOOL threadlib_sem_signaled(HSEM *e)
-{
-	int sig = 0;
-	SemIsSignaled(*e, &sig);
-	return (BOOL)sig;
 }
 
 error_code threadlib_waitfor_sem(HSEM *e)

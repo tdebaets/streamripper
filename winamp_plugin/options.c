@@ -262,17 +262,24 @@ void options_dialog_show(HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, 
 	ret = PropertySheet(&psh);
 	if (ret == -1)
 	{
-		MessageBox(parent, "There was an error while attempting to load the options dialog\r\n"
-						   "Please check http://streamripper.sourceforge.net for updates",
-						   "Can't load options dialog", MB_ICONEXCLAMATION);
+		char s[255];
+		sprintf(s, "There was an error while attempting to load the options dialog\r\n"
+				   "Please check http://streamripper.sourceforge.net for updates\r\n"
+				   "Error: %d\n", GetLastError());
+		MessageBox(parent, s, "Can't load options dialog", MB_ICONEXCLAMATION);
 		return; //JCBUG
 
 	}
 	if (ret)
+	{
+		if (m_pskin_list[m_curskin])
+		{
+			strcpy(m_guiOpt->default_skin, m_pskin_list[m_curskin]);
+			//JCBUG font color doesn't change until restart.
+			render_change_skin(m_guiOpt->default_skin);
+		}
 		options_save(m_opt, m_guiOpt);
-
-	if (m_pskin_list[m_curskin])
-		render_change_skin(m_pskin_list[m_curskin]);
+	}
 
 	free_skin_list();
 }
@@ -474,7 +481,6 @@ LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				HWND hwndlist = GetDlgItem(hWnd, IDC_SKIN_LIST); 
 				m_curskin = SendMessage(hwndlist, LB_GETCURSEL, 0, 0); 
 				assert(m_curskin >= 0 && m_curskin < m_skin_list_size);
-				strcpy(m_guiOpt->default_skin, m_pskin_list[m_curskin]);
 				UpdateWindow(hWnd);
 				InvalidateRect(hWnd, NULL, FALSE);
 				}

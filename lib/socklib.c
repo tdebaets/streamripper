@@ -116,15 +116,22 @@ error_code socklib_open(HSOCKET *socket_handle, char *host, int port)
     struct hostent *hp;
     int len;
 
+	if (!socket_handle || !host)
+		return SR_ERROR_INVALID_PARAM;
+
+	DEBUG2(( "creating our socket\n" ));
     socket_handle->s = socket(AF_INET, SOCK_STREAM, 0);
 
+	DEBUG2(( "checking hostname\n" ));
 	if ((address.sin_addr.s_addr = inet_addr(host)) == INADDR_NONE)
 	{
+		DEBUG2(( "calling gethostbyname\n" ));
 		hp = gethostbyname(host);
 		if (hp)
 			memcpy(&address.sin_addr, hp->h_addr_list[0], hp->h_length);
 		else
 		{
+			DEBUG0(( "resolving hostname: %s failed\n", host ));
 			WSACleanup();
 			return SR_ERROR_CANT_RESOLVE_HOSTNAME;
 		}
@@ -133,8 +140,12 @@ error_code socklib_open(HSOCKET *socket_handle, char *host, int port)
     address.sin_port = htons((unsigned short)port);
     len = sizeof(address);
 
+	DEBUG2(( "connect: sock=%d\n", socket_handle->s ));
     if (connect(socket_handle->s, (struct sockaddr *)&address, len) == SOCKET_ERROR)
+	{
+		DEBUG0(( "connect failed: error=%d\n", WSAGetLastError() ));
 		return SR_ERROR_CONNECT_FAILED;
+	}
 
 #ifdef WIN32
 	{
@@ -233,9 +244,9 @@ int socklib_recvall(HSOCKET *socket_handle, char* buffer, int size)
 		if (socket_handle->closed)
 			return SR_ERROR_SOCKET_CLOSED;
 	
-		DEBUG2(("calling recv for %d bytes", size));
+//		DEBUG2(("calling recv for %d bytes", size));
         ret = recv(socket_handle->s, &buffer[read], size, 0);
-		DEBUG2(("recv: %d", ret));
+//		DEBUG2(("recv: %d", ret));
         if (ret == SOCKET_ERROR)
 			return SOCKET_ERROR;
 				

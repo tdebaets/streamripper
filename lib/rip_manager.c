@@ -111,7 +111,7 @@ void init_error_strings()
 	SET_ERR_STR("SR_ERROR_INVALID_URL",					0x03)
 	SET_ERR_STR("SR_ERROR_WIN32_INIT_FAILURE",			0x04)
 	SET_ERR_STR("Could not connect to the stream. Try checking that the stream is up\n"
-	            "and your proxy settings and internet connection.",				0x05)
+	            "and that your proxy settings are correct.",				0x05)
 	SET_ERR_STR("SR_ERROR_CANT_RESOLVE_HOSTNAME",		0x06)
 	SET_ERR_STR("SR_ERROR_RECV_FAILED",					0x07)
 	SET_ERR_STR("SR_ERROR_SEND_FAILED",					0x08)
@@ -526,6 +526,8 @@ error_code start_ripping()
 	error_code ret;
 	char *pproxy = m_options.proxyurl[0] ? m_options.proxyurl : NULL;
 	int mult;
+
+	DEBUG2(( "calling inet_sc_connect url=%s\n", m_options.url ));
 
 	/*
  	 * Connect to the stream

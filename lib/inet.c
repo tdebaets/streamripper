@@ -23,6 +23,7 @@
 #include "types.h"
 #include "http.h"
 #include "socklib.h"
+#include "debug.h"
 
 /*********************************************************************************
  * Public functions
@@ -47,6 +48,7 @@ error_code inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl,
 	URLINFO url_info;
 	int ret;
 
+	DEBUG2(( "calling httplib_parse_url\n" ));
 	if (proxyurl)
 	{
 		if ((ret = httplib_parse_url(proxyurl, &url_info)) != SR_SUCCESS)
@@ -57,18 +59,23 @@ error_code inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl,
 		return ret;
 	}
 
+	DEBUG2(( "calling sockinit\n" ));
 	if ((ret = socklib_init()) != SR_SUCCESS)
 		return ret;
 
+	DEBUG2(( "calling sock_open: host=%s, port=%d\n", url_info.host, url_info.port ));
 	if ((ret = socklib_open(sock, url_info.host, url_info.port)) != SR_SUCCESS)
 		return ret;
 
+	DEBUG2(( "calling httplib_construct_sc_request\n" ));
 	if ((ret = httplib_construct_sc_request(url, proxyurl, headbuf, useragent)) != SR_SUCCESS)
 		return ret;
 
+	DEBUG2(( "calling socklib_sendall\n" ));
 	if ((ret = socklib_sendall(sock, headbuf, strlen(headbuf))) < 0)
 		return SR_ERROR_SEND_FAILED;
 
+	DEBUG2(( "calling get_sc_header\n" ));
 	if ((ret = get_sc_header(sock, info)) != SR_SUCCESS)
 		return ret;
 

@@ -56,7 +56,6 @@
 #define	SemWait(_s_)	{WaitForSingleObject(_s_, INFINITE); ResetEvent(_s_);}
 #define	SemPost(_s_)	SetEvent(_s_)
 #define	SemDestroy(_s_)	CloseHandle(_s_)
-#define SemIsSignaled(_s_, _b_)	{*_b_ = (WaitForSingleObject(_s_, 0) == WAIT_OBJECT_0);}
 
 
 #elif __UNIX__
@@ -71,7 +70,6 @@
 #define	SemWait(_s_)	sem_wait(&(_s_))
 #define	SemPost(_s_)	sem_post(&(_s_))
 #define	SemDestroy(_s_)	sem_destroy(&(_s_))
-#define SemIsSignaled(_s_, _b_)	sem_getvalue(&(_s_), _b_)
 #define Sleep(x) 	usleep(x)	
 
 #endif

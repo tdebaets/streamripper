@@ -4,7 +4,6 @@ This is the quick and dirty HOWTO for the Winamp plug-in of Streamripper.
 
 The following steps should get you going to ripping a stream.
 
-
 1. Go to shoutcast.com and click on a stream 
 2. The stream should be playing in Winamp, if it's not, click play. On the top of Streamripper you should notice it says like "Press start to rip http://something:port"
 3. Click "start"; hope it works.
@@ -12,6 +11,10 @@ The following steps should get you going to ripping a stream.
 If you don't have a fat pipe (cable modem/dsl, T1, etc.) you'll want to use Streamripper "relay server". If you don't use this Streamripper will make another connection to the stream your listening too, effectively doubling your bandwidth usage. This is a feature that allows you to listen to the stream your ripping through Streamripper. 
 
 To listen through Streamripper relay function click on the box labeled "RLY", Streamripper will add an entry to your playlist. Click on that to listen through the relay.
+
+NOTE: For Windows 95 users
+You may need to install IE 5.5, and the Winsock2 update available from:
+http://www.microsoft.com/windows95/downloads/contents/WUAdminTools/S_WUNetworkingTools/W95Sockets2/Default.asp
 
 I hope this works out for you, if try asking some of folks on the Streamripper mailing list at streamripper-general@lists.sourceforge.net or check out the home page at http://streamripper.sourceforge.net
 

@@ -302,7 +302,7 @@ error_code end_track(u_long pos, char *trackname)
 
             memset(&id3, '\000',sizeof(id3));
             strncpy(id3.tag, "TAG", strlen("TAG"));
-            strncpy(id3.comment, "Streamripper!", strlen("Streamripper!"));
+//            strncpy(id3.comment, "Streamripper!", strlen("Streamripper!"));
 
             memset(&artist, '\000',sizeof(artist));
             memset(&title, '\000',sizeof(title));

@@ -264,7 +264,7 @@ error_code relaylib_send(char *data, int len)
 {
 	int ret;
 
-	if (threadlib_sem_signaled(&m_sem_not_connected))
+	if (!m_hostsock)
 		return SR_ERROR_HOST_NOT_CONNECTED;
 
 	ret = send(m_hostsock, data, len, 0);
