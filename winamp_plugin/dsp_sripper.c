@@ -30,7 +30,6 @@
 #include "shellapi.h"
 #include "dsp_sripper.h"
 #include "render.h"
-#include "touch_page.h"
 #include "../lib/util.h"	// because windows has a util.h, and gets very confused.
 #include "dock.h"
 #include "filelib.h"
@@ -374,8 +373,6 @@ void RipCallback(int message, void *data)
 				winamp_add_track_to_playlist((char*)data);
 			break;
 		case RM_NEW_TRACK:
-			if (m_guiOpt.m_allow_touch)
-				touch_page_listing(m_rmoOpt.proxyurl, m_rmiInfo.streamname, (char*)data, m_rmiInfo.bitrate);
 			break;
 		case RM_STARTED:
 			stop_button_enable();

@@ -46,8 +46,6 @@ BEGIN
                     WS_TABSTOP,7,7,179,15
     CONTROL         "&Create relay stream",IDC_MAKE_RELAY,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,7,24,123,14
-    CONTROL         "A&llow anonymous usage logging",IDC_ALLOW_TOUCH,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,61,123,14
     CONTROL         "&Don't rip over X megs",IDC_CHECK_MAX_BYTES,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,7,43,85,14
     GROUPBOX        "Proxy Server",IDC_STATIC,7,102,196,33

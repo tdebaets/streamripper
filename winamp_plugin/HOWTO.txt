@@ -1,13 +1,6 @@
-Streamripper for Winamp 1.32
+Streamripper for Winamp 1.50
 
 This is the quick and dirty HOWTO for the Winamp plug-in of Streamripper.
-
-******************************
-*         IMPORTANT          *
-******************************
-
-If are upgrading from version 1.0 BETA of Streamripper it is advised that you disable or uninstall the previous version. To do so go to Winamp->Preferences->DSP/Plugins and select none, or anything other then Streamripper. Or go into your plugin’s folder and delete dsp_sripper.dll
-
 
 The following steps should get you going to ripping a stream.
 

@@ -3,6 +3,5 @@
 
 #include "types.h"
 
-extern error_code	findsep_silence(const u_char *buffer, const u_long size, u_long *pos);
-
+extern error_code findsep_silence(const u_char* mpgbuf, long mpgsize, u_long* psilence);
 #endif //__FINDSEP_H__

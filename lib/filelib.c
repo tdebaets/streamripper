@@ -23,6 +23,7 @@
 #include "filelib.h"
 #include "util.h"
 #include "debug.h"
+#include <assert.h>
 
 /*********************************************************************************
  * Public functions
@@ -42,6 +43,7 @@ error_code  filelib_remove(char *filename);
 static error_code	mkdir_if_needed(char *str);
 static void			close_file();
 static BOOL			file_exists(char *filename);
+static void trim_filename(char *filename, char* out);
 
 
 /*********************************************************************************
@@ -127,20 +129,22 @@ BOOL file_exists(char *filename)
 error_code filelib_start(char *filename)
 {
 	char newfile[MAX_FILENAME];
+	char tfile[MAX_FILENAME];
 	close_file();
-
-	sprintf(newfile, m_filename_format, m_incomplete_directory, filename);
+	
+	trim_filename(filename, tfile);
+	sprintf(newfile, m_filename_format, m_incomplete_directory, tfile);
 
 	if (m_keep_incomplete)
 	{
 		int n = 1;
 		char oldfilename[MAX_FILENAME];
 		char oldfile[MAX_FILENAME];
-		strcpy(oldfilename, filename);
-		sprintf(oldfile, m_filename_format, m_incomplete_directory, filename);
+		strcpy(oldfilename, tfile);
+		sprintf(oldfile, m_filename_format, m_incomplete_directory, tfile);
 		while(file_exists(oldfile))
 		{
-			sprintf(oldfilename, "%s(%d)", filename, n);
+			sprintf(oldfilename, "%s(%d)", tfile, n);
 			sprintf(oldfile, m_filename_format, m_incomplete_directory, oldfilename);
 			n++;
 		}
@@ -180,19 +184,21 @@ error_code filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *f
 	FHANDLE test_file;
 	char newfile[MAX_FILENAME];
 	char oldfile[MAX_FILENAME];
+	char tfile[MAX_FILENAME];
+	
+	trim_filename(filename, tfile);
 
 	close_file();
-
 
 	// Make new paths for the old path and new
 	memset(newfile, 0, MAX_FILENAME);
 	memset(oldfile, 0, MAX_FILENAME);
-	sprintf(oldfile, m_filename_format, m_incomplete_directory, filename);
+	sprintf(oldfile, m_filename_format, m_incomplete_directory, tfile);
 	
 	if (m_count != -1)
-		sprintf(newfile, "%s%03d_%s.mp3", m_output_directory, m_count, filename);
+		sprintf(newfile, "%s%03d_%s.mp3", m_output_directory, m_count, tfile);
 	else
-		sprintf(newfile, m_filename_format, m_output_directory, filename);
+		sprintf(newfile, m_filename_format, m_output_directory, tfile);
 
 	// If we are over writing exsiting tracks
 	if (!over_write_existing)
@@ -277,4 +283,22 @@ error_code filelib_remove(char *filename)
 		return SR_ERROR_FAILED_TO_MOVE_FILE;
 
 	return SR_SUCCESS;
+}
+
+void trim_filename(char *filename, char* out)
+{
+	long tlen;
+	long odirlen;
+
+	strncpy(out, filename, MAX_TRACK_LEN);
+	strip_invalid_chars(out);
+
+	tlen = strlen(out);
+	odirlen = strlen(m_output_directory);
+	if (tlen+odirlen > MAX_PATH_LEN)
+	{
+		long diff = tlen+odirlen - MAX_PATH_LEN;
+		assert(diff < odirlen);
+		out[tlen-diff] = '\0';
+	}
 }

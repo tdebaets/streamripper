@@ -93,11 +93,6 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
 	HWND owner = GetWindow(hwnd, GW_OWNER);
 
 	GetClassName(hwnd, classname, 256); 
-	{
-		char s[256];
-		sprintf(s, "%s\n", classname);
-		OutputDebugString(s);
-	}
 
 	if (owner != bigowner )
 		return TRUE;

@@ -210,21 +210,18 @@ int myrecv(char* buffer, int size)
  */
 error_code start_track(char *trackname)
 {
-	char temptrack[MAX_TRACK_LEN];
 	int ret;
 	
-	strcpy(temptrack, trackname);
 	DEBUG0(("start_track: %s\n", trackname));
 
-	strip_invalid_chars(temptrack);
-	if ((ret = filelib_start(temptrack)) != SR_SUCCESS)
+	if ((ret = filelib_start(trackname)) != SR_SUCCESS)
 	{
 		return ret;
 	}
 
-	strcpy(m_ripinfo.filename, temptrack);
+	strcpy(m_ripinfo.filename, trackname);
 	m_ripinfo.filesize = 0;
-	m_status_callback(RM_NEW_TRACK, (void *)temptrack);
+	m_status_callback(RM_NEW_TRACK, (void *)trackname);
 	post_status(0);
 
 	return SR_SUCCESS;
@@ -237,13 +234,9 @@ error_code start_track(char *trackname)
  */
 error_code end_track(char *trackname)
 {
-	char temptrack[MAX_TRACK_LEN];
 	char fullpath[MAX_FILENAME];
 
-	strcpy(temptrack, trackname);
-
-	strip_invalid_chars(temptrack);
-	filelib_end(temptrack, GET_OVER_WRITE_TRACKS(m_options.flags), fullpath);
+	filelib_end(trackname, GET_OVER_WRITE_TRACKS(m_options.flags), fullpath);
 	post_status(0);
 	m_status_callback(RM_TRACK_DONE, (void*)fullpath);
 

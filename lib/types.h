@@ -18,14 +18,18 @@ typedef int error_code;
 
 #define NO_META_INTERVAL	-1
 
+#ifndef WIN32
+#define MAX_PATH 256
+#endif
+
 #define MAX_HOST_LEN		512
 #define MAX_IP_LEN			3+1+3+1+3+1+3+1
-#define MAX_PATH_LEN		8192
+#define MAX_PATH_LEN		MAX_PATH
 #define MAX_HEADER_LEN		8192
 #define MAX_URL_LEN			MAX_HOST_LEN+MAX_PATH_LEN
 #define MAX_ICY_STRING		4024
 #define MAX_SERVER_LEN		1024
-#define MAX_TRACK_LEN		1024
+#define MAX_TRACK_LEN		MAX_PATH
 #define MAX_URI_STRING		1024
 #define MAX_ERROR_STR       (4096)
 #define MAX_USERAGENT_STR	1024

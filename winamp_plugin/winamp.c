@@ -43,8 +43,11 @@ BOOL winamp_get_path(char *path)
 {
 	DWORD size = MAX_PATH_LEN;
 	char strkey[MAX_PATH_LEN];
+	char winampstr[] = "WINAMP.EXE";
+	int winampstrlen = strlen(winampstr);
 	int i;
 	HKEY hKey;
+
 	if(RegOpenKeyEx(HKEY_CLASSES_ROOT,
         TEXT("Winamp.File\\shell\\Enqueue\\command"),
                     0,
@@ -64,11 +67,14 @@ BOOL winamp_get_path(char *path)
 
 
 	// get the path out
-	for(i = 0; strkey[i]; i++)	strkey[i] = toupper(strkey[i]);
-	for(i = 1; strncmp(strkey+i, "WINAMP.EXE", strlen("WINAMP.EXE")) != 0; i++)
+	for(i = 0; strkey[i]; i++)	
+		strkey[i] = toupper(strkey[i]);
+	
+	for(i = 1; strncmp(strkey+i, winampstr, winampstrlen) != 0; i++)
+	{
 		path[i-1] = strkey[i];
+	}
 	path[i-1] = '\0';
-
     RegCloseKey(hKey);
 
 	return TRUE;

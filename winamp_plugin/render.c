@@ -388,8 +388,9 @@ BOOL render_destroy()
 
 BOOL bitmapdc_from_skinfile(const char* skinfile, BITMAPDC* pbmdc)
 {
-	char tempfile[MAX_PATH];
-
+	char tempfile[MAX_PATH_LEN*5];
+	
+	memset(tempfile, 0, MAX_PATH_LEN*5);
 	if (!winamp_get_path(tempfile))
 		return FALSE;
 	strcat(tempfile, SKIN_PATH);
@@ -419,8 +420,6 @@ BOOL render_create_preview(char* skinfile, HDC hdc, long left, long right)
 	long orig_hight = HEIGHT(m_rect_background);
 	BITMAPDC skindc;
 	BITMAPDC tempdc;
-
-	DEBUG2(( "render_do_paint_preview: %d\n", hdc ));
 
 	if (!bitmapdc_from_skinfile(skinfile, &skindc))
 		return FALSE;
@@ -453,7 +452,7 @@ BOOL internal_render_do_paint(HDC skinhdc, HDC outhdc)
 	RECT *prt;
 	int i;
 
-	DEBUG2(( "render_do_paint: %d\n", skinhdc ));
+//	DEBUG2(( "render_do_paint: %d\n", skinhdc ));
 
 	// Create out temp dc if we haven't made it yet
 	if (m_tempdc.hdc == NULL)

@@ -43,7 +43,7 @@
 #define PROP_SHEET_CON		0
 #define PROP_SHEET_FILE		1
 #define PROP_SHEET_SKINS	2
-#define SRVERSION			"1.32"
+#define SRVERSION			"1.50"
 
 /**********************************************************************************
  * Public functions
@@ -98,6 +98,7 @@ BOOL get_skin_list()
 		return FALSE;
 	strcat(temppath, SKIN_PATH);
 	strcat(temppath, "*.bmp");
+
 	hsearch = FindFirstFile(temppath, &filedata);
 	if (hsearch == INVALID_HANDLE_VALUE) 
 		return FALSE;
@@ -131,12 +132,16 @@ BOOL get_skin_list()
 
 void free_skin_list()
 {
+	if (m_skin_list_size == 0)
+		return;
+
 	while(m_skin_list_size--)
 	{
 		assert(m_pskin_list[m_skin_list_size]);
 		free(m_pskin_list[m_skin_list_size]);
 		m_pskin_list[m_skin_list_size] = NULL;
 	}
+	m_skin_list_size = 0;
 }
 
 BOOL get_desktop_folder(char *path)
@@ -266,8 +271,10 @@ void options_dialog_show(HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, 
 	if (ret)
 		options_save(m_opt, m_guiOpt);
 
-	render_change_skin(m_pskin_list[m_curskin]);
+	if (m_pskin_list[m_curskin])
+		render_change_skin(m_pskin_list[m_curskin]);
 
+	free_skin_list();
 }
 
 
@@ -366,7 +373,6 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 		set_to_checkbox(hWnd, IDC_MAKE_RELAY, &m_opt->flags, OPT_MAKE_RELAY);
 		set_to_checkbox(hWnd, IDC_CHECK_MAX_BYTES, &m_opt->flags, OPT_CHECK_MAX_BYTES);
 		m_opt->maxMB_rip_size = GetDlgItemInt(hWnd, IDC_MAX_BYTES, FALSE, FALSE);
-		m_guiOpt->m_allow_touch = get_checkbox(hWnd, IDC_ALLOW_TOUCH);
 		GetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl, MAX_URL_LEN);
 		GetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost, MAX_HOST_LEN);
 		GetDlgItemText(hWnd, IDC_USERAGENT, m_opt->useragent, MAX_USERAGENT_STR);
@@ -380,7 +386,6 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 			set_checkbox(hWnd, IDC_CHECK_MAX_BYTES, OPT_FLAG_ISSET(m_opt->flags, OPT_CHECK_MAX_BYTES));
 			SetDlgItemInt(hWnd, IDC_MAX_BYTES, m_opt->maxMB_rip_size, FALSE);
 		}
-		set_checkbox(hWnd, IDC_ALLOW_TOUCH, m_guiOpt->m_allow_touch);
 		SetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl);
 		SetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost);
 		if (!m_opt->useragent[0])
@@ -398,12 +403,10 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 //
 LRESULT CALLBACK file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	DEBUG2(( "file_dlg\n" ));
 	return options_dlg(hWnd, message, wParam, lParam, FALSE);
 }
 LRESULT CALLBACK con_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	DEBUG2(( "con_dlg\n" ));
 	return options_dlg(hWnd, message, wParam, lParam, TRUE);
 }
 
@@ -411,7 +414,7 @@ BOOL populate_skin_list(HWND dlg)
 {
 	int i;
 	HWND hlist = GetDlgItem(dlg, IDC_SKIN_LIST);
-	
+
 	if (!hlist)
 		return FALSE;
 
@@ -421,6 +424,9 @@ BOOL populate_skin_list(HWND dlg)
 
 		SendMessage(hlist, LB_ADDSTRING, 0, 
 					(LPARAM)m_pskin_list[i]);
+
+		if (strcmp(m_pskin_list[i], m_guiOpt->default_skin) == 0)
+			m_curskin = i;
 	}
 	SendMessage(hlist, LB_SETCURSEL, (WPARAM)m_curskin, 0);
 	return TRUE;
@@ -428,21 +434,22 @@ BOOL populate_skin_list(HWND dlg)
 
 LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	DEBUG2(( "skin_dlg\n" ));
+
 	switch(message)
 	{
-//	case WM_ACTIVATE:
-//		if (wParam == WA_ACTIVE)
-//			m_last_sheet = PROP_SHEET_SKINS;
-//		break;
-
 	case WM_INITDIALOG:
 		DEBUG2(( "skin:WM_INITDIALOG\n" ));
-		if (m_skin_list_size == 0)
+
+		if (!get_skin_list() || 
+			!populate_skin_list(hWnd))	// order of exec important!
 		{
-			assert(get_skin_list());
+			MessageBox(hWnd, 
+				"Failed to find any skins in the SrSkin directory\r\n"
+				"Please make verifiy that the Winamp/Skins/SrSkins/"
+				"contins some Streamripper skins",
+				"Can't load skins", MB_ICONEXCLAMATION);
+			return FALSE;
 		}
-		assert(populate_skin_list(hWnd));
 
 		return TRUE;
 	case WM_PAINT:
@@ -602,7 +609,6 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 
 	guiOpt->m_add_finshed_tracks_to_playlist = GetPrivateProfileInt(APPNAME, "add_tracks_to_playlist", FALSE, filename);
 	guiOpt->m_start_minimized = GetPrivateProfileInt(APPNAME, "start_minimized", FALSE, filename);
-	guiOpt->m_allow_touch = GetPrivateProfileInt(APPNAME, "allow_touch", TRUE, filename);
 	guiOpt->oldpos.x = GetPrivateProfileInt(APPNAME, "window_x", 0, filename);
 	guiOpt->oldpos.y = GetPrivateProfileInt(APPNAME, "window_y", 0, filename);
 	guiOpt->m_enabled = GetPrivateProfileInt(APPNAME, "enabled", 1, filename);
@@ -658,7 +664,6 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 
 	fprintf(fp, "add_tracks_to_playlist=%d\n", guiOpt->m_add_finshed_tracks_to_playlist);
 	fprintf(fp, "start_minimized=%d\n", guiOpt->m_start_minimized);
-	fprintf(fp, "allow_touch=%d\n", guiOpt->m_allow_touch);
 	fprintf(fp, "window_x=%d\n", guiOpt->oldpos.x);
 	fprintf(fp, "window_y=%d\n", guiOpt->oldpos.y);
 	fprintf(fp, "enabled=%d\n", guiOpt->m_enabled);
