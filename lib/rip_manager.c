@@ -645,7 +645,7 @@ error_code start_ripping()
 	 * the stream we are relaying.. this just sets the header to 
 	 * something very simulare to what we got from the stream.
 	 */
-	if (!GET_NO_RELAY(m_options.flags))
+	if (GET_MAKE_RELAY(m_options.flags))
 	{
 		int new_port = 0;
 		if ((ret = relaylib_init(GET_SEARCH_PORTS(m_options.flags), 
@@ -653,7 +653,7 @@ error_code start_ripping()
 								 m_options.max_port, 
 								 &new_port)) != SR_SUCCESS)
 		{
-			return ret;
+			goto RETURN_ERR;
 		}
 		m_options.relay_port = new_port;
 		start_relay();
@@ -705,7 +705,7 @@ debug_printf("***rip_manager_start:being\n");
 		return SR_ERROR_INVALID_PARAM;
 
 	filelib_init(GET_COUNT_FILES(options->flags),
-				 GET_WIPE_INCOMPLETE(options->flags));
+				 GET_KEEP_INCOMPLETE(options->flags));
 	socklib_init();
 
 	init_error_strings();

@@ -2,6 +2,8 @@
 // Microsoft Developer Studio generated include file.
 // Used by Script.rc
 //
+#define MANIFEST_RESOURCE_ID            2
+#define RT_MANIFEST                     24
 #define IDD_DIALOG                      101
 #define IDD_ENABLE                      101
 #define IDD_OPTIONS                     102
@@ -29,8 +31,8 @@
 #define IDC_CHECK2                      1206
 #define IDC_RECONNECT                   1206
 #define IDC_OVER_WRITE                  1207
-#define IDC_CHECK3                      1208
-#define IDC_URLCOMBO                    1208
+//#define IDC_CHECK3                      1208
+//#define IDC_URLCOMBO                    1208
 #define IDC_MAKE_RELAY                  1208
 #define IDC_RIP_URL                     1209
 #define IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST 1209
@@ -45,6 +47,7 @@
 #define IDC_CHECK_MAX_BYTES             1215
 #define IDC_ADD_ID3                     1216
 #define IDC_LOCALHOST                   1217
+#define IDC_KEEP_INCOMPLETE             1218
 #define ID_MENU_STARTRIPPING            40001
 #define ID_MENU_STOPRIPPING             40003
 #define ID_MENU_OPTIONS                 40004
@@ -58,13 +61,5 @@
 #define _APS_NEXT_COMMAND_VALUE         40006
 #define _APS_NEXT_CONTROL_VALUE         1013
 #define _APS_NEXT_SYMED_VALUE           101
-
-//
-// For comctl32 v6 stuff (aka XP styles)
-//
-#define MANIFEST_RESOURCE_ID 2
-#define RT_MANIFEST 24
-
-
 #endif
 #endif

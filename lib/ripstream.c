@@ -121,6 +121,9 @@ void ripstream_destroy()
 	cbuffer_destroy(&m_cbuffer);
 	m_last_track[0] = '\0';
 	m_current_track[0] = '\0';
+	m_no_meta_name[0] = '\0';
+	m_on_first_track = TRUE;
+	m_addID3tag = TRUE;
 }
 
 BOOL is_buffer_full()

@@ -201,19 +201,33 @@ CSRipperDlg::CSRipperDlg(CWnd* pParent /*=NULL*/)
 {
 	//{{AFX_DATA_INIT(CSRipperDlg)
 	m_Destination = _T("");
+
 	m_SelectedBroadcast = _T("");
+
 	m_GenreValue = _T("");
+
 	m_SongTitle = _T("");
+
 	m_MaxBytes = 0;
+
 	m_StreamName = _T("");
+
 	m_RelayPort = 0;
+
 	m_Bytes = _T("");
+
 	m_Status = _T("");
+
 	m_URL = _T("");
+
 	m_addID3 = FALSE;
+
 	m_Overwrite = FALSE;
+
 	m_AddSeq = FALSE;
+
 	//}}AFX_DATA_INIT
+
 	// Note that LoadIcon does not require a subsequent DestroyIcon in Win32
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -223,30 +237,55 @@ void CSRipperDlg::DoDataExchange(CDataExchange* pDX)
 	CResizableDialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(CSRipperDlg)
 	DDX_Control(pDX, IDC_URL, m_URLctrl);
+
 	DDX_Control(pDX, IDC_RELAYPORT, m_RelayPortCtrl);
+
 	DDX_Control(pDX, IDC_CONNECT_RELAY, m_ConnectRelay);
+
 	DDX_Control(pDX, IDC_LIST_CTRL, m_cListCtrl);
+
 	DDX_Control(pDX, IDC_MAXBYTES, m_MaxBytesCtl);
+
 	DDX_Control(pDX, IDC_FOLDER, m_Folder);
+
 	DDX_Control(pDX, IDOK, m_OKctrl);
+
 	DDX_Control(pDX, IDC_DESTINATION, m_Destinationctrl);
+
 	DDX_Control(pDX, IDC_STOPRIPPING, m_StopRipping);
+
 	DDX_Control(pDX, IDC_REFRESH, m_Refresh);
+
 	DDX_Control(pDX, IDC_RIPAWAY, m_Ripaway);
+
 	DDX_Control(pDX, IDC_GENRE, m_Genre);
+
 	DDX_Text(pDX, IDC_DESTINATION, m_Destination);
+
 	DDX_CBString(pDX, IDC_GENRE, m_GenreValue);
+
 	DDX_Text(pDX, IDC_SONGTITLE, m_SongTitle);
+
 	DDX_Text(pDX, IDC_MAXBYTES, m_MaxBytes);
+
 	DDX_Text(pDX, IDC_STREAMNAME, m_StreamName);
+
 	DDX_Text(pDX, IDC_RELAYPORT, m_RelayPort);
+
 	DDX_Text(pDX, IDC_BYTES, m_Bytes);
+
 	DDX_Text(pDX, IDC_RIPPING, m_Status);
+
 	DDX_Text(pDX, IDC_URL, m_URL);
+
 	DDX_Check(pDX, IDC_ID3, m_addID3);
+
 	DDX_Check(pDX, IDC_OVERWRITE, m_Overwrite);
+
 	DDX_Check(pDX, IDC_ADD_SEQ, m_AddSeq);
+
 	//}}AFX_DATA_MAP
+
 }
 
 BEGIN_MESSAGE_MAP(CSRipperDlg, CResizableDialog)
@@ -336,29 +375,53 @@ BOOL CSRipperDlg::OnInitDialog()
 	m_URL = tmpbuf;
 	memset(tmpbuf, '\000', sizeof(tmpbuf));
 	GetPrivateProfileString("SRipper","relayPort", "10069", tmpbuf, sizeof(tmpbuf), "sripper.ini");
+
 	m_RelayPort = atoi(tmpbuf);
 
+
+
 	GetPrivateProfileString("SRipper","addID3", "TRUE", tmpbuf, sizeof(tmpbuf), "sripper.ini");
+
 	if (!strcmp(tmpbuf, "TRUE")) {
+
 		m_addID3 = TRUE;
+
 	}
+
 	else {
+
 		m_addID3 = FALSE;
+
 	}
+
 	GetPrivateProfileString("SRipper","addSeqNumber", "FALSE", tmpbuf, sizeof(tmpbuf), "sripper.ini");
+
 	if (!strcmp(tmpbuf, "TRUE")) {
+
 		m_AddSeq = TRUE;
+
 	}
+
 	else {
+
 		m_AddSeq = FALSE;
+
 	}
+
 	GetPrivateProfileString("SRipper","Overwrite", "FALSE", tmpbuf, sizeof(tmpbuf), "sripper.ini");
+
 	if (!strcmp(tmpbuf, "TRUE")) {
+
 		m_Overwrite = TRUE;
+
 	}
+
 	else {
+
 		m_Overwrite = FALSE;
+
 	}
+
 
 	m_Destination = dest;
 
@@ -435,6 +498,7 @@ void CSRipperDlg::OnRipaway()
 
 	RIP_MANAGER_OPTIONS	m_opt;
 
+
 	memset(&m_opt, '\000', sizeof(m_opt));
 
 	if (m_RelayPort > 0) {
@@ -442,7 +506,7 @@ void CSRipperDlg::OnRipaway()
 		m_opt.flags = OPT_AUTO_RECONNECT | OPT_SEPERATE_DIRS | OPT_SEARCH_PORTS;
 	}
 	else {
-		m_opt.flags = OPT_NO_RELAY | OPT_AUTO_RECONNECT | OPT_SEPERATE_DIRS | OPT_SEARCH_PORTS;
+		m_opt.flags =  OPT_AUTO_RECONNECT | OPT_SEPERATE_DIRS | OPT_SEARCH_PORTS;
 	}
 	m_opt.max_port = 18000;
 //	m_opt.search_ports = TRUE;
@@ -451,8 +515,11 @@ void CSRipperDlg::OnRipaway()
 	m_opt.proxyurl[0] = (char)NULL;		// not tested
 //	m_opt.seperate_dirs = TRUE;		// tested
 	m_opt.over_write_existing_tracks = m_Overwrite; // not tested
+
 	m_opt.add_id3tag = m_addID3;
+
 	m_opt.add_seq_number = m_AddSeq;
+
 
 	strncpy(m_opt.url, url, MAX_URL_LEN);
 
@@ -465,11 +532,16 @@ void CSRipperDlg::OnRipaway()
 	if ((ret = rip_manager_start(rip_callback, &m_opt)) != SR_SUCCESS)
 	{
 		char	msg[1024] = "";
+
 		if (ret == SR_ERROR_LIVE365) {
+
 			sprintf(msg, "Sorry, but StreamRipper32 does not support ripping Live365 streams");
+
 		}
+
 		else {
 			sprintf(msg, "Couldn't connect to %s\n", m_opt.url);
+
 		}
 		MessageBox(msg, "Error", MB_OK);
 		bRipping = false;
@@ -862,25 +934,45 @@ void CSRipperDlg::OnOK()
 	sprintf(relayPort, "%d", m_RelayPort);
 	WritePrivateProfileString("SRipper","relayPort", relayPort, "sripper.ini");
 
+
 	if (m_addID3) {
+
 		WritePrivateProfileString("SRipper","addID3", "TRUE", "sripper.ini");
-	}
-	else {
-		WritePrivateProfileString("SRipper","addID3", "FALSE", "sripper.ini");
+
 	}
 
+	else {
+
+		WritePrivateProfileString("SRipper","addID3", "FALSE", "sripper.ini");
+
+	}
+
+
+
 	if (m_AddSeq) {
+
 		WritePrivateProfileString("SRipper","addSeqNumber", "TRUE","sripper.ini");
+
 	}
+
 	else {
+
 		WritePrivateProfileString("SRipper","addSeqNumber", "FALSE","sripper.ini");
+
 	}
+
 	if (m_Overwrite) {
+
 		WritePrivateProfileString("SRipper","Overwrite", "TRUE", "sripper.ini");
+
 	}
+
 	else {
+
 		WritePrivateProfileString("SRipper","Overwrite", "FALSE", "sripper.ini");
+
 	}
+
 
 	CResizableDialog::OnOK();
 }
@@ -1094,4 +1186,5 @@ void CSRipperDlg::OnConnectRelay()
 	}
 
 }
+
 

@@ -421,7 +421,7 @@ void options_button_pressed()
 {
 	options_dialog_show(m_plugin.hDllInstance, m_hWnd, &m_rmoOpt, &m_guiOpt);
 
-	render_set_button_enabled(m_relaybut, !OPT_FLAG_ISSET(m_rmoOpt.flags, OPT_NO_RELAY)); 			
+	render_set_button_enabled(m_relaybut, OPT_FLAG_ISSET(m_rmoOpt.flags, OPT_MAKE_RELAY)); 			
 
 }
 
@@ -540,7 +540,7 @@ BOOL CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 					{10, 24, 32, 39}
 				};
 				m_relaybut = render_add_button(&rt[0],&rt[1], &rt[2], &rt[3], &rt[4], relay_pressed);
-				render_set_button_enabled(m_relaybut, !OPT_FLAG_ISSET(m_rmoOpt.flags, OPT_NO_RELAY));
+				render_set_button_enabled(m_relaybut, OPT_FLAG_ISSET(m_rmoOpt.flags, OPT_MAKE_RELAY));
 			}
 
 			// Set the progress bar

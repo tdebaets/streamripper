@@ -35,7 +35,7 @@ typedef struct RIP_MANAGER_INFOst
 	char	server_name[MAX_SERVER_LEN];
 	int		bitrate;
 	int		meta_interval;
-	char	filename[MAX_FILENAME_LEN];
+	char	filename[MAX_FILENAME_LEN];		// JCBUG -- it's not the filename, it's the trackname
 	u_long	filesize;
 	int	status;
 } RIP_MANAGER_INFO;
@@ -46,12 +46,12 @@ typedef struct RIP_MANAGER_INFOst
 #define OPT_SEPERATE_DIRS		0x00000002		// create a directory named after the server
 #define OPT_OVER_WRITE_TRACKS	0x00000004		// should files in the complete directory be overwritten
 #define OPT_SEARCH_PORTS		0x00000008		// relay server should search for a open port
-#define OPT_NO_RELAY			0x00000010		// don't make a relay server
+#define OPT_MAKE_RELAY			0x00000010		// don't make a relay server
 #define OPT_COUNT_FILES			0x00000020		// add a index counter to the filenames
 #define OPT_ADD_ID3				0x00000040		// add ID3 info to the mp3s (thanks oddsock)
 #define OPT_DATE_STAMP			0x00000100		// add a date stamp to the output directory
 #define OPT_CHECK_MAX_BYTES		0x00000200		// use the maxMB_rip_size value to know how much to rip
-#define OPT_WIPE_INCOMPLETE		0x00000400		// overwrite files in the incomplete directory, add counter instead
+#define OPT_KEEP_INCOMPLETE		0x00000400		// overwrite files in the incomplete directory, add counter instead
 //
 // Helper macros for checking options
 //
@@ -63,23 +63,23 @@ typedef struct RIP_MANAGER_INFOst
 #define GET_SEPERATE_DIRS(flags)			(OPT_FLAG_ISSET(flags, OPT_SEPERATE_DIRS))
 #define GET_OVER_WRITE_TRACKS(flags)		(OPT_FLAG_ISSET(flags, OPT_OVER_WRITE_TRACKS))
 #define GET_SEARCH_PORTS(flags)				(OPT_FLAG_ISSET(flags, OPT_SEARCH_PORTS))
-#define GET_NO_RELAY(flags)					(OPT_FLAG_ISSET(flags, OPT_NO_RELAY))
+#define GET_MAKE_RELAY(flags)				(OPT_FLAG_ISSET(flags, OPT_MAKE_RELAY))
 #define GET_COUNT_FILES(flags)				(OPT_FLAG_ISSET(flags, OPT_COUNT_FILES))
 #define GET_ADD_ID3(flags)					(OPT_FLAG_ISSET(flags, OPT_ADD_ID3))
 #define GET_DATE_STAMP(flags)				(OPT_FLAG_ISSET(flags, OPT_DATE_STAMP))
 #define GET_CHECK_MAX_BYTES(flags)			(OPT_FLAG_ISSET(flags, OPT_CHECK_MAX_BYTES))
-#define GET_WIPE_INCOMPLETE(flags)			(OPT_FLAG_ISSET(flags, OPT_WIPE_INCOMPLETE))
+#define GET_KEEP_INCOMPLETE(flags)			(OPT_FLAG_ISSET(flags, OPT_KEEP_INCOMPLETE))
 
 #define SET_AUTO_RECONNECT(flags)			(OPT_FLAG_SET(flags, OPT_AUTO_RECONNECT))
 #define SET_SEPERATE_DIRS(flags)			(OPT_FLAG_SET(flags, OPT_SEPERATE_DIRS))
 #define SET_OVER_WRITE_TRACKS(flags)		(OPT_FLAG_SET(flags, OPT_OVER_WRITE_TRACKS))
 #define SET_SEARCH_PORTS(flags)				(OPT_FLAG_SET(flags, OPT_SEARCH_PORTS))
-#define SET_NO_RELAY(flags)					(OPT_FLAG_SET(flags, OPT_NO_RELAY))
+#define SET_MAKE_RELAY(flags)				(OPT_FLAG_SET(flags, OPT_MAKE_RELAY))
 #define SET_COUNT_FILES(flags)				(OPT_FLAG_SET(flags, OPT_COUNT_FILES))
 #define SET_ADD_ID3(flags)					(OPT_FLAG_SET(flags, OPT_ADD_ID3))
 #define SET_DATE_STAMP(flags)				(OPT_FLAG_SET(flags, OPT_DATE_STAMP))
 #define SET_CHECK_MAX_BYTES(flags)			(OPT_FLAG_SET(flags, OPT_CHECK_MAX_BYTES))
-#define SET_WIPE_INCOMPLETE(flags)			(OPT_FLAG_SET(flags, OPT_WIPE_INCOMPLETE))
+#define SET_KEEP_INCOMPLETE(flags)			(OPT_FLAG_SET(flags, OPT_KEEP_INCOMPLETE))
 
 
 typedef struct RIP_MANAGER_OPTIONSst

@@ -35,7 +35,7 @@
 /*********************************************************************************
  * Public functions
  *********************************************************************************/
-error_code	filelib_init(BOOL do_count, BOOL preserve_incomplete);
+error_code	filelib_init(BOOL do_count, BOOL keep_incomplete);
 error_code	filelib_start(char *filename);
 error_code	filelib_end(char *filename, BOOL over_write_existing);
 error_code	filelib_write(char *buf, u_long size);
@@ -74,7 +74,7 @@ static int m_count;
 static char m_output_directory[MAX_PATH];
 static char m_incomplete_directory[MAX_PATH];
 static char m_filename_format[] = "%s%s.mp3";
-static BOOL	m_wipe_incomplete = TRUE;
+static BOOL	m_keep_incomplete = TRUE;
 
 
 
@@ -91,11 +91,11 @@ error_code mkdir_if_needed(char *str)
 
 }
 
-error_code filelib_init(BOOL do_count, BOOL wipe_incomplete)
+error_code filelib_init(BOOL do_count, BOOL keep_incomplete)
 {
 	m_file = (HFILE)NULL;
 	m_count = do_count ? 1 : -1;
-	m_wipe_incomplete = wipe_incomplete;
+	m_keep_incomplete = keep_incomplete;
 	memset(&m_output_directory, 0, MAX_PATH);
 
 	return SR_SUCCESS;
@@ -158,7 +158,7 @@ error_code filelib_start(char *filename)
 
 	sprintf(newfile, m_filename_format, m_incomplete_directory, filename);
 
-	if (!m_wipe_incomplete)
+	if (m_keep_incomplete)
 	{
 		int n = 1;
 		char oldfilename[MAX_FILENAME];
@@ -241,8 +241,16 @@ error_code filelib_end(char *filename, BOOL over_write_existing)
 	}
 
 	if (ok_to_write)
-		if (!MOVE_FILE(oldfile, newfile))
-			return SR_ERROR_FAILED_TO_MOVE_FILE;
+	{
+		// JCBUG -- clean this up
+		int x = REMOVE_FILE(newfile);
+		x = MOVE_FILE(oldfile, newfile);
+//		if (!MOVE_FILE(oldfile, newfile))
+//		{
+//			int x = GetLastError();
+//			return SR_ERROR_FAILED_TO_MOVE_FILE;
+//		}
+	}
 
 	if (m_count != -1)
 		m_count++;

@@ -67,28 +67,32 @@ BEGIN
     EDITTEXT        IDC_MAX_BYTES,97,42,32,15,ES_AUTOHSCROLL
 END
 
-IDD_PROPPAGE_FILE DIALOG DISCARDABLE  0, 0, 210, 154
+IDD_PROPPAGE_FILE DIALOG DISCARDABLE  0, 0, 210, 166
 STYLE WS_CHILD | WS_DISABLED | WS_CAPTION
 CAPTION "File"
 FONT 8, "MS Sans Serif"
 BEGIN
     CONTROL         "&Make separate directories for each stream",
                     IDC_SEPERATE_DIRS,"Button",BS_AUTOCHECKBOX | 
-                    BS_MULTILINE | WS_TABSTOP,7,7,172,14
-    CONTROL         "&Overwrite existing tracks",IDC_OVER_WRITE,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,24,96,14
+                    BS_MULTILINE | WS_TABSTOP,4,7,172,14
+    CONTROL         "&Overwrite existing tracks in the complete directory",
+                    IDC_OVER_WRITE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,
+                    24,184,14
     CONTROL         "&Add finished tracks to playlist",
                     IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,42,123,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,4,56,123,14
     CONTROL         "A&dd sequence numbers to tracks",IDC_COUNT_FILES,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,60,121,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,4,73,121,14
     CONTROL         "A&ppend the date to the directory",IDC_DATE_STAMP,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,77,121,14
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,89,121,14
     CONTROL         "Add &ID3 info to the tracks",IDC_ADD_ID3,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,96,91,14
-    EDITTEXT        IDC_OUTPUT_DIRECTORY,13,127,154,15,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_BROWSE,175,126,17,14
-    GROUPBOX        "Output Directory",IDC_STATIC,7,114,196,33
+                    BS_AUTOCHECKBOX | WS_TABSTOP,4,108,91,14
+    EDITTEXT        IDC_OUTPUT_DIRECTORY,10,137,154,15,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BROWSE,179,136,17,14
+    GROUPBOX        "Output Directory",IDC_STATIC,4,126,199,33
+    CONTROL         "&Never overwrite files from incomplete folder",
+                    IDC_KEEP_INCOMPLETE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,4,40,160,14
 END
 
 
@@ -126,10 +130,10 @@ BEGIN
 
     IDD_PROPPAGE_FILE, DIALOG
     BEGIN
-        LEFTMARGIN, 7
+        LEFTMARGIN, 4
         RIGHTMARGIN, 203
         TOPMARGIN, 7
-        BOTTOMMARGIN, 147
+        BOTTOMMARGIN, 159
     END
 END
 #endif    // APSTUDIO_INVOKED

@@ -252,7 +252,6 @@ void parse_arguments(int argc, char **argv)
 	m_opt.flags = OPT_AUTO_RECONNECT | 
 		      OPT_SEPERATE_DIRS | 
 		      OPT_SEARCH_PORTS |
-		      OPT_NO_RELAY |
 			  OPT_ADD_ID3;
 
 	strcpy(m_opt.output_directory, "./");
@@ -289,7 +288,7 @@ void parse_arguments(int argc, char **argv)
                                 m_opt.flags ^= OPT_SEPERATE_DIRS;
                                 break;
                         case 'r':
-                                m_opt.flags ^= OPT_NO_RELAY;
+                                m_opt.flags ^= OPT_MAKE_RELAY;
 								// Default
 								if (i == (argc-1) || argv[i+1][0] == '-')
 									break;

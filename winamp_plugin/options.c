@@ -228,6 +228,7 @@ void saveload_fileopts(HWND hWnd, BOOL saveload)
 	- append date
 	- add id3
 	- output dir
+	- keep incomplete
 	*/
 
 	if (saveload)
@@ -239,6 +240,7 @@ void saveload_fileopts(HWND hWnd, BOOL saveload)
 		set_to_checkbox(hWnd, IDC_DATE_STAMP, &m_opt->flags, OPT_DATE_STAMP);
 		set_to_checkbox(hWnd, IDC_ADD_ID3, &m_opt->flags, OPT_ADD_ID3);
 		GetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory, MAX_PATH_LEN);
+		set_to_checkbox(hWnd, IDC_KEEP_INCOMPLETE, &m_opt->flags, OPT_KEEP_INCOMPLETE);
 	}
 	else
 	{
@@ -249,6 +251,7 @@ void saveload_fileopts(HWND hWnd, BOOL saveload)
 		set_checkbox(hWnd, IDC_DATE_STAMP, OPT_FLAG_ISSET(m_opt->flags, OPT_DATE_STAMP));
 		set_checkbox(hWnd, IDC_ADD_ID3, OPT_FLAG_ISSET(m_opt->flags, OPT_ADD_ID3));
 		SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory);
+		set_checkbox(hWnd, IDC_KEEP_INCOMPLETE, OPT_FLAG_ISSET(m_opt->flags, OPT_KEEP_INCOMPLETE));
 	}
 
 }
@@ -269,7 +272,7 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 	if (saveload)
 	{
 		set_to_checkbox(hWnd, IDC_RECONNECT, &m_opt->flags, OPT_AUTO_RECONNECT);
-		set_to_checkbox(hWnd, IDC_MAKE_RELAY, &m_opt->flags, OPT_NO_RELAY);
+		set_to_checkbox(hWnd, IDC_MAKE_RELAY, &m_opt->flags, OPT_MAKE_RELAY);
 		set_to_checkbox(hWnd, IDC_CHECK_MAX_BYTES, &m_opt->flags, OPT_CHECK_MAX_BYTES);
 		m_opt->maxMB_rip_size = GetDlgItemInt(hWnd, IDC_MAX_BYTES, FALSE, FALSE);
 		m_guiOpt->m_allow_touch = get_checkbox(hWnd, IDC_ALLOW_TOUCH);
@@ -279,7 +282,7 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 	else
 	{
 		set_checkbox(hWnd, IDC_RECONNECT, OPT_FLAG_ISSET(m_opt->flags, OPT_AUTO_RECONNECT));
-		set_checkbox(hWnd, IDC_MAKE_RELAY, OPT_FLAG_ISSET(m_opt->flags, OPT_NO_RELAY));
+		set_checkbox(hWnd, IDC_MAKE_RELAY, OPT_FLAG_ISSET(m_opt->flags, OPT_MAKE_RELAY));
 		if (OPT_FLAG_ISSET(m_opt->flags, OPT_CHECK_MAX_BYTES))
 		{
 			set_checkbox(hWnd, IDC_CHECK_MAX_BYTES, OPT_FLAG_ISSET(m_opt->flags, OPT_CHECK_MAX_BYTES));
@@ -355,6 +358,7 @@ LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 				case IDC_OUTPUT_DIRECTORY:
 				case IDC_LOCALHOST:
 				case IDC_ALLOW_TOUCH:
+				case IDC_KEEP_INCOMPLETE:
 					PropSheet_Changed(GetParent(hWnd), hWnd);
 					break;
 			}
@@ -383,11 +387,12 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	BOOL	seperate_dirs,
 			auto_reconnect,
 			over_write_tracks,
-			no_relay,
+			make_relay,
 			count_files,
 			date_stamp,
 			add_id3,
-			check_max_btyes;
+			check_max_btyes,
+			keep_incomplete;
 
 	if (!get_desktop_folder(desktop_path))
 	{
@@ -412,12 +417,13 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	opt->max_port = opt->relay_port+1000;
 	auto_reconnect = GetPrivateProfileInt(APPNAME, "auto_reconnect", TRUE, filename);
 	over_write_tracks = GetPrivateProfileInt(APPNAME, "over_write_tracks", FALSE, filename);
-	no_relay = GetPrivateProfileInt(APPNAME, "no_relay", FALSE, filename);
+	make_relay = GetPrivateProfileInt(APPNAME, "no_relay", FALSE, filename);
 	count_files = GetPrivateProfileInt(APPNAME, "count_files", FALSE, filename);
 	date_stamp = GetPrivateProfileInt(APPNAME, "date_stamp", FALSE, filename);
 	add_id3 = GetPrivateProfileInt(APPNAME, "add_id3", TRUE, filename);
 	check_max_btyes = GetPrivateProfileInt(APPNAME, "check_max_bytes", FALSE, filename);
 	opt->maxMB_rip_size = GetPrivateProfileInt(APPNAME, "maxMB_bytes", 0, filename);
+	keep_incomplete = GetPrivateProfileInt(APPNAME, "keep_incomplete", TRUE, filename);
 
 	guiOpt->m_add_finshed_tracks_to_playlist = GetPrivateProfileInt(APPNAME, "add_tracks_to_playlist", FALSE, filename);
 	guiOpt->m_start_minimized = GetPrivateProfileInt(APPNAME, "start_minimized", FALSE, filename);
@@ -434,11 +440,12 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	if (seperate_dirs) opt->flags |= OPT_SEPERATE_DIRS;
 	if (auto_reconnect) opt->flags |= OPT_AUTO_RECONNECT;
 	if (over_write_tracks) opt->flags |= OPT_OVER_WRITE_TRACKS;
-	if (no_relay) opt->flags |= OPT_NO_RELAY;
+	if (make_relay) opt->flags |= OPT_MAKE_RELAY;
 	if (count_files) opt->flags |= OPT_COUNT_FILES;
 	if (date_stamp) opt->flags |= OPT_DATE_STAMP;
 	if (add_id3) opt->flags |= OPT_ADD_ID3;
 	if (check_max_btyes) opt->flags |= OPT_CHECK_MAX_BYTES;
+	if (keep_incomplete) opt->flags |= OPT_KEEP_INCOMPLETE;
 
 	return TRUE;
 }
@@ -464,12 +471,13 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	fprintf(fp, "relay_port=%d\n", opt->relay_port);
 	fprintf(fp, "auto_reconnect=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_AUTO_RECONNECT));
 	fprintf(fp, "over_write_tracks=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_OVER_WRITE_TRACKS));
-	fprintf(fp, "no_relay=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_NO_RELAY));
+	fprintf(fp, "make_relay=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_MAKE_RELAY));
 	fprintf(fp, "count_files=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_COUNT_FILES));
 	fprintf(fp, "date_stamp=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_DATE_STAMP));
 	fprintf(fp, "add_id3=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_ADD_ID3));
 	fprintf(fp, "check_max_bytes=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_CHECK_MAX_BYTES));
 	fprintf(fp, "maxMB_bytes=%d\n", opt->maxMB_rip_size);
+	fprintf(fp, "keep_incomplete=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_KEEP_INCOMPLETE));
 
 
 	fprintf(fp, "add_tracks_to_playlist=%d\n", guiOpt->m_add_finshed_tracks_to_playlist);

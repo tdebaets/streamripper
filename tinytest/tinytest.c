@@ -1,107 +1,42 @@
 #include <stdio.h>
-#include "findsep.h"
-
-#define MSIZE	1000000
-#include "rip_manager.h"
-#include "types.h"
 #include <conio.h>
-#include "socklib.h"
-#include "inet.h"
-#include <process.h>
+#include <direct.h>
+#include "types.h"
+#include "testcommon.h"
+#include "ripman_common.h"
 
-void handle_RM_UPDATE(RIP_MANAGER_INFO *info)
+void main()
 {
-	static char *statusstr[] = {"***ERROR***", 
-								"RM_STATUS_BUFFERING", 
-								"RM_STATUS_RIPPING", 
-								"RM_STATUS_RECONNECTING"};
+	//
+	// remake dir's
+	// JCBUG -- make this nicer
+	char basedir[] = "/sripper_1x/tinytest/";
+	system("rmdir /s /q testdir");
+	system("mkdir testdir");
+	
+	chdir(basedir);
+//	UNIT_TEST("OPT_SEPERATE_DIRS",
+//			  test_seperate_dirs("http://localhost:8000"))
 
-	printf("*got RM_UPDATE\n");
-	printf("streamname: %s\n"
-		   "server_name: %s\n"
-		   "bitrate: %d\n"
-		   "meta_interval: %d\n"
-		   "filename: %s\n"
-		   "filesize: %d\n"
-		   "status: %s\n", 
-			info->streamname,
-			info->server_name,
-			info->bitrate,
-			info->meta_interval,
-			info->filename,
-			info->filesize,
-			statusstr[info->status]);
+	chdir(basedir);
+//	UNIT_TEST("OPT_OVER_WRITE_TRACKS",
+//			  test_over_write_tracks("http://localhost:8000"))
 
-	if (info->status == 0)
-		printf("HOLD ON\n");
-}
+	chdir(basedir);
+	UNIT_TEST("OPT_SEARCH_PORTS",	// JCBUG -- this one needs a local scserver on port 8k
+			  test_search_ports("http://localhost:8000"))
+	
 
-void handle_RM_ERROR(void *arg)
-{
-	ERROR_INFO *err = (ERROR_INFO*)arg;
-	printf("*got RM_ERROR\n"
-		   "error: %d\n"
-		   "info: %s\n", 
-		    err->error_code,
-			err->error_str);
-}
-
-void handle_RM_NEW_TRACK(char *track)
-{
-	printf("*got RM_NEW_TRACK\n"
-		   "track: %s\n",
-		   track);
-		  
-}
-
-void handle_RM_TRACK_DONE(char *track)
-{
-	printf("*got RM_TRACK_DONE\n"
-		   "track: %s\n",
-		   track);
-		  
-}
-
-void handle_RM_OUTPUT_DIR(char *output_dir)
-{
-	printf("*got RM_OUTPUT_DIR\n"
-		   "output_dir: %s\n",
-		   output_dir);
-		  
-}
-
-void rip_manager_proc(int msg, void *arg)
-{
-	switch(msg)
-	{
-	case RM_UPDATE:		// returns a pointer RIP_MANAGER_INFO struct
-		handle_RM_UPDATE(arg);
-		break;
-	case RM_ERROR:		// returns the error code
-		handle_RM_ERROR(arg);
-		break;
-	case RM_DONE:		// NULL
-		printf("*got RM_DONE\n");
-		break;
-	case RM_STARTED:	// NULL
-		printf("*got RM_STARTED\n");
-		break;
-	case RM_NEW_TRACK:	// Name of the new track
-		handle_RM_NEW_TRACK(arg);
-		break;
-	case RM_TRACK_DONE:	// Name of the track completed
-		handle_RM_TRACK_DONE(arg);
-		break;
-	case RM_OUTPUT_DIR:	// Full path of the output directory
-		handle_RM_OUTPUT_DIR(arg);
-		break;
-	default:
-		printf("Unexpected msg!: %d\n", msg);
-	}
-
+//	UNIT_TEST("OPT_AUTO_RECONNECT",
+//			  test_auto_recon("http://localhost:8000"))
+	WAIT_FOR_KEY()
 }
 
 
+
+
+
+/*
 void test_hammer(char *url)
 {
 	int i;
@@ -234,7 +169,6 @@ void test_plain(char *url)
 	printf("Testing streamripper plain\n");
 	memset(&opt, 0, sizeof(RIP_MANAGER_OPTIONS));
 
-	opt.flags = OPT_NO_RELAY;
 	strcpy(opt.url, url);
 	
 	printf("Starting...\n");
@@ -269,18 +203,4 @@ void test_overnight(char *url)
 	}
 }
 
-
-
-void main()
-{
-
-
-	test_overnight("http://205.188.245.132:8038");
-	test_auto_reconnect("http://maris:8000");
-	test_plain("http://maris:8000");
-	test_hammer("http://maris:8000");
-	test_relay("http://maris:8000");
-
-//	printf("Done, press any key to quit.\n");
-//	getch();
-}
+*/

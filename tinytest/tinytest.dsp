@@ -73,7 +73,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Ws2_32.lib xaudio.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept /libpath:"../xaudio_sdk\lib\static\mtd"
+# ADD LINK32 Ws2_32.lib xaudio.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept /libpath:"../xaudio_sdk\lib\static\mtd"
+# Begin Special Build Tool
+SOURCE="$(InputPath)"
+PostBuild_Desc=remake testdir
+PostBuild_Cmds=rmdir /s /q testdir	mkdir testdir
+# End Special Build Tool
 
 !ENDIF 
 
@@ -86,12 +91,44 @@ LINK32=link.exe
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
+SOURCE=.\ripman_common.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\ripman_overwrite.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\ripman_searchports.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\ripman_test_recon.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\ripman_test_sepdirs.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\testcommon.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\tinytest.c
 # End Source File
 # End Group
 # Begin Group "Header Files"
 
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
+# Begin Source File
+
+SOURCE=.\ripman_common.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\testcommon.h
+# End Source File
 # End Group
 # Begin Group "Resource Files"
 
