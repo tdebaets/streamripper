@@ -1,0 +1,10 @@
+# This is an example of a file that can be used to customize how your 
+# metadata is converted into artist and title.
+
+# Any line that starts with a '#' is a comment, and blank lines are ignored.
+# Other lines must be rules.
+
+SKIP    | ^A suivre:
+STRIP i | (.*?)[[:space:]]*-?[[:space:]]*mp3pro
+STRIP   | ^[[:space:]]*-(.*)
+MATCH   | 1 2 0 | ^[[:space:]]*([^-]*?)[[:space:]]*-[[:space:]]*(.*?)[[:space:]]*$
