@@ -1,6 +1,6 @@
 #! /bin/sh
 
-version=streamripper-1.60.pre1
+version=streamripper-1.60
 
 make clean
 if test -d $version; then
@@ -10,6 +10,7 @@ mkdir $version
 cp README readme_xfade.txt COPYING CHANGES Makefile.in \
     THANKS TODO config.guess configure.in configure config.sub \
     install-sh ltconfig ltmain.sh \
+    streamripper.1 \
     $version
 
 mkdir $version/console

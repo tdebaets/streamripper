@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-#define SRVERSION	"1.60-pre2"
+#define SRVERSION	"1.60"
 
 #define MAX_STATUS_LEN		256
 #define MAX_FILENAME_LEN	255
