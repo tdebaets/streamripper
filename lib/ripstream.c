@@ -127,18 +127,17 @@ ripstream_init (IO_GET_STREAM *in, char *no_meta_name,
     m_addID3tag = addID3tag;
     strcpy(m_no_meta_name, no_meta_name);
     strcpy(m_drop_string, drop_string);
-    m_bitrate = bitrate;
+    /* Some streams don't have the bitrate in the http header, 
+     * so let's ignore that one and get it directly from the stream. */
+    /* m_bitrate = bitrate; */
+    m_bitrate = -1;
     m_meta_interval = in->getsize;
     m_cue_sheet_bytes = 0;
 
     if ((m_getbuffer = malloc(in->getsize)) == NULL)
 	return SR_ERROR_CANT_ALLOC_MEMORY;
 
-    // Compute some constants needed to do track splitting
-    // See readme files for details
-    compute_cbuffer_size (sp_opt, m_bitrate, in->getsize);
-	
-    return cbuffer_init(&m_cbuffer, in->getsize * m_cbuffer_size);
+    return SR_SUCCESS;
 }
 
 void ripstream_destroy()
@@ -215,6 +214,24 @@ ripstream_rip()
 
     /* Immediately dump to relay & show file */
     rip_manager_put_raw_data (m_getbuffer, m_meta_interval);
+
+    /* Query stream for bitrate, but only first time through. */
+    if (m_bitrate == -1) {
+        unsigned long test_bitrate;
+        find_bitrate(&test_bitrate, m_getbuffer, m_meta_interval);
+	m_bitrate = test_bitrate / 1000;
+
+        /* The bitrate is needed to do the track splitting parameters 
+	 * properly in seconds.  See the readme file for details.  */
+	if (m_bitrate == 0) {
+	    /* I'm not sure what this means, but let's go with 24k ... */
+	    compute_cbuffer_size (m_sp_opt, 24, m_in->getsize);
+	} else {
+	    compute_cbuffer_size (m_sp_opt, m_bitrate, m_in->getsize);
+	}
+	ret = cbuffer_init(&m_cbuffer, m_in->getsize * m_cbuffer_size);
+	if (ret != SR_SUCCESS) return ret;
+    }
 
     /* GCS - This test is never true. */
     // if the current track matchs with the special no track info 
