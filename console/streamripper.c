@@ -26,7 +26,8 @@
 #include "types.h"
 #include "rip_manager.h"
 #include "util.h"
-#define SRVERSION	"1.32"
+#include "filelib.h"
+#define SRVERSION	"1.54"
 
 /*******************************************************************************
  * Private functions
@@ -259,7 +260,7 @@ void parse_arguments(int argc, char **argv)
 	strcpy(m_opt.output_directory, "./");
 	m_opt.proxyurl[0] = (char)NULL;
 	strncpy(m_opt.url, argv[1], MAX_URL_LEN);
-	strcpy(m_opt.useragent, "sr-POSIX/1.32");
+	strcpy(m_opt.useragent, "sr-POSIX/1.54");
 
         //get arguments
         for(i = 1; i < argc; i++)
