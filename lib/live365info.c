@@ -76,6 +76,57 @@ static char				m_proxyurl[MAX_URL_LEN];
 static HSOCKET			m_sock;
 static THREAD_HANDLE	m_thread;
 
+char *strip_last_word(char *str)
+{
+    int len = strlen(str)-1;
+
+    while(str[len] != ' ' && len != 0)
+	len--;
+
+    str[len] = '\0';
+    return str;
+}
+
+int word_count(char *str)
+{
+    int n = 0;
+    char *p = str;
+
+    if (!*p)
+	return 0; 
+
+    while(*p++)
+	if (*p == ' ')
+	    n++;
+
+    return n+1;
+}
+
+char *escape_string_alloc(const char *str)
+{
+    static const char c2x_table[] = "0123456789abcdef";
+    const unsigned char *spStr = (const unsigned char *)str;
+    char *sNewStr = (char *)calloc(3 * strlen(str) + 1, sizeof(char));
+    unsigned char *spNewStr = (unsigned char *)sNewStr;
+    unsigned c;
+
+    while ((c = *spStr)) {
+        if (c < 'A' || c > 'z') 
+	{
+	    *spNewStr++ = '%';
+	    *spNewStr++ = c2x_table[c >> 4];
+	    *spNewStr++ = c2x_table[c & 0xf];
+        }
+        else 
+	{
+            *spNewStr++ = c;
+        }
+        ++spStr;
+    }
+    *spNewStr = '\0';
+    return sNewStr;
+}
+
 /// FOR TESTING ///
 void dump_file(char *name, char *source)
 {

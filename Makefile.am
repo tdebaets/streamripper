@@ -7,6 +7,14 @@ SUBDIRS = libmad-0.15.1b
 endif
 
 bin_PROGRAMS = streamripper
+
+EXTRA_PROGRAMS = streamripper ictest
+
+ictest_SOURCES = \
+	lib/util.c \
+	lib/debug.c \
+	lib/ictest.c
+
 streamripper_SOURCES = \
 	console/streamripper.c \
 	lib/cbuffer.c \

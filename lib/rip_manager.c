@@ -627,7 +627,7 @@ rip_manager_start(void (*status_callback)(int message, void *data),
 
 	m_ripping = TRUE;
 
-	initialize_locale();
+	initialize_default_locale();
 
 	if (!options)
 		return SR_ERROR_INVALID_PARAM;

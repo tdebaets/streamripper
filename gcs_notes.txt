@@ -438,6 +438,13 @@ http://www.unrelatedinventions.com/Audiotools/Help/thejargonbehindmp3.htm
 How to create a sjis locale
 
 localedef -v -c -i ja_JP -f SHIFT_JIS ja_JP.SJIS
+localedef -v -c -i ja_JP -f EUC-JP ja_JP.EUC-JP
+
+Here is how to display
+
+export LANG=ja_JP.SJIS
+xterm -fn -misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-iso10646-1
+
 
 -----------------------------------------------------------------------
 How to open a new file (start track)

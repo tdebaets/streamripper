@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include "srconfig.h"
 #if defined HAVE_UNISTD_H
 #include <unistd.h>
@@ -28,6 +29,7 @@
 #include <wctype.h>
 #include <locale.h>
 #include <time.h>
+#include <errno.h>
 #if defined HAVE_ICONV
 #include <iconv.h>
 #endif
@@ -39,26 +41,35 @@
 #include "debug.h"
 #include "types.h"
 
-/*********************************************************************************
+/* uncomment to use new i18n code */
+#define NEW_I18N_CODE 1
+
+/*****************************************************************************
  * Public functions
- *********************************************************************************/
-char		*escape_string_alloc(const char *str);
-char		*left_str(char *str, int len);
-char		*strip_last_word(char *str);
-int			word_count(char *str);
-char		*subnstr_until(const char *str, char *until, char *newstr, int maxlen);
-char		*strip_invalid_chars(char *str);
-char		*format_byte_size(char *str, long size);
-char		*add_trailing_slash(char *str);
-void		trim(char *str);
-void 		null_printf(char *s, ...);
+ *****************************************************************************/
+char	*escape_string_alloc(const char *str);
+char	*left_str(char *str, int len);
+char	*strip_last_word(char *str);
+int	word_count(char *str);
+char	*subnstr_until(const char *str, char *until, char *newstr, int maxlen);
+char	*strip_invalid_chars(char *str);
+char	*format_byte_size(char *str, long size);
+char	*add_trailing_slash(char *str);
+void	trim(char *str);
+void 	null_printf(char *s, ...);
 
-wchar_t backslash;
-wchar_t fwdslash;
-wchar_t colon;
+/*****************************************************************************
+ * Private global variables
+ *****************************************************************************/
+const char* codeset_metadata;
+const char* codeset_matchstring;
+const char* codeset_relay;
+const char* codeset_id3;
+const char* codeset_filesys;
 
 
-char *add_trailing_slash(char *str)
+char*
+add_trailing_slash (char *str)
 {
 #if WIN32
     if (str[strlen(str)-1] != '\\')
@@ -70,7 +81,6 @@ char *add_trailing_slash(char *str)
 
     return str;
 }
-
 
 char *subnstr_until(const char *str, char *until, char *newstr, int maxlen)
 {
@@ -87,32 +97,6 @@ char *subnstr_until(const char *str, char *until, char *newstr, int maxlen)
     return newstr;
 }
 
-
-char *escape_string_alloc(const char *str)
-{
-    static const char c2x_table[] = "0123456789abcdef";
-    const unsigned char *spStr = (const unsigned char *)str;
-    char *sNewStr = (char *)calloc(3 * strlen(str) + 1, sizeof(char));
-    unsigned char *spNewStr = (unsigned char *)sNewStr;
-    unsigned c;
-
-    while ((c = *spStr)) {
-        if (c < 'A' || c > 'z') 
-	{
-	    *spNewStr++ = '%';
-	    *spNewStr++ = c2x_table[c >> 4];
-	    *spNewStr++ = c2x_table[c & 0xf];
-        }
-        else 
-	{
-            *spNewStr++ = c;
-        }
-        ++spStr;
-    }
-    *spNewStr = '\0';
-    return sNewStr;
-}
-
 char *left_str(char *str, int len)
 {
     int slen = strlen(str);
@@ -124,64 +108,204 @@ char *left_str(char *str, int len)
     return str;
 }
 
-char *strip_last_word(char *str)
+#if defined (HAVE_ICONV)
+int 
+iconv_convert_string (char* dst, int dst_len, char* src,
+		      const char* dst_codeset, const char* src_codeset)
 {
-    int len = strlen(str)-1;
+    size_t rc;
+    iconv_t ict;
+    size_t src_left, dst_left;
+    char *src_ptr, *dst_ptr;
 
-    while(str[len] != ' ' && len != 0)
-	len--;
+    /* First try to convert using iconv. */
+    ict = iconv_open(dst_codeset, src_codeset);
+    if (ict == (iconv_t)(-1)) {
+	printf ("Error on iconv_open(\"%s\",\"%s\")\n",
+		      dst_codeset, src_codeset);
+	return -1;
+    }
+    src_left = strlen(src);
+    dst_left = dst_len;
+    src_ptr = src;
+    dst_ptr = dst;
+    rc = iconv(ict,&src_ptr,&src_left,&dst_ptr,&dst_left);
+    if (rc == -1) {
+	if (errno == EINVAL || errno == E2BIG) {
+	    /* EINVAL means the last character was truncated
+	       E2BIG means the output buffer was too small.
+	       Declare success and try to continue... */
+	    printf ("Oops 1\n");
+	} else if (errno == EILSEQ) {
+	    /* Here I should advance cptr and try to continue, right? */
+	    printf ("Oops 2\n");
+	}
+    }
+    iconv_close (ict);
+    return 0;
+}
+#endif
 
-    str[len] = '\0';
-    return str;
+/* What does the rc mean here? */
+int 
+string_from_wstring (char* c, int clen, wchar_t* w, const char* codeset)
+{
+    int rc;
+
+#if HAVE_ICONV
+    rc = iconv_convert_string (c, clen, (char*) w, codeset, "WCHAR_T");
+    if (rc == 0) return 0;
+    /* Otherwise, fall through to wcstombs method */
+#endif
+
+    rc = wcstombs(c,w,clen);
+    if (rc == -1) {
+	/* Do something smart here */
+    }
+    return 0;
 }
 
-int word_count(char *str)
+/* What does the rc mean here? */
+int 
+wstring_from_string (wchar_t* w, int wlen, char* c, const char* codeset)
 {
-    int n = 0;
-    char *p = str;
+    int rc;
 
-    if (!*p)
-	return 0; 
+#if HAVE_ICONV
+    rc = iconv_convert_string ((char*) w, wlen, c, "WCHAR_T", codeset);
+    if (rc == 0) return 0;
+    /* Otherwise, fall through to mbstowcs method */
+#endif
 
-    while(*p++)
-	if (*p == ' ')
-	    n++;
-
-    return n+1;
+    rc = mbstowcs(w,c,wlen);
+    if (rc == -1) {
+	/* Do something smart here */
+    }
+    return 0;
 }
 
 void
-initialize_locale (void)
+set_codeset (char* codeset_type, const char* codeset)
+{
+    if (!strcmp(codeset_type, "CODESET_METADATA")) {
+	codeset_metadata = codeset;
+	return;
+    }
+    if (!strcmp(codeset_type, "CODESET_MATCHSTRING")) {
+	codeset_matchstring = codeset;
+	return;
+    }
+    if (!strcmp(codeset_type, "CODESET_RELAY")) {
+	codeset_relay = codeset;
+	return;
+    }
+    if (!strcmp(codeset_type, "CODESET_ID3")) {
+	codeset_id3 = codeset;
+	return;
+    }
+    if (!strcmp(codeset_type, "CODESET_FILESYS")) {
+	codeset_filesys = codeset;
+	return;
+    }
+    if (!strcmp(codeset_type, "CODESET_ALL")) {
+	codeset_metadata = codeset;
+	codeset_matchstring = codeset;
+	codeset_relay = codeset;
+	codeset_id3 = codeset;
+	codeset_filesys = codeset;
+	return;
+    }
+}
+
+const char*
+get_default_codeset (void)
+{
+    const char* fromcode = 0;
+#if defined HAVE_LOCALE_CHARSET
+    fromcode = locale_charset ();
+#elif defined HAVE_LANGINFO_CODESET
+    fromcode = nl_langinfo (CODESET);
+#else
+    /* No way to get default codeset */
+#endif
+    return fromcode;
+}
+
+void
+initialize_default_locale (void)
 {
     const char* fromcode = 0;
     setlocale (LC_ALL, "");
     setlocale (LC_CTYPE, "");
     debug_printf ("LOCALE is %s\n",setlocale(LC_ALL,NULL));
+
 #if defined HAVE_LOCALE_CHARSET
     debug_printf ("Using locale_charset() to get system codeset.\n");
-    fromcode = locale_charset ();
 #elif defined HAVE_LANGINFO_CODESET
     debug_printf ("Using nl_langinfo() to get system codeset.\n");
-    fromcode = nl_langinfo (CODESET);
 #else
     debug_printf ("No way to get system codeset.\n");
 #endif
+
+#if defined HAVE_ICONV
+    debug_printf ("Found iconv.\n");
+#else
+    debug_printf ("No iconv.\n");
+#endif
+
+    /* Set default codesets */
+    fromcode = get_default_codeset ();
     if (fromcode) {
         debug_printf ("LOCALE CODESET is %s\n", fromcode);
+	set_codeset ("CODESET_ALL", fromcode);
+    } else {
+	set_codeset ("CODESET_ALL", 0);
     }
-
-    /* Once locale is initialized, we can make the needed wide strings 
-       for parsing. */
-#if defined (USE_UNICODE)
-    if (fromcode) {
-	string_to_wide(&backslash, "\\");
-	string_to_wide(&fwdslash, "/");
-	string_to_wide(&colon, ":");
-    }
-#endif
 }
 
 
+/*
+  metadata     -> wchar }       { wchar -> filename
+  matchstring  -> wchar } parse { wchar -> id3, cue
+                                { wchar -> relay stream
+
+  metadata_locale: use locale()
+  matchstring: use locale() - same as metadata
+  filename: <<special/platform-specific>> use utf8
+  id3, cue: use locale()
+  relay stream: use locale() - same as metadata
+
+  if have iconv 
+     && iconv has conversion to wchar_t?
+     && HAVE_LOCALE_CHARSET || HAVE_LANGINFO_CODESET
+  then
+     use iconv for conversion to wchar
+  else
+     only default locale available
+     use mbcstowc for conversion to wchar
+
+  // question: what if posix wchar r.e. matching is not available?
+  // answer: default to ascii r.e. matching or simple matching.
+  
+  default approach, use tre for regular expressions.
+  question: should I use built-in posix r.e. at all?
+  answer: i don't know, but check AT&T compatibility page, linked 
+    off tre page.
+
+  --codeset
+  --codeset-metadata
+  --codeset-matchstring
+  --codeset-relay
+  --codeset-id3
+  --codeset-filesys
+
+  Three places processing are needed:
+
+  1) stream name -> parsing -> directory name
+  2) meta data -> parsing -> file name, id3, relay
+  3) What is the third??  
+
+*/
 /* Given a multibyte string containing the title, three names are 
    suggested.  One in utf8 encoding, one with wchar_t encoding,
    one in the multibyte encoding of the locale, and one that 
@@ -201,10 +325,7 @@ initialize_locale (void)
    ------------------------------------------------------
    Pseudocode:
    ------------------------------------------------------
-   if have iconv
-     convert to wchar using iconv
-   else
-     convert to wchar using mbstowcs
+   convert to wchar
 
    if it seemed to work (non-null)
      strip using wchar
@@ -465,7 +586,7 @@ strip_invalid_chars_stable(char *str)
 char* 
 strip_invalid_chars(char *str)
 {
-#if defined (USE_UNICODE)
+#if defined (NEW_I18N_CODE)
     return strip_invalid_chars_testing(str);
 #else
     return strip_invalid_chars_stable(str);
