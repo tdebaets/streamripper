@@ -137,16 +137,16 @@ findsep_silence(const u_char* mpgbuf, long mpgsize,
 
     mad_decoder_finish(&decoder);
 
-    DEBUG2(("total length: %d\n", ds.pcmpos));
+    debug_printf("total length: %d\n", ds.pcmpos);
 
     assert(ds.mpgsize != 0);
     silstart = ds.mpgsize/2;
     for(i = 0; i < NUM_SILTRACKERS; i++)
     {
-	DEBUG2(("i=%d, start=%d\n", i, ds.siltrackers[i].silencestart));
+	debug_printf("i=%d, start=%d\n", i, ds.siltrackers[i].silencestart);
 	if (ds.siltrackers[i].foundsil)
 	{
-	    DEBUG2(( "found!\n" ));
+	    debug_printf("found!\n");
 	    silstart = ds.siltrackers[i].silencestart;
 	    break;
 	}
@@ -164,8 +164,6 @@ findsep_silence(const u_char* mpgbuf, long mpgsize,
 	printf("\nwarning: no silence found between tracks\n");
     *psilence = silstart;
     return SR_SUCCESS;
-
-    //	return SR_ERROR_CANT_DECODE_MP3; // Not really, but what else can we do?
 }
 
 void init_siltrackers(SILENCETRACKER* siltrackers)
@@ -322,11 +320,11 @@ enum mad_flow
 error(void *data, struct mad_stream *ms, struct mad_frame *frame)
 {
     if (MAD_RECOVERABLE(ms->error)) {
-	DEBUG2(( "mad error 0x%04x\n", ms->error));
+	debug_printf("mad error 0x%04x\n", ms->error);
 	return MAD_FLOW_CONTINUE;
     }
 
-    DEBUG0(( "unrecoverable mad error 0x%04x\n", ms->error));
+    debug_printf("unrecoverable mad error 0x%04x\n", ms->error);
     return MAD_FLOW_BREAK;
 }
 

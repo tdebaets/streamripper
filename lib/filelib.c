@@ -438,7 +438,7 @@ error_code
 filelib_write(FHANDLE fp, char *buf, u_long size)
 {
     if (!fp) {
-	DEBUG1(("trying to write to a non file"));
+	debug_printf("filelib_write: fp = 0\n");
 	return SR_ERROR_CANT_WRITE_TO_FILE;
     }
 #if WIN32

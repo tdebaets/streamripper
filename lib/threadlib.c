@@ -58,8 +58,6 @@ void		threadlib_destroy_sem(HSEM *e);
 
 error_code threadlib_beginthread(THREAD_HANDLE *thread, void (*callback)(void *))
 {
-	DEBUG1(("starting thread"));
-
 	BeginThread(thread->thread_handle, callback);
 	//if (thread->thread_handle == NULL)	// don't feel like porting this
 	//	return SR_ERROR_CANT_CREATE_THREAD;

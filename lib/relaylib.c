@@ -302,10 +302,10 @@ try_port(u_short port, char *if_name)
 
 void relaylib_shutdown()
 {
-    DEBUG1(("relaylib_shutdown:start"));
+    debug_printf("relaylib_shutdown:start\n");
     if (!relaylib_isrunning())
     {
-        DEBUG1(("***relaylib_shutdown:return"));
+        debug_printf("***relaylib_shutdown:return");
         return;
     }
     m_running = FALSE;
@@ -316,13 +316,13 @@ void relaylib_shutdown()
     }
     m_listensock = SOCKET_ERROR;                // Accept thread will watch for this and not try to accept anymore
     memset(m_http_header, 0, MAX_HEADER_LEN);
-    DEBUG2(("waiting for relay close"));
+    debug_printf("waiting for relay close");
     threadlib_waitforclose(&m_hthread);
     destroy_all_hostsocks();
     threadlib_destroy_sem(&m_sem_not_connected);
     m_initdone = FALSE;
 
-    DEBUG1(("relaylib_shutdown:done!"));
+    debug_printf("relaylib_shutdown:done!");
 }
 
 
@@ -351,7 +351,7 @@ void thread_accept(void *notused)
     int iAddrSize = sizeof(client);
     struct hostsocklist_t *newhostsock;
 
-    DEBUG1(("***thread_accept:start"));
+    debug_printf("***thread_accept:start");
 
     while(m_running)
     {
@@ -361,9 +361,7 @@ void thread_accept(void *notused)
         // this event will keep use from accepting while we have a connection active
         // when a connection gets dropped, or when streamripper shuts down
         // this event will get signaled
-        DEBUG1(("***thread_accept:threadlib_waitfor_sem"));
         threadlib_waitfor_sem(&m_sem_not_connected);
-        DEBUG1(("***thread_accept:threadlib_waitfor_sem returned!"));
         if (!m_running)
             break;
 

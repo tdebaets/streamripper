@@ -153,10 +153,8 @@ error_code socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_n
     if (!socket_handle || !host)
 	return SR_ERROR_INVALID_PARAM;
 
-    DEBUG2(( "creating our socket\n" ));
     socket_handle->s = socket(AF_INET, SOCK_STREAM, 0);
 
-    DEBUG2(( "finding local interface\n" ));
     if (if_name) {
 	if (read_interface(if_name,&local.sin_addr.s_addr) != 0)
 	    local.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -169,16 +167,14 @@ error_code socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_n
 	}
     }
 
-    DEBUG2(( "checking hostname\n" ));
     if ((address.sin_addr.s_addr = inet_addr(host)) == INADDR_NONE)
     {
-	DEBUG2(( "calling gethostbyname\n" ));
 	hp = gethostbyname(host);
 	if (hp)
 	    memcpy(&address.sin_addr, hp->h_addr_list[0], hp->h_length);
 	else
 	{
-	    DEBUG0(( "resolving hostname: %s failed\n", host ));
+	    debug_printf("resolving hostname: %s failed\n", host);
 	    WSACleanup();
 	    return SR_ERROR_CANT_RESOLVE_HOSTNAME;
 	}
@@ -187,14 +183,8 @@ error_code socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_n
     address.sin_port = htons((unsigned short)port);
     len = sizeof(address);
 
-    DEBUG2(( "connect: sock=%d\n", socket_handle->s ));
     if (connect(socket_handle->s, (struct sockaddr *)&address, len) == SOCKET_ERROR)
     {
-#if WIN32
-	DEBUG0(( "connect failed: error=%d\n", WSAGetLastError() ));
-#else
-	DEBUG0(( "connect failed.\n" ));
-#endif
 	return SR_ERROR_CONNECT_FAILED;
     }
 
@@ -218,7 +208,6 @@ void socklib_cleanup()
 
 void socklib_close(HSOCKET *socket_handle)
 {
-    DEBUG1(("socklib: closeing socket"));
     closesocket(socket_handle->s);
     socket_handle->closed = TRUE;
 }
@@ -349,9 +338,7 @@ int socklib_sendall(HSOCKET *socket_handle, char* buffer, int size)
 	if (socket_handle->closed)
 	    return SR_ERROR_SOCKET_CLOSED;
 
-	DEBUG2(("calling send for %d bytes", size));
         ret = send(socket_handle->s, &buffer[sent], size, 0);
-	DEBUG2(("send ret = %d", ret));
         if (ret == SOCKET_ERROR)
 	    return SR_ERROR_SEND_FAILED;
 

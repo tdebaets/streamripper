@@ -49,7 +49,7 @@ inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl,
     URLINFO url_info;
     int ret;
 
-    DEBUG2(( "calling httplib_parse_url\n" ));
+    debug_printf("inet_sc_connect(): calling httplib_parse_url\n");
     if (proxyurl) {
 	if ((ret = httplib_parse_url(proxyurl, &url_info)) != SR_SUCCESS)
 	    return ret;
@@ -59,23 +59,24 @@ inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl,
 	return ret;
     }
 
-    DEBUG2(( "calling sockinit\n" ));
+    debug_printf("inet_sc_connect(): calling sockinit\n");
     if ((ret = socklib_init()) != SR_SUCCESS)
 	return ret;
 
-    DEBUG2(( "calling sock_open: host=%s, port=%d\n", url_info.host, url_info.port ));
+    debug_printf("inet_sc_connect(): calling sock_open: host=%s, port=%d\n",
+	url_info.host, url_info.port);
     if ((ret = socklib_open(sock, url_info.host, url_info.port, if_name)) != SR_SUCCESS)
 	return ret;
 
-    DEBUG2(( "calling httplib_construct_sc_request\n" ));
+    debug_printf("inet_sc_connect(): calling httplib_construct_sc_request\n");
     if ((ret = httplib_construct_sc_request(url, proxyurl, headbuf, useragent)) != SR_SUCCESS)
 	return ret;
 
-    DEBUG2(( "calling socklib_sendall\n" ));
+    debug_printf("inet_sc_connect(): calling socklib_sendall\n");
     if ((ret = socklib_sendall(sock, headbuf, strlen(headbuf))) < 0)
 	return ret;
 
-    DEBUG2(( "calling get_sc_header\n" ));
+    debug_printf("inet_sc_connect(): calling get_sc_header\n");
     if ((ret = get_sc_header(sock, info)) != SR_SUCCESS)
 	return ret;
 
