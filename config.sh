@@ -12,4 +12,4 @@ cd ..
 
 rm -f config.cache
 ## ./configure
-./configure --enable-static
+./configure --with-included-libmad --with-included-tre

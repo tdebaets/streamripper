@@ -244,6 +244,14 @@ libmad_manifest with the latest list of original files from the
 libmad distro.
 
 -----------------------------------------
+How to revise libtre
+
+in libtre/configure.ac, comment out the disable static line
+
+dnl AM_DISABLE_STATIC
+
+
+-----------------------------------------
 Console mode:
 
 main				(streamripper.c)
