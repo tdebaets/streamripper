@@ -162,7 +162,7 @@ void socklib_cleanup()
 
 void socklib_close(HSOCKET *socket_handle)
 {
-	debug_printf("Closeing socket\n");
+	debug_printf("socklib: closeing socket\n");
 	closesocket(socket_handle->s);
 	socket_handle->closed = TRUE;
 }

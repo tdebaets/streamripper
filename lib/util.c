@@ -51,7 +51,20 @@ void debug_printf(char *str, ...)
 	vsnprintf(buf, MAX_ERROR_STR, str, va);
 	fprintf(stderr, "%s", buf);
 	fflush(stderr);
+
+#if DEBUG_TO_FILE
+	
+	{
+	FILE *fp = fopen("debugdump.txt", "a");
+	vsnprintf(buf, MAX_ERROR_STR, str, va);
+	fprintf(fp, "%s", buf);
+	fflush(fp);
+	fclose(fp);
+	}
+
 	va_end(va);
+#endif
+
 #endif
 }
 

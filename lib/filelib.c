@@ -183,7 +183,9 @@ error_code filelib_start(char *filename)
 					FILE_ATTRIBUTE_NORMAL,     // normal file 
 					NULL);                     // no attr. template 
  	if (m_file == INVALID_HANDLE_VALUE)
+	{
 		return SR_ERROR_CANT_CREATE_FILE;
+	}
 #else
 	// Needs to be better tested
 	m_file = open(newfile, O_RDWR | O_CREAT, S_IRWXU | S_IRGRP | S_IROTH);
