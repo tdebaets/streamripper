@@ -49,6 +49,7 @@
 #if __UNIX__
 	#include <unistd.h>
 	#define Sleep(x) usleep(x)
+	#define _endthread()	;	/* just don't do it under *nix, this probably isn't the best choice */
 #elif __BEOS__
 	#define Sleep(x) snooze(x)
 #endif
