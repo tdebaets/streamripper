@@ -1,4 +1,4 @@
-Name Streamripper for Winamp 1.31
+Name Streamripper for Winamp 1.32
 Text This will install Nullsoft Streamripper for Winamp 1.31 on your computer
 OutFile gen_sripper.exe
 SetOutPath $DSPDIR
