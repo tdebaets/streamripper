@@ -27,6 +27,7 @@
 #include "rip_manager.h"
 #include "util.h"
 #include "filelib.h"
+#include "debug.h"
 
 /*******************************************************************************
  * Private functions
@@ -36,7 +37,7 @@ static void print_status();
 static void catch_sig(int code);
 static void parse_arguments(int argc, char **argv);
 static void rip_callback(int message, void *data);
-static void parse_splitpoint_rules (char* rule);
+static void parse_extended_options (char* rule);
 static void verify_splitpoint_rules (void);
 
 /*******************************************************************************
@@ -347,7 +348,7 @@ void parse_arguments(int argc, char **argv)
 	    strncpy(m_opt.if_name, argv[i], SR_MAX_PATH);
 	    break;
 	case '-':
-	    parse_splitpoint_rules(&argv[i][2]);
+	    parse_extended_options(&argv[i][2]);
 	    break;
 	}
     }
@@ -363,10 +364,17 @@ void parse_arguments(int argc, char **argv)
 }
 
 static void
-parse_splitpoint_rules (char* rule)
+parse_extended_options (char* rule)
 {
     int x,y;
 
+    /* Misc options */
+    if (!strcmp(rule,"debug")) {
+	debug_enable();
+	return;
+    }
+
+    /* Splitpoint options */
     if (!strcmp(rule,"xs_none")) {
 	m_opt.sp_opt.xs = 0;
 	printf ("Disable silence detection");

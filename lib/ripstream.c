@@ -196,7 +196,7 @@ ripstream_rip()
     // get the data
     if ((ret = m_in->get_stream_data(m_getbuffer, m_current_track)) != SR_SUCCESS)
     {
-	debug_printf("m_in->get_data bad return code(?) %d", ret);
+	debug_printf("m_in->get_data bad return code(?) %d\n", ret);
 	// If it is a single track recording, finish the track
 	// if end_track is successful
         /* GCS - This test is never true -- vestigal from live365 */
@@ -243,7 +243,7 @@ ripstream_rip()
     // this is so end_track will actually call end.
     if (is_no_meta_track() && m_on_first_track) {
 	if ((ret = start_track(m_no_meta_name)) != SR_SUCCESS) {
-	    debug_printf("start_track had bad return code %d", ret);
+	    debug_printf("start_track had bad return code %d\n", ret);
 	    return ret;
 	}
     }
@@ -255,7 +255,7 @@ ripstream_rip()
 	// The first track should not be ended. It will always be incomplete.
 	//if ((ret = rip_manager_start_track(m_current_track)) != SR_SUCCESS) {
 	if ((ret = rip_manager_start_track(m_no_meta_name)) != SR_SUCCESS) {
-	    debug_printf("start_track had bad return code %d", ret);
+	    debug_printf("start_track had bad return code %d\n", ret);
 	    return ret;
 	}
 	/* write the cue sheet */
@@ -266,7 +266,7 @@ ripstream_rip()
     /* Copy the data into cbuffer */
     ret = cbuffer_insert(&m_cbuffer, m_getbuffer, m_in->getsize);
     if (ret != SR_SUCCESS) {
-	debug_printf("start_track had bad return code %d", ret);
+	debug_printf("start_track had bad return code %d\n", ret);
 	return ret;
     }													
 
@@ -275,9 +275,6 @@ ripstream_rip()
 	   needed until we can do silence separation. */
 	debug_printf ("is_track_changed: m_find_silence = %d\n",
 		      m_find_silence);
-#if defined (commentout)
-	debug_printf ("Got is_track_changed\n");
-#endif
         relay_send_meta_data (m_current_track);
 	if (m_find_silence < 0) {
 	    if (m_mi_to_cbuffer_end > 0) {
@@ -295,7 +292,7 @@ ripstream_rip()
 	u_long pos1, pos2;
 	ret = find_sep (&pos1, &pos2);
 	if (ret != SR_SUCCESS) {
-	    debug_printf("find_sep had bad return code %d", ret);
+	    debug_printf("find_sep had bad return code %d\n", ret);
 	    return ret;
 	}
 
@@ -315,7 +312,7 @@ ripstream_rip()
 	extract_size = m_in->getsize - cbuffer_get_free(&m_cbuffer);
         ret = cbuffer_extract(&m_cbuffer, m_getbuffer, extract_size);
         if (ret != SR_SUCCESS) {
-	    debug_printf("cbuffer_extract had bad return code %d", ret);
+	    debug_printf("cbuffer_extract had bad return code %d\n", ret);
 	    return ret;
 	}
         /* Post to caller */

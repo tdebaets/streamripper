@@ -145,7 +145,8 @@ filelib_set_output_directory (char* output_directory,
 	/* I wish I could do something like "realpath()" here, but it 
 	 * doesn't have (e.g.) posix conformance. */
 	if (is_absolute_path (output_directory)) {
-	    strncpy (m_output_directory,output_directory,SR_MAX_PATH);
+	    strncpy (base_dir,output_directory,SR_MAX_PATH);
+	    debug_printf("Had absolute path\n");
 	} else {
 	    char pwd[SR_MAX_PATH];
 	    if (!getcwd (pwd, SR_MAX_PATH)) {
@@ -154,6 +155,7 @@ filelib_set_output_directory (char* output_directory,
 	    }
 	    snprintf (base_dir, SR_MAX_PATH, "%s%c%s", pwd, 
 		      PATH_SLASH,output_directory);
+	    debug_printf("Had relative path\n");
 	}
 #endif
     } else {
@@ -167,6 +169,7 @@ filelib_set_output_directory (char* output_directory,
 	    debug_printf ("getcwd returned zero?\n");
 	    return SR_ERROR_DIR_PATH_TOO_LONG;
 	}
+	debug_printf("Had null output dir\n");
 #endif
     }
     add_trailing_slash (base_dir);

@@ -50,6 +50,7 @@ extern void _freevargstr(char *str);
 void debug_open (void);
 void debug_close (void);
 void debug_printf (char* fmt, ...);
+void debug_enable (void);
 
 #endif//__DEBUG_H__
 
