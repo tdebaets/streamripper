@@ -469,8 +469,18 @@ relaylib_send(char *data, int len)
 	    int bsz;
             next = ptr->m_next;
 
+#if defined (commentout)
 	    //Up to two full packets
 	    bsz= ( 8*len > BUFSIZE ) ? 8*len : BUFSIZE;
+#endif
+	    /* GCS: Increase buffer size.  What happens is that
+	       at the beginning, right after connecting with the 
+	       shoutcast server, shoutcast pumps out a lot of data.
+	       If winamp (or possibly other clients) connects to the
+	       relay right away, they don't request as much as 
+	       the shoutcast server pumps out.  So we need to 
+	       buffer it here (or stop requesting so much). */
+	    bsz= ( 24*len > BUFSIZE ) ? 24*len : BUFSIZE;
 	    if( bsz > ptr->m_BufferSize ) {
 		ptr->m_Buffer= realloc( ptr->m_Buffer, bsz );
 		ptr->m_BufferSize= bsz;
