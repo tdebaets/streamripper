@@ -282,7 +282,7 @@ void parse_arguments(int argc, char **argv)
 #endif
 
     // get URL
-    strncpy(m_opt->url, argv[1], MAX_URL_LEN);
+    strncpy(m_opt.url, argv[1], MAX_URL_LEN);
 
     //get arguments
     for(i = 1; i < argc; i++) {
