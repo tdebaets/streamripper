@@ -5,6 +5,7 @@ New for 1.60.7
 * Add plugin gui prop page for splitpoints options
 * Fix crash when bitrate==0
 * Fix crash when no metadata reported as 0
+* Mike Frysinger's patch to rip from specified interface
 
 New for 1.60.6
 --------------

@@ -1,5 +1,13 @@
 Greg's notes
 -----------------------------------------
+
+* How to upgrade the version number
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1)  configure.ac
+2)  lib/rip_manager.h
+3)  winamp_plugin/sr2x.nsi
+
 * Generated files
 ~~~~~~~~~~~~~~~~~
 I deleted the automatically generated files from CVS.  The people 
@@ -101,12 +109,11 @@ How to tag a new version (e.g. for version 1.60)
 -----------------------------------------
 How to revise libmad
 
-~~~~~~~
 First, match the auto* versions used by libmad.  For libmad-0.15.1b, 
 this is :
 
   - autoconf 2.59, automake 1.8.2, libtool 1.5.2.
- 
+
 Next in Makefile.am, make the following modifications.
 
   ## GCS - don't install for streamripper
@@ -116,6 +123,9 @@ Next in Makefile.am, make the following modifications.
   ## GCS - don't install for streamripper
   ## include_HEADERS =	mad.h
   noinst_HEADERS = mad.h
+
+In Makefile.am & configure.ac, comment out the msvc++ stuff.  No need 
+to build makefiles, nor to distribute.
 
 Next rebuild the auto* files.  Test it all out and make sure it works.
 
