@@ -202,8 +202,23 @@ enum mad_flow input(void *data, struct mad_stream *ms)
 
     if (ms->next_frame) {
 	frameoffset = &(ds->mpgbuf[ds->mpgpos]) - ms->next_frame;
-	assert(frameoffset != READSIZE);
+	/* GCS: This is the famous bug. */
+	if (frameoffset == READSIZE) {
+	    FILE* fp;
+            debug_printf ("%p | %p | %p | %p | %d\n",
+		ds->mpgbuf, ds->mpgpos, &(ds->mpgbuf[ds->mpgpos]), 
+		ms->next_frame, frameoffset);
+    	    fprintf (stderr, "ERROR: frameoffset != READSIZE\n");
+	    debug_printf ("ERROR: frameoffset != READSIZE\n");
+	    fp = fopen ("gcs1.txt","w");
+	    fwrite(ds->mpgbuf,1,ds->mpgsize,fp);
+	    fclose(fp);
+	    exit (-1);
+	}
     }
+    debug_printf ("%p | %p | %p | %p | %d\n",
+	ds->mpgbuf, ds->mpgpos, &(ds->mpgbuf[ds->mpgpos]), 
+	ms->next_frame, frameoffset);
 
     mad_stream_buffer(ms,
 		      (const unsigned char*)(ds->mpgbuf+ds->mpgpos)-frameoffset, 

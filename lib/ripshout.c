@@ -101,6 +101,7 @@ ripshout_getdata(char *data, char *track)
 	return ret;
 
     if (c < 0) {
+	debug_printf ("Got invalid metadata: %d\n",c);
 	return SR_ERROR_INVALID_METADATA;
     } else if (c == 0) {
 	// around christmas time 2001 someone noticed that 1.8.7 shoutcast

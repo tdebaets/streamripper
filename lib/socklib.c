@@ -1,4 +1,4 @@
-/* sockets.c - jonclegg@yahoo.com
+/* socklib.c - jonclegg@yahoo.com
  * library routines for handling socket stuff
  *
  * This program is free software; you can redistribute it and/or modify
@@ -92,8 +92,8 @@ error_code socklib_init()
     int err;
 #endif
 
-	if (m_done_init)
-		return SR_SUCCESS;
+    if (m_done_init)
+	return SR_SUCCESS;
 
 #if WIN32
     wVersionRequested = MAKEWORD( 2, 2 );
@@ -102,9 +102,8 @@ error_code socklib_init()
         return SR_ERROR_WIN32_INIT_FAILURE;
 #endif
 
-	m_done_init = TRUE;
-
-	return SR_SUCCESS;
+    m_done_init = TRUE;
+    return SR_SUCCESS;
 }
 
 
@@ -116,23 +115,23 @@ error_code read_interface(char *if_name, u_int32_t *addr)
 #if defined (WIN32)
     return -1;
 #else
-	int fd;
-	struct ifreq ifr;
+    int fd;
+    struct ifreq ifr;
 
-	memset(&ifr, 0, sizeof(struct ifreq));
-	if((fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) >= 0) {
-		ifr.ifr_addr.sa_family = AF_INET;
-		strcpy(ifr.ifr_name, if_name);
-		if (ioctl(fd, SIOCGIFADDR, &ifr) == 0)
-			*addr = ((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr;
-		else {
-			close(fd);
-			return -2;
-		}
-	} else
-		return -1;
-	close(fd);
-	return 0;
+    memset(&ifr, 0, sizeof(struct ifreq));
+    if((fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) >= 0) {
+	ifr.ifr_addr.sa_family = AF_INET;
+	strcpy(ifr.ifr_name, if_name);
+	if (ioctl(fd, SIOCGIFADDR, &ifr) == 0)
+	    *addr = ((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr;
+	else {
+	    close(fd);
+	    return -2;
+	}
+    } else
+	return -1;
+    close(fd);
+    return 0;
 #endif
 }
 
@@ -220,8 +219,10 @@ void socklib_close(HSOCKET *socket_handle)
     socket_handle->closed = TRUE;
 }
 
-error_code	socklib_read_header(HSOCKET *socket_handle, char *buffer, int size, 
-								int (*recvall)(HSOCKET *socket_handle, char* buffer, int size, int timeout))
+error_code
+socklib_read_header(HSOCKET *socket_handle, char *buffer, int size, 
+		    int (*recvall)(HSOCKET *socket_handle, char* buffer,
+				   int size, int timeout))
 {
     int i;
 #ifdef WIN32
@@ -229,7 +230,7 @@ error_code	socklib_read_header(HSOCKET *socket_handle, char *buffer, int size,
 #endif
     int ret;
     char *t;
-	 int (*myrecv)(HSOCKET *socket_handle, char* buffer, int size, int timeout);
+    int (*myrecv)(HSOCKET *socket_handle, char* buffer, int size, int timeout);
 
     if (socket_handle->closed)
 	return SR_ERROR_SOCKET_CLOSED;
@@ -300,15 +301,15 @@ int socklib_recvall(HSOCKET *socket_handle, char* buffer, int size, int timeout)
 	
 	if (timeout > 0)
 	{
-		// Wait up to 'timeout' seconds for data on socket to be ready for read
-		FD_SET(sock, &fds);
-		tv.tv_sec = timeout;
-		tv.tv_usec = 0;
-		ret = select(sock + 1, &fds, NULL, NULL, &tv);
-		if (ret == SOCKET_ERROR)
-			return SOCKET_ERROR;
-		if (ret != 1)
-			return SR_ERROR_TIMEOUT;
+	    // Wait up to 'timeout' seconds for data on socket to be ready for read
+	    FD_SET(sock, &fds);
+	    tv.tv_sec = timeout;
+	    tv.tv_usec = 0;
+	    ret = select(sock + 1, &fds, NULL, NULL, &tv);
+	    if (ret == SOCKET_ERROR)
+		return SOCKET_ERROR;
+	    if (ret != 1)
+		return SR_ERROR_TIMEOUT;
 	}
 		
 	//		DEBUG2(("calling recv for %d bytes", size));
@@ -353,11 +354,14 @@ int socklib_sendall(HSOCKET *socket_handle, char* buffer, int size)
 	
 }
 
-error_code	socklib_recvall_alloc(HSOCKET *socket_handle, char** buffer, unsigned long *size, 
-								int (*recvall)(HSOCKET *socket_handle, char* buffer, int size, int timeout))
+error_code
+socklib_recvall_alloc(HSOCKET *socket_handle, char** buffer, 
+		      unsigned long *size, 
+		      int (*recvall)(HSOCKET *socket_handle, char* buffer, 
+				     int size, int timeout))
 {
     const int CHUNK_SIZE = 8192;
-	 int (*myrecv)(HSOCKET *socket_handle, char* buffer, int size, int timeout);
+    int (*myrecv)(HSOCKET *socket_handle, char* buffer, int size, int timeout);
     int ret;
     unsigned long mysize = 0;
     int chunks = 1;

@@ -91,17 +91,17 @@ static HSEM		m_sem_listlock;
 
 static void destroy_all_hostsocks(void)
 {
-	struct hostsocklist_t	*ptr;
-	
-	threadlib_waitfor_sem(&m_sem_listlock);
-	while(m_hostsocklist != NULL)
-	{
-		ptr = m_hostsocklist;
-		closesocket(ptr->m_hostsock);
-		m_hostsocklist = ptr->m_next;
-		free(ptr);
-	}
-	threadlib_signel_sem(&m_sem_listlock);
+    struct hostsocklist_t	*ptr;
+
+    threadlib_waitfor_sem(&m_sem_listlock);
+    while(m_hostsocklist != NULL)
+    {
+	ptr = m_hostsocklist;
+	closesocket(ptr->m_hostsock);
+	m_hostsocklist = ptr->m_next;
+	free(ptr);
+    }
+    threadlib_signel_sem(&m_sem_listlock);
 }
 
 
@@ -110,84 +110,85 @@ static void destroy_all_hostsocks(void)
 // Returns 0 if successful or SOCKET_ERROR if error
 static int swallow_receive(int sock)
 {
-	fd_set fds;
-	struct timeval tv;
-	int ret = 0;
-	char buf[BUFSIZE];
-	BOOL hasmore = TRUE;
+    fd_set fds;
+    struct timeval tv;
+    int ret = 0;
+    char buf[BUFSIZE];
+    BOOL hasmore = TRUE;
 	
-	FD_ZERO(&fds);
-	while(hasmore)
+    FD_ZERO(&fds);
+    while(hasmore)
+    {
+	// Poll the socket to see if it has anything to read
+	hasmore = FALSE;
+	FD_SET(sock, &fds);
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+	ret = select(sock + 1, &fds, NULL, NULL, &tv);
+	if (ret == 1)
 	{
-		// Poll the socket to see if it has anything to read
-		hasmore = FALSE;
-		FD_SET(sock, &fds);
-		tv.tv_sec = 0;
-		tv.tv_usec = 0;
-		ret = select(sock + 1, &fds, NULL, NULL, &tv);
-		if (ret == 1)
-		{
-			// Read and throw away data, ignoring errors
-			ret = recv(sock, buf, BUFSIZE, 0);
-			if (ret > 0)
-			{
-				hasmore = TRUE;
-			}
-			else if (ret == SOCKET_ERROR)
-			{
-				break;
-			}
-		}
-		else if (ret == SOCKET_ERROR)
-		{
-			break;
-		}
+	    // Read and throw away data, ignoring errors
+	    ret = recv(sock, buf, BUFSIZE, 0);
+	    if (ret > 0)
+	    {
+		hasmore = TRUE;
+	    }
+	    else if (ret == SOCKET_ERROR)
+	    {
+		break;
+	    }
 	}
+	else if (ret == SOCKET_ERROR)
+	{
+	    break;
+	}
+    }
 	
-	return ret;
+    return ret;
 }
 
 
 // Makes a socket non-blocking
 void make_nonblocking(int sock)
 {
-	int opt;
+    int opt;
 	
 #ifndef WIN32
-	opt = fcntl(sock, F_GETFL);
-	if (opt != SOCKET_ERROR)
-	{
-		fcntl(sock, F_SETFL, opt | O_NONBLOCK);
-	}
+    opt = fcntl(sock, F_GETFL);
+    if (opt != SOCKET_ERROR)
+    {
+	fcntl(sock, F_SETFL, opt | O_NONBLOCK);
+    }
 #else
-	opt = 1;
-	ioctlsocket(sock, FIONBIO, &opt);
+    opt = 1;
+    ioctlsocket(sock, FIONBIO, &opt);
 #endif
 }
 
 
 BOOL relaylib_isrunning()
 {
-	return m_running;
+    return m_running;
 }
 
 
-error_code	relaylib_set_response_header(char *http_header)
+error_code
+relaylib_set_response_header(char *http_header)
 {
-	if (!http_header)
-		return SR_ERROR_INVALID_PARAM;
+    if (!http_header)
+	return SR_ERROR_INVALID_PARAM;
 
-	strcpy(m_http_header, http_header);
+    strcpy(m_http_header, http_header);
 
-	return SR_SUCCESS;
+    return SR_SUCCESS;
 }
 
 #ifndef WIN32
 void catch_pipe(int code)
 {
-	//m_hostsock = 0;
-	//m_connected = FALSE;
-	// JCBUG, not sure what to do about this
+    //m_hostsock = 0;
+    //m_connected = FALSE;
+    // JCBUG, not sure what to do about this
 }
 #endif
 
@@ -212,8 +213,8 @@ relaylib_init(BOOL search_ports, int relay_port, int max_port, int *port_used, c
 
     m_sem_not_connected = threadlib_create_sem();
 
-	m_sem_listlock = threadlib_create_sem();
-	threadlib_signel_sem(&m_sem_listlock);
+    m_sem_listlock = threadlib_create_sem();
+    threadlib_signel_sem(&m_sem_listlock);
 
     //
     // NOTE: we need to signel it here in case we try to destroy
@@ -232,7 +233,7 @@ relaylib_init(BOOL search_ports, int relay_port, int max_port, int *port_used, c
 
 	if (ret == SR_SUCCESS) {
 	    *port_used = relay_port;
-		 debug_printf("Relay: Listening on port %d\n", relay_port);
+	    debug_printf("Relay: Listening on port %d\n", relay_port);
 	    return SR_SUCCESS;
 	} else {
 	    return ret;
@@ -245,165 +246,165 @@ relaylib_init(BOOL search_ports, int relay_port, int max_port, int *port_used, c
 error_code
 try_port(u_short port, char *if_name)
 {
-	struct sockaddr_in local;
+    struct sockaddr_in local;
 
-	m_listensock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
-	if (m_listensock == SOCKET_ERROR)
-		return SR_ERROR_SOCK_BASE;
-	make_nonblocking(m_listensock);
+    m_listensock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+    if (m_listensock == SOCKET_ERROR)
+	return SR_ERROR_SOCK_BASE;
+    make_nonblocking(m_listensock);
 
-	if (read_interface(if_name,&local.sin_addr.s_addr) != 0)
-		local.sin_addr.s_addr = htonl(INADDR_ANY);
-	local.sin_family = AF_INET;
-	local.sin_port = htons(port);
+    if (read_interface(if_name,&local.sin_addr.s_addr) != 0)
+	local.sin_addr.s_addr = htonl(INADDR_ANY);
+    local.sin_family = AF_INET;
+    local.sin_port = htons(port);
 
 #ifndef WIN32
-	{
-		// Prevent port error when restarting quickly after a previous exit
-		int opt = 1;
-		setsockopt(m_listensock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-	}
+    {
+	// Prevent port error when restarting quickly after a previous exit
+	int opt = 1;
+	setsockopt(m_listensock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    }
 #endif
 			
-	if (bind(m_listensock, (struct sockaddr *)&local, sizeof(local)) == SOCKET_ERROR)
-	{
-		closesocket(m_listensock);
-		m_listensock = SOCKET_ERROR;
-		return SR_ERROR_CANT_BIND_ON_PORT;
-	}
+    if (bind(m_listensock, (struct sockaddr *)&local, sizeof(local)) == SOCKET_ERROR)
+    {
+	closesocket(m_listensock);
+	m_listensock = SOCKET_ERROR;
+	return SR_ERROR_CANT_BIND_ON_PORT;
+    }
 	
-	if (listen(m_listensock, 1) == SOCKET_ERROR)
-	{
-		closesocket(m_listensock);
-		m_listensock = SOCKET_ERROR;
-		return SR_ERROR_SOCK_BASE;
-	}
+    if (listen(m_listensock, 1) == SOCKET_ERROR)
+    {
+	closesocket(m_listensock);
+	m_listensock = SOCKET_ERROR;
+	return SR_ERROR_SOCK_BASE;
+    }
 
-	return SR_SUCCESS;
+    return SR_SUCCESS;
 }
 
 
 void relaylib_shutdown()
 {
-	DEBUG1(("relaylib_shutdown:start"));
-	if (!relaylib_isrunning())
-	{
-		DEBUG1(("***relaylib_shutdown:return"));
-		return;
-	}
-	m_running = FALSE;
-	threadlib_signel_sem(&m_sem_not_connected);
-	if (closesocket(m_listensock) == SOCKET_ERROR)
-	{	
-		// JCBUG, what can we do?
-	}
-	m_listensock = SOCKET_ERROR;		// Accept thread will watch for this and not try to accept anymore
-	memset(m_http_header, 0, MAX_HEADER_LEN);
-	DEBUG2(("waiting for relay close"));
-	threadlib_waitforclose(&m_hthread);
-	destroy_all_hostsocks();
-	threadlib_destroy_sem(&m_sem_not_connected);
+    DEBUG1(("relaylib_shutdown:start"));
+    if (!relaylib_isrunning())
+    {
+	DEBUG1(("***relaylib_shutdown:return"));
+	return;
+    }
+    m_running = FALSE;
+    threadlib_signel_sem(&m_sem_not_connected);
+    if (closesocket(m_listensock) == SOCKET_ERROR)
+    {	
+	// JCBUG, what can we do?
+    }
+    m_listensock = SOCKET_ERROR;		// Accept thread will watch for this and not try to accept anymore
+    memset(m_http_header, 0, MAX_HEADER_LEN);
+    DEBUG2(("waiting for relay close"));
+    threadlib_waitforclose(&m_hthread);
+    destroy_all_hostsocks();
+    threadlib_destroy_sem(&m_sem_not_connected);
 
-	DEBUG1(("relaylib_shutdown:done!"));
+    DEBUG1(("relaylib_shutdown:done!"));
 }
 
 
 error_code relaylib_start()
 {
-	int ret;
+    int ret;
 
-	m_running = TRUE;
-	// Spawn on a thread so it's non-blocking
-	if ((ret = threadlib_beginthread(&m_hthread, thread_accept)) != SR_SUCCESS)
-		return ret;
-	return SR_SUCCESS;
+    m_running = TRUE;
+    // Spawn on a thread so it's non-blocking
+    if ((ret = threadlib_beginthread(&m_hthread, thread_accept)) != SR_SUCCESS)
+	return ret;
+    return SR_SUCCESS;
 }
 
 void thread_accept(void *notused)
 {
-	int ret;
-	int newsock;
-	BOOL good;
-	struct sockaddr_in client;
-	int iAddrSize = sizeof(client);
-	struct hostsocklist_t *newhostsock;
+    int ret;
+    int newsock;
+    BOOL good;
+    struct sockaddr_in client;
+    int iAddrSize = sizeof(client);
+    struct hostsocklist_t *newhostsock;
 
-	DEBUG1(("***thread_accept:start"));
+    DEBUG1(("***thread_accept:start"));
 
-	while(m_running)
-	{
-		fd_set fds;
-		struct timeval tv;
+    while(m_running)
+    {
+	fd_set fds;
+	struct timeval tv;
 		
-		//
-		// this event will keep use from accepting while we have a connection active
-		// when a connection gets dropped, or when streamripper shuts down
-		// this event will get signaled
-		//
-		DEBUG1(("***thread_accept:threadlib_waitfor_sem"));
-		threadlib_waitfor_sem(&m_sem_not_connected);
-		DEBUG1(("***thread_accept:threadlib_waitfor_sem returned!"));
-		if (!m_running)
-			break;
+	//
+	// this event will keep use from accepting while we have a connection active
+	// when a connection gets dropped, or when streamripper shuts down
+	// this event will get signaled
+	//
+	DEBUG1(("***thread_accept:threadlib_waitfor_sem"));
+	threadlib_waitfor_sem(&m_sem_not_connected);
+	DEBUG1(("***thread_accept:threadlib_waitfor_sem returned!"));
+	if (!m_running)
+	    break;
 
-		// Poll once per second, instead of blocking forever in accept(), so that we can regain control if relaylib_shutdown() called
-		FD_ZERO(&fds);
-		while (m_listensock != SOCKET_ERROR)
+	// Poll once per second, instead of blocking forever in accept(), so that we can regain control if relaylib_shutdown() called
+	FD_ZERO(&fds);
+	while (m_listensock != SOCKET_ERROR)
+	{
+	    FD_SET(m_listensock, &fds);
+	    tv.tv_sec = 1;
+	    tv.tv_usec = 0;
+	    ret = select(m_listensock + 1, &fds, NULL, NULL, &tv);
+	    if (ret == 1)
+	    {
+		newsock = accept(m_listensock, (struct sockaddr *)&client, &iAddrSize);
+		if (newsock != SOCKET_ERROR)
 		{
-			FD_SET(m_listensock, &fds);
-			tv.tv_sec = 1;
-			tv.tv_usec = 0;
-			ret = select(m_listensock + 1, &fds, NULL, NULL, &tv);
-			if (ret == 1)
+		    // Got successful accept
+		    make_nonblocking(newsock);
+
+		    debug_printf("Relay: Client %d new from %s:%hd\n", newsock,
+				 inet_ntoa(client.sin_addr), ntohs(client.sin_port));
+
+		    // Socket is new and its buffer had better have room to hold the entire HTTP header!
+		    good = FALSE;
+		    if (swallow_receive(newsock) == 0)
+		    {
+			ret = send(newsock, m_http_header, strlen(m_http_header), 0);
+			if (ret == strlen(m_http_header))
 			{
-				newsock = accept(m_listensock, (struct sockaddr *)&client, &iAddrSize);
-				if (newsock != SOCKET_ERROR)
-				{
-					// Got successful accept
-					make_nonblocking(newsock);
-
-					debug_printf("Relay: Client %d new from %s:%hd\n", newsock,
-					 inet_ntoa(client.sin_addr), ntohs(client.sin_port));
-
-					// Socket is new and its buffer had better have room to hold the entire HTTP header!
-					good = FALSE;
-					if (swallow_receive(newsock) == 0)
-					{
-						ret = send(newsock, m_http_header, strlen(m_http_header), 0);
-						if (ret == strlen(m_http_header))
-						{
-							newhostsock = malloc(sizeof(*newhostsock));
-							if (newhostsock != NULL)
-							{
-								// Add new client to list (headfirst)
-								threadlib_waitfor_sem(&m_sem_listlock);
-								newhostsock->m_hostsock = newsock;
-								newhostsock->m_next = m_hostsocklist;
-								m_hostsocklist = newhostsock;
-								threadlib_signel_sem(&m_sem_listlock);
+			    newhostsock = malloc(sizeof(*newhostsock));
+			    if (newhostsock != NULL)
+			    {
+				// Add new client to list (headfirst)
+				threadlib_waitfor_sem(&m_sem_listlock);
+				newhostsock->m_hostsock = newsock;
+				newhostsock->m_next = m_hostsocklist;
+				m_hostsocklist = newhostsock;
+				threadlib_signel_sem(&m_sem_listlock);
 								
-								good = TRUE;
-							}
-						}
-					}
+				good = TRUE;
+			    }
+			}
+		    }
 
-					if (!good)
-					{
-						closesocket(newsock);
-						debug_printf("Relay: Client %d disconnected (Unable to receive HTTP header)\n", newsock);
-					}
-				}
-			}
-			else if (ret == SOCKET_ERROR)
-			{
-				// Something went wrong with select
-				break;
-			}
+		    if (!good)
+		    {
+			closesocket(newsock);
+			debug_printf("Relay: Client %d disconnected (Unable to receive HTTP header)\n", newsock);
+		    }
 		}
-
-			threadlib_signel_sem(&m_sem_not_connected);	// go back to accept
+	    }
+	    else if (ret == SOCKET_ERROR)
+	    {
+		// Something went wrong with select
+		break;
+	    }
 	}
-	m_running = FALSE;
+
+	threadlib_signel_sem(&m_sem_not_connected);	// go back to accept
+    }
+    m_running = FALSE;
 }
 
 // this function will be called for us, if we're connected then we send 
@@ -411,83 +412,83 @@ void thread_accept(void *notused)
 error_code
 relaylib_send(char *data, int len)
 {
-	struct hostsocklist_t *prev;
-	struct hostsocklist_t *ptr;
-	struct hostsocklist_t *next;
-	int sock;
-	int ret;
-	BOOL good;
-	error_code err = SR_SUCCESS;
+    struct hostsocklist_t *prev;
+    struct hostsocklist_t *ptr;
+    struct hostsocklist_t *next;
+    int sock;
+    int ret;
+    BOOL good;
+    error_code err = SR_SUCCESS;
 
-	threadlib_waitfor_sem(&m_sem_listlock);
-	ptr = m_hostsocklist;
-	if (ptr != NULL)
+    threadlib_waitfor_sem(&m_sem_listlock);
+    ptr = m_hostsocklist;
+    if (ptr != NULL)
+    {
+	prev = NULL;
+	while(ptr != NULL)
 	{
-		prev = NULL;
-		while(ptr != NULL)
+	    sock = ptr->m_hostsock;
+	    next = ptr->m_next;
+	    good = TRUE;
+
+	    // Replicate the same data to each socket
+	    // If client too slow to receive our data, too bad, data will be dropped (but client will be allowed to remain connected)
+	    if (swallow_receive(sock) != 0)
+	    {
+		good = FALSE;
+	    }
+	    else
+	    {
+		ret = send(sock, data, len, 0);
+		if (ret == SOCKET_ERROR)
 		{
-			sock = ptr->m_hostsock;
-			next = ptr->m_next;
-			good = TRUE;
-
-			// Replicate the same data to each socket
-			// If client too slow to receive our data, too bad, data will be dropped (but client will be allowed to remain connected)
-			if (swallow_receive(sock) != 0)
-			{
-				good = FALSE;
-			}
-			else
-			{
-				ret = send(sock, data, len, 0);
-				if (ret == SOCKET_ERROR)
-				{
-					if (errno != EWOULDBLOCK)
-					{
-						good = FALSE;
-					}
-					else
-					{
-						debug_printf("Relay: Client %d too slow (dropped %d bytes)\n", sock, len);
-					}
-				}
-				else if (ret < len)
-				{
-					debug_printf("Relay: Client %d too slow (dropped %d of %d bytes)\n", sock, (len - ret), len);
-				}
-			}
-			
-			if (!good)
-			{
-				debug_printf("Relay: Client %d disconnected (%s)\n", sock, strerror(errno));
-				closesocket(sock);
-				
-				// Carefully delete this client from list without affecting list order
-				if (prev != NULL)
-				{
-					prev->m_next = next;
-				}
-				else
-				{
-					m_hostsocklist = next;
-				}
-				free(ptr);
-				ptr = NULL;
-			}
-			
-			if (ptr != NULL)
-			{
-				prev = ptr;
-			}
-			ptr = next;
+		    if (errno != EWOULDBLOCK)
+		    {
+			good = FALSE;
+		    }
+		    else
+		    {
+			debug_printf("Relay: Client %d too slow (dropped %d bytes)\n", sock, len);
+		    }
 		}
+		else if (ret < len)
+		{
+		    debug_printf("Relay: Client %d too slow (dropped %d of %d bytes)\n", sock, (len - ret), len);
+		}
+	    }
+			
+	    if (!good)
+	    {
+		debug_printf("Relay: Client %d disconnected (%s)\n", sock, strerror(errno));
+		closesocket(sock);
+				
+		// Carefully delete this client from list without affecting list order
+		if (prev != NULL)
+		{
+		    prev->m_next = next;
+		}
+		else
+		{
+		    m_hostsocklist = next;
+		}
+		free(ptr);
+		ptr = NULL;
+	    }
+			
+	    if (ptr != NULL)
+	    {
+		prev = ptr;
+	    }
+	    ptr = next;
 	}
-	else
-	{
-		err = SR_ERROR_HOST_NOT_CONNECTED;
-	}
-	threadlib_signel_sem(&m_sem_listlock);
+    }
+    else
+    {
+	err = SR_ERROR_HOST_NOT_CONNECTED;
+    }
+    threadlib_signel_sem(&m_sem_listlock);
 
-	return err;
+    return err;
 }
 
 error_code
@@ -502,9 +503,9 @@ relay_send_meta_data(char *track)
     char *bufptr;
     int buflen = 0;
 
-	// Default to sending zero metadata if any errors occur
-	buf[0] = 0;
-	buflen = 1;
+    // Default to sending zero metadata if any errors occur
+    buf[0] = 0;
+    buflen = 1;
 
     if (!track || !*track) {
     	return relaylib_send(buf, 1);
@@ -515,7 +516,7 @@ relay_send_meta_data(char *track)
     meta_len = track_len+header_len+footer_len;
     chunks = 1 + (meta_len-1) / 16;
     /* GCS the following test is because c is assumed unsigned when read 
-	(see above code) */
+       (see above code) */
     if (chunks > 127) {
     	return relaylib_send(buf, 1);
     }
@@ -523,25 +524,25 @@ relay_send_meta_data(char *track)
     c = chunks;
     extra_len = c*16 - meta_len;
 
-	buflen = 1 + header_len + track_len + footer_len + extra_len;
-	bufptr = buf;
-	if (buflen > BUFSIZE)
-	{
-		// Avoid buffer overflow by just sending zero metadata instead
-		debug_printf("Relay: Metadata overflow (%d bytes)\n", buflen);
-		return relaylib_send(buf, 1);
-	}
+    buflen = 1 + header_len + track_len + footer_len + extra_len;
+    bufptr = buf;
+    if (buflen > BUFSIZE)
+    {
+	// Avoid buffer overflow by just sending zero metadata instead
+	debug_printf("Relay: Metadata overflow (%d bytes)\n", buflen);
+	return relaylib_send(buf, 1);
+    }
 	
-	memcpy(bufptr, &c, 1);
-	bufptr += 1;
-	memcpy(bufptr, header, header_len);
-	bufptr += header_len;
-	memcpy(bufptr, track, track_len);
-	bufptr += track_len;
-	memcpy(bufptr, footer, footer_len);
-	bufptr += footer_len;
-	memcpy(bufptr, zerobuf, extra_len);
-	bufptr += extra_len;
+    memcpy(bufptr, &c, 1);
+    bufptr += 1;
+    memcpy(bufptr, header, header_len);
+    bufptr += header_len;
+    memcpy(bufptr, track, track_len);
+    bufptr += track_len;
+    memcpy(bufptr, footer, footer_len);
+    bufptr += footer_len;
+    memcpy(bufptr, zerobuf, extra_len);
+    bufptr += extra_len;
 	
-	return relaylib_send(buf, buflen);
+    return relaylib_send(buf, buflen);
 }

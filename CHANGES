@@ -1,4 +1,18 @@
 
+New for 1.60.9
+--------------
+* Apply Josh Lehan's patch:
+-  Multiple relay streams
+-  Fix wandering port problem
+-  New flag "-m" for auto-closing connection
+-  New flag "-k" to avoid saving broken songs after connect
+* Add debug information for frameoffset == READSIZE problem
+
+New for 1.60.8
+--------------
+* Fix a bug which caused the -d flag to fail on unix.
+* New flag "--debug" to turn on debugging
+
 New for 1.60.7
 --------------
 Mon May 17 00:09:40 EDT 2004 (GCS)

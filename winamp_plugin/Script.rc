@@ -121,8 +121,8 @@ BEGIN
     EDITTEXT        IDC_XS_PADDING_PRE,48,92,32,15,ES_AUTOHSCROLL
     EDITTEXT        IDC_XS_PADDING_POST,152,92,32,15,ES_AUTOHSCROLL
     LTEXT           "Offset:",IDC_STATIC,16,22,20,8
-    LTEXT           "Note: all times are in milliseconds (ms)",IDC_STATIC,44,
-                    125,115,8
+    LTEXT           "All times are in milliseconds (ms)",IDC_STATIC,54,131,
+                    98,8
     LTEXT           "Pre:",IDC_STATIC,23,53,13,8
     GROUPBOX        "Padding",IDC_STATIC,7,81,196,35
     LTEXT           "Post:",IDC_STATIC,126,53,16,8
@@ -130,6 +130,8 @@ BEGIN
     GROUPBOX        "Search Window",IDC_STATIC,7,3,196,72
     LTEXT           "Pre:",IDC_STATIC,23,96,13,8
     LTEXT           "Post:",IDC_STATIC,126,96,16,8
+    LTEXT           "Disconnect and reconnect to apply changes",IDC_STATIC,
+                    36,120,132,8
 END
 
 
