@@ -1,5 +1,6 @@
 New for 1.61.5
 --------------
+Sat 03-26-2005
 * Add -A flag: suppress individual files
 * Add --quiet flag: no ripping status sent to console
 * Fix bug #1108854, windows directory ending in periods
