@@ -232,7 +232,7 @@ get_default_codeset (void)
 }
 
 void
-initialize_default_locale (void)
+initialize_default_locale (CODESET_OPTIONS* cs_opt)
 {
     const char* fromcode = 0;
     setlocale (LC_ALL, "");
@@ -260,6 +260,12 @@ initialize_default_locale (void)
 	set_codeset ("CODESET_ALL", fromcode);
     } else {
 	set_codeset ("CODESET_ALL", 0);
+    }
+
+    /* Override from command line if requested */
+    if (!cs_opt) return;
+    if (cs_opt->codeset) {
+	set_codeset ("CODESET_ALL", cs_opt->codeset);
     }
 }
 

@@ -14,7 +14,7 @@ char *add_trailing_slash(char *str);
 void trim(char *str);
 void null_printf(char *str, ...);
 int dir_max_filename_length (char* dirname);
-void initialize_default_locale (void);
+void initialize_default_locale (CODESET_OPTIONS* cs_opt);
 void set_codeset (char* codeset_type, const char* codeset);
 
 #endif //__UTIL_H__

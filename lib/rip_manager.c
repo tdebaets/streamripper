@@ -627,7 +627,7 @@ rip_manager_start(void (*status_callback)(int message, void *data),
 
 	m_ripping = TRUE;
 
-	initialize_default_locale();
+	initialize_default_locale(&options->cs_opt);
 
 	if (!options)
 		return SR_ERROR_INVALID_PARAM;
@@ -686,4 +686,7 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
     m_opt->sp_opt.xs_offset = 0;
     m_opt->sp_opt.xs_padding_1 = 300;
     m_opt->sp_opt.xs_padding_2 = 300;
+
+    // Defaults for codeset
+    memset (&m_opt->cs_opt, 0, sizeof(CODESET_OPTIONS));
 }

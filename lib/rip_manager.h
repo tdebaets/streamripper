@@ -105,6 +105,7 @@ typedef struct RIP_MANAGER_OPTIONSst
     SPLITPOINT_OPTIONS sp_opt;		// More options concerning splitpoint rules
     int timeout;			// timeout, in seconds, before a stalled connection is forcefully closed
     int dropcount;			// number of tracks at beginning of connection to always ignore
+    CODESET_OPTIONS cs_opt;             // which codeset should i use?
 } RIP_MANAGER_OPTIONS;
 
 typedef struct ERROR_INFOst

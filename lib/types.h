@@ -101,6 +101,16 @@ typedef struct SPLITPOINT_OPTIONSst
 } SPLITPOINT_OPTIONS;
 
 
+/* 
+ * CODESET_OPTIONS are the options used to decide how to parse
+ * and convert the metadata
+ */
+typedef struct CODESET_OPTIONSst
+{
+    char* codeset;
+} CODESET_OPTIONS;
+
+
 ////////////////////////////////////////////////
 // StreamRipper Codes
 ////////////////////////////////////////////////

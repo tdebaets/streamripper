@@ -432,6 +432,14 @@ parse_extended_options (char* rule)
 	return;
     }
 
+    /* codeset options */
+    x = strlen("codeset=");
+    if (!strncmp(rule,"codeset=",x)) {
+	m_opt.cs_opt.codeset = &rule[x];
+	printf ("Setting codeset to %s\n",m_opt.cs_opt.codeset);
+	return;
+    }
+
     /* All rules failed */
     fprintf (stderr, "Can't parse command option: --%s\n", rule);
     exit (-1);
@@ -440,8 +448,11 @@ parse_extended_options (char* rule)
 static void
 verify_splitpoint_rules (void)
 {
-    /* I think I got most of them... */
+#if defined (commentout)
+    /* This is still not complete, but the warning causes people to 
+       wonder what is going on. */
     fprintf (stderr, "Warning: splitpoint sanity check not yet complete.\n");
+#endif
     
     /* xs_silence_length must be non-negative and divisible by two */
     if (m_opt.sp_opt.xs_silence_length < 0) {
