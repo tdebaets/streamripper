@@ -394,7 +394,6 @@ filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath)
     char tfile[TEMP_STR_LEN];
 
     trim_filename(filename, tfile);
-
     close_file (&m_file);
 
     // Make new paths for the old path and new

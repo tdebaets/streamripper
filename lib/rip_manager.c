@@ -245,11 +245,12 @@ rip_manager_start_track (TRACK_INFO* ti, int track_count)
  * the first track is *never* complete.
  */
 error_code
-rip_manager_end_track(char *trackname)
+rip_manager_end_track(TRACK_INFO* ti)
 {
     char fullpath[SR_MAX_PATH];
 
-    filelib_end(trackname, GET_OVER_WRITE_TRACKS(m_options.flags), fullpath);
+    /* GCS FIX */
+    filelib_end(ti->raw_metadata, GET_OVER_WRITE_TRACKS(m_options.flags), fullpath);
     post_status(0);
     m_status_callback(RM_TRACK_DONE, (void*)fullpath);
 

@@ -43,8 +43,7 @@
  * Private functions
  *********************************************************************************/
 static error_code find_sep (u_long *pos1, u_long *pos2);
-static error_code end_track(u_long pos1, u_long pos2, char *trackname);
-//static error_code start_track(char *trackname);
+static error_code end_track(u_long pos1, u_long pos2, TRACK_INFO* ti);
 static error_code start_track (TRACK_INFO* ti);
 
 static void compute_cbuffer_size (SPLITPOINT_OPTIONS *sp_opt,
@@ -206,6 +205,16 @@ is_no_meta_track()
 }
 #endif
 
+static void
+copy_track_info (TRACK_INFO* dest, TRACK_INFO* src)
+{
+    dest->have_track_info = src->have_track_info;
+    strcpy (dest->raw_metadata, src->raw_metadata);
+    strcpy (dest->artist, src->artist);
+    strcpy (dest->title, src->title);
+    strcpy (dest->album, src->album);
+}
+
 error_code
 ripstream_rip()
 {
@@ -220,6 +229,7 @@ ripstream_rip()
 #if defined (commentout)
 	strcpy(m_last_track, m_current_track);
 #endif
+	copy_track_info (&m_last_track, &m_current_track);
 	strcpy(m_last_track.raw_metadata, m_current_track.raw_metadata);
     }
 
@@ -337,7 +347,7 @@ ripstream_rip()
 	}
 
 	/* Write out previous track */
-	ret = end_track(pos1, pos2, m_last_track.raw_metadata);
+	ret = end_track(pos1, pos2, &m_last_track);
 	if (ret != SR_SUCCESS)
 	    real_ret = ret;
         m_cue_sheet_bytes += pos2;
@@ -443,7 +453,67 @@ find_sep (u_long *pos1, u_long *pos2)
 }
 
 error_code
-end_track(u_long pos1, u_long pos2, char *trackname)
+end_track(u_long pos1, u_long pos2, TRACK_INFO* ti)
+{
+    // pos1 is end of prev track
+    // pos2 is beginning of next track
+    int ret;
+
+    // I think pos can be zero if the silence is right at the beginning
+    // i.e. it is a bug in s.r.
+    u_char *buf = (u_char *)malloc(pos1);
+
+    // pos1 is end of prev track
+    // pos2 is beginning of next track
+
+    // First, dump the part only in prev track
+    if (pos1 <= pos2) {
+	if ((ret = cbuffer_extract(&m_cbuffer, buf, pos1)) != SR_SUCCESS)
+	    goto BAIL;
+	// Next, skip past portion not in either track
+	if (pos1 < pos2) {
+	    if ((ret = cbuffer_fastforward(&m_cbuffer, pos2-pos1)) != SR_SUCCESS)
+		goto BAIL;
+	}
+    } else {
+	if ((ret = cbuffer_extract(&m_cbuffer, buf, pos2)) != SR_SUCCESS)
+	    goto BAIL;
+	// Next, grab, but don't skip, past portion in both tracks
+	if ((ret = cbuffer_peek(&m_cbuffer, buf+pos2, pos1-pos2)) != SR_SUCCESS)
+	    goto BAIL;
+    }
+
+    // Write that out to the current file
+    if ((ret = rip_manager_put_data(buf, pos1)) != SR_SUCCESS)
+	goto BAIL;
+
+    if (m_addID3tag) {
+	ID3Tag id3;
+	memset(&id3, '\000',sizeof(id3));
+	strncpy(id3.tag, "TAG", strlen("TAG"));
+	strncpy(id3.artist, ti->artist, sizeof(id3.artist));
+	strncpy(id3.songtitle, ti->title, sizeof(id3.songtitle));
+	strncpy(id3.album, ti->album, sizeof(id3.album));
+	if ((ret = rip_manager_put_data((char *)&id3, sizeof(id3))) != SR_SUCCESS)
+	    goto BAIL;
+    }
+
+    // Only save this track if we've skipped over enough cruft 
+    // at the beginning of the stream
+    debug_printf("Current track number %d (skipping if %d or less)\n", 
+		 m_track_count, m_drop_count);
+    if (m_track_count > m_drop_count)
+	if ((ret = rip_manager_end_track(ti)) != SR_SUCCESS)
+	    goto BAIL;
+
+ BAIL:
+    free(buf);
+    return ret;
+}
+
+#if defined (commentout)
+error_code
+end_track(u_long pos1, u_long pos2, TRACK_INFO* ti)
 {
     // pos1 is end of prev track
     // pos2 is beginning of next track
@@ -520,6 +590,7 @@ end_track(u_long pos1, u_long pos2, char *trackname)
     free(buf);
     return ret;
 }
+#endif
 
 error_code
 start_track (TRACK_INFO* ti)

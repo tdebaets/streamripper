@@ -708,16 +708,29 @@ sr_strncpy(char* dst, char* src, int n)
 
 struct parse_rule {
     int flags;
+    int artist_idx;
+    int title_idx;
+    int album_idx;
     char* rule;
 };
 typedef struct parse_rule Parse_Rule;
 
 Parse_Rule default_rule_list[] = {
-    { 0x01, "^A suivre:" },
-    { 0x02 | 0x08, "(.*?)[[:space:]]*-?[[:space:]]*mp3pro" },
-    { 0x04, "^[[:space:]]*([^-]*?)[[:space:]]*-[[:space:]]*(.*?)[[:space:]]*$" },
-    { 0x00, 0 }
+    { 0x01, 0, 0, 0, "^A suivre:" },
+    { 0x02 | 0x08, 0, 0, 0, "(.*?)[[:space:]]*-?[[:space:]]*mp3pro" },
+    { 0x04, 1, 2, 0, "^[[:space:]]*([^-]*?)[[:space:]]*-[[:space:]]*(.*?)[[:space:]]*$" },
+    { 0x00, 0, 0, 0, 0 }
 };
+
+static void
+copy_rule_result (char* dest, char* query_string, regmatch_t* pmatch, int idx)
+{
+    if (idx > 0 && idx < 4) {
+	sr_strncpy(dest, query_string + pmatch[idx].rm_so,
+	    pmatch[idx].rm_eo - pmatch[idx].rm_so);
+    }
+}
+
 
 void
 parse_metadata (TRACK_INFO* ti)
@@ -742,7 +755,7 @@ parse_metadata (TRACK_INFO* ti)
        regular expressions. */
     strcpy (query_string, ti->raw_metadata);
     for (rulep = default_rule_list; rulep->rule; rulep++) {
-	regmatch_t pmatch[3];
+	regmatch_t pmatch[4];
 
 	cflags = REG_EXTENDED;
 	if (rulep->flags & PARSERULE_ICASE) {
@@ -780,8 +793,9 @@ parse_metadata (TRACK_INFO* ti)
 		/* Didn't match rule. */
 		continue;
 	    }
-	    sr_strncpy(ti->artist, query_string + pmatch[1].rm_so, pmatch[1].rm_eo - pmatch[1].rm_so);
-	    sr_strncpy(ti->title, query_string + pmatch[2].rm_so, pmatch[2].rm_eo - pmatch[2].rm_so);
+	    copy_rule_result (ti->artist, query_string, pmatch, rulep->artist_idx);
+	    copy_rule_result (ti->title, query_string, pmatch, rulep->title_idx);
+	    copy_rule_result (ti->album, query_string, pmatch, rulep->album_idx);
 	    ti->have_track_info = 1;
 	    return;
 	}
