@@ -1,18 +1,24 @@
-New for 1.60
-------------
-* track splitting enhancements
-* multibyte character support
-* fix crashes on very long file names
-* luria's patch for relay to multiple clients
-* ejViNjdbkcg='s patch for improved authentication
-  (already applied - see below)
-* BeyondLogic's patch for overwriting incomplete files
+
+New for 1.60-pre2
+-----------------
+2004/03/24 (GCS - gregsharp@users.sourceforge.net)
+* Add Johannes Buettner's drop patch
+* Fixes for compiling winamp 2 plugin
+
+New for 1.60-pre1
+-----------------
+2004/03/10 (GCS - gregsharp@users.sourceforge.net)
+* Track splitting enhancements - see readme_xfade.txt
+* Partial multibyte character support
+* Fix crashes on very long file names
+* Fix crashes on control characters in meta data
+* New flag "-t" to prevent overwriting files in the incomplete directory
 
 new in cvs
 ----------
-
 2003/09/25:
-* Added support for HTTP "Basic" authorization. Works with DigitallyImported.com.
+* Added support for HTTP "Basic" authorization. Works with
+  DigitallyImported.com.
   (lib/types.h, lib/http.c) -Colin D. Bennett <cbennett@radsoft.com>
 * Fixed a couple of tiny memory leaks in the usage of b64enc(), the
   returned buffer allocated as 'string' in b64enc wasn't being freed,
@@ -22,7 +28,6 @@ new in cvs
 
 new in 1.30b (win32 & nix)
 --------------
-
 * Added option to never overwrite files in the incomplete directory
 * UserAgent fix for picky streams (fakes winamp)
 * Fix for "INVALID_TRACK_SEPARATION" message.
