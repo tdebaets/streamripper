@@ -35,7 +35,7 @@ DECL_ERROR_DESC(CTrackSplitter_InvalidFilePosition,	"Invalid file position")
 struct ITrackSplitterEvents
 {
 	virtual void OnNewTrack(const char* trackname, long start, long end) = 0;
-	virtual void OnDataRead(long bytepos) = 0;
+	virtual void OnDataRead(long bytepos) {}	// optional
 };
 
 class CTrackSplitter : public IDecodeHandler
