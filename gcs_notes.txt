@@ -1,13 +1,31 @@
 Greg's notes
 -----------------------------------------
+
 * More problems
 ~~~~~~~~~~~~~~~
-Still have file length too long:
-http://66.54.65.166:8026
-
 Bitrate = 0 stuff:
 http://www.mperia.com:8000/content/1569.mp3
 
+* MP3 utilities
+~~~~~~~~~~~~~~~
+MP3TRIM
+~~~~~~~
+http://www.logiccell.com/~mp3trim/
+(win only - did not seem to fix/detect prob)
+
+ENCSPOT
+~~~~~~~
+http://www.guerillasoft.nstemp.com/EncSpot2/download.html
+(win only - did not seem to fix/detect prob)
+
+DR TAG/MP3 Repair Tool
+~~~~~~~~~~~~~~~~~~~~~~
+http://www.drtag.de/en/description_mp3rt.htm
+(win only - did seem to fix/detect prob)
+
+mp3_check
+~~~~~~~~~
+(unix command line/see freshmeat)
 
 * The dependencies for version 1.54
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -61,7 +79,6 @@ File Type: EXECUTABLE IMAGE
     KERNEL32.dll
     WS2_32.dll
 
-
 -----------------------------------------
 How to tag a new version (e.g. for version 1.60)
 
@@ -70,6 +87,7 @@ How to tag a new version (e.g. for version 1.60)
 -----------------------------------------
 How to revise libmad
 
+~~~~~~~
 First, match the auto* versions used by libmad.  For libmad-0.15.1b, 
 this is :
 
