@@ -161,7 +161,18 @@ void close_files()
 
 BOOL file_exists(char *filename)
 {
+#if defined (commentout)
     FHANDLE f = OpenFile(filename);
+#endif
+    FHANDLE f;
+
+#if defined (WIN32)
+    f = CreateFile (filename, GENERIC_READ,
+	    FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+	    FILE_ATTRIBUTE_NORMAL, NULL);
+#else
+    f = open(filename, O_RDONLY);
+#endif
 
     if (f == INVALID_FHANDLE) {
 	return FALSE;
