@@ -55,13 +55,14 @@ static int ms_to_bytes (int ms, int bitrate);
 static CBUFFER			m_cbuffer;
 static IO_GET_STREAM	*m_in;
 static IO_PUT_STREAM	*m_out;
-static char				m_last_track[MAX_TRACK_LEN] = {'\0'};
-static char				m_current_track[MAX_TRACK_LEN] = {'\0'};
-static char				m_no_meta_name[MAX_TRACK_LEN] = {'\0'};
-static char				*m_getbuffer = NULL;
-static int				m_find_silence = -1;
-static BOOL				m_on_first_track = TRUE;
-static BOOL				m_addID3tag = TRUE;
+static char			m_last_track[MAX_TRACK_LEN] = {'\0'};
+static char			m_current_track[MAX_TRACK_LEN] = {'\0'};
+static char			m_no_meta_name[MAX_TRACK_LEN] = {'\0'};
+static char			*m_getbuffer = NULL;
+static int			m_find_silence = -1;
+static BOOL			m_on_first_track = TRUE;
+static BOOL			m_addID3tag = TRUE;
+static char                     m_drop_string[MAX_DROPSTRING_LEN]={'\0'};
 static SPLITPOINT_OPTIONS	*m_sp_opt;
 static int			m_bitrate;
 static int			m_meta_interval;
@@ -104,7 +105,8 @@ typedef struct ID3V2framest {
 
 error_code
 ripstream_init (IO_GET_STREAM *in, IO_PUT_STREAM *out, char *no_meta_name, 
-		SPLITPOINT_OPTIONS *sp_opt, int bitrate, BOOL addID3tag)
+		char *drop_string, SPLITPOINT_OPTIONS *sp_opt, 
+		int bitrate, BOOL addID3tag)
 {
     if (!in || !out || !sp_opt || !no_meta_name) {
 	printf ("Error: invalid ripstream parameters\n");
@@ -117,6 +119,7 @@ ripstream_init (IO_GET_STREAM *in, IO_PUT_STREAM *out, char *no_meta_name,
     m_on_first_track = TRUE;
     m_addID3tag = addID3tag;
     strcpy(m_no_meta_name, no_meta_name);
+    strcpy(m_drop_string, drop_string);
     m_bitrate = bitrate;
     m_meta_interval = in->getsize;
 
@@ -155,7 +158,13 @@ BOOL is_track_changed()
 #if defined (commentout)
     printf ("   <>%s\n   >>%s\n",m_last_track, m_current_track);
 #endif
-	return strcmp(m_last_track, m_current_track) != 0 && *m_last_track;
+
+    if (strstr(m_current_track,m_drop_string) && *m_drop_string) {
+	strcpy(m_current_track,m_last_track);
+	return 0;
+    }
+
+    return strcmp(m_last_track, m_current_track) != 0 && *m_last_track;
 }
 
 BOOL is_no_meta_track()

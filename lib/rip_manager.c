@@ -685,16 +685,13 @@ error_code start_ripping()
 	 * it's sending it to
 	 */
 	ripstream_destroy();
-#if defined (commentout)
-	if ((ret = ripstream_init(mult, &m_ripin, &m_ripout, m_info.icy_name, 
-		GET_ADD_ID3(m_options.flags),GET_PAD_SONGS(m_options.flags))) != SR_SUCCESS)
-#endif
-	if ((ret = ripstream_init(&m_ripin, &m_ripout, 
-		m_info.icy_name, &m_options.sp_opt, 
-		m_ripinfo.bitrate, GET_ADD_ID3(m_options.flags))) != SR_SUCCESS)
-	{
-		ripstream_destroy();
-		goto RETURN_ERR;
+	ret = ripstream_init(&m_ripin, &m_ripout, 
+			     m_info.icy_name, m_options.dropstring,
+			     &m_options.sp_opt, m_ripinfo.bitrate, 
+			     GET_ADD_ID3(m_options.flags));
+	if (ret != SR_SUCCESS) {
+	    ripstream_destroy();
+	    goto RETURN_ERR;
 	}
 
 	/*

@@ -233,6 +233,7 @@ void print_usage()
         fprintf(stderr, "        -q             - add sequence number to output file\n");
         fprintf(stderr, "        -i             - dont add ID3V1 Tags to output file\n");
         fprintf(stderr, "        -u <useragent> - Use a different UserAgent then \"Streamripper\"\n");
+        fprintf(stderr, "        -f <dstring>   - Don't create new track if metainfo contains <dstring>\n");
         fprintf(stderr, "        --x            - Invoke splitpoint detection rules\n");
 }
 
@@ -349,6 +350,10 @@ void parse_arguments(int argc, char **argv)
 	case 'u':
 	    i++;
 	    strncpy(m_opt.useragent, argv[i], MAX_USERAGENT_STR);
+	    break;
+	case 'f':
+	    i++;
+	    strncpy(m_opt.dropstring, argv[i], MAX_DROPSTRING_LEN);
 	    break;
 	}
     }

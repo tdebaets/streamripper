@@ -101,6 +101,7 @@ typedef struct RIP_MANAGER_OPTIONSst
 	u_long	maxMB_rip_size;						// max number of megabytes that can by writen out before we stop
 	u_short	flags;								// all booleans logically OR'd together (see above)
 	char	useragent[MAX_USERAGENT_STR];		// optional, use a different useragent
+	char	dropstring[MAX_DROPSTRING_LEN];      //optional dropstring to be searched in metainfo;if found: metainfo dropped
 	SPLITPOINT_OPTIONS sp_opt;
 } RIP_MANAGER_OPTIONS;
 
