@@ -163,6 +163,7 @@ Content-Type: audio/mpeg
 2)  lib/rip_manager.h
 3)  winamp_plugin/sr2x.nsi
 4)  makedist_win.bat
+5)  streamripper.1.asc
 
 * Generated files
 ~~~~~~~~~~~~~~~~~
