@@ -264,12 +264,6 @@ error_code put_data(char *buf, int size)
 
    But "for now", I've hacked it to do better truncation at least in this 
    limited circumstance: ASCII streams with MAX_PATH == NAME_MAX.
-
-   In particular, the -d flag now overrides the name of the stream instead
-   of giving the base directory.
-
-   Actually, now -d is required (failure to do so will dump the mp3's into
-   the current directory.  Need to debug things better.
 */
 int
 set_output_directory()
@@ -805,6 +799,7 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
     strcpy(m_opt->output_directory, "./");
     m_opt->proxyurl[0] = (char)NULL;
     m_opt->url[0] = '\0';
+    m_opt->output_file[0] = 0;
     strcpy(m_opt->useragent, "sr-POSIX/" SRVERSION);
 
     // Defaults for splitpoint

@@ -35,8 +35,8 @@ typedef struct RIP_MANAGER_INFOst
 {
 	char	streamname[MAX_STREAMNAME_LEN];
 	char	server_name[MAX_SERVER_LEN];
-	int		bitrate;
-	int		meta_interval;
+	int	bitrate;
+	int	meta_interval;
 	char	filename[MAX_FILENAME_LEN];		// JCBUG -- it's not the filename, it's the trackname
 	u_long	filesize;
 	int	status;
@@ -44,19 +44,17 @@ typedef struct RIP_MANAGER_INFOst
 
 // Use to set and get the flags
 
-#define OPT_AUTO_RECONNECT		0x00000001		// reconnect automatticly if dropped
-#define OPT_SEPERATE_DIRS		0x00000002		// create a directory named after the server
+#define OPT_AUTO_RECONNECT	0x00000001		// reconnect automatticly if dropped
+#define OPT_SEPERATE_DIRS	0x00000002		// create a directory named after the server
 #define OPT_OVER_WRITE_TRACKS	0x00000004		// should files in the complete directory be overwritten
-#define OPT_SEARCH_PORTS		0x00000008		// relay server should search for a open port
-#define OPT_MAKE_RELAY			0x00000010		// don't make a relay server
-#define OPT_COUNT_FILES			0x00000020		// add a index counter to the filenames
-#define OPT_ADD_ID3				0x00000040		// add ID3 info to the mp3s (thanks oddsock)
-#define OPT_DATE_STAMP			0x00000100		// add a date stamp to the output directory
-#define OPT_CHECK_MAX_BYTES		0x00000200		// use the maxMB_rip_size value to know how much to rip
-#define OPT_KEEP_INCOMPLETE		0x00000400		// overwrite files in the incomplete directory, add counter instead
-#if defined (commentout)
-#define OPT_PAD_SONGS			0x00000800		// don't use silence splitting, instead include cross-fading region in both files
-#endif
+#define OPT_SEARCH_PORTS	0x00000008		// relay server should search for a open port
+#define OPT_MAKE_RELAY		0x00000010		// don't make a relay server
+#define OPT_COUNT_FILES		0x00000020		// add a index counter to the filenames
+#define OPT_ADD_ID3		0x00000040		// add ID3 info to the mp3s (thanks oddsock)
+#define OPT_DATE_STAMP		0x00000100		// add a date stamp to the output directory
+#define OPT_CHECK_MAX_BYTES	0x00000200		// use the maxMB_rip_size value to know how much to rip
+#define OPT_KEEP_INCOMPLETE	0x00000400		// overwrite files in the incomplete directory, add counter instead
+#define OPT_SINGLE_FILE_OUTPUT	0x00000800		// enable ripping to single file
 
 //
 // Helper macros for checking options
@@ -95,15 +93,16 @@ typedef struct RIP_MANAGER_INFOst
 
 typedef struct RIP_MANAGER_OPTIONSst
 {
-	char	url[MAX_URL_LEN];					// url of the stream to connect to
-	char	proxyurl[MAX_URL_LEN];				// url of a http proxy server, '\0' otherwise
+	char	url[MAX_URL_LEN];			// url of the stream to connect to
+	char	proxyurl[MAX_URL_LEN];			// url of a http proxy server, '\0' otherwise
 	char	output_directory[MAX_PATH_LEN];		// base directory to output files too
-	int	relay_port;								// port to use for the relay server
-	u_short	max_port;							// highest port the relay server can look if it needs to search
-	u_long	maxMB_rip_size;						// max number of megabytes that can by writen out before we stop
-	u_short	flags;								// all booleans logically OR'd together (see above)
+	char	output_file[MAX_PATH_LEN];		// filename base when ripping without splitting
+	int	relay_port;				// port to use for the relay server
+	u_short	max_port;				// highest port the relay server can look if it needs to search
+	u_long	maxMB_rip_size;				// max number of megabytes that can by writen out before we stop
+	u_short	flags;					// all booleans logically OR'd together (see above)
 	char	useragent[MAX_USERAGENT_STR];		// optional, use a different useragent
-	char	dropstring[MAX_DROPSTRING_LEN];      //optional dropstring to be searched in metainfo;if found: metainfo dropped
+	char	dropstring[MAX_DROPSTRING_LEN];		// optional dropstring to be searched in metainfo;if found: metainfo dropped
 	SPLITPOINT_OPTIONS sp_opt;
 } RIP_MANAGER_OPTIONS;
 
