@@ -204,8 +204,6 @@ void search_for_silence(DECODE_STRUCT *ds, double vol)
 		if (pstracker->insilencecount > ds->samplerate)
 		{
 			pstracker->foundsil = TRUE;
-			printf("found silence at pos: %d with tol=%f\n", 
-						pstracker->silencestart, pstracker->silencevol);
 		}
 	}
 
