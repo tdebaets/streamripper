@@ -698,8 +698,10 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 
     strcat(filename, "Plugins\\sripper.ini");
 
+#if defined (commentout)
     opt->flags = 0;
     opt->flags |= OPT_SEARCH_PORTS;			// not having this caused a bad bug, must remember this.
+#endif
 
     GetPrivateProfileString(APPNAME, "url", "", opt->url, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "proxy", "", opt->proxyurl, MAX_INI_LINE_LEN, filename);
@@ -746,8 +748,11 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     if (guiOpt->oldpos.x < 0 || guiOpt->oldpos.y < 0)
 	guiOpt->oldpos.x = guiOpt->oldpos.y = 0;
 
+    /* GCS: Why zero this out? I can just keep defaults */
+#if defined (commentout)
     opt->flags = 0;
-    opt->flags |= OPT_SEARCH_PORTS;
+#endif
+    opt->flags |= OPT_SEARCH_PORTS;			// not having this caused a bad bug, must remember this.
     if (seperate_dirs) opt->flags |= OPT_SEPERATE_DIRS;
     if (auto_reconnect) opt->flags |= OPT_AUTO_RECONNECT;
     if (over_write_tracks) opt->flags |= OPT_OVER_WRITE_TRACKS;
