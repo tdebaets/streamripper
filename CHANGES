@@ -1,5 +1,6 @@
 New for 1.61.3
 --------------
+Sat 12-11-2004
 * Fix bug introduced in 1.61.2, whereby url referral (Location: header) 
   stopped working
 * Fix problem with using regular expressions to drop metadata

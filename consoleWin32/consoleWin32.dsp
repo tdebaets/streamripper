@@ -226,10 +226,6 @@ SOURCE=..\lib\types.h
 
 SOURCE=..\lib\util.c
 # End Source File
-# Begin Source File
-
-SOURCE=..\lib\util.h
-# End Source File
 # End Group
 # Begin Source File
 
@@ -246,6 +242,10 @@ SOURCE=..\makedist_win.bat
 # Begin Source File
 
 SOURCE=..\winamp_plugin\sr2x.nsi
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\util.h
 # End Source File
 # End Target
 # End Project
