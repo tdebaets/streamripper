@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <rip_manager.h>
 
 #if WIN32
 	#define vsnprintf _vsnprintf
@@ -81,6 +82,7 @@ debug_printf (char* fmt, ...)
     if (!initialized) {
 	initialized = 1;
 	fprintf (gcsfp, "=========================\n");
+	fprintf (gcsfp, "STREAMRIPPER " SRPLATFORM " " SRVERSION "\n");
     }
     vfprintf (gcsfp, fmt, argptr);
 #endif

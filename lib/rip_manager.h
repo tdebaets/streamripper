@@ -5,6 +5,12 @@
 
 #define SRVERSION	"1.60.11"
 
+#if defined (WIN32)
+#define SRPLATFORM      "windows"
+#else
+#define SRPLATFORM      "unix"
+#endif
+
 #define MAX_STATUS_LEN		256
 #define MAX_STREAMNAME_LEN	1024
 #define MAX_SERVER_LEN		1024
