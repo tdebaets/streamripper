@@ -60,7 +60,6 @@
  * Public functions
  *********************************************************************************/
 void            relaylib_shutdown();
-error_code      relaylib_set_response_header(char *http_header);
 error_code      relaylib_start();
 error_code      relaylib_send(char *data, int len);
 BOOL            relaylib_isrunning();

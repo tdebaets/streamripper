@@ -302,21 +302,29 @@ ripstream_rip()
 	return ret;
     }													
 
-    if (is_track_changed()) {
-	/* Set m_find_silence equal to the number of additional blocks 
-	   needed until we can do silence separation. */
-	debug_printf ("is_track_changed: m_find_silence = %d\n",
-		      m_find_silence);
-        relay_send_meta_data (m_current_track.raw_metadata);
-	if (m_find_silence < 0) {
-	    if (m_mi_to_cbuffer_end > 0) {
-		m_find_silence = m_mi_to_cbuffer_end;
-	    } else {
-		m_find_silence = 0;
+    /* Send meta-data & check track change.  Note, m_content_type 
+       isn't quite the best way to check.  Instead we should check 
+       if there is meta-data, but this information isn't available
+       in this routine without some code reorganization - GCS */
+    if (m_content_type == CONTENT_TYPE_MP3
+	|| m_content_type == CONTENT_TYPE_NSV
+	|| m_content_type == CONTENT_TYPE_AAC) {
+	if (is_track_changed()) {
+	    /* Set m_find_silence equal to the number of additional blocks 
+	       needed until we can do silence separation. */
+	    debug_printf ("is_track_changed: m_find_silence = %d\n",
+			  m_find_silence);
+	    relay_send_meta_data (m_current_track.raw_metadata);
+	    if (m_find_silence < 0) {
+		if (m_mi_to_cbuffer_end > 0) {
+		    m_find_silence = m_mi_to_cbuffer_end;
+		} else {
+		    m_find_silence = 0;
+		}
 	    }
+	} else {
+	    relay_send_meta_data (0);
 	}
-    } else {
-        relay_send_meta_data (0);
     }
 
     if (m_find_silence == 0) {

@@ -61,7 +61,7 @@ u_short			rip_mananger_get_relay_port();
  ******************************************************************************/
 static void			ripthread(void *bla);
 static int			myrecv(char* buffer, int size);
-static error_code		start_relay();
+static error_code		start_relay(int content_type);
 static void			post_status(int status);
 static int			set_output_directory();
 //static error_code		start_track(char *track);
@@ -307,7 +307,7 @@ set_output_directory()
  * call is about.
  */
 error_code
-start_relay()
+start_relay(int content_type)
 {	
     int ret;
     SR_HTTP_HEADER info = m_info;
@@ -317,6 +317,8 @@ start_relay()
 //    info.meta_interval = NO_META_INTERVAL;
     sprintf(temp_icyname, "[%s] %s", "relay stream", info.icy_name);
     strcpy(info.icy_name, temp_icyname);
+    info.content_type = content_type;
+
     if ((ret = httplib_construct_sc_response(&info, headbuf, MAX_HEADER_LEN)) != SR_SUCCESS)
 	return ret;
 
@@ -560,7 +562,7 @@ start_ripping()
 		goto RETURN_ERR;
 	}
 	m_options.relay_port = new_port;
-	start_relay();
+	start_relay(m_info.content_type);
     }
     post_status(RM_STATUS_BUFFERING);
     return SR_SUCCESS;

@@ -27,14 +27,6 @@
 
 
 /*********************************************************************************
- * Public functions
- *********************************************************************************/
-error_code	httplib_parse_url(const char *url, URLINFO *urlinfo);
-error_code	httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, char *useragent);
-error_code	httplib_construct_page_request(const char *url, BOOL proxyformat, char *buffer);
-error_code	httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size);
-
-/*********************************************************************************
  * Private functions
  *********************************************************************************/
 static char* make_auth_header(const char *header_name, 
@@ -407,16 +399,37 @@ httplib_parse_sc_header(const char *url, char *header, SR_HTTP_HEADER *info)
  * Constructs a HTTP response header from the SR_HTTP_HEADER struct, if data is null it is not 
  * added to the header
  */
-error_code httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size)
+error_code
+httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size)
 {
     char *buf = (char *)malloc(size);
+
+    char* test_header = 
+	"HTTP/1.0 200 OK\r\n"
+	"Content-Type: application/ogg\r\n"
+	"ice-audio-info: ice-samplerate=44100\r\n"
+	"ice-bitrate: Quality 0\r\n"
+	"ice-description: This is my server desription\r\n"
+	"ice-genre: Rock\r\n"
+	"ice-name: This is my server desription\r\n"
+	"ice-private: 0\r\n"
+	"ice-public: 1\r\n"
+	"ice-url: http://www.oddsock.org\r\n"
+	"Server: Icecast 2.0.1\r\n\r\n";
 
     if (!info || !header || size < 1)
 	return SR_ERROR_INVALID_PARAM;
 
     memset(header, 0, size);
-	
-    sprintf(buf, "HTTP/1.0 %d\r\n", info->icy_code);
+
+    /* GCS - try this */
+#if defined (commentout)
+    strcpy (header, test_header);
+    return SR_SUCCESS;
+#endif
+
+    /* sprintf(buf, "HTTP/1.0 %d\r\n", info->icy_code); */
+    sprintf(buf, "HTTP/1.0 200 OK\r\n");
     strcat(header, buf);
 
     if (info->http_location[0])
@@ -465,6 +478,29 @@ error_code httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int
     {
 	sprintf(buf, "icy-metaint:%d\r\n", info->meta_interval);
 	strcat(header, buf);
+    }
+
+    switch (info->content_type) {
+    case CONTENT_TYPE_MP3:
+	sprintf (buf, "Content-Type: audio/mpeg\r\n");
+	strcat(header, buf);
+	break;
+    case CONTENT_TYPE_NSV:
+	sprintf (buf, "Content-Type: video/nsv\r\n");
+	strcat(header, buf);
+	break;
+    case CONTENT_TYPE_OGG:
+	sprintf (buf, "Content-Type: application/ogg\r\n");
+	strcat(header, buf);
+	break;
+    case CONTENT_TYPE_ULTRAVOX:
+	sprintf (buf, "Content-Type: misc/ultravox\r\n");
+	strcat(header, buf);
+	break;
+    case CONTENT_TYPE_AAC:
+	sprintf (buf, "Content-Type: audio/aac\r\n");
+	strcat(header, buf);
+	break;
     }
 
     free(buf);
