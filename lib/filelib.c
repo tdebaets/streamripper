@@ -287,6 +287,38 @@ file_exists(char *filename)
 }
 
 error_code
+filelib_write_cue(TRACK_INFO* ti, int secs)
+{
+    static int track_no = 1;
+    int rc;
+    char buf[1024];
+
+    if (!m_do_show) return SR_SUCCESS;
+    if (!m_cue_file) return SR_SUCCESS;
+
+#if defined (commentout)
+    /* Oops, forgot that Jon doesn't like the easy way... */
+    fprintf (m_cue_file, "  TRACK %02d AUDIO\n",track_no++);
+    fprintf (m_cue_file, "    TITLE \"%s\"\n",title);
+    fprintf (m_cue_file, "    PERFORMER \"%s\"\n",artist);
+    fprintf (m_cue_file, "    INDEX 01 %02d:%02d\n",
+	secs / 60, secs % 60);
+#endif
+    rc = snprintf(buf,1024,"  TRACK %02d AUDIO\n",track_no++);
+    filelib_write(m_cue_file,buf,rc);
+    rc = snprintf(buf,1024,"    TITLE \"%s\"\n",ti->title);
+    filelib_write(m_cue_file,buf,rc);
+    rc = snprintf(buf,1024,"    PERFORMER \"%s\"\n",ti->artist);
+    filelib_write(m_cue_file,buf,rc);
+    rc = snprintf(buf,1024,"    INDEX 01 %02d:%02d:00\n",
+	secs / 60, secs % 60);
+    filelib_write(m_cue_file,buf,rc);
+
+    return SR_SUCCESS;
+}
+
+#if defined (commentout)
+error_code
 filelib_write_cue(char *artist, char* title, int secs)
 {
     static int track_no = 1;
@@ -316,6 +348,7 @@ filelib_write_cue(char *artist, char* title, int secs)
 
     return SR_SUCCESS;
 }
+#endif
 
 error_code
 filelib_start(char *filename)

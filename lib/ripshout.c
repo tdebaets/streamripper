@@ -38,7 +38,8 @@ void		ripshout_destroy();
  * Private Functions
  *********************************************************************************/
 static error_code	get_trackname(int size, char *newtrack);
-static error_code	ripshout_getdata(char *data, char *track);
+static error_code ripshout_get_stream_data(char *data_buf, int* track_status, char *track_buf);
+
 
 /*********************************************************************************
  * Private Vars
@@ -62,7 +63,7 @@ ripshout_init(IO_DATA_INPUT *in, IO_GET_STREAM *getstream, int meta_interval, ch
 
     m_buffersize = (m_meta_interval == NO_META_INTERVAL) ? DEFAULT_BUFFER_SIZE : m_meta_interval;
 
-    getstream->get_stream_data = ripshout_getdata;
+    getstream->get_stream_data = ripshout_get_stream_data;
     getstream->getsize = m_buffersize;
 
     strcpy(m_no_meta_name, no_meta_name);
@@ -82,18 +83,19 @@ ripshout_destroy()
 }
 
 error_code
-ripshout_getdata(char *data, char *track)
+ripshout_get_stream_data(char *data_buf, int* track_status, char *track_buf)
 {
     int ret = 0;
     char c;
     char newtrack[MAX_TRACK_LEN];
 
+    *track_status = 0;
     m_chunkcount++;
-    if ((ret = m_in->get_input_data(data, m_buffersize)) <= 0)
+    if ((ret = m_in->get_input_data(data_buf, m_buffersize)) <= 0)
 	return ret;
 
-    if (m_meta_interval == NO_META_INTERVAL) {	
-	strcpy(track, m_no_meta_name);
+    if (m_meta_interval == NO_META_INTERVAL) {
+	strcpy(track_buf, m_no_meta_name);
 	return SR_SUCCESS;
     }
 
@@ -110,7 +112,7 @@ ripshout_getdata(char *data, char *track)
 	// anyway, bassicly if the first meta capture is null then we assume
 	// that the stream does not have metadata
 	if (m_chunkcount == 1) {
-	    strcpy(track, m_no_meta_name);
+	    strcpy(track_buf, m_no_meta_name);
 	}
 	return SR_SUCCESS;
     } else {
@@ -122,10 +124,12 @@ ripshout_getdata(char *data, char *track)
 	// WolfFM is a station that does not stream meta-data, but is in that format anyway...
 	// StreamTitle='', so we need to pretend this has no meta data.
 	if (*newtrack == '\0') {
-	    strcpy(track, m_no_meta_name);
+	    strcpy(track_buf, m_no_meta_name);
 	    return SR_SUCCESS;
 	}
-	strncpy(track, newtrack, MAX_TRACK_LEN);
+	/* This is the case where we got metadata. */
+	*track_status = 1;
+	strncpy(track_buf, newtrack, MAX_TRACK_LEN);
     }
     return SR_SUCCESS;
 }

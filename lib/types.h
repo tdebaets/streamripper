@@ -64,7 +64,7 @@ typedef struct IO_DATA_INPUTst{
  * does the "find silent point" shit.
  */
 typedef struct IO_GET_STREAMst{
-	int (*get_stream_data)(char* buffer, char *track);
+	int (*get_stream_data)(char* data_buf, int* track_status, char *track_buf);
 	u_long getsize;
 } IO_GET_STREAM;
 
@@ -108,9 +108,9 @@ typedef struct TRACK_INFOst
 {
     int have_track_info;
     char raw_metadata[MAX_TRACK_LEN];
-    mchar artist[MAX_TRACK_LEN];
-    mchar title[MAX_TRACK_LEN];
-    mchar album[MAX_TRACK_LEN];
+    char artist[MAX_TRACK_LEN];
+    char title[MAX_TRACK_LEN];
+    char album[MAX_TRACK_LEN];
 } TRACK_INFO;
 
 

@@ -217,9 +217,12 @@ myrecv(char* buffer, int size)
  * update via the callback 
  */
 error_code
-rip_manager_start_track(char *trackname, int track_count)
+rip_manager_start_track (TRACK_INFO* ti, int track_count)
 {
     int ret;
+
+    /* GCS FIX */
+    char* trackname = ti->raw_metadata;
 
     debug_printf("start_track: %s\n", trackname);
 

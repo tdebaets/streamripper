@@ -122,7 +122,7 @@ void set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt);
 error_code rip_manager_start (void (*status_callback)(int message, void *data), 
 			     RIP_MANAGER_OPTIONS *options);
 void rip_manager_stop();
-error_code rip_manager_start_track(char *trackname, int track_count);
+error_code rip_manager_start_track (TRACK_INFO* ti, int track_count);
 error_code rip_manager_end_track(char *trackname);
 error_code rip_manager_put_data(char *buf, int size);
 error_code rip_manager_put_raw_data(char *buf, int size);

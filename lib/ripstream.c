@@ -44,7 +44,8 @@
  *********************************************************************************/
 static error_code find_sep (u_long *pos1, u_long *pos2);
 static error_code end_track(u_long pos1, u_long pos2, char *trackname);
-static error_code start_track(char *trackname);
+//static error_code start_track(char *trackname);
+static error_code start_track (TRACK_INFO* ti);
 
 static void compute_cbuffer_size (SPLITPOINT_OPTIONS *sp_opt,
 				  int bitrate, int meta_interval);
@@ -57,8 +58,8 @@ static int bytes_to_secs (unsigned int bytes);
 static CBUFFER			m_cbuffer;
 static IO_GET_STREAM	*m_in;
 #if defined (commentout)
-static char			m_last_track[MAX_TRACK_LEN] = {'\0'};
-static char			m_current_track[MAX_TRACK_LEN] = {'\0'};
+//static char			m_last_track[MAX_TRACK_LEN] = {'\0'};
+//static char			m_current_track[MAX_TRACK_LEN] = {'\0'};
 #endif
 static TRACK_INFO m_last_track;
 static TRACK_INFO m_current_track;
@@ -191,8 +192,6 @@ BOOL is_track_changed()
     if (!strcmp(m_last_track.raw_metadata, m_current_track.raw_metadata))
 	return 0;
 
-    /* Here we could put in the pattern matching rules. */
-
     /* Otherwise, there was a change. */
     return 1;
 }
@@ -212,6 +211,7 @@ ripstream_rip()
 {
     int ret;
     int real_ret = SR_SUCCESS;
+    int track_status;
     u_long extract_size;
 
     // only copy over the last track name if 
@@ -224,7 +224,7 @@ ripstream_rip()
     }
 
     // get the data
-    ret = m_in->get_stream_data(m_getbuffer, m_current_track.raw_metadata);
+    ret = m_in->get_stream_data(m_getbuffer, &track_status, m_current_track.raw_metadata);
     if (ret != SR_SUCCESS) {
 	debug_printf("m_in->get_stream_data bad return code: %d\n", ret);
 	return ret;
@@ -256,9 +256,30 @@ ripstream_rip()
 	if (ret != SR_SUCCESS) return ret;
     }
 
-    /* Parse metadata <new stuff starts here> */
-    parse_metadata (&m_current_track);
+    /* Parse metadata */
+    if (track_status == 1) {
+        parse_metadata (&m_current_track);
+    }
 
+    /* First time through, so start a track. */
+    if (!m_last_track.have_track_info) {
+	int ret;
+	if (! m_current_track.have_track_info) {
+	    strcpy (m_current_track.raw_metadata, m_no_meta_name);
+	}
+	ret = rip_manager_start_track (&m_current_track, m_track_count);
+	if (ret != SR_SUCCESS) {
+	    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
+	    return ret;
+	}
+	/* write the cue sheet */
+	filelib_write_cue (&m_current_track, 0);
+	/* set last track info */
+	strcpy (m_last_track.raw_metadata, m_current_track.raw_metadata);
+	m_last_track.have_track_info = 1;
+    }
+
+#if defined (commentout)
     /* GCS - This is only true once? */
     // if this is the first time we have received a track name, then we
     // can start the track
@@ -280,6 +301,7 @@ ripstream_rip()
 			    m_current_track.raw_metadata);
 	filelib_write_cue(artist,title,0);
     }
+#endif
 
     /* Copy the data into cbuffer */
     ret = cbuffer_insert(&m_cbuffer, m_getbuffer, m_in->getsize);
@@ -319,7 +341,8 @@ ripstream_rip()
 	if (ret != SR_SUCCESS)
 	    real_ret = ret;
         m_cue_sheet_bytes += pos2;
-	ret = start_track(m_current_track.raw_metadata);
+	//ret = start_track(m_current_track.raw_metadata);
+	ret = start_track (&m_current_track);
 	if (ret != SR_SUCCESS)
 	    real_ret = ret;
 	m_find_silence = -1;
@@ -498,38 +521,30 @@ end_track(u_long pos1, u_long pos2, char *trackname)
     return ret;
 }
 
-
 error_code
-start_track(char *trackname)
+start_track (TRACK_INFO* ti)
 {
     int ret;
     ID3V2head id3v2header;
     ID3V2frame id3v2frame1;
     ID3V2frame id3v2frame2;
     char comment[1024] = "Ripped with Streamripper";
-    char artist[1024] = "";
-    char title[1024] = "";
-    char album[1024] = "";
     char bigbuf[1600] = "";
-    //char *p1,*p2;
     int	sent = 0;
     char buf[3] = "";
     unsigned long int framesize = 0;
     unsigned int secs;
 
     debug_printf ("calling rip_manager_start_track(#2)\n");
-    ret = rip_manager_start_track(trackname, m_track_count);
+    ret = rip_manager_start_track (ti, m_track_count);
     if (ret != SR_SUCCESS) {
 	debug_printf ("rip_manager_start_track failed(#2): %d\n",ret);
         return ret;
     }
 
-    /* Split the trackname string */
-    parse_artist_title (artist, title, album, 1024, trackname);
-
     /* Dump to artist/title to cue sheet */
-    secs = bytes_to_secs(m_cue_sheet_bytes);
-    ret = filelib_write_cue(artist,title,secs);
+    secs = bytes_to_secs (m_cue_sheet_bytes);
+    ret = filelib_write_cue (ti, secs);
     if (ret != SR_SUCCESS)
         return ret;
 
@@ -558,7 +573,7 @@ start_track(char *trackname)
 
 	// Write ID3V2 frame1 with data
 	strncpy(id3v2frame1.id, "TPE1", 4);
-	framesize = htonl(strlen(artist)+1);
+	framesize = htonl(strlen(ti->artist)+1);
 	ret = rip_manager_put_data((char *)&(id3v2frame1.id), 4);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 4;
@@ -568,13 +583,13 @@ start_track(char *trackname)
 	ret = rip_manager_put_data((char *)&(id3v2frame1.pad), 3);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 3;
-	ret = rip_manager_put_data(artist, strlen(artist));
+	ret = rip_manager_put_data(ti->artist, strlen(ti->artist));
 	if (ret != SR_SUCCESS) return ret;
-	sent += strlen(artist);
+	sent += strlen(ti->artist);
 
 	// Write ID3V2 frame2 with data
 	strncpy(id3v2frame2.id, "TIT2", 4);
-	framesize = htonl(strlen(title)+1);
+	framesize = htonl(strlen(ti->title)+1);
 	ret = rip_manager_put_data((char *)&(id3v2frame2.id), 4);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 4;
@@ -584,9 +599,9 @@ start_track(char *trackname)
 	ret = rip_manager_put_data((char *)&(id3v2frame2.pad), 3);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 3;
-	ret = rip_manager_put_data(title, strlen(title));
+	ret = rip_manager_put_data(ti->title, strlen(ti->title));
 	if (ret != SR_SUCCESS) return ret;
-	sent += strlen(title);
+	sent += strlen(ti->title);
 
 	// Write ID3V2 frame2 with data
 	strncpy(id3v2frame2.id, "TENC", 4);
@@ -608,7 +623,7 @@ start_track(char *trackname)
 	// Write ID3V2 frame2 with data
 	memset(&id3v2frame2, '\000', sizeof(id3v2frame2));
 	strncpy(id3v2frame2.id, "TALB", 4);
-	framesize = htonl(strlen(album)+1);
+	framesize = htonl(strlen(ti->album)+1);
 	ret = rip_manager_put_data((char *)&(id3v2frame2.id), 4);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 4;
@@ -618,9 +633,9 @@ start_track(char *trackname)
 	ret = rip_manager_put_data((char *)&(id3v2frame2.pad), 3);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 3;
-	ret = rip_manager_put_data(album, strlen(album));
+	ret = rip_manager_put_data(ti->album, strlen(ti->album));
 	if (ret != SR_SUCCESS) return ret;
-	sent += strlen(album);
+	sent += strlen(ti->album);
 
 	ret = rip_manager_put_data(bigbuf, 1600-sent);
 	if (ret != SR_SUCCESS) return ret;

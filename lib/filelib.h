@@ -70,6 +70,6 @@ error_code filelib_set_output_directory (char* output_directory,
 		int get_separate_dirs, int get_date_stamp, char* icy_name);
 char* filelib_get_output_directory ();
 error_code filelib_remove(char *filename);
-error_code filelib_write_cue(char *artist, char* title, int secs);
+error_code filelib_write_cue(TRACK_INFO* ti, int secs);
 
 #endif //FILELIB
