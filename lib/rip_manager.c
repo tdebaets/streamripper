@@ -285,68 +285,6 @@ set_output_directory()
     return rc;
 }
 
-#if defined (commentout)
-int
-set_output_directory()
-{
-    char newpath[MAX_PATH_LEN] = {'\0'};
-    char newpath_test[MAX_PATH_LEN];
-    char *striped_icy_name;
-    int min_mfl = 54; /* mfl: max_filename_length */
-    int min_stublen = 8;
-
-    if (*m_options.output_directory) {
-	snprintf (newpath, MAX_PATH_LEN, "%s%c",
-		  m_options.output_directory, PATH_SLASH);
-	debug_printf ("OUTDIR: |%s|\n",newpath);
-	if (dir_max_filename_length (newpath) < min_mfl)
-	    return SR_ERROR_DIR_PATH_TOO_LONG;
-    }
-    if (GET_SEPERATE_DIRS(m_options.flags)) {
-	char timestring[36];
-	time_t timestamp;
-	struct tm *theTime;
-	int time_len = 0;
-	timestring[0] = '\0';
-	if (GET_DATE_STAMP(m_options.flags)) {
-	    time(&timestamp);
-	    theTime = localtime(&timestamp);
-	    time_len = strftime(timestring, 35, "_%Y-%m-%d", theTime);
-	}
-
-	striped_icy_name = malloc(strlen(m_info.icy_name)+ 1);
-	strcpy(striped_icy_name, m_info.icy_name);
-	strip_invalid_chars(striped_icy_name);
-	left_str(striped_icy_name, MAX_DIR_LEN);
-	trim(striped_icy_name);
-	snprintf (newpath_test, MAX_DIR_LEN, "%s%s%s", newpath,
-		  striped_icy_name, timestring);
-	debug_printf ("OUTDIR(2): |%s|\n",newpath_test);
-	if (dir_max_filename_length (newpath_test) < min_mfl) {
-	    /* Try to shorten it */
-	    int icylen = strlen(striped_icy_name);
-	    int dml = dir_max_filename_length (newpath);
-	    if (icylen + dml - min_mfl < min_stublen) {
-		return SR_ERROR_DIR_PATH_TOO_LONG;
-	    }
-	    icylen = strlen(newpath) + dml - min_mfl - time_len;
-	    striped_icy_name[icylen] = '\0';
-	    snprintf (newpath_test,MAX_DIR_LEN,"%s%s%s",newpath,
-		      striped_icy_name,timestring);
-	    debug_printf ("OUTDIR(3): |%s|\n",newpath_test);
-	    if (dir_max_filename_length (newpath_test) < min_mfl) {
-		return SR_ERROR_DIR_PATH_TOO_LONG;
-	    }
-	}
-	strcpy (newpath,newpath_test);
-    }
-    filelib_set_output_directory (newpath);
-    filelib_set_max_filename_length (dir_max_filename_length (newpath));
-    m_status_callback(RM_OUTPUT_DIR, (void*)newpath);
-    return SR_SUCCESS;
-}
-#endif
-
 /* 
  * Fires up the relaylib stuff. Most of it is so relaylib 
  * knows what to call the stream which is what the 'construct_sc_repsonse()'
