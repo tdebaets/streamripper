@@ -172,11 +172,13 @@ initialize_locale (void)
 
     /* Once locale is initialized, we can make the needed wide strings 
        for parsing. */
+#if defined (USE_UNICODE)
     if (fromcode) {
 	string_to_wide(&backslash, "\\");
 	string_to_wide(&fwdslash, "/");
 	string_to_wide(&colon, ":");
     }
+#endif
 }
 
 
@@ -463,7 +465,11 @@ strip_invalid_chars_stable(char *str)
 char* 
 strip_invalid_chars(char *str)
 {
+#if defined (USE_UNICODE)
     return strip_invalid_chars_testing(str);
+#else
+    return strip_invalid_chars_stable(str);
+#endif
 }
 
 
