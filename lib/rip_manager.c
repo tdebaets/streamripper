@@ -180,6 +180,10 @@ void post_error(int err)
  *
  * The rest of the function does the auto-reconnect stuff. it's pretty
  * hacky, but works.
+ * 
+ * note 8/8/2001 WOW THIS THING IS FUCKED UP!!!!! NEEDS TOTAL RE_WRITE!!!!! BLA!!!!
+ * recomendation: take threads out of the loop for rip_manager. people can deal with that 
+ * shit themselfs.
  */
 void ripthread(void *bla)
 {
@@ -264,6 +268,8 @@ void ripthread(void *bla)
 					m_status_callback(RM_UPDATE, &m_ripinfo);
 					Sleep(1000);
 				}
+
+				_endthread();
 			}
 		}
 	}

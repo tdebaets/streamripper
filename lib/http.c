@@ -80,7 +80,7 @@ error_code httplib_construct_sc_request(const char *url, BOOL proxyformat, char 
 snprintf(buffer, MAX_HEADER_LEN + MAX_HOST_LEN + MAX_PATH_LEN,
 "GET %s HTTP/1.0\r\n\
 Host: %s:%d\r\n\
-User-Agent: WinampMPEG/2.00\r\n\
+User-Agent: Streamripper for Winamp/1.x\r\n\
 Icy-MetaData:1\r\n\
 Accept: */*\r\n\r\n", myurl, ui.host, ui.port);
 
