@@ -156,7 +156,15 @@ dir_max_filename_length (char* dirname)
     debug_printf ("strlen(full) == %d\n",strlen(full));
     return _MAX_PATH - strlen(full) - 1;
 #else
-    return pathconf(dirname, _PC_NAME_MAX);
+    char full[MAX_PATH_LEN];
+    if (*dirname == '/') {
+	return MAX_PATH_LEN - strlen(dirname) - 1;
+    }
+    if (!getcwd (full,MAX_PATH_LEN)) {
+	debug_printf ("getcwd returned zero?\n");
+	return 0;
+    }
+    return MAX_PATH_LEN - strlen(full) - strlen(dirname) - 2;
 #endif
 }
 
