@@ -144,6 +144,17 @@ initialize_locale (void)
     debug_printf ("LOCALE is %s\n",setlocale(LC_ALL,NULL));
 }
 
+
+/* Given a multibyte string containing the title, three names are 
+   suggested.  One in utf8 encoding, one in the multibyte encoding 
+   of the locale, and one is a "guaranteed-to-work" ascii name. */
+void
+suggest_filenames (char *title_string, char *utf8_name, 
+		   char *locale_name, char *ascii_name)
+{
+}
+
+
 char*
 strip_invalid_chars(char *str)
 {
@@ -213,6 +224,9 @@ strip_invalid_chars(char *str)
 	debug_printf ("%02x ",*strp&0x0ff);
     }
     debug_printf ("\n");
+
+    free (w_in);
+    free (w_invalid);
 
     return str;
 
