@@ -27,7 +27,7 @@
  *********************************************************************************/
 BOOL winamp_init();			
 BOOL winamp_get_info(WINAMP_INFO *info);
-BOOL winamp_add_relay_to_playlist(u_short port);
+BOOL winamp_add_relay_to_playlist(char *host, u_short port);
 BOOL winamp_add_track_to_playlist(char *outputdir, char *track);
 BOOL winamp_get_path(char *path);
 
@@ -130,9 +130,9 @@ BOOL winamp_get_info(WINAMP_INFO *info)
 }
 
 
-BOOL winamp_add_relay_to_playlist(u_short port)
+BOOL winamp_add_relay_to_playlist(char *host, u_short port)
 {
-	char host[] = "localhost";		// needs to use the machines name, for proxys
+//	char host[] = "localhost";		// needs to use the machines name, for proxys
 	char relay_file[MAX_PATH_LEN];
 	char winamp_path[MAX_PATH_LEN];
 

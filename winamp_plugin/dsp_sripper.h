@@ -8,6 +8,7 @@ typedef struct GUI_OPTIONSst
 	POINT	oldpos;
 	BOOL	m_allow_touch;
 	BOOL	m_enabled;
+	char	localhost[MAX_HOST_LEN];		// hostname of 'localhost' 
 } GUI_OPTIONS;
 
 #endif //__DSP_SRIPPER_H__

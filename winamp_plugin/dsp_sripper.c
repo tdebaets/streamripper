@@ -434,7 +434,7 @@ void close_button_pressed()
 
 void relay_pressed()
 {
-	winamp_add_relay_to_playlist((u_short)m_rmoOpt.relay_port);
+	winamp_add_relay_to_playlist(m_guiOpt.localhost, (u_short)m_rmoOpt.relay_port);
 }
 
 BOOL CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)

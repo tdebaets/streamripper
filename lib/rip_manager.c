@@ -52,6 +52,8 @@
 	#define _endthread()	;	/* just don't do it under *nix, this probably isn't the best choice */
 #elif __BEOS__
 	#define Sleep(x) snooze(x)
+#elif WIN32
+#include <process.h>
 #endif
 
 /******************************************************************************
@@ -353,7 +355,7 @@ error_code end_track(char *trackname)
 	strcpy(temptrack, trackname);
 
 	strip_invalid_chars(temptrack);
-	filelib_end(temptrack, m_options.over_write_existing_tracks);
+	filelib_end(temptrack, OPT_FLAG_ISSET(m_options.flags, OPT_OVER_WRITE_TRACKS));
 	m_status_callback(RM_UPDATE, &m_ripinfo);
 	m_status_callback(RM_TRACK_DONE, (void*)temptrack);
 

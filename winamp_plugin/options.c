@@ -167,6 +167,7 @@ LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			options_load(m_opt, m_guiOpt);
 			SetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl);
 			SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory);
+			SetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost);
 
 			set_checkbox(hWnd, IDC_SEPERATE_DIRS, OPT_FLAG_ISSET(m_opt->flags, OPT_SEPERATE_DIRS));
 			set_checkbox(hWnd, IDC_RECONNECT, OPT_FLAG_ISSET(m_opt->flags, OPT_AUTO_RECONNECT));
@@ -195,6 +196,7 @@ LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 				case IDC_OK:
 					GetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl, MAX_URL_LEN);
 					GetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory, MAX_PATH_LEN);
+					GetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost, MAX_HOST_LEN);
 					m_guiOpt->m_allow_touch = get_checkbox(hWnd, IDC_ALLOW_TOUCH);
 
 					m_opt->flags = 0;
@@ -283,6 +285,7 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	GetPrivateProfileString(APPNAME, "url", "", opt->url, MAX_INI_LINE_LEN, filename);
 	GetPrivateProfileString(APPNAME, "proxy", "", opt->proxyurl, MAX_INI_LINE_LEN, filename);
 	GetPrivateProfileString(APPNAME, "output_dir", desktop_path, opt->output_directory, MAX_INI_LINE_LEN, filename);
+	GetPrivateProfileString(APPNAME, "localhost", "localhost", guiOpt->localhost, MAX_INI_LINE_LEN, filename);
 	seperate_dirs = GetPrivateProfileInt(APPNAME, "seperate_dirs", TRUE, filename);
 	opt->relay_port = GetPrivateProfileInt(APPNAME, "relay_port", 8000, filename);
 	opt->max_port = opt->relay_port+1000;
@@ -335,6 +338,7 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	fprintf(fp, "url=%s\n", opt->url);
 	fprintf(fp, "proxy=%s\n", opt->proxyurl);
 	fprintf(fp, "output_dir=%s\n", opt->output_directory);
+	fprintf(fp, "localhost=%s\n", guiOpt->localhost);
 	fprintf(fp, "seperate_dirs=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_SEPERATE_DIRS));
 	fprintf(fp, "relay_port=%d\n", opt->relay_port);
 	fprintf(fp, "auto_reconnect=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_AUTO_RECONNECT));

@@ -37,26 +37,25 @@ typedef struct RIP_MANAGER_INFOst
 // Use to set and get the flags
 #define OPT_FLAG_ISSET(flags, opt)	((flags & opt) > 0)
 
-#define OPT_AUTO_RECONNECT		0x00000001
-#define OPT_SEPERATE_DIRS		0x00000002
-#define OPT_OVER_WRITE_TRACKS	0x00000004
-#define OPT_SEARCH_PORTS		0x00000008
-#define OPT_NO_RELAY			0x00000010 
-#define OPT_COUNT_FILES			0x00000020 
-#define OPT_ADD_ID3				0x00000040 
-#define OPT_DATE_STAMP			0x00000100
-#define OPT_CHECK_MAX_BYTES		0x00000200
+#define OPT_AUTO_RECONNECT		0x00000001		// reconnect automatticly if dropped
+#define OPT_SEPERATE_DIRS		0x00000002		// create a directory named after the server
+#define OPT_OVER_WRITE_TRACKS	0x00000004		// should files in the complete directory be overwritten
+#define OPT_SEARCH_PORTS		0x00000008		// relay server should search for a open port
+#define OPT_NO_RELAY			0x00000010		// don't make a relay server
+#define OPT_COUNT_FILES			0x00000020		// add a index counter to the filenames
+#define OPT_ADD_ID3				0x00000040		// add ID3 info to the mp3s (thanks oddsock)
+#define OPT_DATE_STAMP			0x00000100		// add a date stamp to the output directory
+#define OPT_CHECK_MAX_BYTES		0x00000200		// use the maxMB_rip_size value to know how much to rip
 
 typedef struct RIP_MANAGER_OPTIONSst
 {
-	char	url[MAX_URL_LEN];
-	char	proxyurl[MAX_URL_LEN];
-	char	output_directory[MAX_PATH_LEN];
-	BOOL	over_write_existing_tracks;
-	int	relay_port;
-	u_short	max_port;
-	u_long	maxMB_rip_size;
-	u_short	flags;
+	char	url[MAX_URL_LEN];					// url of the stream to connect to
+	char	proxyurl[MAX_URL_LEN];				// url of a http proxy server, '\0' otherwise
+	char	output_directory[MAX_PATH_LEN];		// base directory to output files too
+	int	relay_port;								// port to use for the relay server
+	u_short	max_port;							// highest port the relay server can look if it needs to search
+	u_long	maxMB_rip_size;						// max number of megabytes that can by writen out before we stop
+	u_short	flags;								// all booleans logically OR'd together (see above)
 } RIP_MANAGER_OPTIONS;
 
 typedef struct ERROR_INFOst

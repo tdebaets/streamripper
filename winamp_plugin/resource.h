@@ -42,6 +42,7 @@
 #define IDC_DATE_STAMP                  1214
 #define IDC_CHECK_MAX_BYTES             1215
 #define IDC_ADD_ID3                     1216
+#define IDC_LOCALHOST                   1217
 #define ID_MENU_STARTRIPPING            40001
 #define ID_MENU_STOPRIPPING             40003
 #define ID_MENU_OPTIONS                 40004
@@ -53,7 +54,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        117
 #define _APS_NEXT_COMMAND_VALUE         40006
-#define _APS_NEXT_CONTROL_VALUE         1012
+#define _APS_NEXT_CONTROL_VALUE         1013
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
