@@ -295,7 +295,7 @@ void UpdateRippingDisplay()
 	strcpy(sStatusStr, "Re-connecting..");
 	break;
     default:
-	DEBUG1(("************ what am i doing here?"));
+	debug_printf("************ what am i doing here?");
     }
     render_set_display_data(IDR_STATUS, "%s", sStatusStr);
 
@@ -357,9 +357,9 @@ void RipCallback(int message, void *data)
 	break;
     case RM_ERROR:
 	err = (ERROR_INFO*)data;
-	DEBUG1(("***RipCallback: about to post error dialog"));
+	debug_printf("***RipCallback: about to post error dialog");
 	MessageBox(m_hWnd, err->error_str, "Streamripper", MB_SETFOREGROUND);
-	DEBUG1(("***RipCallback: done posting error dialog"));
+	debug_printf("***RipCallback: done posting error dialog");
 	break;
     case RM_DONE:
 	//stop_button_pressed();
@@ -392,7 +392,7 @@ void RipCallback(int message, void *data)
 void start_button_pressed()
 {
     int ret;
-    DEBUG0(("start"));
+    debug_printf("start");
 
     assert(!m_bRipping);
     render_clear_all_data();
@@ -413,7 +413,7 @@ void start_button_pressed()
 
 void stop_button_pressed()
 {
-    DEBUG0(("stop"));
+    debug_printf("stop");
 
     stop_button_disable();
     assert(m_bRipping);

@@ -513,7 +513,7 @@ LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch(message)
     {
     case WM_INITDIALOG:
-	DEBUG2(( "skin:WM_INITDIALOG\n" ));
+	debug_printf( "skin:WM_INITDIALOG\n" );
 
 	if (!get_skin_list() || 
 	    !populate_skin_list(hWnd))	// order of exec important!
@@ -532,9 +532,9 @@ LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	    PAINTSTRUCT pt;
 
 	    HDC hdc = BeginPaint(hWnd, &pt);
-	    DEBUG2(( "skin:WM_PAINT\n" ));
-	    render_create_preview(m_pskin_list[m_curskin], hdc, SKIN_PREV_LEFT, 
-				  SKIN_PREV_TOP);
+	    debug_printf ("skin:WM_PAINT\n");
+	    render_create_preview (m_pskin_list[m_curskin], hdc, 
+		SKIN_PREV_LEFT, SKIN_PREV_TOP);
 	    EndPaint(hWnd, &pt);
 	}
 	return FALSE;
