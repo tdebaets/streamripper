@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
   	 * (i.e. rip_manager_stop) from a signal handler.. or at least not
   	 * in FreeBSD 3.4, i don't know about linux or NT.
 	 */
-	while(!m_got_sig)
+	while(!m_got_sig && !m_alldone)
 	{
 		sleep(1);
 		time(&temp_time);
