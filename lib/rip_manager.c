@@ -39,7 +39,6 @@
 #include "riplive365.h"
 #include "ripshout.h"
 #include "findsep.h"
-//#include "live365info.h"
 #include "inet.h"
 #include "relaylib.h"
 #include "rip_manager.h"
@@ -47,6 +46,7 @@
 #include "threadlib.h"
 #include "debug.h"
 #include "compat.h"
+#include "parse.h"
 
 /******************************************************************************
  * Public functions
@@ -362,7 +362,7 @@ ripthread(void *notused)
 	 * wnd locks, etc.. all i know is that this appeared to work
 	 */
 	if (m_bytes_ripped >= (m_options.maxMB_rip_size*1000000) &&
-		GET_CHECK_MAX_BYTES(m_options.flags)) {
+	    GET_CHECK_MAX_BYTES(m_options.flags)) {
 	    socklib_close(&m_sock);
 	    destroy_subsystems();
 	    post_error(SR_ERROR_MAX_BYTES_RIPPED);
@@ -382,7 +382,7 @@ ripthread(void *notused)
 	}
 	else if ((ret == SR_ERROR_RECV_FAILED || ret == SR_ERROR_TIMEOUT ||
 		  ret == SR_ERROR_SELECT_FAILED) && 
-		     GET_AUTO_RECONNECT(m_options.flags)) {
+		 GET_AUTO_RECONNECT(m_options.flags)) {
 	    /*
 	     * Try to reconnect, if thats what the user wants
 	     */
@@ -402,7 +402,7 @@ ripthread(void *notused)
 		relaylib_shutdown();
 		ripstream_destroy();
 		if (m_destroy_func)
-			m_destroy_func();
+		    m_destroy_func();
 
 		ret = start_ripping();
 		if (ret == SR_SUCCESS)
@@ -428,7 +428,7 @@ ripthread(void *notused)
     // We get here when there was either a fatal error
     // or we we're not auto-reconnecting and the stream just stopped
     // or when we have been told to stop, via the m_ripping flag
-DONE:
+ DONE:
     m_status_callback(RM_DONE, &m_ripinfo);
     m_ripping = FALSE;
 }
@@ -444,6 +444,9 @@ rip_manager_stop()
     // Make sure the ripping started before we try to stop
     threadlib_waitfor_sem(&m_started_sem);
     m_ripping = FALSE;
+
+    /* Destroy the parsing rules */
+    /* destroy_metadata_parser (); */
 
     // Causes the code running in the thread to bail
     socklib_close(&m_sock);
@@ -511,62 +514,20 @@ start_ripping()
 	goto RETURN_ERR;
     }
 
-    /*
-     * currently it works like this: 
-     * ripshout and riplive are responsable for providing a track name
-     * and pulling data. ripshout, is responsable for seeing when a track
-     * changed, then decoding a buffer to PCM (raw audio) and looking for
-     * a silent point, it then call tells the "output" interface to change 
-     * track.
-     *
-     * All of this is handled through structures with function pointers, 
-     * or a poor mans virtual classes.
-     */
-//  if (strcmp(m_info.server, "Nanocaster/2.0") == 0)	// This should be user setable, the name changed once in the last month
-//  {
-//	ret = SR_ERROR_LIVE365;
-//	goto RETURN_ERR;
-//
-//	/*
-//	 * NOTE: live365 needs a url, proxy stuff so it can 
-//	 * page the webpage with the track information. this is
-//	 * a good example of whats wrong with the current idea of 
-//	 * plugins
-//	 */
-//	if ((ret = riplive365_init(&m_in, &m_ripin, m_info.icy_name, m_options.url, pproxy)) != SR_SUCCESS)
-//		goto RETURN_ERR;
-//
-//	/*
-//	 * this happened with rogers classical, just default to 56k
-//	 */
-//	if (m_info.icy_bitrate == 0)
-//	    m_info.icy_bitrate = 56;
-//	mult = m_info.icy_bitrate * 3;
-//	m_destroy_func = riplive365_destroy;
-//  }
-//  else
-    {
 	/* prepares the ripshout lib for ripping */
 	ret = ripshout_init(&m_in, &m_ripin, m_info.meta_interval, 
 		m_info.icy_name);
 	if (ret != SR_SUCCESS)
 	    goto RETURN_ERR;
 	m_destroy_func = ripshout_destroy;
-    }
 
     /*
      * ripstream is good to go, it knows how to get data, and where
      * it's sending it to
      */
     ripstream_destroy();
-#if defined (commentout)
-    ret = ripstream_init(&m_ripin, &m_ripout, 
-			 m_info.icy_name, m_options.dropstring,
-			 &m_options.sp_opt, m_ripinfo.bitrate, 
-			 GET_ADD_ID3(m_options.flags));
-#endif
     ret = ripstream_init(&m_ripin, 
-			 m_info.icy_name, m_options.dropstring, m_options.dropcount,
+			 m_info.icy_name, m_options.dropcount,
 			 &m_options.sp_opt, m_ripinfo.bitrate, 
 			 GET_ADD_ID3(m_options.flags));
     if (ret != SR_SUCCESS) {
@@ -603,63 +564,45 @@ RETURN_ERR:
     return ret;	
 }
 
-/* 
- * From an email to oddsock he asked how one would be able to add ID3 data
- * to the tracks with the current "system". this was my reply:
- * ----
- * Personally I think this system sucks. feel free to just remove all of it 
- * and do it the most strait forward way possible, i have some much better 
- * ideas for handling these systems now, so i don't really care about what 
- * happens to it. However if you don't want to fuck with it to much the 
- * easyest way to provide id3 info to filelib would probably be in 
- * ripstream.c, before you call 'end_track()' or (IO_PUT_STREAM::end_track() 
- * as it is) append the ID3 data to the "strema". of course the first track 
- * wouldn't get it, so you might have to do something clever around the 
- * start_track call or something, i'm not sure.
- * 
- * -Jon
- */
 error_code
 rip_manager_start(void (*status_callback)(int message, void *data), 
 			     RIP_MANAGER_OPTIONS *options)
 {
+    int ret = 0;
+    m_started_sem = threadlib_create_sem();
+    if (m_ripping)
+	return SR_SUCCESS;		// to prevent reentrenty
 
-	int ret = 0;
-	m_started_sem = threadlib_create_sem();
-	if (m_ripping)
-		return SR_SUCCESS;		// to prevent reentrenty
+    m_ripping = TRUE;
 
-	m_ripping = TRUE;
+    initialize_default_locale(&options->cs_opt);
 
-	initialize_default_locale(&options->cs_opt);
+    if (!options)
+	return SR_ERROR_INVALID_PARAM;
 
-	if (!options)
-		return SR_ERROR_INVALID_PARAM;
+    filelib_init(GET_COUNT_FILES(options->flags),
+		 GET_KEEP_INCOMPLETE(options->flags),
+		 GET_SINGLE_FILE_OUTPUT(options->flags),
+		 options->output_file);
+    socklib_init();
 
-	filelib_init(GET_COUNT_FILES(options->flags),
-			GET_KEEP_INCOMPLETE(options->flags),
-			GET_SINGLE_FILE_OUTPUT(options->flags),
-			options->output_file);
-	socklib_init();
+    init_error_strings();
+    m_in.get_input_data = myrecv;
+    m_status_callback = status_callback;
+    m_destroy_func = NULL;
+    m_bytes_ripped = 0;
 
-	init_error_strings();
-	m_in.get_input_data = myrecv;
-	m_status_callback = status_callback;
-	m_destroy_func = NULL;
-	m_bytes_ripped = 0;
+    /* Initialize the parsing rules */
+    init_metadata_parser (options->rules_file);
 
-	/*
-  	 * Get a local copy of the options passed
-  	 */
-	memcpy(&m_options, options, sizeof(RIP_MANAGER_OPTIONS));
+    /* Get a local copy of the options passed */
+    memcpy(&m_options, options, sizeof(RIP_MANAGER_OPTIONS));
 
-	/*
-	 * Start the ripping thread
-	 */
-	m_ripping = TRUE;
-	if ((ret = threadlib_beginthread(&m_hthread, ripthread)) != SR_SUCCESS)
-		return ret;
-	return SR_SUCCESS;
+    /* Start the ripping thread */
+    m_ripping = TRUE;
+    if ((ret = threadlib_beginthread(&m_hthread, ripthread)) != SR_SUCCESS)
+	return ret;
+    return SR_SUCCESS;
 }
 
 void
@@ -675,9 +618,10 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
     m_opt->max_connections = 1;
 
     strcpy(m_opt->output_directory, "./");
-    m_opt->proxyurl[0] = (char)NULL;
-    m_opt->url[0] = '\0';
+    m_opt->proxyurl[0] = 0;
+    m_opt->url[0] = 0;
     m_opt->output_file[0] = 0;
+    m_opt->rules_file[0] = 0;
     strcpy(m_opt->useragent, "sr-POSIX/" SRVERSION);
 
     // Defaults for splitpoint

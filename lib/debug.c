@@ -1,10 +1,11 @@
-#include "debug.h"
-#include "types.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <rip_manager.h>
+#include "types.h"
+#include "threadlib.h"
+#include "rip_manager.h"
+#include "debug.h"
 
 #if WIN32
 	#define vsnprintf _vsnprintf
@@ -18,6 +19,7 @@
 int debug_on = 0;
 int command_line_debug = 0;
 FILE* gcsfp = 0;
+static HSEM m_debug_lock;
 
 void
 debug_enable (void)
@@ -56,6 +58,12 @@ debug_printf (char* fmt, ...)
 
     if (!debug_on) return;
 
+    if (!initialized) {
+        m_debug_lock = threadlib_create_sem();
+        threadlib_signel_sem(&m_debug_lock);
+    }
+    threadlib_waitfor_sem (&m_debug_lock);
+
 #if (DEBUG_PRINTF_TO_FILE)
     va_start (argptr, fmt);
     if (!gcsfp) {
@@ -68,6 +76,7 @@ debug_printf (char* fmt, ...)
 	fprintf (gcsfp, "STREAMRIPPER " SRPLATFORM " " SRVERSION "\n");
     }
     vfprintf (gcsfp, fmt, argptr);
+    fflush (gcsfp);
 #endif
 
     if (command_line_debug) {
@@ -86,4 +95,5 @@ debug_printf (char* fmt, ...)
 	debug_close ();
     }
 #endif
+    threadlib_signel_sem (&m_debug_lock);
 }

@@ -95,13 +95,14 @@ typedef struct RIP_MANAGER_OPTIONSst
     char output_directory[SR_MAX_PATH];	// base directory to output files too
     char output_file[SR_MAX_PATH];	// filename base when ripping without splitting
     char if_name[SR_MAX_PATH];		// local interface to use
+    char rules_file[SR_MAX_PATH];       // file that holds rules for parsing metadata
     int relay_port;			// port to use for the relay server
     u_short max_port;			// highest port the relay server can look if it needs to search
     int max_connections;                // max number of connections to relay stream
     u_long maxMB_rip_size;		// max number of megabytes that can by writen out before we stop
     u_short flags;			// all booleans logically OR'd together (see above)
     char useragent[MAX_USERAGENT_STR];	// optional, use a different useragent
-    char dropstring[MAX_DROPSTRING_LEN];// optional dropstring to be searched in metainfo;if found: metainfo dropped
+    //char dropstring[MAX_DROPSTRING_LEN];// optional dropstring to be searched in metainfo;if found: metainfo dropped
     SPLITPOINT_OPTIONS sp_opt;		// More options concerning splitpoint rules
     int timeout;			// timeout, in seconds, before a stalled connection is forcefully closed
     int dropcount;			// number of tracks at beginning of connection to always ignore

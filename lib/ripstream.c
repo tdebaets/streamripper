@@ -28,6 +28,7 @@
 #include "cbuffer.h"
 #include "findsep.h"
 #include "util.h"
+#include "parse.h"
 #include "rip_manager.h"
 #include "ripstream.h"
 #include "debug.h"
@@ -63,7 +64,6 @@ static char			m_no_meta_name[MAX_TRACK_LEN] = {'\0'};
 static char			*m_getbuffer = NULL;
 static int			m_find_silence = -1;
 static BOOL			m_addID3tag = TRUE;
-static char                     m_drop_string[MAX_DROPSTRING_LEN]={'\0'};
 static SPLITPOINT_OPTIONS	*m_sp_opt;
 static int			m_bitrate;
 static int			m_http_bitrate;
@@ -110,7 +110,7 @@ typedef struct ID3V2framest {
 
 error_code
 ripstream_init (IO_GET_STREAM *in, char *no_meta_name, 
-		char *drop_string, int drop_count,
+		int drop_count,
 		SPLITPOINT_OPTIONS *sp_opt, 
 		int bitrate, BOOL addID3tag)
 {
@@ -124,7 +124,6 @@ ripstream_init (IO_GET_STREAM *in, char *no_meta_name,
     m_track_count = 0;
     m_addID3tag = addID3tag;
     strcpy(m_no_meta_name, no_meta_name);
-    strcpy(m_drop_string, drop_string);
     m_drop_count = drop_count;
     m_http_bitrate = bitrate;
     m_bitrate = -1;

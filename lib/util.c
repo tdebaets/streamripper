@@ -15,7 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,8 +45,6 @@
 #endif
 #include "debug.h"
 #include "types.h"
-
-#include "regex.h"
 
 
 /* uncomment to use new i18n code */
@@ -689,115 +686,16 @@ void trim(char *str)
 
 /* This is a little different from standard strncpy, because:
    1) behavior is known when dst & src overlap
-   2) i add the null char
+   2) only copy n-1 characters max
+   3) then add the null char
 */
 void
 sr_strncpy(char* dst, char* src, int n)
 {
     int i = 0;
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < n-1; i++) {
 	dst[i] = src[i];
     }
     dst[i] = 0;
 }
 
-#define PARSERULE_DROP               0x01
-#define PARSERULE_FALLTHROUGH        0x02
-#define PARSERULE_MATCH              0x04
-#define PARSERULE_ICASE              0x08
-
-struct parse_rule {
-    int flags;
-    int artist_idx;
-    int title_idx;
-    int album_idx;
-    char* rule;
-};
-typedef struct parse_rule Parse_Rule;
-
-Parse_Rule default_rule_list[] = {
-    { 0x01, 0, 0, 0, "^A suivre:" },
-    { 0x02 | 0x08, 0, 0, 0, "(.*?)[[:space:]]*-?[[:space:]]*mp3pro" },
-    { 0x04, 1, 2, 0, "^[[:space:]]*([^-]*?)[[:space:]]*-[[:space:]]*(.*?)[[:space:]]*$" },
-    { 0x00, 0, 0, 0, 0 }
-};
-
-static void
-copy_rule_result (char* dest, char* query_string, regmatch_t* pmatch, int idx)
-{
-    if (idx > 0 && idx < 4) {
-	sr_strncpy(dest, query_string + pmatch[idx].rm_so,
-	    pmatch[idx].rm_eo - pmatch[idx].rm_so);
-    }
-}
-
-
-void
-parse_metadata (TRACK_INFO* ti)
-{
-    regex_t reg;
-    char* regex1 = "^J";
-    int cflags, eflags;
-    int rc;
-    char query_string[MAX_TRACK_LEN];
-    Parse_Rule* rulep;
-
-    ti->have_track_info = 0;
-    ti->artist[0] = 0;
-    ti->title[0] = 0;
-    ti->album[0] = 0;
-    if (!ti->raw_metadata[0]) {
-	return;
-    }
-
-    /* Loop through rules, if we find a matching rule, then use it */
-    /* For now, only default rules supported with ascii 
-       regular expressions. */
-    strcpy (query_string, ti->raw_metadata);
-    for (rulep = default_rule_list; rulep->rule; rulep++) {
-	regmatch_t pmatch[4];
-
-	cflags = REG_EXTENDED;
-	if (rulep->flags & PARSERULE_ICASE) {
-	    cflags |= REG_ICASE;
-	}
-	rc = regcomp(&reg, rulep->rule, cflags);
-	if (rc != 0) {
-	    /* Couldn't compile rule.  Ignoring... */
-	    continue;
-	}
-	eflags = 0;
-	if (rulep->flags & PARSERULE_DROP) {
-	    rc = regexec(&reg, query_string, 0, NULL, eflags);
-	    if (rc != 0) {
-		/* Didn't match rule. */
-		continue;
-	    }
-	    /* For a drop rule, we simply need to return to the 
-		caller that the metadata should be dropped. */
-	}
-	else if (rulep->flags & PARSERULE_FALLTHROUGH) {
-	    rc = regexec(&reg, query_string, 0, NULL, eflags);
-	    if (rc != 0) {
-		/* Didn't match rule. */
-		continue;
-	    }
-	    /* For a fallthrough rule, we need to update the query
-		string and continue. */
-	    sr_strncpy(query_string, query_string + pmatch[1].rm_so, pmatch[1].rm_eo - pmatch[1].rm_so);
-	}
-	else if (rulep->flags & PARSERULE_MATCH) {
-    	    eflags = 0;
-	    rc = regexec(&reg, query_string, 3, pmatch, eflags);
-	    if (rc != 0) {
-		/* Didn't match rule. */
-		continue;
-	    }
-	    copy_rule_result (ti->artist, query_string, pmatch, rulep->artist_idx);
-	    copy_rule_result (ti->title, query_string, pmatch, rulep->title_idx);
-	    copy_rule_result (ti->album, query_string, pmatch, rulep->album_idx);
-	    ti->have_track_info = 1;
-	    return;
-	}
-    }
-}

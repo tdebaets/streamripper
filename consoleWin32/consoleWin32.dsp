@@ -164,6 +164,14 @@ SOURCE=..\lib\mpeg.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\lib\parse.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\parse.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\lib\relaylib.c
 # End Source File
 # Begin Source File
