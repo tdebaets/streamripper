@@ -1,0 +1,36 @@
+How to compile Streamripper for Winamp (dec25 2001)
+
+First get the source, there are two ways to do this. The easiest is to download it from the streamripper site, http://streamripper.sourceforge.net/sr103src.zip the second is to use CVS. For cvs you'll need cvs for win32 (get it from cvshome.org) then at the command line type
+
+cvs -d:pserver:anonymous@cvs1.sourceforge.net:/cvsroot/streamripper login
+
+(a login prompt will ask for you a password, just hit enter)
+
+Then type:
+
+cvs -d:pserver:anonymous@cvs1.sourceforge.net:/cvsroot/streamripper co sripper_1x
+
+This will download the entire streamripper tree which contains (among other things):
+
+/winamp_plugin - source to the winamp plugin front end
+/lib - core streamripper lib, used in streamripper32 and unix versions
+/xaudio_sdk - mp3 decoder used for win32 version
+/console - source to the console front end (win32 and unix)
+/mpglib - source to mpglib from the LAME project, mp3 decoder used in unix versions
+/releases - binary versions of past releases
+/Streamripper32 - oddsocks win32 front end (probably out of date)
+/tinytest - unit test stuff
+
+Open up winamp_plugin/sr_winamp.dsw in visual C++, hopefully it'll just compile, however make sure that under the project settings you have:
+
+link with: ws2_32.lib xaudio.lib comctl32.lib 
+link path: ..\xaudio_sdk\lib\static\mtd
+include path: ../lib,../mpglib,../xaudio_sdk/include
+
+Try compiling it, the default output path is c:/program files/winamp/plugins, so make sure you have winamp installed on C, or change that path.
+
+If you have any questions please email me at jonclegg@yahoo.com
+
+-Jon
+
+NOTE: as of dec25 2001 it will not compile under anything but win32.
