@@ -25,6 +25,8 @@
 #include "debug.h"
 #include <assert.h>
 
+#define TEMP_STR_LEN	(MAX_FILENAME*2)
+
 /*********************************************************************************
  * Public functions
  *********************************************************************************/
@@ -57,7 +59,6 @@ static char 	m_filename_format[] = "%s%s.mp3";
 static BOOL	m_keep_incomplete = TRUE;
 
 
-
 // For now we're not going to care. If it makes it good. it not, will know 
 // When we try to create a file in the path.
 error_code mkdir_if_needed(char *str)
@@ -86,20 +87,22 @@ error_code filelib_set_output_directory(char *str)
 {
 	if (!str)
 	{
-		memset(&m_output_directory, 0, MAX_PATH);
+		//JCBUG does this make sense?
+		memset(&m_output_directory, 0, MAX_DIR_LEN);	
 		return SR_SUCCESS;
 	}
-	mkdir_if_needed(str);
-	DEBUG1((str));
-	strcpy(m_output_directory, str);
+	strncpy(m_output_directory, str, MAX_BASE_DIR_LEN);
+	mkdir_if_needed(m_output_directory);
 	add_trailing_slash(m_output_directory);
-	DEBUG1((m_output_directory));
 
 	// Make the incomplete directory
 	sprintf(m_incomplete_directory, "%s%s", m_output_directory, "incomplete");
 	mkdir_if_needed(m_incomplete_directory);
 	add_trailing_slash(m_incomplete_directory);
 
+	{
+		long t = strlen(m_incomplete_directory);
+	}
 	return SR_SUCCESS;
 }
 
@@ -125,21 +128,25 @@ BOOL file_exists(char *filename)
 	return TRUE;
 }
 
-
 error_code filelib_start(char *filename)
 {
-	char newfile[MAX_FILENAME];
-	char tfile[MAX_FILENAME];
+	char newfile[TEMP_STR_LEN];
+	char tfile[TEMP_STR_LEN];
+	long temp = 0;
 	close_file();
 	
 	trim_filename(filename, tfile);
 	sprintf(newfile, m_filename_format, m_incomplete_directory, tfile);
+	temp = strlen(newfile);
+	temp = strlen(tfile);
+	temp = MAX_PATH_LEN;
+	temp = strlen(m_incomplete_directory);
 
 	if (m_keep_incomplete)
 	{
 		int n = 1;
-		char oldfilename[MAX_FILENAME];
-		char oldfile[MAX_FILENAME];
+		char oldfilename[TEMP_STR_LEN];
+		char oldfile[TEMP_STR_LEN];
 		strcpy(oldfilename, tfile);
 		sprintf(oldfile, m_filename_format, m_incomplete_directory, tfile);
 		while(file_exists(oldfile))
@@ -161,6 +168,8 @@ error_code filelib_start(char *filename)
 					NULL);                     // no attr. template 
  	if (m_file == INVALID_HANDLE_VALUE)
 	{
+		int r = GetLastError();
+		r = strlen(newfile);
 		return SR_ERROR_CANT_CREATE_FILE;
 	}
 #else
@@ -182,17 +191,17 @@ error_code filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *f
 {
 	BOOL ok_to_write = TRUE;
 	FHANDLE test_file;
-	char newfile[MAX_FILENAME];
-	char oldfile[MAX_FILENAME];
-	char tfile[MAX_FILENAME];
+	char newfile[TEMP_STR_LEN];
+	char oldfile[TEMP_STR_LEN];
+	char tfile[TEMP_STR_LEN];
 	
 	trim_filename(filename, tfile);
 
 	close_file();
 
 	// Make new paths for the old path and new
-	memset(newfile, 0, MAX_FILENAME);
-	memset(oldfile, 0, MAX_FILENAME);
+	memset(newfile, 0, TEMP_STR_LEN);
+	memset(oldfile, 0, TEMP_STR_LEN);
 	sprintf(oldfile, m_filename_format, m_incomplete_directory, tfile);
 	
 	if (m_count != -1)
@@ -207,6 +216,7 @@ error_code filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *f
 
 		// test if we can open the file we would be overwriting
 #if WIN32
+		OutputDebugString(newfile);
 		test_file = CreateFile(newfile, GENERIC_WRITE, FILE_SHARE_READ, 
 						NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 
 						NULL);
@@ -287,18 +297,9 @@ error_code filelib_remove(char *filename)
 
 void trim_filename(char *filename, char* out)
 {
-	long tlen;
-	long odirlen;
-
+	long maxlen = MAX_PATH_LEN-strlen(m_incomplete_directory);
+	
 	strncpy(out, filename, MAX_TRACK_LEN);
 	strip_invalid_chars(out);
-
-	tlen = strlen(out);
-	odirlen = strlen(m_output_directory);
-	if (tlen+odirlen > MAX_PATH_LEN)
-	{
-		long diff = tlen+odirlen - MAX_PATH_LEN;
-		assert(diff < odirlen);
-		out[tlen-diff] = '\0';
-	}
+	out[maxlen-4] = '\0';	// -4 for ".mp3"
 }

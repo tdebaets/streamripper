@@ -7,7 +7,7 @@
 #define MAX_FILENAME_LEN	255
 #define MAX_STREAMNAME_LEN	1024
 #define MAX_SERVER_LEN		1024
-#define MAX_DIR_LEN			100
+
 
 //
 // Messages for status_callback hook in rip_manager_init()

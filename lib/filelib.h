@@ -9,7 +9,9 @@
 #ifndef MAX_PATH
 #define MAX_PATH		512
 #endif
-#define MAX_FILENAME	256+MAX_PATH
+#define MAX_FILENAME	255
+#define MAX_DIR_LEN		248
+#define MAX_BASE_DIR_LEN (248-strlen("/incomplete/"))
 
 
 extern error_code	filelib_init(BOOL do_count, BOOL keep_incomplete);
