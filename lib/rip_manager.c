@@ -516,7 +516,8 @@ start_ripping()
     strcpy(m_ripinfo.server_name, m_info.server);
 
     /* GCS testing... moved from rip_manager_start() */
-    filelib_init(GET_COUNT_FILES(m_options.flags),
+    filelib_init(GET_INDIVIDUAL_TRACKS(m_options.flags),
+		 GET_COUNT_FILES(m_options.flags),
 		 GET_KEEP_INCOMPLETE(m_options.flags),
 		 GET_SINGLE_FILE_OUTPUT(m_options.flags),
 		 m_info.content_type, 
@@ -628,7 +629,8 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
     m_opt->flags = OPT_AUTO_RECONNECT | 
 	    OPT_SEPERATE_DIRS | 
 	    OPT_SEARCH_PORTS |
-	    OPT_ADD_ID3;
+	    OPT_ADD_ID3 |
+	    OPT_INDIVIDUAL_TRACKS;
 
     /* GCS FIX: What is the difference between this timeout 
        and the one used in setsockopt()? */

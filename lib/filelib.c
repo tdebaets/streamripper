@@ -68,8 +68,8 @@ static BOOL	m_keep_incomplete = TRUE;
 static int      m_max_filename_length;
 static char 	m_show_name[SR_MAX_PATH];
 static char 	m_cue_name[SR_MAX_PATH];
-static char* m_extension;
-
+static char*	m_extension;
+static BOOL	m_do_individual_tracks;
 
 // For now we're not going to care. If it makes it good. it not, will know 
 // When we try to create a file in the path.
@@ -85,7 +85,8 @@ mkdir_if_needed(char *str)
 }
 
 error_code
-filelib_init(BOOL do_count, BOOL keep_incomplete, BOOL do_show_file,
+filelib_init(BOOL do_individual_tracks,
+	     BOOL do_count, BOOL keep_incomplete, BOOL do_show_file,
 	     int content_type, char* show_file_name)
 {
     m_file = INVALID_FHANDLE;
@@ -96,6 +97,7 @@ filelib_init(BOOL do_count, BOOL keep_incomplete, BOOL do_show_file,
     memset(&m_output_directory, 0, SR_MAX_PATH);
     m_show_name[0] = 0;
     m_do_show = do_show_file;
+    m_do_individual_tracks = do_individual_tracks;
 
     switch (content_type) {
     case CONTENT_TYPE_MP3:
@@ -194,11 +196,6 @@ filelib_set_output_directory (char* output_directory,
 #endif
     }
     add_trailing_slash (base_dir);
-    debug_printf("Base_dir is: %s\n", base_dir);
-
-    /* GCS FIX: Here is where I would actually recursively create the 
-     * base directories */
-    mkdir_if_needed(base_dir);
 
     /* Next, get full path to station directory.  If !get_separate_dir,
      * then the station directory is just the base directory. */
@@ -252,18 +249,27 @@ filelib_set_output_directory (char* output_directory,
     } else {
 	strcpy (m_output_directory, base_dir);
     }
-    debug_printf ("Trying to make m_output_directory: %s\n",
-		  m_output_directory);
-    mkdir_if_needed(m_output_directory);
 
-    /* Next, make the incomplete directory */
     sprintf(m_incomplete_directory, "%s%s", m_output_directory,
 	    "incomplete");
-    mkdir_if_needed(m_incomplete_directory);
-    add_trailing_slash(m_incomplete_directory);
 
+    /* GCS FIX: I should recursively create the base_dir */
+    if (m_do_individual_tracks || m_do_show) {
+	debug_printf("Trying to make base_dir: %s\n", base_dir);
+	mkdir_if_needed(base_dir);
+
+	debug_printf ("Trying to make m_output_directory: %s\n",
+		      m_output_directory);
+	mkdir_if_needed(m_output_directory);
+
+	/* Next, make the incomplete directory */
+	if (m_do_individual_tracks) {
+	    mkdir_if_needed(m_incomplete_directory);
+	}
+    }
     /* Finally, compute the amount of remaining path length for the 
      * music filenames */
+    add_trailing_slash(m_incomplete_directory);
     m_max_filename_length = SR_MAX_PATH - strlen(m_incomplete_directory);
 
     return SR_SUCCESS;
@@ -340,45 +346,15 @@ filelib_write_cue(TRACK_INFO* ti, int secs)
     return SR_SUCCESS;
 }
 
-#if defined (commentout)
-error_code
-filelib_write_cue(char *artist, char* title, int secs)
-{
-    static int track_no = 1;
-    int rc;
-    char buf[1024];
-
-    if (!m_do_show) return SR_SUCCESS;
-    if (!m_cue_file) return SR_SUCCESS;
-
-#if defined (commentout)
-    /* Oops, forgot that Jon doesn't like the easy way... */
-    fprintf (m_cue_file, "  TRACK %02d AUDIO\n",track_no++);
-    fprintf (m_cue_file, "    TITLE \"%s\"\n",title);
-    fprintf (m_cue_file, "    PERFORMER \"%s\"\n",artist);
-    fprintf (m_cue_file, "    INDEX 01 %02d:%02d\n",
-	secs / 60, secs % 60);
-#endif
-    rc = snprintf(buf,1024,"  TRACK %02d AUDIO\n",track_no++);
-    filelib_write(m_cue_file,buf,rc);
-    rc = snprintf(buf,1024,"    TITLE \"%s\"\n",title);
-    filelib_write(m_cue_file,buf,rc);
-    rc = snprintf(buf,1024,"    PERFORMER \"%s\"\n",artist);
-    filelib_write(m_cue_file,buf,rc);
-    rc = snprintf(buf,1024,"    INDEX 01 %02d:%02d:00\n",
-	secs / 60, secs % 60);
-    filelib_write(m_cue_file,buf,rc);
-
-    return SR_SUCCESS;
-}
-#endif
-
 error_code
 filelib_start(char *filename)
 {
     char newfile[TEMP_STR_LEN];
     char tfile[TEMP_STR_LEN];
     long temp = 0;
+
+    if (!m_do_individual_tracks) return SR_SUCCESS;
+
     close_file(&m_file);
 	
     trim_filename(filename, tfile);
@@ -417,6 +393,8 @@ filelib_end(char *filename, BOOL over_write_existing, BOOL truncate_dup, char *f
     char newfile[TEMP_STR_LEN];
     char oldfile[TEMP_STR_LEN];
     char tfile[TEMP_STR_LEN];
+
+    if (!m_do_individual_tracks) return SR_SUCCESS;
 
     trim_filename(filename, tfile);
     close_file (&m_file);
@@ -571,7 +549,7 @@ filelib_shutdown()
      * We're just calling this to zero out 
      * the vars, it's not really nessasary.
      */
-    filelib_init(FALSE, TRUE, FALSE, CONTENT_TYPE_MP3, 0);
+    filelib_init(TRUE, FALSE, TRUE, FALSE, CONTENT_TYPE_MP3, 0);
 }
 
 error_code

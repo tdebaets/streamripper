@@ -229,6 +229,7 @@ void print_usage()
     fprintf(stderr, "Opts:  -h            - Print this listing\n");
     fprintf(stderr, "       -v            - Print version info and quit\n");
     fprintf(stderr, "       -a [file]     - Rip to single file, default name is timestamped\n");
+    fprintf(stderr, "       -A            - Don't write individual tracks\n");
     fprintf(stderr, "       -d dir        - The destination directory\n");
     fprintf(stderr, "       -s            - Don't create a directory for each stream\n");
     fprintf(stderr, "       -r [port]     - Create relay server on base port, default port 8000\n");
@@ -387,6 +388,9 @@ void parse_arguments(int argc, char **argv)
 	    i++;
 	    strncpy(m_opt.if_name, argv[i], SR_MAX_PATH);
 	    break;
+	case 'A':
+	    m_opt.flags ^= OPT_INDIVIDUAL_TRACKS;
+	    break;
  	case 'M':
  	    i++;
  	    m_opt.maxMB_rip_size = atoi(argv[i]);
@@ -417,7 +421,7 @@ parse_extended_options (char* rule)
 {
     int x,y;
 
-    /* Misc options */
+    /* Logging options */
     if (!strcmp(rule,"debug")) {
 	debug_enable();
 	return;

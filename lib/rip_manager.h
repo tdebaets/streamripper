@@ -60,6 +60,7 @@ typedef struct RIP_MANAGER_INFOst
 #define OPT_KEEP_INCOMPLETE	0x00000400		// overwrite files in the incomplete directory, add counter instead
 #define OPT_SINGLE_FILE_OUTPUT	0x00000800		// enable ripping to single file
 #define OPT_TRUNCATE_DUPS	0x00001000		// truncate file in the incomplete directory already present in complete
+#define OPT_INDIVIDUAL_TRACKS	0x00002000		// should we write the individual tracks?
 
 #define OPT_FLAG_ISSET(flags, opt)	((flags & opt) > 0)
 #define OPT_FLAG_SET(flags, opt)	(flags =| opt)
@@ -76,6 +77,7 @@ typedef struct RIP_MANAGER_INFOst
 #define GET_KEEP_INCOMPLETE(flags)		(OPT_FLAG_ISSET(flags, OPT_KEEP_INCOMPLETE))
 #define GET_SINGLE_FILE_OUTPUT(flags)		(OPT_FLAG_ISSET(flags, OPT_SINGLE_FILE_OUTPUT))
 #define GET_TRUNCATE_DUPS(flags)		(OPT_FLAG_ISSET(flags, OPT_TRUNCATE_DUPS))
+#define GET_INDIVIDUAL_TRACKS(flags)		(OPT_FLAG_ISSET(flags, OPT_INDIVIDUAL_TRACKS))
 
 #define SET_AUTO_RECONNECT(flags)		(OPT_FLAG_SET(flags, OPT_AUTO_RECONNECT))
 #define SET_SEPERATE_DIRS(flags)		(OPT_FLAG_SET(flags, OPT_SEPERATE_DIRS))
@@ -89,6 +91,7 @@ typedef struct RIP_MANAGER_INFOst
 #define SET_KEEP_INCOMPLETE(flags)		(OPT_FLAG_SET(flags, OPT_KEEP_INCOMPLETE))
 #define SET_SINGLE_FILE_OUTPUT(flags)		(OPT_FLAG_SET(flags, OPT_SINGLE_FILE_OUTPUT))
 #define SET_TRUNCATE_DUPS(flags)		(OPT_FLAG_SET(flags, OPT_TRUNCATE_DUPS))
+#define SET_INDIVIDUAL_TRACKS(flags)		(OPT_FLAG_SET(flags, OPT_INDIVIDUAL_TRACKS))
 
 
 typedef struct RIP_MANAGER_OPTIONSst

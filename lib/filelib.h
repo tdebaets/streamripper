@@ -58,7 +58,8 @@
 #define SR_MAX_BASE_W_DATE (SR_MAX_BASE-SR_MIN_COMPLETE_W_DATE)
 
 
-error_code filelib_init(BOOL do_count, BOOL keep_incomplete, 
+error_code filelib_init(BOOL do_individual_tracks,
+			BOOL do_count, BOOL keep_incomplete, 
 			BOOL do_single_file, 	     
 			int content_type, char* show_file_name);
 error_code filelib_start(char *filename);
