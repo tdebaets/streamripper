@@ -233,7 +233,19 @@ SOURCE=..\lib\util.h
 # End Group
 # Begin Source File
 
+SOURCE=..\configure.ac
+# End Source File
+# Begin Source File
+
 SOURCE=..\gcs_notes.txt
+# End Source File
+# Begin Source File
+
+SOURCE=..\makedist_win.bat
+# End Source File
+# Begin Source File
+
+SOURCE=..\winamp_plugin\sr2x.nsi
 # End Source File
 # End Target
 # End Project
