@@ -30,7 +30,6 @@
 /*********************************************************************************
  * Public functions
  *********************************************************************************/
-error_code	filelib_init(BOOL do_count, BOOL keep_incomplete);
 error_code	filelib_start(char *filename);
 error_code	filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath);
 error_code	filelib_write(char *buf, u_long size);
@@ -43,21 +42,26 @@ error_code  filelib_remove(char *filename);
  * Private Functions
  *********************************************************************************/
 static error_code	mkdir_if_needed(char *str);
-static void			close_file();
-static BOOL			file_exists(char *filename);
+static void		close_file();
+static BOOL		file_exists(char *filename);
 static void trim_filename(char *filename, char* out);
+static void trim_mp3_suffix(char *filename, char* out);
 
 
 /*********************************************************************************
  * Private Vars
  *********************************************************************************/
 static FHANDLE 	m_file;
+static FHANDLE 	m_single_file;
+static FHANDLE  m_cue_file;
 static int 	m_count;
 static char 	m_output_directory[MAX_PATH];
 static char 	m_incomplete_directory[MAX_PATH];
 static char 	m_filename_format[] = "%s%s.mp3";
 static BOOL	m_keep_incomplete = TRUE;
 static int      m_max_filename_length;
+static char 	m_single_file_name[MAX_PATH];
+static char 	m_cue_name[MAX_PATH];
 
 
 // For now we're not going to care. If it makes it good. it not, will know 
@@ -73,38 +77,50 @@ error_code mkdir_if_needed(char *str)
 
 }
 
-error_code filelib_init(BOOL do_count, BOOL keep_incomplete)
+error_code
+filelib_init(BOOL do_count, BOOL keep_incomplete, BOOL do_single_file,
+	     char* single_file_name)
 {
-	m_file = INVALID_FHANDLE;
-	m_count = do_count ? 1 : -1;
-	m_keep_incomplete = keep_incomplete;
-	memset(&m_output_directory, 0, MAX_PATH);
+    m_file = INVALID_FHANDLE;
+    m_single_file = INVALID_FHANDLE;
+    m_cue_file = INVALID_FHANDLE;
+    m_count = do_count ? 1 : -1;
+    m_keep_incomplete = keep_incomplete;
+    memset(&m_output_directory, 0, MAX_PATH);
 
-	return SR_SUCCESS;
+    if (do_single_file) {
+	trim_mp3_suffix (single_file_name, m_single_file_name);
+	if (strlen(m_single_file_name) > MAX_PATH - 5) {
+	    return SR_ERROR_DIR_PATH_TOO_LONG;
+	}
+	strcpy (m_cue_name, m_single_file_name);
+	strcat (m_cue_name, ".cue");
+	strcat (m_single_file_name, ".mp3");
+
+	/* Open the files the files */
+    }
+
+    return SR_SUCCESS;
 }
 
 error_code
 filelib_set_output_directory(char *str)
 {
-	if (!str)
-	{
-		//JCBUG does this make sense?
-		memset(&m_output_directory, 0, MAX_DIR_LEN);	
-		return SR_SUCCESS;
-	}
-	strncpy(m_output_directory, str, MAX_BASE_DIR_LEN);
-	mkdir_if_needed(m_output_directory);
-	add_trailing_slash(m_output_directory);
-
-	// Make the incomplete directory
-	sprintf(m_incomplete_directory, "%s%s", m_output_directory,
-		"incomplete");
-	mkdir_if_needed(m_incomplete_directory);
-	add_trailing_slash(m_incomplete_directory);
-	{
-		long t = strlen(m_incomplete_directory);
-	}
+    if (!str) {
+	//JCBUG does this make sense?
+	memset(&m_output_directory, 0, MAX_DIR_LEN);	
 	return SR_SUCCESS;
+    }
+    strncpy(m_output_directory, str, MAX_BASE_DIR_LEN);
+    mkdir_if_needed(m_output_directory);
+    add_trailing_slash(m_output_directory);
+
+    // Make the incomplete directory
+    sprintf(m_incomplete_directory, "%s%s", m_output_directory,
+	    "incomplete");
+    mkdir_if_needed(m_incomplete_directory);
+    add_trailing_slash(m_incomplete_directory);
+    return SR_SUCCESS;
 }
 
 void
@@ -115,24 +131,22 @@ filelib_set_max_filename_length (int mfl)
 
 void close_file()
 {
-	if (m_file)
-	{
-		CloseFile(m_file);
-		m_file = INVALID_FHANDLE;
-	}
+    if (m_file) {
+	CloseFile(m_file);
+	m_file = INVALID_FHANDLE;
+    }
 }
 
 BOOL file_exists(char *filename)
 {
-	FHANDLE f = OpenFile(filename);
+    FHANDLE f = OpenFile(filename);
 
- 	if (f == INVALID_FHANDLE)
-	{
-		return FALSE;
-	}
+    if (f == INVALID_FHANDLE) {
+	return FALSE;
+    }
 
-	CloseFile(f);
-	return TRUE;
+    CloseFile(f);
+    return TRUE;
 }
 
 error_code filelib_start(char *filename)
@@ -149,15 +163,13 @@ error_code filelib_start(char *filename)
 	temp = MAX_PATH_LEN;
 	temp = strlen(m_incomplete_directory);
 
-	if (m_keep_incomplete)
-	{
+	if (m_keep_incomplete) {
 		int n = 1;
 		char oldfilename[TEMP_STR_LEN];
 		char oldfile[TEMP_STR_LEN];
 		strcpy(oldfilename, tfile);
 		sprintf(oldfile, m_filename_format, m_incomplete_directory, tfile);
-		while(file_exists(oldfile))
-		{
+		while(file_exists(oldfile)) {
 			sprintf(oldfilename, "%s(%d)", tfile, n);
 			sprintf(oldfile, m_filename_format, m_incomplete_directory, oldfilename);
 			n++;
@@ -173,7 +185,7 @@ error_code filelib_start(char *filename)
 					CREATE_ALWAYS,             // existing file only 
 					FILE_ATTRIBUTE_NORMAL,     // normal file 
 					NULL);                     // no attr. template 
- 	if (m_file == INVALID_HANDLE_VALUE)
+ 	if (m_file == INVALID_FHANDLE)
 	{
 		int r = GetLastError();
 		r = strlen(newfile);
@@ -192,74 +204,64 @@ error_code filelib_start(char *filename)
 }
 
 // Moves the file from incomplete to output directory
-// Needs to be tested, added ok_to_write = FALSE, before it wasn't even
-// initilzed. 
-// *** fullpath must be over MAX_FILENAME len
-error_code filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath)
+error_code
+filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath)
 {
-	BOOL ok_to_write = TRUE;
-	FHANDLE test_file;
-	char newfile[TEMP_STR_LEN];
-	char oldfile[TEMP_STR_LEN];
-	char tfile[TEMP_STR_LEN];
-	
-	trim_filename(filename, tfile);
+    BOOL ok_to_write = TRUE;
+    FHANDLE test_file;
+    char newfile[TEMP_STR_LEN];
+    char oldfile[TEMP_STR_LEN];
+    char tfile[TEMP_STR_LEN];
 
-	close_file();
+    trim_filename(filename, tfile);
 
-	// Make new paths for the old path and new
-	memset(newfile, 0, TEMP_STR_LEN);
-	memset(oldfile, 0, TEMP_STR_LEN);
-	sprintf(oldfile, m_filename_format, m_incomplete_directory, tfile);
-	
-	if (m_count != -1)
-		sprintf(newfile, "%s%03d_%s.mp3", m_output_directory, m_count, tfile);
-	else
-		sprintf(newfile, m_filename_format, m_output_directory, tfile);
+    close_file();
 
-	// If we are over writing exsiting tracks
-	if (!over_write_existing)
-	{
-		ok_to_write = FALSE;
+    // Make new paths for the old path and new
+    memset(newfile, 0, TEMP_STR_LEN);
+    memset(oldfile, 0, TEMP_STR_LEN);
+    sprintf(oldfile, m_filename_format, m_incomplete_directory, tfile);
 
-		// test if we can open the file we would be overwriting
+    if (m_count != -1)
+        sprintf(newfile, "%s%03d_%s.mp3", m_output_directory, m_count, tfile);
+    else
+	sprintf(newfile, m_filename_format, m_output_directory, tfile);
+
+    // If we are over writing existing tracks
+    if (!over_write_existing) {
+	ok_to_write = FALSE;
+
+	// test if we can open the file we would be overwriting
 #if WIN32
-		OutputDebugString(newfile);
-		test_file = CreateFile(newfile, GENERIC_WRITE, FILE_SHARE_READ, 
-						NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 
-						NULL);
-		if (test_file == INVALID_HANDLE_VALUE)
+	OutputDebugString(newfile);
+	test_file = CreateFile(newfile, GENERIC_WRITE, FILE_SHARE_READ, 
+				NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 
+				NULL);
 #else
-		test_file = open(newfile, O_WRONLY | O_EXCL);
-		if (test_file == -1)
+	test_file = open(newfile, O_WRONLY | O_EXCL);
 #endif
-			ok_to_write = TRUE;
-		else
-			CloseFile(test_file);
-	}
+	if (test_file == INVALID_FHANDLE)
+	    ok_to_write = TRUE;
+	else
+	    CloseFile(test_file);
+    }
 
-	if (ok_to_write)
-	{
-		// JCBUG -- clean this up
-		int x = DeleteFile(newfile);
-		x = MoveFile(oldfile, newfile);
-//		if (!MOVE_FILE(oldfile, newfile))
-//		{
-//			int x = GetLastError();
-//			return SR_ERROR_FAILED_TO_MOVE_FILE;
-//		}
-	}
-	
-	if (fullpath)
-		strcpy(fullpath, newfile); 
+    if (ok_to_write) {
+	// JCBUG -- clean this up
+	int x = DeleteFile(newfile);
+	x = MoveFile(oldfile, newfile);
+    }
 
-	if (m_count != -1)
-		m_count++;
-	return SR_SUCCESS;
+    if (fullpath)
+	strcpy(fullpath, newfile); 
+    if (m_count != -1)
+	m_count++;
+    return SR_SUCCESS;
 }
 
 
-error_code filelib_write(char *buf, u_long size)
+error_code
+filelib_write(char *buf, u_long size)
 {
 	if (!m_file)
 	{
@@ -276,7 +278,6 @@ error_code filelib_write(char *buf, u_long size)
 	if (write(m_file, buf, size) == -1)
 		return SR_ERROR_CANT_WRITE_TO_FILE;
 #endif
-		
 
 	return SR_SUCCESS;
 }
@@ -289,7 +290,7 @@ void filelib_shutdown()
     	 * We're just calling this to zero out 
 	 * the vars, it's not really nessasary.
 	 */
-	filelib_init(FALSE, TRUE);
+	filelib_init(FALSE, TRUE, FALSE, 0);
 }
 
 error_code filelib_remove(char *filename)
@@ -303,16 +304,22 @@ error_code filelib_remove(char *filename)
 	return SR_SUCCESS;
 }
 
-void trim_filename(char *filename, char* out)
+static void
+trim_filename(char *filename, char* out)
 {
-#if defined (commentout)
-    /* GCS This would have worked, except that m_incomplete_directory
-	is usually a relative path */
-    long maxlen = MAX_PATH_LEN-strlen(m_incomplete_directory);
-#endif
     long maxlen = m_max_filename_length;
     strncpy(out, filename, MAX_TRACK_LEN);
     strip_invalid_chars(out);
     out[maxlen-4] = '\0';	// -4 for ".mp3"
 }
 
+static void
+trim_mp3_suffix(char *filename, char* out)
+{
+    char* suffix_ptr;
+    strncpy(out, filename, MAX_PATH);
+    suffix_ptr = out + strlen(out) - 4;  // -4 for ".mp3"
+    if (strcmp(suffix_ptr,".mp3") == 0) {
+	*suffix_ptr = 0;
+    }
+}

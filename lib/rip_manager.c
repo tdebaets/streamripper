@@ -767,7 +767,9 @@ error_code rip_manager_start(void (*status_callback)(int message, void *data),
 		return SR_ERROR_INVALID_PARAM;
 
 	filelib_init(GET_COUNT_FILES(options->flags),
-				 GET_KEEP_INCOMPLETE(options->flags));
+			GET_KEEP_INCOMPLETE(options->flags),
+			GET_SINGLE_FILE_OUTPUT(options->flags),
+			options->output_file);
 	socklib_init();
 
 	init_error_strings();

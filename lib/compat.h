@@ -43,7 +43,6 @@
 #endif 
 
 // Thread Routines
-////////////////////////////////////////// 
 #if WIN32
 #define THANDLE	HANDLE
 #define BeginThread(_thandle_, callback) \

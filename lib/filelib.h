@@ -19,8 +19,9 @@
 #define MAX_DIR_LEN		248
 #define MAX_BASE_DIR_LEN (248-strlen("/incomplete/"))
 
-
-extern error_code	filelib_init(BOOL do_count, BOOL keep_incomplete);
+extern error_code
+filelib_init(BOOL do_count, BOOL keep_incomplete, BOOL do_single_file,
+	     char* single_file_name);
 extern error_code	filelib_start(char *filename);
 extern error_code	filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath);
 extern error_code	filelib_write(char *buf, u_long size);
