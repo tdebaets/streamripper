@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-#define SRVERSION	"1.60.1"
+#define SRVERSION	"1.60.2"
 
 #define MAX_STATUS_LEN		256
 #define MAX_FILENAME_LEN	255
@@ -16,10 +16,10 @@
 // used for notifing to client whats going on *DO NOT* call rip_mananger_start or rip_mananger_stop from
 // these functions!!! it will cause a deadlock
 //
-#define RM_UPDATE		0x01		// returns a pointer RIP_MANAGER_INFO struct
-#define RM_ERROR		0x02		// returns the error code
-#define RM_DONE			0x03		// NULL
-#define RM_STARTED		0x04		// NULL
+#define RM_UPDATE	0x01		// returns a pointer RIP_MANAGER_INFO struct
+#define RM_ERROR	0x02		// returns the error code
+#define RM_DONE		0x03		// NULL
+#define RM_STARTED	0x04		// NULL
 #define RM_NEW_TRACK	0x05		// Name of the new track
 #define RM_TRACK_DONE	0x06		// pull path of the track completed
 #define RM_OUTPUT_DIR	0x07		// Full path of the output directory
