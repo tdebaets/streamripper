@@ -236,21 +236,6 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDI_SR_ICON             ICON    DISCARDABLE     "sricon.ico"
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Dialog Info
-//
-
-IDD_PROPPAGE_CON DLGINIT
-BEGIN
-    IDC_USERAGENT, 0x403, 15, 0
-0x6957, 0x616e, 0x706d, 0x504d, 0x4745, 0x322f, 0x372e, "\000" 
-    IDC_USERAGENT, 0x403, 17, 0
-0x7453, 0x6572, 0x6d61, 0x6972, 0x7070, 0x7265, 0x312f, 0x782e, "\000" 
-    0
-END
-
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
 

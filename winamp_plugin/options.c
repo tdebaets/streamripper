@@ -406,7 +406,6 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
       - useragent
       - use old way
     */
-
     if (saveload) {
 	set_to_checkbox(hWnd, IDC_RECONNECT, &m_opt->flags, OPT_AUTO_RECONNECT);
 	set_to_checkbox(hWnd, IDC_MAKE_RELAY, &m_opt->flags, OPT_MAKE_RELAY);

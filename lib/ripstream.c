@@ -68,6 +68,7 @@ static BOOL			m_addID3tag = TRUE;
 static char                     m_drop_string[MAX_DROPSTRING_LEN]={'\0'};
 static SPLITPOINT_OPTIONS	*m_sp_opt;
 static int			m_bitrate;
+static int			m_http_bitrate;
 static int			m_meta_interval;
 static unsigned int		m_cue_sheet_bytes = 0;
 
@@ -127,10 +128,9 @@ ripstream_init (IO_GET_STREAM *in, char *no_meta_name,
     m_addID3tag = addID3tag;
     strcpy(m_no_meta_name, no_meta_name);
     strcpy(m_drop_string, drop_string);
-    /* Some streams don't have the bitrate in the http header, 
-     * so let's ignore that one and get it directly from the stream. */
-    /* m_bitrate = bitrate; */
+    m_http_bitrate = bitrate;
     m_bitrate = -1;
+    /* GCS RMK: If no meta data, then this is the default chunk size. */
     m_meta_interval = in->getsize;
     m_cue_sheet_bytes = 0;
 
@@ -199,7 +199,7 @@ ripstream_rip()
 	debug_printf("m_in->get_data bad return code(?) %d", ret);
 	// If it is a single track recording, finish the track
 	// if end_track is successful
-        /* GCS - This test is never true. */
+        /* GCS - This test is never true -- vestigal from live365 */
 	if (is_no_meta_track()) {
 	    int ret2;
 	    ret2 = end_track(cbuffer_get_used(&m_cbuffer),
@@ -224,15 +224,19 @@ ripstream_rip()
         /* The bitrate is needed to do the track splitting parameters 
 	 * properly in seconds.  See the readme file for details.  */
 	if (m_bitrate == 0) {
-	    /* I'm not sure what this means, but let's go with 24k ... */
-	    m_bitrate = 24;
+	    /* I'm not sure what this means, but let's go with 
+	     * what the http header says... */
+	    if (m_http_bitrate > 0)
+		m_bitrate = m_http_bitrate;
+	    else
+		m_bitrate = 24;
 	}
         compute_cbuffer_size (m_sp_opt, m_bitrate, m_in->getsize);
 	ret = cbuffer_init(&m_cbuffer, m_in->getsize * m_cbuffer_size);
 	if (ret != SR_SUCCESS) return ret;
     }
 
-    /* GCS - This test is never true. */
+    /* GCS - This test is never true -- vestigal from live365 */
     // if the current track matchs with the special no track info 
     // name we declair that we are no longer on the first track 
     // (or the last for that matter)

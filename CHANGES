@@ -3,6 +3,8 @@ New for 1.60.7
 --------------
 * Send metadata to relay stream
 * Add plugin gui prop page for splitpoints options
+* Fix crash when bitrate==0
+* Fix crash when no metadata reported as 0
 
 New for 1.60.6
 --------------

@@ -319,16 +319,18 @@ httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
 
     //get the meta interval
     start = (char*)strstr(header, "icy-metaint:");
-    if (start)
-    {
+    if (start) {
         sscanf(start, "icy-metaint:%i", &info->meta_interval);
-        if (info->meta_interval < 1)
-        {
+        if (info->meta_interval < 1) {
+	    info->meta_interval = NO_META_INTERVAL;
+#if defined (commentout)
+	    /* GCS: I don't think we want an error here.  */
             return SR_ERROR_NO_META_INTERVAL;
+#endif
         }
-    }
-    else
+    } else {
         info->meta_interval = NO_META_INTERVAL;
+    }
 
     return SR_SUCCESS;
 }
