@@ -540,7 +540,8 @@ error_code start_ripping()
 	if ((ret = inet_sc_connect(&m_sock, 
 								m_options.url,
 								pproxy, 
-								&m_info)) != SR_SUCCESS)
+								&m_info,
+								GET_WINAMP_USERAGENT(m_options.flags))) != SR_SUCCESS)
 	{
 		goto RETURN_ERR;
 	}

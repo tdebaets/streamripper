@@ -267,6 +267,7 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 	- anon usage
 	- proxy server
 	- local machine name
+	- fake winamp/winamp useragent
 	*/
 
 	if (saveload)
@@ -278,6 +279,7 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 		m_guiOpt->m_allow_touch = get_checkbox(hWnd, IDC_ALLOW_TOUCH);
 		GetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl, MAX_URL_LEN);
 		GetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost, MAX_HOST_LEN);
+		set_to_checkbox(hWnd, IDC_WINAMP_USERAGENT, &m_opt->flags, OPT_WINAMP_USERAGENT);
 	}
 	else
 	{
@@ -291,6 +293,7 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 		set_checkbox(hWnd, IDC_ALLOW_TOUCH, m_guiOpt->m_allow_touch);
 		SetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl);
 		SetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost);
+		set_checkbox(hWnd, IDC_WINAMP_USERAGENT, OPT_FLAG_ISSET(m_opt->flags, OPT_WINAMP_USERAGENT));
 	}
 
 }
@@ -359,6 +362,7 @@ LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 				case IDC_LOCALHOST:
 				case IDC_ALLOW_TOUCH:
 				case IDC_KEEP_INCOMPLETE:
+				case IDC_WINAMP_USERAGENT:
 					PropSheet_Changed(GetParent(hWnd), hWnd);
 					break;
 			}
@@ -392,7 +396,8 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 			date_stamp,
 			add_id3,
 			check_max_btyes,
-			keep_incomplete;
+			keep_incomplete,
+			fake_winamp;
 
 	if (!get_desktop_folder(desktop_path))
 	{
@@ -424,6 +429,7 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	check_max_btyes = GetPrivateProfileInt(APPNAME, "check_max_bytes", FALSE, filename);
 	opt->maxMB_rip_size = GetPrivateProfileInt(APPNAME, "maxMB_bytes", 0, filename);
 	keep_incomplete = GetPrivateProfileInt(APPNAME, "keep_incomplete", TRUE, filename);
+	fake_winamp = GetPrivateProfileInt(APPNAME, "fake_winamp", FALSE, filename);
 
 	guiOpt->m_add_finshed_tracks_to_playlist = GetPrivateProfileInt(APPNAME, "add_tracks_to_playlist", FALSE, filename);
 	guiOpt->m_start_minimized = GetPrivateProfileInt(APPNAME, "start_minimized", FALSE, filename);
@@ -446,6 +452,7 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	if (add_id3) opt->flags |= OPT_ADD_ID3;
 	if (check_max_btyes) opt->flags |= OPT_CHECK_MAX_BYTES;
 	if (keep_incomplete) opt->flags |= OPT_KEEP_INCOMPLETE;
+	if (fake_winamp) opt->flags |= OPT_WINAMP_USERAGENT;
 
 	return TRUE;
 }
@@ -478,6 +485,7 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	fprintf(fp, "check_max_bytes=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_CHECK_MAX_BYTES));
 	fprintf(fp, "maxMB_bytes=%d\n", opt->maxMB_rip_size);
 	fprintf(fp, "keep_incomplete=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_KEEP_INCOMPLETE));
+	fprintf(fp, "fake_winamp=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_WINAMP_USERAGENT));
 
 
 	fprintf(fp, "add_tracks_to_playlist=%d\n", guiOpt->m_add_finshed_tracks_to_playlist);

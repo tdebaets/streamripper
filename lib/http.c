@@ -33,7 +33,7 @@
  *********************************************************************************/
 error_code	httplib_parse_url(const char *url, URLINFO *urlinfo);
 error_code	httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info);
-error_code	httplib_construct_sc_request(const char *url, BOOL proxyformat, char *buffer);
+error_code	httplib_construct_sc_request(const char *url, BOOL proxyformat, char *buffer, BOOL fakewinamp);
 error_code	httplib_construct_page_request(const char *url, BOOL proxyformat, char *buffer);
 error_code	httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size);
 
@@ -64,7 +64,7 @@ error_code httplib_parse_url(const char *url, URLINFO *urlinfo)
 }
 
 // This pretends to be WinAmp
-error_code httplib_construct_sc_request(const char *url, BOOL proxyformat, char *buffer)
+error_code httplib_construct_sc_request(const char *url, BOOL proxyformat, char *buffer, BOOL fakewinamp)
 {
 	int ret;
 	URLINFO ui;
@@ -77,14 +77,18 @@ error_code httplib_construct_sc_request(const char *url, BOOL proxyformat, char 
 	else
 		strcpy(myurl, ui.path);
 
-snprintf(buffer, MAX_HEADER_LEN + MAX_HOST_LEN + MAX_PATH_LEN,
-"GET %s HTTP/1.0\r\n\
-Host: %s:%d\r\n\
-User-Agent: Streamripper/1.x\r\n\
-Icy-MetaData:1\r\n\
-Accept: */*\r\n\r\n", myurl, ui.host, ui.port);
+	snprintf(buffer, MAX_HEADER_LEN + MAX_HOST_LEN + MAX_PATH_LEN,
+					"GET %s HTTP/1.0\r\n"
+					"Host: %s:%d\r\n"
+					"User-Agent: %s\r\n"
+					"Icy-MetaData:1\r\n"
+					"Accept: */*\r\n\r\n", 
+					myurl, 
+					ui.host, 
+					ui.port, 
+					fakewinamp ? "WinampMPEG/2.7" : "Streamripper/1.x");
+
     return SR_SUCCESS;
-//WinampMPEG/2.7\r\n
 }
 
 // Here we pretend we're IE 5, hehe
@@ -102,13 +106,16 @@ error_code httplib_construct_page_request(const char *url, BOOL proxyformat, cha
 		strcpy(myurl, ui.path);
 
 	snprintf(buffer, MAX_HEADER_LEN + MAX_HOST_LEN + MAX_PATH_LEN,
-"GET %s HTTP/1.0\r\n\
-Host: %s:%d\r\n\
-Accept: */*\r\n\
-Accept-Language: en-us\r\n\
-Accept-Encoding: gzip, deflate\r\n\
-User-Agent: Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)\r\n\
-Connection: Keep-Alive\r\n\r\n", myurl, ui.host, ui.port);
+			"GET %s HTTP/1.0\r\n"
+			"Host: %s:%d\r\n"
+			"Accept: */*\r\n"
+			"Accept-Language: en-us\r\n"
+			"Accept-Encoding: gzip, deflate\r\n"
+			"User-Agent: Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)\r\n"
+			"Connection: Keep-Alive\r\n\r\n", 
+			myurl, 
+			ui.host, 
+			ui.port);
 
 
 	return SR_SUCCESS;
