@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl AC_INIT(lib/types.h)
 
-AC_INIT(streamripper,1.61.4)
+AC_INIT(streamripper,1.61.5)
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([lib/config.h])
@@ -109,6 +109,28 @@ else
   LIBREGEX=""
   AC_SUBST(LIBREGEX)
 fi
+
+
+dnl -------- Tests for using ogg/vorbis ------
+AC_SUBST(VORBIS_CFLAGS)
+AC_SUBST(VORBIS_LIBS)
+AC_SUBST(OGG_CFLAGS)
+AC_SUBST(OGG_LIBS)
+dnl -------- (coming soon) ------
+dnl XIPH_PATH_OGG([
+dnl     AC_SUBST(OGG_CFLAGS)
+dnl     AC_SUBST(OGG_LIBS)
+dnl     AC_DEFINE(HAVE_OGG,1,[Define to 1 if you have the ogg libraries installed])
+dnl     ],
+dnl     [AC_MSG_ERROR([must have Ogg Vorbis v1.0 or above installed])
+dnl     ])
+dnl XIPH_PATH_VORBIS([
+dnl     AC_SUBST(VORBIS_CFLAGS)
+dnl     AC_SUBST(VORBIS_LIBS)
+dnl     AC_DEFINE(HAVE_VORBIS,1,[Define to 1 if you have the vorbis libraries installed])
+dnl     ],
+dnl     [AC_MSG_ERROR([must have Ogg Vorbis v1.0 or above installed])
+dnl     ])
 
 
 dnl Check for semaphore library
