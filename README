@@ -107,6 +107,14 @@ This is useful for streams that don't have meta-data.  Because these
 streams only have a single file, reconnects will cause overwriting the
 existing file, which is not desired.
 
+-T::
+Truncate completed tracks in incomplete directory.
+
+When you are not overwriting files in the complete folder, the 
+duplicate files will normally stay in the incomplete folder.  This 
+option tells streamripper to truncate the files to zero bytes 
+in the incomplete folder if they are a duplicate.
+
 -c::
 Don't auto-reconnect.
 

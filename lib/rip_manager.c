@@ -250,7 +250,7 @@ rip_manager_end_track(TRACK_INFO* ti)
     char fullpath[SR_MAX_PATH];
 
     /* GCS FIX */
-    filelib_end(ti->raw_metadata, GET_OVER_WRITE_TRACKS(m_options.flags), fullpath);
+    filelib_end(ti->raw_metadata, GET_OVER_WRITE_TRACKS(m_options.flags), GET_TRUNCATE_DUPS(m_options.flags), fullpath, m_options.szPrefix);
     post_status(0);
     m_status_callback(RM_TRACK_DONE, (void*)fullpath);
 

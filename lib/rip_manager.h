@@ -14,7 +14,7 @@
 #define MAX_STATUS_LEN		256
 #define MAX_STREAMNAME_LEN	1024
 #define MAX_SERVER_LEN		1024
-
+#define MAX_PREFIX_LEN 50
 
 // Messages for status_callback hook in rip_manager_init()
 // used for notifing to client whats going on *DO NOT* call rip_mananger_start or rip_mananger_stop from
@@ -59,6 +59,7 @@ typedef struct RIP_MANAGER_INFOst
 #define OPT_CHECK_MAX_BYTES	0x00000200		// use the maxMB_rip_size value to know how much to rip
 #define OPT_KEEP_INCOMPLETE	0x00000400		// overwrite files in the incomplete directory, add counter instead
 #define OPT_SINGLE_FILE_OUTPUT	0x00000800		// enable ripping to single file
+#define OPT_TRUNCATE_DUPS	0x00001000		// truncate file in the incomplete directory already present in complete
 
 #define OPT_FLAG_ISSET(flags, opt)	((flags & opt) > 0)
 #define OPT_FLAG_SET(flags, opt)	(flags =| opt)
@@ -74,6 +75,7 @@ typedef struct RIP_MANAGER_INFOst
 #define GET_CHECK_MAX_BYTES(flags)		(OPT_FLAG_ISSET(flags, OPT_CHECK_MAX_BYTES))
 #define GET_KEEP_INCOMPLETE(flags)		(OPT_FLAG_ISSET(flags, OPT_KEEP_INCOMPLETE))
 #define GET_SINGLE_FILE_OUTPUT(flags)		(OPT_FLAG_ISSET(flags, OPT_SINGLE_FILE_OUTPUT))
+#define GET_TRUNCATE_DUPS(flags)		(OPT_FLAG_ISSET(flags, OPT_TRUNCATE_DUPS))
 
 #define SET_AUTO_RECONNECT(flags)		(OPT_FLAG_SET(flags, OPT_AUTO_RECONNECT))
 #define SET_SEPERATE_DIRS(flags)		(OPT_FLAG_SET(flags, OPT_SEPERATE_DIRS))
@@ -86,6 +88,7 @@ typedef struct RIP_MANAGER_INFOst
 #define SET_CHECK_MAX_BYTES(flags)		(OPT_FLAG_SET(flags, OPT_CHECK_MAX_BYTES))
 #define SET_KEEP_INCOMPLETE(flags)		(OPT_FLAG_SET(flags, OPT_KEEP_INCOMPLETE))
 #define SET_SINGLE_FILE_OUTPUT(flags)		(OPT_FLAG_SET(flags, OPT_SINGLE_FILE_OUTPUT))
+#define SET_TRUNCATE_DUPS(flags)		(OPT_FLAG_SET(flags, OPT_TRUNCATE_DUPS))
 
 
 typedef struct RIP_MANAGER_OPTIONSst
@@ -107,6 +110,7 @@ typedef struct RIP_MANAGER_OPTIONSst
     int timeout;			// timeout, in seconds, before a stalled connection is forcefully closed
     int dropcount;			// number of tracks at beginning of connection to always ignore
     CODESET_OPTIONS cs_opt;             // which codeset should i use?
+    char szPrefix[MAX_PREFIX_LEN];      // might want to use a prefix for each file
 } RIP_MANAGER_OPTIONS;
 
 typedef struct ERROR_INFOst

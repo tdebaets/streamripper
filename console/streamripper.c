@@ -252,6 +252,8 @@ void print_usage()
 #if !defined (WIN32)
     fprintf(stderr, "       -I interface  - Rip from specified interface (e.g. eth0)\n");
 #endif
+    fprintf(stderr, "       -T            - Truncate duplicated tracks in incomplete\n");
+    fprintf(stderr, "       -P text       - Add a Prefix to each ripped file (Not shown on stdout).\n");
     fprintf(stderr, "       --debug       - Save debugging trace\n");
     fprintf(stderr, "       --x           - Invoke splitpoint detection rules (see online guide)\n");
 }
@@ -343,6 +345,10 @@ void parse_arguments(int argc, char **argv)
 	    i++;
 	    strncpy(m_opt.proxyurl, argv[i], MAX_URL_LEN);
 	    break;
+	case 'P':
+	    i++;
+	    strncpy(m_opt.szPrefix, argv[i], MAX_PREFIX_LEN);
+	    break;
 	case 'q':
 	    m_opt.flags ^= OPT_COUNT_FILES;
 	    break;
@@ -358,6 +364,9 @@ void parse_arguments(int argc, char **argv)
 	    break;
 	case 't':
 	    m_opt.flags |= OPT_KEEP_INCOMPLETE;
+	    break;
+	case 'T':
+	    m_opt.flags |= OPT_TRUNCATE_DUPS;
 	    break;
 	case 'u':
 	    i++;

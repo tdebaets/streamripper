@@ -63,7 +63,9 @@ error_code filelib_init(BOOL do_count, BOOL keep_incomplete,
 			int content_type, char* show_file_name);
 error_code filelib_start(char *filename);
 error_code filelib_end(char *filename, BOOL over_write_existing, 
-			    /*out*/ char *fullpath);
+		       BOOL truncate_dup,
+		       char *fullpath,
+		       char* a_pszPrefix);
 error_code filelib_write_track(char *buf, u_long size);
 error_code filelib_write_show(char *buf, u_long size);
 void filelib_shutdown();

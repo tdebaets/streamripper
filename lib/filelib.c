@@ -34,7 +34,7 @@
 error_code filelib_start(char *filename);
 error_code filelib_write_track(char *buf, u_long size);
 error_code filelib_write_show(char *buf, u_long size);
-error_code filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath);
+error_code filelib_end(char *filename, BOOL over_write_existing, BOOL truncate_dup, char *fullpath, char* a_pszPrefix);
 void filelib_shutdown();
 error_code filelib_remove(char *filename);
 
@@ -406,11 +406,13 @@ filelib_start(char *filename)
     return filelib_open_for_write(&m_file, newfile);
 }
 
-// Moves the file from incomplete to output directory
+// Moves the file from incomplete to complete directory
+// fullpath is an output parameter
 error_code
-filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath)
+filelib_end(char *filename, BOOL over_write_existing, BOOL truncate_dup, char *fullpath, char* a_pszPrefix)
 {
     BOOL ok_to_write = TRUE;
+    BOOL file_exists = FALSE;
     FHANDLE test_file;
     char newfile[TEMP_STR_LEN];
     char oldfile[TEMP_STR_LEN];
@@ -425,7 +427,7 @@ filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath)
     sprintf(oldfile, m_filename_format, m_incomplete_directory, tfile, m_extension);
 
     if (m_count != -1)
-        sprintf(newfile, "%s%03d_%s%s", m_output_directory, m_count, tfile, m_extension);
+        sprintf(newfile, "%s%s%03d_%s%s", m_output_directory, a_pszPrefix, m_count, tfile, m_extension);
     else
 	sprintf(newfile, m_filename_format, m_output_directory, tfile, m_extension);
 
@@ -442,7 +444,8 @@ filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath)
 #else
 	test_file = open(newfile, O_WRONLY | O_EXCL);
 #endif
-	if (test_file == INVALID_FHANDLE)
+	file_exists = (test_file != INVALID_FHANDLE);
+	if (!file_exists)
 	    ok_to_write = TRUE;
 	else
 	    CloseFile(test_file);
@@ -452,6 +455,10 @@ filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath)
 	// JCBUG -- clean this up
 	int x = DeleteFile(newfile);
 	x = MoveFile(oldfile, newfile);
+    } else {
+	if (truncate_dup && file_exists) {
+	    TruncateFile(oldfile);
+	}
     }
 
     if (fullpath)

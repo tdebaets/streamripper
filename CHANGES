@@ -1,3 +1,9 @@
+New for 1.61.4
+--------------
+* Add Les's patch for the -M flag.
+* Add Obiguan's patch for the -T flag.
+* Add Aussie's patch for the -P flag.
+
 New for 1.61.3
 --------------
 Sat 12-11-2004
