@@ -450,13 +450,11 @@ BOOL CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 	switch (uMsg)
 	{
 		case WM_CREATE:
-
 			if (!render_init(m_plugin.hDllInstance, hWnd, m_guiOpt.default_skin))
 			{
 				MessageBox(hWnd, "Failed to find the skin bitmap", "Error", 0);
 				break;
 			}
-
 			{
 				RECT rt = {0, 0, 276, 150};	// background
 
@@ -581,6 +579,7 @@ BOOL CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 			{
 				render_set_display_data(IDR_STREAMNAME, "Loading please wait...");
 			}
+			
 			SetTimer(hWnd, 1, 500, (TIMERPROC)UpdateDisplay);
 			dock_hook_winamp(hWnd);
 

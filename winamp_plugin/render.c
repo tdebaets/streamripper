@@ -63,6 +63,7 @@ VOID	render_do_mousemove(HWND hWnd, LONG wParam, LONG lParam);
 VOID	render_do_lbuttonup(HWND hWnd, LONG wParam, LONG lParam);
 VOID	render_do_lbuttondown(HWND hWnd, LONG wParam, LONG lParam);
 
+#define do_refresh(rect)	(InvalidateRect(m_hwnd, rect, FALSE))
 
 /*********************************************************************************
  * Private structs
@@ -89,50 +90,55 @@ typedef struct BITMAPDCst
 	HDC		hdc;
 } BITMAPDC;
 
-
+typedef struct SKINDATAst
+{
+	BITMAPDC bmdc;
+	COLORREF textcolor;
+	HBRUSH	 hbrush;
+} SKINDATA;
 
 /*********************************************************************************
  * Private functions
  *********************************************************************************/
+BOOL internal_render_do_paint(SKINDATA skind, HDC outhdc);
+
 VOID CALLBACK on_timer(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
 BOOL TrimTextOut(HDC hdc, int x, int y, int maxwidth, char *str);
-BOOL bitmapdc_from_skinfile(const char* skinfile, BITMAPDC* pbmdc);
-void bitmapdc_close(BITMAPDC bmdc);
-BOOL internal_render_do_paint(HDC skindc, HDC outhdc);
 
-#define do_refresh(rect)	(InvalidateRect(m_hwnd, rect, FALSE))
+BOOL skindata_from_file(const char* skinfile, SKINDATA* pskind);
+void skindata_close(SKINDATA skind);
+BOOL bitmapdc_from_file(const char* skinfile, BITMAPDC* bmdc);
+void bitmapdc_close(BITMAPDC b);
+
+
 
 /*********************************************************************************
  * Private Vars
  *********************************************************************************/
 static BITMAPDC		m_tempdc;
-static BITMAPDC		m_tempprevdc;
+static SKINDATA		m_offscreenskind;
 static HFONT		m_tempfont;
-static HBRUSH		m_tempbrush;
 
-static BITMAPDC		m_offscreendc;
 static int			m_num_buttons;
 static BUTTON		m_buttons[MAX_BUTTONS];
 static RECT			m_rect_background;
 static RECT			m_prog_rect;
+static POINT		m_pt_color;
 static time_t		m_time_start;
 static BOOL			m_prog_on;
-static POINT		m_prog_point;
+static POINT		m_prog_point = {0, 0};
 static COLORREF		m_prog_color;
 static HWND			m_hwnd;
 static DISPLAYDATA	m_ddinfo[IDR_NUMFIELDS];
-static COLORREF		m_text_color;
 
 BOOL render_init(HINSTANCE hInst, HWND hWnd, LPCTSTR szBmpFile)
 {
-	if (!bitmapdc_from_skinfile(szBmpFile, &m_offscreendc))
+	if (!skindata_from_file(szBmpFile, &m_offscreenskind))
 		return FALSE;
 
-	m_num_buttons = 0;
+//	m_num_buttons = 0;
 	m_tempdc.hdc = NULL;
 	m_tempdc.bm = NULL;
-	m_tempprevdc.hdc = NULL;
-	m_tempprevdc.bm = NULL;
 	
 	// Set a timer for mouseovers
 	SetTimer(hWnd, TIMER_ID, 100, (TIMERPROC)on_timer);
@@ -143,17 +149,21 @@ BOOL render_init(HINSTANCE hInst, HWND hWnd, LPCTSTR szBmpFile)
 
 BOOL render_change_skin(LPCTSTR szBmpFile)
 {
-	bitmapdc_close(m_offscreendc);
-	if (!bitmapdc_from_skinfile(szBmpFile, &m_offscreendc))
+	skindata_close(m_offscreenskind);
+	if (!skindata_from_file(szBmpFile, &m_offscreenskind))
 		return FALSE;
 	return TRUE;
 }
 
-
-
 VOID render_set_text_color(POINT pt)
 {
-	m_text_color = GetPixel(m_offscreendc.hdc, pt.x, pt.y);
+	m_pt_color = pt;
+	m_offscreenskind.textcolor = GetPixel(m_offscreenskind.bmdc.hdc, pt.x, pt.y);
+
+	if (m_offscreenskind.hbrush)
+		DeleteObject(m_offscreenskind.hbrush);
+	m_offscreenskind.textcolor = GetPixel(m_offscreenskind.bmdc.hdc, pt.x, pt.y);
+	m_offscreenskind.hbrush = CreateSolidBrush(m_offscreenskind.textcolor);
 }
 
 BOOL render_set_background(RECT *rt, POINT *rgn_points, int num_points)
@@ -377,16 +387,31 @@ BOOL TrimTextOut(HDC hdc, int x, int y, int maxwidth, char *str)
 BOOL render_destroy()
 {
 
-	DeleteDC(m_tempdc.hdc);
-	DeleteObject(m_tempdc.bm);
-	DeleteDC(m_offscreendc.hdc);
-	DeleteObject(m_offscreendc.bm);
 	DeleteObject(m_tempfont);
-	DeleteObject(m_tempbrush);
+	skindata_close(m_offscreenskind);
+	bitmapdc_close(m_tempdc);
 	return TRUE;
 }
 
-BOOL bitmapdc_from_skinfile(const char* skinfile, BITMAPDC* pbmdc)
+BOOL skindata_from_file(const char* skinfile, SKINDATA* pskind)
+{
+	if (!pskind)
+		return FALSE;
+	if (!bitmapdc_from_file(skinfile, &pskind->bmdc))
+		return FALSE;
+	pskind->textcolor = GetPixel(pskind->bmdc.hdc, m_pt_color.x, m_pt_color.y);
+	pskind->hbrush = CreateSolidBrush(pskind->textcolor);
+	return pskind->hbrush ? TRUE : FALSE;
+}
+
+void skindata_close(SKINDATA skind)
+{
+	bitmapdc_close(skind.bmdc);
+	DeleteObject(skind.hbrush);
+	skind.hbrush = NULL;
+}
+
+BOOL bitmapdc_from_file(const char* skinfile, BITMAPDC* bmdc)
 {
 	char tempfile[MAX_PATH_LEN*5];
 	
@@ -396,21 +421,24 @@ BOOL bitmapdc_from_skinfile(const char* skinfile, BITMAPDC* pbmdc)
 	strcat(tempfile, SKIN_PATH);
 	strcat(tempfile, skinfile);
 
-	pbmdc->bm = (HBITMAP) LoadImage(0, tempfile, IMAGE_BITMAP, 
+	bmdc->bm = (HBITMAP) LoadImage(0, tempfile, IMAGE_BITMAP, 
 						BIG_IMAGE_WIDTH, BIG_IMAGE_HEIGHT, 
 						LR_CREATEDIBSECTION | LR_LOADFROMFILE);
-	if (pbmdc->bm == NULL)
+	if (bmdc->bm == NULL)
 		return FALSE;
 
-	pbmdc->hdc = CreateCompatibleDC(NULL);
-	SelectObject(pbmdc->hdc, pbmdc->bm);
+	bmdc->hdc = CreateCompatibleDC(NULL);
+	SelectObject(bmdc->hdc, bmdc->bm);
+
 	return TRUE;
 }
 
-void bitmapdc_close(BITMAPDC bmdc)
+void bitmapdc_close(BITMAPDC b)
 {
-	DeleteDC(bmdc.hdc);
-	DeleteObject(bmdc.bm);
+	DeleteDC(b.hdc);
+	DeleteObject(b.bm);
+	b.hdc = NULL;
+	b.bm = NULL;
 }
 
 BOOL render_create_preview(char* skinfile, HDC hdc, long left, long right)
@@ -418,23 +446,23 @@ BOOL render_create_preview(char* skinfile, HDC hdc, long left, long right)
 	BOOL b;
 	long orig_width = WIDTH(m_rect_background);
 	long orig_hight = HEIGHT(m_rect_background);
-	BITMAPDC skindc;
+	SKINDATA skind;
 	BITMAPDC tempdc;
 
-	if (!bitmapdc_from_skinfile(skinfile, &skindc))
+	if (!skindata_from_file(skinfile, &skind))
 		return FALSE;
 
-	tempdc.hdc = CreateCompatibleDC(skindc.hdc);
-	tempdc.bm = CreateCompatibleBitmap(skindc.hdc, orig_width, orig_hight);
+	tempdc.hdc = CreateCompatibleDC(skind.bmdc.hdc);
+	tempdc.bm = CreateCompatibleBitmap(skind.bmdc.hdc, orig_width, orig_hight);
 	SelectObject(tempdc.hdc, tempdc.bm);
 
-	if (!internal_render_do_paint(skindc.hdc, tempdc.hdc))
+	if (!internal_render_do_paint(skind, tempdc.hdc))
 		return FALSE;
 	b = StretchBlt(hdc, left, right, orig_width / 2, orig_hight / 2,
 					tempdc.hdc, 0, 0, orig_width, orig_hight, 
 					SRCCOPY);
 	bitmapdc_close(tempdc);
-	bitmapdc_close(skindc);
+	skindata_close(skind);
 	if (!b)
 		return FALSE;
 	return TRUE;
@@ -442,25 +470,26 @@ BOOL render_create_preview(char* skinfile, HDC hdc, long left, long right)
 
 BOOL render_do_paint(HDC hdc)
 {
-	return internal_render_do_paint(m_offscreendc.hdc, hdc);
+	return internal_render_do_paint(m_offscreenskind, hdc);
 }
 
 
-BOOL internal_render_do_paint(HDC skinhdc, HDC outhdc)
+BOOL internal_render_do_paint(SKINDATA skind, HDC outhdc)
 {
 	BUTTON *b;
 	RECT *prt;
 	int i;
+	HDC thdc = skind.bmdc.hdc;
 
-//	DEBUG2(( "render_do_paint: %d\n", skinhdc ));
+//	DEBUG2(( "render_do_paint: %d\n", thdc ));
 
 	// Create out temp dc if we haven't made it yet
 	if (m_tempdc.hdc == NULL)
 	{
 		LOGFONT ft;
 
-		m_tempdc.hdc = CreateCompatibleDC(skinhdc);
-		m_tempdc.bm = CreateCompatibleBitmap(skinhdc, WIDTH(m_rect_background), 
+		m_tempdc.hdc = CreateCompatibleDC(thdc);
+		m_tempdc.bm = CreateCompatibleBitmap(thdc, WIDTH(m_rect_background), 
 						HEIGHT(m_rect_background));
 		SelectObject(m_tempdc.hdc, m_tempdc.bm);
 
@@ -472,8 +501,6 @@ BOOL internal_render_do_paint(HDC skinhdc, HDC outhdc)
 		m_tempfont = CreateFontIndirect(&ft);
 		SelectObject(m_tempdc.hdc, m_tempfont);
 
-
-		m_tempbrush = CreateSolidBrush(m_text_color);
 	}
 
 
@@ -483,7 +510,7 @@ BOOL internal_render_do_paint(HDC skinhdc, HDC outhdc)
 		   0, 
 		   WIDTH(m_rect_background),
 		   HEIGHT(m_rect_background),
-		   skinhdc,
+		   thdc,
 		   m_rect_background.left,
 		   m_rect_background.top,
 		   SRCCOPY);
@@ -498,7 +525,7 @@ BOOL internal_render_do_paint(HDC skinhdc, HDC outhdc)
 			   b->dest.top,
 			   WIDTH(b->dest),
 			   HEIGHT(b->dest),
-			   skinhdc,
+			   thdc,
 			   prt->left,
 			   prt->top,
 			   SRCCOPY);
@@ -517,7 +544,7 @@ BOOL internal_render_do_paint(HDC skinhdc, HDC outhdc)
 
 		time(&now);
 		num_bars = (now-m_time_start) % 15;	// number of bars to draw
-		FrameRect(m_tempdc.hdc, &rt, m_tempbrush);
+		FrameRect(m_tempdc.hdc, &rt, skind.hbrush);
 		
 		for(i = 0; i < num_bars; i++)
 		{
@@ -528,7 +555,7 @@ BOOL internal_render_do_paint(HDC skinhdc, HDC outhdc)
 					   rt.top+2,
 					   WIDTH(m_prog_rect),
 					   HEIGHT(m_prog_rect),
-					   skinhdc,
+					   thdc,
 					   m_prog_rect.left,
 					   m_prog_rect.top,
 					   SRCCOPY);
@@ -542,7 +569,7 @@ BOOL internal_render_do_paint(HDC skinhdc, HDC outhdc)
 		SetBkMode(m_tempdc.hdc, TRANSPARENT); 
 		
 		// Draw text
- 		SetTextColor(m_tempdc.hdc, m_text_color);
+ 		SetTextColor(m_tempdc.hdc, skind.textcolor);
 
 		for(i = 0; i < IDR_NUMFIELDS; i++)
 		{		
