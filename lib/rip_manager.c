@@ -242,13 +242,14 @@ error_code start_track(char *trackname)
 error_code end_track(char *trackname)
 {
 	char temptrack[MAX_TRACK_LEN];
+	char fullpath[MAX_FILENAME];
 
 	strcpy(temptrack, trackname);
 
 	strip_invalid_chars(temptrack);
-	filelib_end(temptrack, GET_OVER_WRITE_TRACKS(m_options.flags));
+	filelib_end(temptrack, GET_OVER_WRITE_TRACKS(m_options.flags), fullpath);
 	post_status(0);
-	m_status_callback(RM_TRACK_DONE, (void*)temptrack);
+	m_status_callback(RM_TRACK_DONE, (void*)fullpath);
 
 	return SR_SUCCESS;
 }
@@ -391,9 +392,11 @@ void ripthread(void *notused)
 		 * the interface it's a weird combonation of threads
 		 * wnd locks, etc.. all i know is that this appeared to work
 		 */
-		if (m_bytes_ripped >= (m_options.maxMB_rip_size*100000) &&
+		if (m_bytes_ripped >= (m_options.maxMB_rip_size*1000000) &&
 			GET_CHECK_MAX_BYTES(m_options.flags))
 		{
+			socklib_close(&m_sock);
+			destroy_subsystems();
 			post_error(SR_ERROR_MAX_BYTES_RIPPED);
 			break;
 		}
@@ -432,6 +435,8 @@ void ripthread(void *notused)
 				// functions. init_system, init_rip, shutdown_system and shutdown_rip
 				// this would be a shutdown_rip, which only lacks the filelib and socklib
 				// shutdowns
+				// because filelib needs to keep track of it's file counters, and socklib.. umm..
+				// not sure about. no reasdon to i imagine.
 				//
 				socklib_close(&m_sock);
 				relaylib_shutdown();
@@ -524,6 +529,7 @@ void destroy_subsystems()
 	socklib_cleanup();
 	filelib_shutdown();
 
+	DEBUG0(("destroy_subsystems complete"));
 }
 
 

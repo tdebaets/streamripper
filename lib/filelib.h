@@ -14,7 +14,7 @@
 
 extern error_code	filelib_init(BOOL do_count, BOOL keep_incomplete);
 extern error_code	filelib_start(char *filename);
-extern error_code	filelib_end(char *filename, BOOL over_write_existing);
+extern error_code	filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath);
 extern error_code	filelib_write(char *buf, u_long size);
 extern void			filelib_shutdown();
 extern error_code	filelib_set_output_directory(char *str);

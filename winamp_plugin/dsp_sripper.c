@@ -75,8 +75,8 @@ static HBUTTON				m_relaybut;
 static char					m_szWindowClass[] = "sripper";
 static HMENU				m_hMenu = NULL;
 static HMENU				m_hPopupMenu = NULL;
-static BOOL					m_config_enable = FALSE;
-
+static BOOL					m_doing_options_dialog = FALSE;		// a hack to make sure the options dialog is not
+																// open if the user trys to disable streamripper													
 
 winampGeneralPurposePlugin m_plugin= {GPPHDR_VER,
 									  m_szToopTip,
@@ -95,9 +95,6 @@ int init()
 	
 	winamp_init(m_plugin.hDllInstance);
 	options_load(&m_rmoOpt, &m_guiOpt);
-
-	if (m_config_enable)
-		m_guiOpt.m_enabled = TRUE;
 
 	if (!m_guiOpt.m_enabled)
 		return 0;
@@ -178,16 +175,25 @@ INT_PTR CALLBACK EnableProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 void config()
 {
 	BOOL prev_enabled = m_guiOpt.m_enabled;
+
+	if (m_doing_options_dialog)
+	{
+		MessageBox(m_hWnd, "Please close the options dialog in Streamripper before you try this", 
+						   "Can not open config dialog", 
+						   MB_ICONINFORMATION);
+		return;
+	}
+
 	DialogBox(m_plugin.hDllInstance, 
 			  MAKEINTRESOURCE(IDD_ENABLE), 
 			  m_plugin.hwndParent,
 			  EnableProc);
 
+	options_save(&m_rmoOpt, &m_guiOpt);
 	if (m_guiOpt.m_enabled)
 	{
 		if (!prev_enabled)
 		{
-			m_config_enable = TRUE;
 			init();
 		}
 	}
@@ -365,7 +371,7 @@ void RipCallback(int message, void *data)
 			break;
 		case RM_TRACK_DONE:
 			if (m_guiOpt.m_add_finshed_tracks_to_playlist)
-				winamp_add_track_to_playlist(m_output_dir, (char*)data);
+				winamp_add_track_to_playlist((char*)data);
 			break;
 		case RM_NEW_TRACK:
 			if (m_guiOpt.m_allow_touch)
@@ -420,9 +426,11 @@ void stop_button_pressed()
 
 void options_button_pressed()
 {
+	m_doing_options_dialog = TRUE;
 	options_dialog_show(m_plugin.hDllInstance, m_hWnd, &m_rmoOpt, &m_guiOpt);
 
 	render_set_button_enabled(m_relaybut, OPT_FLAG_ISSET(m_rmoOpt.flags, OPT_MAKE_RELAY)); 			
+	m_doing_options_dialog = FALSE;
 
 }
 

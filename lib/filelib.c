@@ -38,7 +38,7 @@
  *********************************************************************************/
 error_code	filelib_init(BOOL do_count, BOOL keep_incomplete);
 error_code	filelib_start(char *filename);
-error_code	filelib_end(char *filename, BOOL over_write_existing);
+error_code	filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath);
 error_code	filelib_write(char *buf, u_long size);
 error_code	filelib_set_output_directory(char *str);
 void		filelib_shutdown();
@@ -201,7 +201,8 @@ error_code filelib_start(char *filename)
 // Moves the file from incomplete to output directory
 // Needs to be tested, added ok_to_write = FALSE, before it wasn't even
 // initilzed. 
-error_code filelib_end(char *filename, BOOL over_write_existing)
+// *** fullpath must be over MAX_FILENAME len
+error_code filelib_end(char *filename, BOOL over_write_existing, /*out*/ char *fullpath)
 {
 	BOOL ok_to_write = TRUE;
 	HFILE test_file;
@@ -252,6 +253,9 @@ error_code filelib_end(char *filename, BOOL over_write_existing)
 //			return SR_ERROR_FAILED_TO_MOVE_FILE;
 //		}
 	}
+	
+	if (fullpath)
+		strcpy(fullpath, newfile); 
 
 	if (m_count != -1)
 		m_count++;

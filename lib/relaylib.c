@@ -191,11 +191,10 @@ error_code try_port(u_short port)
 
 void relaylib_shutdown()
 {
-	DEBUG1(("***relaylib_shutdown:start"));
+	DEBUG1(("relaylib_shutdown:start"));
 	if (!relaylib_isrunning())
 	{
-	DEBUG1(("***relaylib_shutdown:return"));
-
+		DEBUG1(("***relaylib_shutdown:return"));
 		return;
 	}
 	m_running = FALSE;
@@ -209,11 +208,12 @@ void relaylib_shutdown()
 		int x = WSAGetLastError();
 	}
 	memset(m_http_header, 0, MAX_HEADER_LEN);
+	DEBUG2(("waiting for relay close"));
 	threadlib_waitforclose(&m_hthread);
 	threadlib_destroy_event(&m_event_not_connected);
-	DEBUG1(("***relaylib_shutdown:done"));
 	m_hostsock = m_listensock = 0;
 
+	DEBUG1(("relaylib_shutdown:done!"));
 }
 
 

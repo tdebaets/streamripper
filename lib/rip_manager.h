@@ -19,7 +19,7 @@
 #define RM_DONE			0x03		// NULL
 #define RM_STARTED		0x04		// NULL
 #define RM_NEW_TRACK	0x05		// Name of the new track
-#define RM_TRACK_DONE	0x06		// Name of the track completed
+#define RM_TRACK_DONE	0x06		// pull path of the track completed
 #define RM_OUTPUT_DIR	0x07		// Full path of the output directory
 
 //

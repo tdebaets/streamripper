@@ -28,7 +28,7 @@
 BOOL winamp_init();			
 BOOL winamp_get_info(WINAMP_INFO *info);
 BOOL winamp_add_relay_to_playlist(char *host, u_short port);
-BOOL winamp_add_track_to_playlist(char *outputdir, char *track);
+BOOL winamp_add_track_to_playlist(char *track);
 BOOL winamp_get_path(char *path);
 
 
@@ -149,13 +149,13 @@ BOOL winamp_add_relay_to_playlist(char *host, u_short port)
 }
 
 
-BOOL winamp_add_track_to_playlist(char *outputdir, char *track)
+BOOL winamp_add_track_to_playlist(char *fullpath)
 {
 	char add_track[MAX_PATH_LEN];
 	char winamp_path[MAX_PATH_LEN];
 
 	sprintf(winamp_path, "%s%s", m_winamps_path, "winamp.exe");
-	sprintf(add_track, "/add \"%s\\%s.mp3\"", outputdir, track);
+	sprintf(add_track, "/add \"%s\"", fullpath);
 	ShellExecute(NULL, "open", winamp_path,	add_track, NULL, SW_SHOWNORMAL);
 	return TRUE;
 }
