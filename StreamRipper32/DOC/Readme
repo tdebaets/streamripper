@@ -1,0 +1,48 @@
+This documents how to get you up, running and using StreamRipper.  
+
+Well, it's pretty straightforward...Select a genre from the Genre
+dropdown and then hit the "Refresh List" button.  This will then go
+out to Shoutcast (yp.shoutcast.com) and pull the streams and put them
+into the Listbox.  Select a broadcast by double-clicking.  This will
+put the IP address and Port in the appropriate boxes on the screen.
+
+You can also manually enter an IP and Port if you want to.
+
+To start ripping hit "Rip Away" (duh) and StreamRipper32 will try to
+connect to the broadcast and start ripping the stream.
+
+There are a few instances where this technique still does not work...
+Send me the broadcast IP and port and I can try to resolve them as they
+popup. Otherwise, try another station.  Note that for only broadcasts that
+support title streaming will you be able to rip to filenames based off
+the stream title..Otherwise it will rip to a filename based off the 
+Stream Name (i.e. the Broadcast name).  Broadcasts that *appear* to
+support title streaming will appear with a "***" prepended to the name. 
+This is not a guarantee, just a best guess...It still may not support
+title streaming even though there is a "***" in front of it...
+
+If you check the "Append stream name to output dir" option, then
+StreamRipper32 will create a directory for you based off the Stream Name.
+This is especially nice and a bonus feature.. :)
+
+You will not be able to select another broadcast or start another ripping
+session while one is currently going on....Don't even try.
+
+Hitting the "OK" button closes the program.
+
+Make sure you put something in the "Output Directory" "C:\music" is good,
+but not supplying this is going to eventually frustrate the hell out of you.
+(where *is* my music going?)
+
+INSTALLATION:
+----------------------------------------------------------------------
+Nothing to do! Just create a dir to hold it and copy the exe there.
+
+
+ABOUT StreamRipper32:
+----------------------------------------------------------------------
+StreamRipper32 is essentially a windows-based front end around the
+streamripper library created by Jon Clegg (www.bigfreakinserver.com).
+I had to modify it slightly to work best with Win32, but the core logic is
+preserved.  He did an awesome job figureing out the logic behind this, and
+deserves all the credit he can get...

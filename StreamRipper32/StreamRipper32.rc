@@ -1,0 +1,304 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 9, 1\r\n"
+    "#pragma code_page(1252)\r\n"
+    "#endif //_WIN32\r\n"
+    "#include ""res\\SRipper.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""afxres.rc""         // Standard components\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON    DISCARDABLE     "res\\SRipper.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOGEX 0, 0, 235, 92
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_TOOLWINDOW
+CAPTION "About Stream Ripper 32"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,177,41,21,20
+    LTEXT           "SRipper Version 2",IDC_STATIC,161,65,63,8,SS_NOPREFIX
+    DEFPUSHBUTTON   "OK",IDOK,185,0,50,14,WS_GROUP
+    LTEXT           "Written By :",IDC_STATIC,1,5,38,8
+    LTEXT           "oddsock\nwww.oddsock.org",IDC_STATIC,87,20,76,21,
+                    SS_SUNKEN
+    LTEXT           "Jon Clegg\njonclegg@yahoo.com",IDC_STATIC,7,20,76,21,
+                    SS_SUNKEN
+    LTEXT           "GUI Help :",IDC_STATIC,3,53,34,8
+    LTEXT           "Jay Krivanek\nwww.shoutclub.com",IDC_STATIC,7,66,76,21,
+                    SS_SUNKEN
+END
+
+IDD_SRIPPER_DIALOG DIALOGEX 0, 0, 328, 294
+STYLE DS_CENTER | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_POPUP | WS_VISIBLE | 
+    WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "StreamRipper 32"
+FONT 8, "Tahoma"
+BEGIN
+    LTEXT           "URL (http://ip:port)",IDC_STATIC,7,30,80,8
+    EDITTEXT        IDC_URL,5,41,107,12,ES_AUTOHSCROLL
+    GROUPBOX        "Broadcast Parameters",IDC_STATIC,0,20,115,38
+    GROUPBOX        "Current MP3",IDC_STATIC5,116,20,210,38
+    LTEXT           "Title:",IDC_STATIC,143,32,18,8
+    EDITTEXT        IDC_SONGTITLE,163,30,156,12,ES_AUTOHSCROLL | ES_READONLY | 
+                    NOT WS_BORDER,WS_EX_STATICEDGE
+    LTEXT           "Bytes Read:",IDC_STATIC,121,45,40,8
+    EDITTEXT        IDC_BYTES,163,43,56,12,ES_AUTOHSCROLL | ES_READONLY | 
+                    NOT WS_BORDER,WS_EX_STATICEDGE
+    LTEXT           "Max Bytes To Rip",IDC_STATIC,4,76,58,8
+    EDITTEXT        IDC_MAXBYTES,64,74,54,12,ES_AUTOHSCROLL
+    LTEXT           "Destination:",IDC_STATIC,4,90,40,8
+    EDITTEXT        IDC_DESTINATION,45,87,135,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "&Start Rip",IDC_RIPAWAY,281,71,38,14
+    PUSHBUTTON      "S&top Rip",IDC_STOPRIPPING,281,86,38,14,WS_DISABLED
+    PUSHBUTTON      "E&xit",IDOK,281,102,38,14
+    EDITTEXT        IDC_RIPPING,107,270,106,15,ES_CENTER | ES_AUTOHSCROLL | 
+                    ES_READONLY,WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE
+    GROUPBOX        "Output",IDC_STATIC,0,68,196,70
+    LTEXT           "Genre:",IDC_STATIC,3,156,22,8
+    COMBOBOX        IDC_GENRE,27,155,83,116,CBS_DROPDOWN | WS_VSCROLL | 
+                    WS_TABSTOP
+    DEFPUSHBUTTON   "Refresh &List",IDC_REFRESH,113,155,56,12
+    LTEXT           "Version 2",IDC_STATIC3,0,277,39,8
+    PUSHBUTTON      "..",IDC_FOLDER,180,87,12,12
+    GROUPBOX        "SHOUTcast.com Directory",IDC_STATIC1,0,144,326,123
+    GROUPBOX        "Control",IDC_STATIC2,275,60,51,59
+    CONTROL         "List1",IDC_LIST_CTRL,"SysListView32",LVS_REPORT | 
+                    WS_BORDER | WS_TABSTOP,1,170,317,94
+    EDITTEXT        IDC_STREAMNAME,0,4,326,14,ES_CENTER | ES_AUTOHSCROLL | 
+                    ES_READONLY | NOT WS_BORDER
+    EDITTEXT        IDC_RELAYPORT,217,83,40,14,ES_AUTOHSCROLL
+    LTEXT           "Relay Port",IDC_STATIC,220,74,34,8
+    PUSHBUTTON      "Connect To Relay",IDC_CONNECT_RELAY,204,99,68,14
+    CONTROL         "Add Sequence Number To Output Track",IDC_ADD_SEQ,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,45,104,143,10
+    CONTROL         "Add ID3V1 and ID3V2 Tags to Output",IDC_ID3,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,45,115,136,10
+    CONTROL         "Overwrite Tracks If They Exist",IDC_OVERWRITE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,45,126,113,10
+END
+
+IDD_MIRRORSELECT DIALOGEX 0, 0, 233, 73
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_TOOLWINDOW
+CAPTION "Select A Mirror"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    LISTBOX         IDC_MIRRORS,0,0,233,73,LBS_SORT | LBS_NOINTEGRALHEIGHT | 
+                    WS_VSCROLL | WS_HSCROLL | WS_TABSTOP
+END
+
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,2,0,1
+ PRODUCTVERSION 1,2,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "000004b0"
+        BEGIN
+            VALUE "Comments", "\0"
+            VALUE "CompanyName", "ShoutClub.com\0"
+            VALUE "FileDescription", "SRipper\0"
+            VALUE "FileVersion", "1, 2, 0, 1\0"
+            VALUE "InternalName", "SRipper\0"
+            VALUE "LegalCopyright", "Copyright © 2000\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "SRipper.exe\0"
+            VALUE "PrivateBuild", "\0"
+            VALUE "ProductName", "ShoutClub.com SRipper\0"
+            VALUE "ProductVersion", "1, 2, 0, 1\0"
+            VALUE "SpecialBuild", "\0"
+        END
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "Comments", "\0"
+            VALUE "CompanyName", "\0"
+            VALUE "FileDescription", "SRipper MFC Application\0"
+            VALUE "FileVersion", "1, 2, 0, 1\0"
+            VALUE "InternalName", "SRipper\0"
+            VALUE "LegalCopyright", "Copyright (C) 2000\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "SRipper.EXE\0"
+            VALUE "PrivateBuild", "\0"
+            VALUE "ProductName", "SRipper Application\0"
+            VALUE "ProductVersion", "1, 2, 0, 1\0"
+            VALUE "SpecialBuild", "\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0, 1200, 0x409, 1200
+    END
+END
+
+#endif    // !_MAC
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MENU1 MENU DISCARDABLE 
+BEGIN
+    POPUP "Context"
+    BEGIN
+        MENUITEM "&Start Ripping",              ID_CONTEXT_STARTRIP
+        MENUITEM "S&top Ripping",               ID_CONTEXT_STOPRIPPING
+        MENUITEM "Refresh &List",               IDM_CONTEXT_REFRESH
+        POPUP "Winamp"
+        BEGIN
+            MENUITEM "&Play",                       IDM_CONTEXT_WINAMP_PLAY
+            MENUITEM "St&op",                       IDM_CONTEXT_WINAMP_STOP
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "A&bout",                      IDM_CONTEXT_ABOUT
+        MENUITEM "E&xit",                       IDOK
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        BOTTOMMARGIN, 55
+    END
+
+    IDD_SRIPPER_DIALOG, DIALOG
+    BEGIN
+        RIGHTMARGIN, 326
+        BOTTOMMARGIN, 285
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_ABOUTBOX            "&About StreamRipper32..."
+    IDP_SOCKETS_INIT_FAILED "Windows sockets initialization failed."
+    IDS_NOITEMS             "No Items"
+    IDS_TRACKINFO           "Track Info"
+    IDS_BITRATE             "Bitrate"
+    IDS_DESCRIPTON          "Description"
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE 9, 1
+#pragma code_page(1252)
+#endif //_WIN32
+#include "res\SRipper.rc2"  // non-Microsoft Visual C++ edited resources
+#include "afxres.rc"         // Standard components
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

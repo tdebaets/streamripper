@@ -1,0 +1,26 @@
+Streamripper for Winamp 1.2.4
+
+This is the quick and dirty HOWTO for the Winamp plug-in of Streamripper.
+
+******************************
+*         IMPORTANT          *
+******************************
+
+If are upgrading from version 1.0 BETA of Streamripper it is advised that you disable or uninstall the previous version. To do so go to Winamp->Preferences->DSP/Plugins and select none, or anything other then Streamripper. Or go into your plugin’s folder and delete dsp_sripper.dll
+
+
+The following steps should get you going to ripping a stream.
+
+
+1. Go to shoutcast.com, icecast.com, or live365.com and click on a stream 
+2. The stream should be playing in Winamp, if it's not, click play. On the top of Streamripper you should notice it says like "Press start to rip http://something:port"
+3. Click "start"; hope it works.
+
+If you don't have a fat pipe (cable modem/dsl, T1, etc.) you'll want to use Streamripper "relay server". If you don't use this Streamripper will make another connection to the stream your listening too, effectively doubling your bandwidth usage. This is a feature that allows you to listen to the stream your ripping through Streamripper. 
+
+To listen through Streamripper relay function click on the box labeled "RLY", Streamripper will add an entry to your playlist. Click on that to listen through the relay.
+
+I hope this works out for you, if try asking some of folks on the Streamripper mailing list at streamripper-general@lists.sourceforge.net or check out the home page at http://streamripper.sourceforge.net
+
+-Jon <jonclegg@yahoo.com>
+

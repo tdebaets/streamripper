@@ -1,0 +1,84 @@
+s t r e a m r i p p e r  - v 1.0.1
+
+by Jon Clegg
+
+Introduction
+~~~~~~~~~~~~
+This readme is the official documentation for streamripper. If you have any additional questions, don't hesitate to email me at jonclegg@yahoo.com. you may also want to check out the following web sites.
+
+Sourceforge Project Page:
+http://sourceforge.net/projects/streamripper
+
+Streamripper mailing list: 
+http://lists.sourceforge.net/lists/listinfo/streamripper-general
+
+Shoutcast: www.shoutcast.com
+Live365: www.live365.com
+Icecast: www.icecast.org
+ShoutClub: www.shoutclub.com
+
+About streamripper
+~~~~~~~~~~~~~~~~~~
+streamripper records shoutcast compatible and live365 streams. For shoutcast style streams it finds the "meta data" or track separation data, and uses that as a marker for where the track should be separated. For live365 streams it hits the website and finds when a track has changed. Either way, the MP3 data will be decoded and scanned for a silent point which is where tracks will be created.
+
+Installation
+~~~~~~~~~~~~
+download the latest version from ftp://streamripper.sourceforge.net/pub/streamripper and extract the archive, then type in the following commands
+
+./configure
+make
+make install
+
+this works on FreeBSD 3.4, and Linux 2.2. If it doesn't work on your setup let me know, i'll see what i can do.
+
+Usage
+~~~~~
+the easiest way to get started is to find the URL of a stream you want to rip, usually I find the URL by loading it up in winamp or xmms and querying for the source URL. (right clicking on the playlist)
+Once you have the URL you can begin ripping.
+
+streamripper http://205.188.245.132:8038
+
+This would rip Monkey Radio (as of 1/10/2001), it places the tracks into two directory's one called "Monkey Radio" and a sub-directory "Monkey Radio/incomplete" the incomplete directory is for tracks that streamripper does not know the begging or end of. the first and last tracks your rip for instance, would be in incomplete.
+
+also you can listen to the stream by creating a relay server..
+
+streamripper http://205.188.245.132:8038 -r
+
+When the program starts it will display what port it's relaying the stream on, it defaults to 8000 but you can choose another port. To listen to your relay server open up XMMS or Winamp and enter your machine name with the port as you would any other stream.
+
+Command line parameters
+~~~~~~~~~~~~~~~~~~~~~~~
+-d <dir>       - Optional: The destination directory
+
+Select a different base directory for ripping. just in case you don't want to dump tons of mp3's into whatever directory your at.
+
+-s             - Optional: Don't create a directory for each stream
+
+I don't know why you wouldn't want this. Normally streamripper will make a directory with the same name as the stream to place the tracks into, this disables that.
+
+-r <base port> - Optional: Create a relay server on base port, defaults to port 8000
+
+Creates a relay server on base port. if base port is not specified it defaults to 8000, otherwise whatever you entered for base port. NOTE: without the -z option, it will keep trying higher ports if the port is unavailable.
+
+-z             - Optional: Don't scan for free ports if base port is not avail
+
+Disables the "scan for free port" feature. use it if your paranoid. or don't like ports being open.
+
+-p <url>       - Optional: Use HTTP proxy server at <url>
+
+If your behind a proxy server, enter it here. This hasn't been tested in over 6 months. but it should still work. Please till me if it doesn't
+
+-o             - Optional: Write over tracks from incomplete
+
+when streamripper rips tracks they are first in the incomplete directory. if the tracks finishes properly it moves over to the main directory, but if they track is already there it doesn't. this make streamripper copy over tracks that already exist in the main directory. I didn't make this default because if your ripping a stream for a long time (trying to get the whole thing) it helps to see the incomplete directory fill up with tracks you already have. One the incomplete directory is as large (or larger) then your main directory you can be pretty sure you've got the whole stream.
+
+-c             - Optional: Don't auto-reconnect
+
+Once again, not sure why you wouldn't want this. Normally streamripper will be very aggressive and try to re-connect to a dropped stream, this disables that.
+
+Bugs
+~~~~
+* mpglib has the annoying habit of calling exit(1) in the middle of code i don't understand. this will kill streamripper, this happens (rarely) usually on low bitrate streams. 
+
+* Track separation is not an exact science, it will fail retardedly at times. Sometimes streamripper hasn't buffered enough back to ever hear the previous track, other times the track has a pockets of silence in he beginning and end, hopefully it works well 95% of the time.
+

@@ -1,0 +1,83 @@
+Changes in 1.0.4
+~~~~~~~~~~~~~~~~
+* Fixed mpglib stuff.
+
+Changes in 1.0.3
+~~~~~~~~~~~~~~~~
+* Removed live365 ripping (legal reasons)
+
+Changes in 1.0.2
+~~~~~~~~~~~~~~~~
+* Merged back in with Win32 build, fixed live365.com ripping
+
+Changes in 1.0.2
+~~~~~~~~~~~~~~~~
+* fixed thread creation timing bug, would happen on some linux machines, sometimes.
+* fixed bug that would cause divide by zero when mpglib failed very (very) badly
+* Trims track names, for some reason some track names contained \r's
+
+Changes in 1.0.1
+~~~~~~~~~~~~~~~~
+* ported to win32 and made a winamp plug-in
+* made all socket I/O non blocking
+* should quite faster now
+
+Changes in 1.0b 
+~~~~~~~~~~~~~~~~
+* Finds silence between tracks by decoding the MP3 with mpglib
+* Rips live365 streams
+* Creates shoutcast relay server for listening for listening to streams
+* Separates incomplete tracks
+* Uses cvs @ sourceforge.net
+* supports icecast mount points
+* proxy support
+* More.. much much more..
+
+Changes in 0.7.0 
+~~~~~~~~~~~~~~~~
+* Started playing around with cvs at sourceforge.net
+
+Changes in 0.7.0b
+~~~~~~~~~~~~~~~~
+* Split up streamripper_lib into ripper.c and sockets.c
+* Made start_ripping asynchronous via threads. This is mainly due
+  to problems with people implementing the library under a windowed 
+  environment. it should be quite easy to make a GUI frontend now
+* Added a -o option via request. this creates a directory after the
+  the stream name and puts the tracks in there, pretty nifty
+* MPEG 2.5 frames are now handles correctly, this caused "too many errors in mp3 data"
+  errors before
+* Errors in the mp3 data do not stop the ripping anymore.
+* added -n option via request. this waits until the next track before ripping to
+  avoid getting a half done tracks
+* Uses automake now, doh
+
+Changes in 0.6.4
+~~~~~~~~~~~~~~~~
+* new code to process options due to win32 not supported getopt
+* compiles under win32 :)
+
+Changes in 0.6.3
+~~~~~~~~~~~~~~~~
+* outputs stream data to stdout for use with mpg123
+* rips shoutcast streams without meta data
+
+Changes in 0.6.0
+~~~~~~~~~~~~~~
+* added pretty counting byte status
+* checks mp3 header, starts and ends file at valid positions
+* traps signals and exists gracefully
+* takes host names, not just ip's.
+* merged in changes from Mike Baker <mbm@linux.com>
+* works with meta intervals other then 8192
+* quite mode, don't actually record anything.
+
+Changes in 0.5.0b
+~~~~~~~~~~~~~~~
+* Fixed RedHat 6.1 compile bug 
+
+
+Changes in 0.5.0a
+~~~~~~~~~~~~~~~
+* Initial release.
+
