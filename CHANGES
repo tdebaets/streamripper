@@ -1,9 +1,11 @@
-New for 1.60.14
----------------
+New for 1.61.0
+--------------
 * Add signal handler to SIGTERM.
 * Fix for SR_ERROR_NOT_SHOUTCAST_STREAM when \r\n\r\n exists before
   icy portion of header.
 * Add check for -lsem to configure script
+* Increase streamripper relay buffer size to fix streamripper 
+  relay noises when relay client connects early.
 
 New for 1.60.13
 ---------------
