@@ -33,6 +33,7 @@ typedef int error_code;
 #define MAX_URI_STRING		1024
 #define MAX_ERROR_STR       (4096)
 #define MAX_USERAGENT_STR	1024
+#define MAX_AUTH_LEN            255
 
 #ifdef WIN32
 	#ifndef _WINSOCKAPI_

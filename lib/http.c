@@ -41,6 +41,8 @@ error_code	httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int
 /*********************************************************************************
  * Private functions
  *********************************************************************************/
+static char* make_auth_header(const char *header_name, 
+			      const char *username, const char *password);
 char* b64enc(const char *buf, int size);
 
 
@@ -71,6 +73,11 @@ error_code httplib_parse_url(const char *url, URLINFO *urlinfo)
 		ret = sscanf(url, "%[^:]:%[^@]", urlinfo->username, urlinfo->password);
 		if (ret < 2) return SR_ERROR_PARSE_FAILURE;
 		url = strchr(url, '@') + 1;
+	}
+	else
+	{
+		urlinfo->username[0] = '\0';
+		urlinfo->password[0] = '\0';
 	}
 
 	//
@@ -115,31 +122,56 @@ error_code httplib_construct_sc_request(const char *url, const char* proxyurl, c
 					"GET %s HTTP/1.0\r\n"
 					"Host: %s:%d\r\n"
 					"User-Agent: %s\r\n"
-					"Icy-MetaData:1\r\n"
-					"Accept: */*\r\n", 
+					"Icy-MetaData:1\r\n", 
 					myurl, 
 					ui.host, 
 					ui.port, 
 					useragent[0] ? useragent : "Streamripper/1.x");
 
 	//
+	// http authentication (not proxy, see below for that)
+	// 
+	if (ui.username[0] && ui.password[0])
+	{
+		char *authbuf = make_auth_header("Authorization", 
+						 ui.username,
+						 ui.password);
+		strcat(buffer, authbuf);
+		free(authbuf);
+	}
+
+	//
 	// proxy auth stuff
 	//
 	if (proxyurl && proxyui.username[0] && proxyui.password[0])
 	{
-		char *authbuf = malloc(strlen(proxyui.username)+strlen(proxyui.password)+MAX_URI_STRING);
-		char *auth64;
-
-		sprintf(authbuf, "%s:%s", proxyui.username, proxyui.password);
-		auth64= b64enc(authbuf, strlen(authbuf));
-		sprintf(authbuf, "Proxy-Authorization: Basic %s\r\n", auth64);
-
+		char *authbuf = make_auth_header("Proxy-Authorization",
+						 proxyui.username,
+						 proxyui.password);
 		strcat(buffer, authbuf);
+		free(authbuf);
 	}
-
+	
 	strcat(buffer, "\r\n");
 
-    return SR_SUCCESS;
+	return SR_SUCCESS;
+}
+
+// Make the 'Authorization: Basic xxxxxx\r\n' or 'Proxy-Authorization...' 
+// headers for the HTTP request.
+static char* make_auth_header(const char *header_name, 
+			      const char *username, const char *password) 
+{
+	char *authbuf = malloc(strlen(header_name) 
+			       + strlen(username)
+			       + strlen(password)
+			       + MAX_URI_STRING);
+	char *auth64;
+	sprintf(authbuf, "%s:%s", username, password);
+	auth64 = b64enc(authbuf, strlen(authbuf));
+	sprintf(authbuf, "%s: Basic %s\r\n", header_name, auth64);
+	free(auth64);
+	return authbuf;
 }
 
 // Here we pretend we're IE 5, hehe
@@ -381,7 +413,7 @@ char* b64enc(const char *inbuf, int size)
         int newlines = (chars + CHARS_PER_LINE - 1) / CHARS_PER_LINE;
 
         const char* data = inbuf;
-        char* string = (char*) malloc(chars + newlines + 1);
+        char* string = (char*) malloc(chars + newlines + 1 + 100);
 
         if (string)
         {

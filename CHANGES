@@ -1,3 +1,15 @@
+new in cvs
+----------
+
+2003/09/25:
+* Added support for HTTP "Basic" authorization. Works with DigitallyImported.com.
+  (lib/types.h, lib/http.c) -Colin D. Bennett <cbennett@radsoft.com>
+* Fixed a couple of tiny memory leaks in the usage of b64enc(), the
+  returned buffer allocated as 'string' in b64enc wasn't being freed,
+  and the 'authbuf' malloc'd in httplib_construct_sc_request for the 
+  proxy authorization wasn't freed.
+  (lib/http.c) -Colin D. Bennett <cbennett@radsoft.com>
+
 new in 1.30b (win32 & nix)
 --------------
 
