@@ -6,7 +6,7 @@ Wed Feb 23 00:51:11 EST 2005
 * Add Obiguan's patch for the -T flag.
 * Add Aussie's patch for the -P flag.
 * Upgrades for new version of autoconf
-* And something else, what was it???
+* Fix incorrect size field in id3v2 tag
 
 New for 1.61.3
 --------------
