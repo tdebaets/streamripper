@@ -140,7 +140,7 @@ get_trackname(int size, char *newtrack)
 
     if ((ret = m_in->get_input_data(namebuf, size)) <= 0) {
 	free(namebuf);
-	return SR_ERROR_RECV_FAILED;
+	return ret;
     }
 
     if(strstr(namebuf, "StreamTitle='") == NULL) {

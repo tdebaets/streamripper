@@ -46,6 +46,7 @@
 #include "util.h"
 #include "socklib.h"
 #include "threadlib.h"
+#include "compat.h"
 #include "debug.h"
 
 #define DEFAULT_TIMEOUT		15
@@ -56,30 +57,33 @@
 #define FIRST_READ_TIMEOUT	30
 #endif
 
-#ifndef WIN32
-#define WSACleanup()
-#define SOCKET_ERROR		-1
-#endif
 
 /*********************************************************************************
  * Public functions
  *********************************************************************************/
-error_code	socklib_init();
-error_code	socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_name);
-void		socklib_close(HSOCKET *socket_handle);
-void		socklib_cleanup();
-error_code	socklib_read_header(HSOCKET *socket_handle, char *buffer, int size, 
-								int (*recvall)(HSOCKET *socket_handle, char* buffer, int size, int timeout));
-int			socklib_recvall(HSOCKET *socket_handle, char* buffer, int size, int timeout);
-int			socklib_sendall(HSOCKET *socket_handle, char* buffer, int size);
-error_code	socklib_recvall_alloc(HSOCKET *socket_handle, char** buffer, unsigned long *size, 
-								int (*recvall)(HSOCKET *socket_handle, char* buffer, int size, int timeout));
+error_code socklib_init();
+error_code socklib_open(HSOCKET *socket_handle, char *host, int port,
+			char *if_name);
+void socklib_close(HSOCKET *socket_handle);
+void socklib_cleanup();
+error_code socklib_read_header(HSOCKET *socket_handle, char *buffer, int size, 
+			       int (*recvall)(HSOCKET *socket_handle, 
+					      char* buffer, int size, 
+					      int timeout));
+int socklib_recvall(HSOCKET *socket_handle, char* buffer, int size,
+		    int timeout);
+int socklib_sendall(HSOCKET *socket_handle, char* buffer, int size);
+error_code socklib_recvall_alloc(HSOCKET *socket_handle, char** buffer, 
+				 unsigned long *size, 
+				 int (*recvall)(HSOCKET *socket_handle, 
+						char* buffer, int size, 
+						int timeout));
 error_code read_interface(char *if_name, u_int32_t *addr);
 
 /*********************************************************************************
  * Private Vars 
  *********************************************************************************/
-static BOOL		m_done_init = FALSE;	// so we don't init the mutex twice.. arg.
+static BOOL m_done_init = FALSE; // so we don't init the mutex twice.. arg.
 
 /*
  * Init socket stuff
@@ -247,8 +251,8 @@ socklib_read_header(HSOCKET *socket_handle, char *buffer, int size,
     memset(buffer, -1, size);
     for(i = 0; i < size; i++)
     {
-	if ((ret = (*myrecv)(socket_handle, &buffer[i], 1, 0)) == SOCKET_ERROR)
-	    return SR_ERROR_RECV_FAILED;
+	if ((ret = (*myrecv)(socket_handle, &buffer[i], 1, 0)) < 0)
+	    return ret;
 		
 	if (ret == 0)
 	    return SR_ERROR_NO_HTTP_HEADER;
@@ -307,7 +311,7 @@ int socklib_recvall(HSOCKET *socket_handle, char* buffer, int size, int timeout)
 	    tv.tv_usec = 0;
 	    ret = select(sock + 1, &fds, NULL, NULL, &tv);
 	    if (ret == SOCKET_ERROR)
-		return SOCKET_ERROR;
+		return SR_ERROR_SELECT_FAILED;
 	    if (ret != 1)
 		return SR_ERROR_TIMEOUT;
 	}
@@ -316,10 +320,14 @@ int socklib_recvall(HSOCKET *socket_handle, char* buffer, int size, int timeout)
         ret = recv(socket_handle->s, &buffer[read], size, 0);
 	//		DEBUG2(("recv: %d", ret));
         if (ret == SOCKET_ERROR)
-	    return SOCKET_ERROR;
-				
-	if (ret == 0)
+	    return SR_ERROR_RECV_FAILED;
+
+	/* GCS: Jun 5, 2004.  If we don't get any bytes, what does that 
+	   mean?  This is supposed to be a blocking read. */
+	if (ret == 0) {
+	    debug_printf ("recv recieved zero bytes!\n");
 	    break;
+	}
 
 	read += ret;
 	size -= ret;
@@ -341,8 +349,8 @@ int socklib_sendall(HSOCKET *socket_handle, char* buffer, int size)
         ret = send(socket_handle->s, &buffer[sent], size, 0);
 	DEBUG2(("send ret = %d", ret));
         if (ret == SOCKET_ERROR)
-	    return SOCKET_ERROR;
-		
+	    return SR_ERROR_SEND_FAILED;
+
 	if (ret == 0)
 	    break;
 

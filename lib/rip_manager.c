@@ -159,6 +159,7 @@ void init_error_strings()
     SET_ERR_STR("The output directory length is too long", 0x39);
     SET_ERR_STR("SR_ERROR_PROGRAM_ERROR", 0x3a);
     SET_ERR_STR("SR_ERROR_TIMEOUT", 0x3b);
+    SET_ERR_STR("SR_ERROR_SELECT_FAILED", 0x3c);
 }
 
 char*
@@ -197,7 +198,16 @@ post_status(int status)
 int
 myrecv(char* buffer, int size)
 {
-    return socklib_recvall(&m_sock, buffer, size, m_options.timeout);
+    int ret;
+    /* GCS: Jun 5, 2004.  Here is where I think we are getting aussie's 
+       problem with the SR_ERROR_INVALID_METADATA or SR_ERROR_NO_TRACK_INFO
+       messages */
+    ret = socklib_recvall(&m_sock, buffer, size, m_options.timeout);
+    if (ret >= 0 && ret != size) {
+	debug_printf ("rip_manager_recv: expected %d, got %d\n",size,ret);
+	ret = SR_ERROR_RECV_FAILED;
+    }
+    return ret;
 }
 
 /* 
@@ -373,7 +383,8 @@ ripthread(void *notused)
 	    post_error(ret);
 	    continue;
 	}
-	else if ((ret == SR_ERROR_RECV_FAILED || ret == SR_ERROR_TIMEOUT) && 
+	else if ((ret == SR_ERROR_RECV_FAILED || ret == SR_ERROR_TIMEOUT ||
+		  ret == SR_ERROR_SELECT_FAILED) && 
 		     GET_AUTO_RECONNECT(m_options.flags)) {
 	    /*
 	     * Try to reconnect, if thats what the user wants

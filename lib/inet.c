@@ -73,7 +73,7 @@ inet_sc_connect(HSOCKET *sock, const char *url, const char *proxyurl,
 
     DEBUG2(( "calling socklib_sendall\n" ));
     if ((ret = socklib_sendall(sock, headbuf, strlen(headbuf))) < 0)
-	return SR_ERROR_SEND_FAILED;
+	return ret;
 
     DEBUG2(( "calling get_sc_header\n" ));
     if ((ret = get_sc_header(sock, info)) != SR_SUCCESS)

@@ -153,7 +153,7 @@ static int swallow_receive(int sock)
 void make_nonblocking(int sock)
 {
     int opt;
-	
+
 #ifndef WIN32
     opt = fcntl(sock, F_GETFL);
     if (opt != SOCKET_ERROR)
