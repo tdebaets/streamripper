@@ -136,18 +136,9 @@ int word_count(char *str)
 void
 initialize_locale (void)
 {
-#if defined (commentout)
-    static int initialized = 0;
-    if (!initialized) {
-	initialized = 1;
-	setlocale (LC_ALL, "");
-	setlocale (LC_CTYPE, "");
-	printf ("LOCALE is %s\n",setlocale(LC_ALL,NULL));
-    }
-#endif
     setlocale (LC_ALL, "");
     setlocale (LC_CTYPE, "");
-    printf ("LOCALE is %s\n",setlocale(LC_ALL,NULL));
+    debug_printf ("LOCALE is %s\n",setlocale(LC_ALL,NULL));
 }
 
 int
