@@ -1,4 +1,4 @@
-s t r e a m r i p p e r  - v 1.0.1
+s t r e a m r i p p e r  - v 1.0.5
 
 by Jon Clegg
 
@@ -29,7 +29,7 @@ download the latest version from ftp://streamripper.sourceforge.net/pub/streamri
 make
 make install
 
-this works on FreeBSD 3.4, and Linux 2.2. If it doesn't work on your setup let me know, i'll see what i can do.
+this works on FreeBSD 3.4, and Linux 2.2/2.4. If it doesn't work on your setup let me know, i'll see what i can do.
 
 Usage
 ~~~~~
