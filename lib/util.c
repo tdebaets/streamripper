@@ -148,12 +148,15 @@ int word_count(char *str)
 void
 initialize_locale (void)
 {
-    char* locale_codeset;
+    char* locale_codeset = 0;
     setlocale (LC_ALL, "");
     setlocale (LC_CTYPE, "");
     debug_printf ("LOCALE is %s\n",setlocale(LC_ALL,NULL));
+#if defined (FOOBAR)
     locale_codeset = nl_langinfo(CODESET);
-    debug_printf ("LOCALE CODESET is %s\n", locale_codeset);
+#endif
+    debug_printf ("LOCALE CODESET is %s\n", 
+	locale_codeset ? locale_codeset : "(null)");
 }
 
 
