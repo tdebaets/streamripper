@@ -1,3 +1,8 @@
+New for 1.60.13
+---------------
+* Add track numbers & FILE attribute to cue files
+* Fix file permissions on UNIX
+
 New for 1.60.12
 ---------------
 * Add -R option to limit number of clients connected to relay
