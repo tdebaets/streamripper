@@ -4,11 +4,18 @@
 ////////////////////////////////////////////////
 // Types
 ////////////////////////////////////////////////
-
+#include "srconfig.h"
 #if WIN32
 #include <windows.h>
 #else
 #include <sys/types.h>
+#endif
+
+#if HAVE_WCHAR_H
+#include <wchar.h>
+#endif
+#if STDC_HEADERS
+#include <stddef.h>
 #endif
 
 typedef int error_code;
