@@ -223,7 +223,7 @@ void add_useragent_strings(HWND hdlg)
 	HWND hcombo = GetDlgItem(hdlg, IDC_USERAGENT);
 
 	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"Streamripper/1.x");
-	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"WinampMPEG/2.7");
+//	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"WinampMPEG/2.7");
 	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"FreeAmp/2.x");
 	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"XMMS/1.x");
 	SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"UnknownPlayer/1.x");

@@ -46,6 +46,9 @@ static int				m_meta_interval;
 static int				m_buffersize;
 static IO_DATA_INPUT	*m_in;
 static char				m_no_meta_name[MAX_TRACK_LEN];
+static int				m_chunkcount;		// for when we need to know what the first
+											// empty metadata came for streams that
+											// stream empty metadatas
 
 error_code	ripshout_init(IO_DATA_INPUT *in, IO_GET_STREAM *getstream, int meta_interval, char *no_meta_name)
 {
@@ -61,7 +64,7 @@ error_code	ripshout_init(IO_DATA_INPUT *in, IO_GET_STREAM *getstream, int meta_i
 	getstream->getsize = m_buffersize;
 
 	strcpy(m_no_meta_name, no_meta_name);
-
+	m_chunkcount = 0;
 	return SR_SUCCESS;
 }
 
@@ -72,6 +75,7 @@ void ripshout_destroy()
 	m_no_meta_name[0] = '\0';
 	m_buffersize = 0;
 	m_meta_interval = 0;
+	m_chunkcount = 0;
 	m_in = NULL;
 }
 
@@ -80,8 +84,8 @@ error_code getdata(char *data, char *track)
 	int ret = 0;
 	char c;
 	char newtrack[MAX_TRACK_LEN];
-	static BOOL firsttime = TRUE;
 
+	m_chunkcount++;
 	if ((ret = m_in->get_data(data, m_buffersize)) <= 0)
 		return SR_ERROR_RECV_FAILED;
 
@@ -106,8 +110,10 @@ error_code getdata(char *data, char *track)
 		// anyway, bassicly if the first meta capture is null then we assume
 		// that the stream does not have metadata
 		//
-		if (firsttime)
+		if (m_chunkcount == 1)
+		{
 			strcpy(track, m_no_meta_name);
+		}
 
 		return SR_SUCCESS;
 	}
