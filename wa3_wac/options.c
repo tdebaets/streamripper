@@ -50,7 +50,7 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt);
 /**********************************************************************************
  * Private functions
  **********************************************************************************/
-static BOOL				browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder);
+static BOOL				browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder, long );
 static BOOL				get_desktop_folder(char *path);
 static LRESULT CALLBACK file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK con_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -101,7 +101,7 @@ BOOL get_desktop_folder(char *path)
 } 
 
 
-BOOL browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder)
+BOOL browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder, long foldersize)
 {
 	char *strResult = NULL;
 	LPITEMIDLIST lpItemIDList;
@@ -142,14 +142,13 @@ BOOL browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder)
 	
 	// We have a path in szBuffer!
 	// Return it.
-	strncpy(folder, buffer, _MAX_PATH);
+	strncpy(folder, buffer, foldersize);
 	retval = TRUE;
 
 BAIL:
 	lpMalloc->lpVtbl->Free(lpMalloc, lpItemIDList);
 	lpMalloc->lpVtbl->Release(lpMalloc);      
 
-	// If we made it this far, SHBrowseForFolder failed.
 	return retval;
 }
 
@@ -389,9 +388,9 @@ LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 				case IDC_BROWSE:
 					{
 						char temp_dir[MAX_PATH_LEN];
-						if (browse_for_folder(hWnd, "bla", 0, temp_dir))
+						if (browse_for_folder(hWnd, "Select a folder", 0, temp_dir, MAX_PATH_LEN))
 						{
-							strcpy(m_opt->output_directory, temp_dir);
+							strncpy(m_opt->output_directory, temp_dir, MAX_PATH_LEN);
 							SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory);
 						}
 						return TRUE;

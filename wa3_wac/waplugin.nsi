@@ -9,10 +9,10 @@
 ;
 
 ; The name of the installer
-Name "Streamripper for Winamp3 v1.52"
+Name "Streamripper for Winamp3 v1.53"
 
 ; The file to write
-OutFile "srwa3_152.exe"
+OutFile "srwa3_153.exe"
 
 ; The default installation directory
 InstallDir $PROGRAMFILES\Winamp3
