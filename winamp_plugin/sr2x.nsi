@@ -9,10 +9,10 @@
 ;
 
 ; The name of the installer
-Name "Streamripper for Winamp v1.60.9"
+Name "Streamripper for Winamp v1.60.10"
 
 ; The file to write
-OutFile "srwa5-1.60.9.exe"
+OutFile "srwa5-1.60.10.exe"
 
 ; License page
 ; LicenseText "This installer will install the Nullsoft Tiny Visualization 2000 Plug-in for Winamp. Please read the license below."

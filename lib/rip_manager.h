@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-#define SRVERSION	"1.60.9"
+#define SRVERSION	"1.60.10"
 
 #define MAX_STATUS_LEN		256
 #define MAX_STREAMNAME_LEN	1024
