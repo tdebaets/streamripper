@@ -359,7 +359,7 @@ void RipCallback(int message, void *data)
 			break;
 		case RM_ERROR:
 			err = (ERROR_INFO*)data;
-			MessageBox(m_hWnd, err->error_str, "BAD", 0);
+			MessageBox(m_hWnd, err->error_str, "Streamripper", MB_SETFOREGROUND);
 			break;
 		case RM_DONE:
 			m_rmiInfo.status = RM_STATUS_DONE;
