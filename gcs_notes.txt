@@ -133,32 +133,27 @@ Content-Length: 44000000
 ---------------
 
 
-For [ 583191 ] can't separate tracks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Xanu
-http://216.127.70.20:8000
-
-Network received: 2679159 bytes
-Server: SHOUTcast Distributed Network Audio Server/Linux v1.9.4
-Metadata received: 390 bytes
-Metadata interval: 8192 bytes
-Stream name: Xanu Radio Beta Stream
-Current title: AEJ DFD RS 06.07.2003
-
-
-[ 591323 ] SR_ERROR_INVALID_METADATA
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-FlareSOUND housemusique
-http://www.flaresound.com/
-http://www.bp6.com:8000/
-
-Network received: 385092 bytes
-Server: SHOUTcast Distributed Network Audio Server/Linux v1.9.4
-Metadata received: 110 bytes
-Metadata interval: 8192 bytes
-Stream name: H O U S E M U S I Q U E - Deep Underground House Grooves from Netmusique.com: Soulmeka Live from Salon Daome loft with Bougie Soliterre
-Current title: mischfuehler-dub.souling mixset
-
+Shoutcast vs streamripper headers
+=================================
+ICY 200 OK
+icy-notice1:<BR>This stream requires <a href="http://www.winamp.com/">Winamp</a><BR>
+icy-notice2:SHOUTcast Distributed Network Audio Server/Linux v1.9.4<BR>
+icy-name:[JAPANESE R&B, HIPHOP, JROCK, JPOP & NEW RELEASES] SeiyaUsagi.Net Radio wo kiite kudasai!: SeiyaUsagi.Net Radio
+icy-genre:World
+icy-url:http://www.seiyausagi.net
+content-type:audio/mpeg
+icy-pub:1
+icy-metaint:8192
+icy-br:32
+---------
+HTTP/1.0 200 OK
+Server:SHOUTcast/Linux v1.9.4
+icy-name:[relay stream] [JAPANESE R&B, HIPHOP, JROCK, JPOP & NEW RELEASES] SeiyaUsagi.Net Radio wo kiite kudasai!: SeiyaUsagi.Net Radio
+icy-url:http://www.seiyausagi.net
+icy-br:32
+icy-metaint:8192
+Content-Type: audio/mpeg
+---------
 
 
 * How to upgrade the version number
