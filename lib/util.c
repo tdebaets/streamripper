@@ -147,8 +147,12 @@ initialize_locale (void)
 char*
 strip_invalid_chars(char *str)
 {
-    //    int i;
+    /* GCS FIX: Only the leading "." should be stripped for unix. */
+#if defined (WIN32)
+    char invalid_chars[] = "\\/:*?\"<>|~";
+#else
     char invalid_chars[] = "\\/:*?\"<>|.~";
+#endif
     char* mb_in = str;
     int mb_in_len = strlen(mb_in);
     wchar_t *w_in = (wchar_t*) malloc (sizeof(wchar_t)*mb_in_len+2);
