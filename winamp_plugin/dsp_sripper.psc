@@ -1,6 +1,6 @@
-Name Streamripper for Winamp 1.50
-Text This will install Nullsoft Streamripper for Winamp 1.50 on your computer
-OutFile sripper150.exe
+Name Streamripper for Winamp 1.51
+Text This will install Nullsoft Streamripper for Winamp 1.51 on your computer
+OutFile sripper151.exe
 SetOutPath $DSPDIR
 AddFile \Program Files\Winamp\Plugins\gen_sripper.dll
 AddFile HOWTO.txt

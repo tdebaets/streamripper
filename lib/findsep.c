@@ -32,7 +32,7 @@
 #include "mad.h"	//mpeg library
 
 #define MIN_RMS_SILENCE		100
-#define MAX_RMS_SILENCE		30000
+#define MAX_RMS_SILENCE		32767 //max short
 #define NUM_SILTRACKERS		30
 #define READSIZE	2000
 
@@ -97,12 +97,13 @@ error_code findsep_silence(const u_char* mpgbuf, long mpgsize, u_long* psilence)
 
 	init_siltrackers(ds.siltrackers);
 
-//	{
-//		FILE* fp = fopen("dump.mp3", "wb");
-//		fwrite(mpgbuf, mpgsize, 1, fp);
-//		fclose(fp);
-//	}
-
+#ifdef _DEBUG_
+	{
+		FILE* fp = fopen("dump.mp3", "wb");
+		fwrite(mpgbuf, mpgsize, 1, fp);
+		fclose(fp);
+	}
+#endif
 
 	/* initialize and start decoder */
 	mad_decoder_init(&decoder, &ds,
@@ -120,6 +121,7 @@ error_code findsep_silence(const u_char* mpgbuf, long mpgsize, u_long* psilence)
 
 	DEBUG2(("total length: %d\n", ds.pcmpos));
 
+	assert(ds.mpgsize != 0);
 	silstart = ds.mpgsize/2;
 	for(i = 0; i < NUM_SILTRACKERS; i++)
 	{

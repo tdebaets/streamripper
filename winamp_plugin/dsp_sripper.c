@@ -247,7 +247,7 @@ void UpdateNotRippingDisplay(HWND hwnd)
 {
 	WINAMP_INFO winfo;
 //	HWND hwndStart = GetDlgItem(hwnd, IDC_START);		// JCBUG, why was this here?
-	winamp_get_info(&winfo);
+	winamp_get_info(&winfo, m_guiOpt.use_old_playlist_ret);
 	assert(winfo.is_running);
 	strcpy(m_rmoOpt.url, winfo.url);
 

@@ -43,7 +43,7 @@
 #define PROP_SHEET_CON		0
 #define PROP_SHEET_FILE		1
 #define PROP_SHEET_SKINS	2
-#define SRVERSION			"1.50"
+#define SRVERSION			"1.51"
 
 /**********************************************************************************
  * Public functions
@@ -372,6 +372,7 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 	- proxy server
 	- local machine name
 	- useragent
+	- use old way
 	*/
 
 	if (saveload)
@@ -383,6 +384,7 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 		GetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl, MAX_URL_LEN);
 		GetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost, MAX_HOST_LEN);
 		GetDlgItemText(hWnd, IDC_USERAGENT, m_opt->useragent, MAX_USERAGENT_STR);
+		m_guiOpt->use_old_playlist_ret = get_checkbox(hWnd, IDC_USE_OLD_PLAYLIST_RET);
 	}
 	else
 	{
@@ -398,6 +400,7 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 		if (!m_opt->useragent[0])
 			strcpy(m_opt->useragent, DEFAULT_USERAGENT);
 		SetDlgItemText(hWnd, IDC_USERAGENT, m_opt->useragent);
+		set_checkbox(hWnd, IDC_USE_OLD_PLAYLIST_RET, m_guiOpt->use_old_playlist_ret);
 	}
 
 }
@@ -544,6 +547,7 @@ LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 				case IDC_ALLOW_TOUCH:
 				case IDC_KEEP_INCOMPLETE:
 				case IDC_USERAGENT:
+				case IDC_USE_OLD_PLAYLIST_RET:
 					PropSheet_Changed(GetParent(hWnd), hWnd);
 					break;
 			}
@@ -618,6 +622,8 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	guiOpt->oldpos.x = GetPrivateProfileInt(APPNAME, "window_x", 0, filename);
 	guiOpt->oldpos.y = GetPrivateProfileInt(APPNAME, "window_y", 0, filename);
 	guiOpt->m_enabled = GetPrivateProfileInt(APPNAME, "enabled", 1, filename);
+	guiOpt->use_old_playlist_ret = GetPrivateProfileInt(APPNAME, "use_old_playlist_ret", 0, filename);
+
 
 	if (guiOpt->oldpos.x < 0 || guiOpt->oldpos.y < 0)
 		guiOpt->oldpos.x = guiOpt->oldpos.y = 0;
@@ -674,6 +680,7 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	fprintf(fp, "window_y=%d\n", guiOpt->oldpos.y);
 	fprintf(fp, "enabled=%d\n", guiOpt->m_enabled);
 	fprintf(fp, "default_skin=%s\n", guiOpt->default_skin);
+	fprintf(fp, "use_old_playlist_ret=%d", guiOpt->use_old_playlist_ret);
 
 	fclose(fp);
 

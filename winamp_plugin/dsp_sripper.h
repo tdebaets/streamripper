@@ -9,6 +9,7 @@ typedef struct GUI_OPTIONSst
 	BOOL	m_enabled;
 	char	localhost[MAX_HOST_LEN];		// hostname of 'localhost' 
 	char	default_skin[MAX_PATH];
+	BOOL	use_old_playlist_ret;
 } GUI_OPTIONS;
 
 #endif //__DSP_SRIPPER_H__

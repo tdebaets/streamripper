@@ -57,6 +57,9 @@ BEGIN
     COMBOBOX        IDC_USERAGENT,104,82,99,42,CBS_DROPDOWN | CBS_SORT | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "Pretend to be (UserAgent)",IDC_STATIC,7,82,86,11
+    CONTROL         "&Use old way of retrieving the current track from winamp",
+                    IDC_USE_OLD_PLAYLIST_RET,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,7,62,196,12
 END
 
 IDD_PROPPAGE_FILE DIALOG DISCARDABLE  0, 0, 210, 166

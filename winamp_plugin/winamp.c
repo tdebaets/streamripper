@@ -26,7 +26,7 @@
  * Public functions
  *********************************************************************************/
 BOOL winamp_init();			
-BOOL winamp_get_info(WINAMP_INFO *info);
+BOOL winamp_get_info(WINAMP_INFO *info, BOOL useoldway);
 BOOL winamp_add_relay_to_playlist(char *host, u_short port);
 BOOL winamp_add_track_to_playlist(char *track);
 BOOL winamp_get_path(char *path);
@@ -89,7 +89,7 @@ BOOL winamp_init()
 }
 
 
-BOOL winamp_get_info(WINAMP_INFO *info)
+BOOL winamp_get_info(WINAMP_INFO *info, BOOL useoldway)
 {
 	HWND hwndWinamp = FindWindow("Winamp v1.x", NULL);
 	info->url[0] = '\0';
@@ -106,37 +106,37 @@ BOOL winamp_get_info(WINAMP_INFO *info)
 	else
 		info->is_running = TRUE;
 
-	//
-	// Send a message to winamp to save the current playlist
-	// to a file, 'n' is the index of the currently selected item
-	// 
-//	n  = SendMessage(hwndWinamp, WM_USER, (WPARAM)NULL, 120); 
-//
-//	{
-//		char m3u_path[MAX_PATH_LEN];
-//		char buf[4096] = {'\0'};
-//		FILE *fp;
-//
-//		sprintf(m3u_path, "%s%s", m_winamps_path, "winamp.m3u");	
-//		if ((fp = fopen(m3u_path, "r")) == NULL)
-//			return FALSE;
-//
-//		while(!feof(fp) && n >= 0)
-//		{
-//			fgets(buf, 4096, fp);
-//			if (*buf != '#')
-//				n--;
-//		}
-//		fclose(fp);
-//		buf[strlen(buf)-1] = '\0';
-//
-//		// Make sure it's a URL
-//		if (strncmp(buf, "http://", strlen("http://")) == 0)
-//			strcpy(info->url, buf);
-//	}
-
-	// Much better way to get the filename
+	if (useoldway)
 	{
+		//
+		// Send a message to winamp to save the current playlist
+		// to a file, 'n' is the index of the currently selected item
+		// 
+		int n  = SendMessage(hwndWinamp, WM_USER, (WPARAM)NULL, 120); 
+		char m3u_path[MAX_PATH_LEN];
+		char buf[4096] = {'\0'};
+		FILE *fp;
+
+		sprintf(m3u_path, "%s%s", m_winamps_path, "winamp.m3u");	
+		if ((fp = fopen(m3u_path, "r")) == NULL)
+			return FALSE;
+
+		while(!feof(fp) && n >= 0)
+		{
+			fgets(buf, 4096, fp);
+			if (*buf != '#')
+				n--;
+		}
+		fclose(fp);
+		buf[strlen(buf)-1] = '\0';
+
+		// Make sure it's a URL
+		if (strncmp(buf, "http://", strlen("http://")) == 0)
+			strcpy(info->url, buf);
+	}
+	else
+	{
+	// Much better way to get the filename
 		int get_filename = 211;
 		int get_position = 125;
 

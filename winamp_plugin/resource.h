@@ -33,6 +33,7 @@
 #define IDC_KEEP_INCOMPLETE             1360
 #define IDC_USERAGENT                   1370
 #define IDC_SKIN_LIST                   1371
+#define IDC_USE_OLD_PLAYLIST_RET        1372
 #define ID_MENU_STARTRIPPING            40001
 #define ID_MENU_STOPRIPPING             40003
 #define ID_MENU_OPTIONS                 40004
@@ -44,7 +45,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        119
 #define _APS_NEXT_COMMAND_VALUE         40006
-#define _APS_NEXT_CONTROL_VALUE         1372
+#define _APS_NEXT_CONTROL_VALUE         1373
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

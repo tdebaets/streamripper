@@ -14,7 +14,7 @@ typedef struct WINAMP_INFOst
 extern BOOL winamp_init();
 extern BOOL winamp_add_relay_to_playlist(char *host, u_short port);
 extern BOOL winamp_add_track_to_playlist(char *track);
-extern BOOL winamp_get_info(WINAMP_INFO *info);
+extern BOOL winamp_get_info(WINAMP_INFO *info, BOOL useoldway);
 extern BOOL winamp_get_path(char *path);
 
 
