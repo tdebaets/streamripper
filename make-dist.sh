@@ -1,5 +1,8 @@
 
-
+make clean
+if test -d streamripper-1.60; then
+  rm -rf streamripper-1.60
+fi
 mkdir streamripper-1.60
 cp README readme_xfade.txt COPYING CHANGES Makefile.in \
     THANKS TODO config.guess configure.in configure config.sub \
