@@ -90,7 +90,7 @@ ripshout_getdata(char *data, char *track)
 
     m_chunkcount++;
     if ((ret = m_in->get_input_data(data, m_buffersize)) <= 0)
-	return SR_ERROR_RECV_FAILED;
+	return ret;
 
     if (m_meta_interval == NO_META_INTERVAL) {	
 	strcpy(track, m_no_meta_name);
@@ -98,7 +98,7 @@ ripshout_getdata(char *data, char *track)
     }
 
     if ((ret = m_in->get_input_data(&c, 1)) <= 0)
-	return SR_ERROR_RECV_FAILED;
+	return ret;
 
     if (c < 0) {
 	return SR_ERROR_INVALID_METADATA;

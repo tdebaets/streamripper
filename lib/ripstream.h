@@ -12,7 +12,7 @@ ripstream_init (IO_GET_STREAM *in, IO_PUT_STREAM *out, char *no_meta_name,
 #endif
 error_code
 ripstream_init (IO_GET_STREAM *in, char *no_meta_name, 
-		char *drop_string, SPLITPOINT_OPTIONS *sp_opt, 
+		char *drop_string, int drop_count, SPLITPOINT_OPTIONS *sp_opt, 
 		int bitrate, BOOL addID3tag);
 error_code ripstream_rip();
 void ripstream_destroy();

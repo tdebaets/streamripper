@@ -158,6 +158,7 @@ void init_error_strings()
 	SET_ERR_STR("HTTP:403 - Access Forbidden (try changing the UserAgent)", 0x38)
 	SET_ERR_STR("The output directory length is too long", 0x39)
 	SET_ERR_STR("SR_ERROR_PROGRAM_ERROR", 0x3a)
+	SET_ERR_STR("SR_ERROR_TIMEOUT", 0x3b)
 }
 
 char*
@@ -196,7 +197,7 @@ post_status(int status)
 int
 myrecv(char* buffer, int size)
 {
-    return socklib_recvall(&m_sock, buffer, size);
+	return socklib_recvall(&m_sock, buffer, size, m_options.timeout);
 }
 
 /* 
@@ -206,7 +207,7 @@ myrecv(char* buffer, int size)
  * update via the callback 
  */
 error_code
-rip_manager_start_track(char *trackname)
+rip_manager_start_track(char *trackname, int track_count)
 {
     int ret;
 
@@ -218,6 +219,7 @@ rip_manager_start_track(char *trackname)
 
     strcpy(m_ripinfo.filename, trackname);
     m_ripinfo.filesize = 0;
+    m_ripinfo.track_count = track_count;
     m_status_callback(RM_NEW_TRACK, (void *)trackname);
     post_status(0);
 
@@ -371,7 +373,7 @@ ripthread(void *notused)
 	    post_error(ret);
 	    continue;
 	}
-	else if (ret == SR_ERROR_RECV_FAILED && 
+	else if ((ret == SR_ERROR_RECV_FAILED || ret == SR_ERROR_TIMEOUT) && 
 		     GET_AUTO_RECONNECT(m_options.flags)) {
 	    /*
 	     * Try to reconnect, if thats what the user wants
@@ -568,7 +570,7 @@ start_ripping()
 			 GET_ADD_ID3(m_options.flags));
 #endif
     ret = ripstream_init(&m_ripin, 
-			 m_info.icy_name, m_options.dropstring,
+			 m_info.icy_name, m_options.dropstring, m_options.dropcount,
 			 &m_options.sp_opt, m_ripinfo.bitrate, 
 			 GET_ADD_ID3(m_options.flags));
     if (ret != SR_SUCCESS) {
@@ -676,7 +678,8 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
 	    OPT_SEPERATE_DIRS | 
 	    OPT_SEARCH_PORTS |
 	    OPT_ADD_ID3;
-
+	 m_opt->timeout = 0;
+	 
     strcpy(m_opt->output_directory, "./");
     m_opt->proxyurl[0] = (char)NULL;
     m_opt->url[0] = '\0';

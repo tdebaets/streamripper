@@ -108,7 +108,7 @@ typedef struct SPLITPOINT_OPTIONSst
 // are not organized at all, should have space to insert in places.
 //
 /* ******************** IMPORTANT IF YOU ADD ERROR CODES!!!! *****************************/
-#define NUM_ERROR_CODES					0x3a+1
+#define NUM_ERROR_CODES					0x3b+1
 /* ******************** IMPORTANT IF YOU ADD ERROR CODES!!!! *****************************/
 #define SR_SUCCESS					0x00
 #define SR_SUCCESS_BUFFERING				0x01
@@ -171,5 +171,6 @@ typedef struct SPLITPOINT_OPTIONSst
 #define	SR_ERROR_HTTP_403_ERROR				-	0x38
 #define SR_ERROR_DIR_PATH_TOO_LONG			-	0x39
 #define SR_ERROR_PROGRAM_ERROR				-	0x3a
+#define SR_ERROR_TIMEOUT                  -  0x3b
 
 #endif //__SRIPPER_H__

@@ -142,7 +142,14 @@ void print_status()
 				break;
 
 			case RM_STATUS_RIPPING:
-				strcpy(status_str, "ripping...    ");
+				if (m_curinfo.track_count < m_opt.dropcount)
+				{
+					strcpy(status_str, "skipping...   ");
+				}
+				else
+				{
+					strcpy(status_str, "ripping...    ");
+				}
 				format_byte_size(filesize_str, m_curinfo.filesize);
                                 fprintf(stderr, "[%14s] %.50s [%7s]\r",
                                                 status_str,
@@ -236,6 +243,8 @@ void print_usage()
     fprintf(stderr, "        -i             - Don't add ID3V1 Tags to output file\n");
     fprintf(stderr, "        -u <useragent> - Use a different UserAgent than \"Streamripper\"\n");
     fprintf(stderr, "        -f <dstring>   - Don't create new track if metainfo contains <dstring>\n");
+    fprintf(stderr, "        -m <timeout>   - Number of seconds before force-closing stalled conn\n");
+    fprintf(stderr, "        -k <count>     - Skip over first <count> tracks before starting to rip\n");
 #if !defined (WIN32)
     fprintf(stderr, "        -I <interface> - Rip from specified interface (e.g. eth0)\n");
 #endif
@@ -305,10 +314,18 @@ void parse_arguments(int argc, char **argv)
 	case 'i':
 	    m_opt.flags ^= OPT_ADD_ID3;
 	    break;
+	case 'k':
+		 i++;
+		 m_opt.dropcount = atoi(argv[i]);
+		 break;
 	case 'l':
 	    i++;
 	    time(&m_stop_time);
 	    m_stop_time += atoi(argv[i]);
+	    break;
+	case 'm':
+	    i++;
+	    m_opt.timeout = atoi(argv[i]);
 	    break;
 	case 'o':
 	    m_opt.flags |= OPT_OVER_WRITE_TRACKS;

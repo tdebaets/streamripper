@@ -63,7 +63,6 @@ static char			m_current_track[MAX_TRACK_LEN] = {'\0'};
 static char			m_no_meta_name[MAX_TRACK_LEN] = {'\0'};
 static char			*m_getbuffer = NULL;
 static int			m_find_silence = -1;
-static BOOL			m_on_first_track = TRUE;
 static BOOL			m_addID3tag = TRUE;
 static char                     m_drop_string[MAX_DROPSTRING_LEN]={'\0'};
 static SPLITPOINT_OPTIONS	*m_sp_opt;
@@ -78,7 +77,8 @@ static int			m_mi_to_cbuffer_end;
 static int			m_sw_start_to_cbuffer_end;
 static int			m_sw_end_to_cbuffer_end;
 static int			m_min_search_win;
-
+static int			m_drop_count;
+static int			m_track_count = 0;		// Number of completed tracks so far
 
 /*
  * oddsock's id3 tags
@@ -111,7 +111,7 @@ typedef struct ID3V2framest {
 
 error_code
 ripstream_init (IO_GET_STREAM *in, char *no_meta_name, 
-		char *drop_string, SPLITPOINT_OPTIONS *sp_opt, 
+		char *drop_string, int drop_count, SPLITPOINT_OPTIONS *sp_opt, 
 		int bitrate, BOOL addID3tag)
 {
     if (!in || !sp_opt || !no_meta_name) {
@@ -124,10 +124,11 @@ ripstream_init (IO_GET_STREAM *in, char *no_meta_name,
     m_out = out;
 #endif
     m_sp_opt = sp_opt;
-    m_on_first_track = TRUE;
+    m_track_count = 0;
     m_addID3tag = addID3tag;
     strcpy(m_no_meta_name, no_meta_name);
     strcpy(m_drop_string, drop_string);
+    m_drop_count = drop_count;
     m_http_bitrate = bitrate;
     m_bitrate = -1;
     /* GCS RMK: If no meta data, then this is the default chunk size. */
@@ -150,7 +151,7 @@ void ripstream_destroy()
     m_last_track[0] = '\0';
     m_current_track[0] = '\0';
     m_no_meta_name[0] = '\0';
-    m_on_first_track = TRUE;
+    m_track_count = 0;
     m_addID3tag = TRUE;
 }
 
@@ -241,7 +242,7 @@ ripstream_rip()
     // name we declair that we are no longer on the first track 
     // (or the last for that matter)
     // this is so end_track will actually call end.
-    if (is_no_meta_track() && m_on_first_track) {
+    if (is_no_meta_track() && (m_track_count == 0)) {
 	if ((ret = start_track(m_no_meta_name)) != SR_SUCCESS) {
 	    debug_printf("start_track had bad return code %d\n", ret);
 	    return ret;
@@ -254,7 +255,7 @@ ripstream_rip()
 	char artist[1024], title[1024], album[1024];
 	// The first track should not be ended. It will always be incomplete.
 	//if ((ret = rip_manager_start_track(m_current_track)) != SR_SUCCESS) {
-	if ((ret = rip_manager_start_track(m_no_meta_name)) != SR_SUCCESS) {
+	if ((ret = rip_manager_start_track(m_no_meta_name, m_track_count)) != SR_SUCCESS) {
 	    debug_printf("start_track had bad return code %d\n", ret);
 	    return ret;
 	}
@@ -464,7 +465,10 @@ end_track(u_long pos1, u_long pos2, char *trackname)
 	if ((ret = rip_manager_put_data((char *)&id3, sizeof(id3))) != SR_SUCCESS)
 	    goto BAIL;
     }
-    if (!m_on_first_track)
+
+	debug_printf("Current track number %d (skipping if %d or less)\n", m_track_count, m_drop_count);
+    // Only save this track if we've skipped over enough cruft at the beginning of the stream
+    if (m_track_count > m_drop_count)
 	if ((ret = rip_manager_end_track(trackname)) != SR_SUCCESS)
 	    goto BAIL;
 
@@ -531,7 +535,7 @@ start_track(char *trackname)
     unsigned long int framesize = 0;
     unsigned int secs;
 
-    if ((ret = rip_manager_start_track(trackname)) != SR_SUCCESS)
+    if ((ret = rip_manager_start_track(trackname, m_track_count)) != SR_SUCCESS)
         return ret;
 
     /* Split the trackname string */
@@ -666,7 +670,8 @@ start_track(char *trackname)
 	}
 #endif
     }
-    m_on_first_track = FALSE;
+    m_track_count ++;
+
     return SR_SUCCESS;
 }
 

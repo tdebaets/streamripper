@@ -69,11 +69,11 @@ error_code	socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_n
 void		socklib_close(HSOCKET *socket_handle);
 void		socklib_cleanup();
 error_code	socklib_read_header(HSOCKET *socket_handle, char *buffer, int size, 
-								int (*recvall)(HSOCKET *socket_handle, char* buffer, int size));
-int			socklib_recvall(HSOCKET *socket_handle, char* buffer, int size);
+								int (*recvall)(HSOCKET *socket_handle, char* buffer, int size, int timeout));
+int			socklib_recvall(HSOCKET *socket_handle, char* buffer, int size, int timeout);
 int			socklib_sendall(HSOCKET *socket_handle, char* buffer, int size);
 error_code	socklib_recvall_alloc(HSOCKET *socket_handle, char** buffer, unsigned long *size, 
-								int (*recvall)(HSOCKET *socket_handle, char* buffer, int size));
+								int (*recvall)(HSOCKET *socket_handle, char* buffer, int size, int timeout));
 error_code read_interface(char *if_name, u_int32_t *addr);
 
 /*********************************************************************************
@@ -221,7 +221,7 @@ void socklib_close(HSOCKET *socket_handle)
 }
 
 error_code	socklib_read_header(HSOCKET *socket_handle, char *buffer, int size, 
-								int (*recvall)(HSOCKET *socket_handle, char* buffer, int size))
+								int (*recvall)(HSOCKET *socket_handle, char* buffer, int size, int timeout))
 {
     int i;
 #ifdef WIN32
@@ -229,7 +229,7 @@ error_code	socklib_read_header(HSOCKET *socket_handle, char *buffer, int size,
 #endif
     int ret;
     char *t;
-    int (*myrecv)(HSOCKET *socket_handle, char* buffer, int size);
+	 int (*myrecv)(HSOCKET *socket_handle, char* buffer, int size, int timeout);
 
     if (socket_handle->closed)
 	return SR_ERROR_SOCKET_CLOSED;
@@ -246,7 +246,7 @@ error_code	socklib_read_header(HSOCKET *socket_handle, char *buffer, int size,
     memset(buffer, -1, size);
     for(i = 0; i < size; i++)
     {
-	if ((ret = (*myrecv)(socket_handle, &buffer[i], 1)) == SOCKET_ERROR)
+	if ((ret = (*myrecv)(socket_handle, &buffer[i], 1, 0)) == SOCKET_ERROR)
 	    return SR_ERROR_RECV_FAILED;
 		
 	if (ret == 0)
@@ -284,14 +284,33 @@ error_code	socklib_read_header(HSOCKET *socket_handle, char *buffer, int size,
 /*
  * Default recv
  */
-int socklib_recvall(HSOCKET *socket_handle, char* buffer, int size)
+int socklib_recvall(HSOCKET *socket_handle, char* buffer, int size, int timeout)
 {
     int ret = 0, read = 0;
+    int sock;
+    fd_set fds;
+    struct timeval tv;
+    
+    sock = socket_handle->s;
+    FD_ZERO(&fds);
     while(size)
     {
 	if (socket_handle->closed)
 	    return SR_ERROR_SOCKET_CLOSED;
 	
+	if (timeout > 0)
+	{
+		// Wait up to 'timeout' seconds for data on socket to be ready for read
+		FD_SET(sock, &fds);
+		tv.tv_sec = timeout;
+		tv.tv_usec = 0;
+		ret = select(sock + 1, &fds, NULL, NULL, &tv);
+		if (ret == SOCKET_ERROR)
+			return SOCKET_ERROR;
+		if (ret != 1)
+			return SR_ERROR_TIMEOUT;
+	}
+		
 	//		DEBUG2(("calling recv for %d bytes", size));
         ret = recv(socket_handle->s, &buffer[read], size, 0);
 	//		DEBUG2(("recv: %d", ret));
@@ -335,10 +354,10 @@ int socklib_sendall(HSOCKET *socket_handle, char* buffer, int size)
 }
 
 error_code	socklib_recvall_alloc(HSOCKET *socket_handle, char** buffer, unsigned long *size, 
-								int (*recvall)(HSOCKET *socket_handle, char* buffer, int size))
+								int (*recvall)(HSOCKET *socket_handle, char* buffer, int size, int timeout))
 {
     const int CHUNK_SIZE = 8192;
-    int (*myrecv)(HSOCKET *socket_handle, char* buffer, int size);
+	 int (*myrecv)(HSOCKET *socket_handle, char* buffer, int size, int timeout);
     int ret;
     unsigned long mysize = 0;
     int chunks = 1;
@@ -355,7 +374,7 @@ error_code	socklib_recvall_alloc(HSOCKET *socket_handle, char** buffer, unsigned
     else
 	myrecv = socklib_recvall;
 
-    while((ret = myrecv(socket_handle, &temp[mysize], (CHUNK_SIZE*chunks)-mysize)) >= 0)
+    while((ret = myrecv(socket_handle, &temp[mysize], (CHUNK_SIZE*chunks)-mysize, 0)) >= 0)
     {
 	mysize += ret;
 

@@ -37,6 +37,7 @@ typedef struct RIP_MANAGER_INFOst
     char filename[SR_MAX_PATH];		// JCBUG -- it's not the filename, it's the trackname
     u_long filesize;
     int	status;
+    int  track_count;
 } RIP_MANAGER_INFO;
 
 
@@ -95,6 +96,8 @@ typedef struct RIP_MANAGER_OPTIONSst
     char useragent[MAX_USERAGENT_STR];	// optional, use a different useragent
     char dropstring[MAX_DROPSTRING_LEN];// optional dropstring to be searched in metainfo;if found: metainfo dropped
     SPLITPOINT_OPTIONS sp_opt;		// More options concerning splitpoint rules
+    int timeout;				// timeout, in seconds, before a stalled connection is forcefully closed
+    int dropcount;			// number of tracks at beginning of connection to always ignore
 } RIP_MANAGER_OPTIONS;
 
 typedef struct ERROR_INFOst
@@ -111,7 +114,7 @@ void set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt);
 error_code rip_manager_start (void (*status_callback)(int message, void *data), 
 			     RIP_MANAGER_OPTIONS *options);
 void rip_manager_stop();
-error_code rip_manager_start_track(char *trackname);
+error_code rip_manager_start_track(char *trackname, int track_count);
 error_code rip_manager_end_track(char *trackname);
 error_code rip_manager_put_data(char *buf, int size);
 error_code rip_manager_put_raw_data(char *buf, int size);
