@@ -23,6 +23,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <net/if.h>
+#include <sys/ioctl.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <signal.h>
@@ -49,7 +51,7 @@
 /*********************************************************************************
  * Public functions
  *********************************************************************************/
-error_code	relaylib_init(BOOL search_ports, int base_port, int max_port, int *port_used);
+error_code	relaylib_init(BOOL search_ports, int base_port, int max_port, int *port_used, char *ifr_name);
 void		relaylib_shutdown();
 error_code	relaylib_set_response_header(char *http_header);
 error_code	relaylib_start();
@@ -60,7 +62,7 @@ BOOL		relaylib_isrunning();
  * Private functions
  *********************************************************************************/
 static void			thread_accept(void *notused);
-static error_code	try_port(u_short port);
+static error_code	try_port(u_short port, char *ifr_name);
 
 
 /*********************************************************************************
@@ -98,62 +100,64 @@ void catch_pipe(int code)
 }
 #endif
 
-error_code relaylib_init(BOOL search_ports, int relay_port, int max_port, int *port_used)
+error_code
+relaylib_init(BOOL search_ports, int relay_port, int max_port, int *port_used, char *ifr_name)
 {
-	int ret;
+    int ret;
 #ifdef WIN32
-	WSADATA wsd;
+    WSADATA wsd;
 
-	if (WSAStartup(MAKEWORD(2,2), &wsd) != 0)
-		return SR_ERROR_CANT_BIND_ON_PORT;
+    if (WSAStartup(MAKEWORD(2,2), &wsd) != 0)
+	return SR_ERROR_CANT_BIND_ON_PORT;
 #endif
 
-	if (relay_port < 1 || !port_used)
-		return SR_ERROR_INVALID_PARAM;
+    if (relay_port < 1 || !port_used)
+	return SR_ERROR_INVALID_PARAM;
 
 #ifndef WIN32
-	// catch a SIGPIPE if send fails
-	signal(SIGPIPE, catch_pipe);
+    // catch a SIGPIPE if send fails
+    signal(SIGPIPE, catch_pipe);
 #endif
 
-	m_sem_not_connected = threadlib_create_sem();
+    m_sem_not_connected = threadlib_create_sem();
 
-	//
-	// NOTE: we need to signel it here in case we try to destroy
-	// relaylib before the thread starts!
-	//
-	threadlib_signel_sem(&m_sem_not_connected);
+    //
+    // NOTE: we need to signel it here in case we try to destroy
+    // relaylib before the thread starts!
+    //
+    threadlib_signel_sem(&m_sem_not_connected);
 
-	*port_used = 0;
-	if (!search_ports)
-		max_port = relay_port;
+    *port_used = 0;
+    if (!search_ports)
+	max_port = relay_port;
 
-	for(;relay_port <= max_port; relay_port++)
-	{
-		if ((ret = try_port((u_short)relay_port)) == SR_ERROR_CANT_BIND_ON_PORT)
-			continue;		// Keep searching.
+    for(;relay_port <= max_port; relay_port++) {
+	ret = try_port((u_short)relay_port, ifr_name);
+	if (ret == SR_ERROR_CANT_BIND_ON_PORT)
+	    continue;		// Keep searching.
 
-		if (ret == SR_SUCCESS)
-		{
-			*port_used = relay_port;
-			return SR_SUCCESS;
-		}
-		else
-			return ret;
+	if (ret == SR_SUCCESS) {
+	    *port_used = relay_port;
+	    return SR_SUCCESS;
+	} else {
+	    return ret;
 	}
+    }
 
-	return SR_ERROR_CANT_BIND_ON_PORT;
+    return SR_ERROR_CANT_BIND_ON_PORT;
 }
 
-error_code try_port(u_short port)
+error_code
+try_port(u_short port, char *ifr_name)
 {
 	struct sockaddr_in local;
 
 	m_listensock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
 	if (m_listensock == SOCKET_ERROR)
 		return SR_ERROR_SOCK_BASE;
-	
-	local.sin_addr.s_addr = htonl(INADDR_ANY);
+
+	if (read_interface(ifr_name,&local.sin_addr.s_addr) != 0)
+		local.sin_addr.s_addr = htonl(INADDR_ANY);
 	local.sin_family = AF_INET;
 	local.sin_port = htons(port);
 	

@@ -217,25 +217,28 @@ void rip_callback(int message, void *data)
 
 void print_usage()
 {
-        fprintf(stderr, "Usage: streamripper URL [OPTIONS]\n");
-        fprintf(stderr, "Options:\n");
-        fprintf(stderr, "        -h             - Print this listing\n");
-        fprintf(stderr, "        -a <file>      - Rip to single file, default name is timestamped\n");
-        fprintf(stderr, "        -d <dir>       - The destination directory\n");
-        fprintf(stderr, "        -s             - Don't create a directory for each stream\n");
-        fprintf(stderr, "        -r <base port> - Create relay server on base port, default port 8000\n");
-        fprintf(stderr, "        -z             - Don't scan for free ports if base port is not avail\n");
-        fprintf(stderr, "        -p <url>       - Use HTTP proxy server at <url>\n");
-        fprintf(stderr, "        -o             - Overwrite tracks in complete\n");
-        fprintf(stderr, "        -t             - Don't overwrite tracks in incomplete\n");
-        fprintf(stderr, "        -c             - Don't auto-reconnect\n");
-        fprintf(stderr, "        -v             - Print version info and quit\n");
-        fprintf(stderr, "        -l <seconds>   - number of seconds to run, otherwise runs forever\n");
-        fprintf(stderr, "        -q             - Add sequence number to output file\n");
-        fprintf(stderr, "        -i             - Don't add ID3V1 Tags to output file\n");
-        fprintf(stderr, "        -u <useragent> - Use a different UserAgent than \"Streamripper\"\n");
-        fprintf(stderr, "        -f <dstring>   - Don't create new track if metainfo contains <dstring>\n");
-        fprintf(stderr, "        --x            - Invoke splitpoint detection rules (see online guide)\n");
+    fprintf(stderr, "Usage: streamripper URL [OPTIONS]\n");
+    fprintf(stderr, "Options:\n");
+    fprintf(stderr, "        -h             - Print this listing\n");
+    fprintf(stderr, "        -a <file>      - Rip to single file, default name is timestamped\n");
+    fprintf(stderr, "        -d <dir>       - The destination directory\n");
+    fprintf(stderr, "        -s             - Don't create a directory for each stream\n");
+    fprintf(stderr, "        -r <base port> - Create relay server on base port, default port 8000\n");
+    fprintf(stderr, "        -z             - Don't scan for free ports if base port is not avail\n");
+    fprintf(stderr, "        -p <url>       - Use HTTP proxy server at <url>\n");
+    fprintf(stderr, "        -o             - Overwrite tracks in complete\n");
+    fprintf(stderr, "        -t             - Don't overwrite tracks in incomplete\n");
+    fprintf(stderr, "        -c             - Don't auto-reconnect\n");
+    fprintf(stderr, "        -v             - Print version info and quit\n");
+    fprintf(stderr, "        -l <seconds>   - number of seconds to run, otherwise runs forever\n");
+    fprintf(stderr, "        -q             - Add sequence number to output file\n");
+    fprintf(stderr, "        -i             - Don't add ID3V1 Tags to output file\n");
+    fprintf(stderr, "        -u <useragent> - Use a different UserAgent than \"Streamripper\"\n");
+    fprintf(stderr, "        -f <dstring>   - Don't create new track if metainfo contains <dstring>\n");
+#if !defined (WIN32)
+    fprintf(stderr, "        -I <interface> - Rip from specified interface (e.g. eth0)\n");
+#endif
+    fprintf(stderr, "        --x            - Invoke splitpoint detection rules (see online guide)\n");
 }
 
 /* 
@@ -251,6 +254,11 @@ void parse_arguments(int argc, char **argv)
 
     if (argc < 2) {
 	print_usage();
+	exit(2);
+    }
+
+    if (argv[1][0] == '-') {
+	fprintf(stderr, "*** The first parameter MUST be the URL\n\n");
 	exit(2);
     }
 
@@ -339,6 +347,9 @@ void parse_arguments(int argc, char **argv)
 	case 'z':
 	    m_opt.flags ^= OPT_SEARCH_PORTS;
 	    m_opt.max_port = m_opt.relay_port+1000;
+	    break;
+	case 'I':
+	    strncpy(m_opt.ifr_name, argv[i], SR_MAX_PATH);
 	    break;
 	case '-':
 	    parse_splitpoint_rules(&argv[i][2]);

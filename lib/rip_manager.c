@@ -482,7 +482,7 @@ start_ripping()
      * Connect to the stream
      */
     ret = inet_sc_connect(&m_sock, m_options.url, pproxy, &m_info, 
-	    m_options.useragent);
+			  m_options.useragent, m_options.ifr_name);
     if (ret != SR_SUCCESS) {
 	goto RETURN_ERR;
     }
@@ -586,7 +586,8 @@ start_ripping()
     if (GET_MAKE_RELAY(m_options.flags)) {
 	int new_port = 0;
 	ret = relaylib_init(GET_SEARCH_PORTS(m_options.flags), 
-		m_options.relay_port, m_options.max_port, &new_port);
+			    m_options.relay_port, m_options.max_port, 
+			    &new_port, m_options.ifr_name);
 	if (ret != SR_SUCCESS) {
 		goto RETURN_ERR;
 	}

@@ -87,6 +87,7 @@ typedef struct RIP_MANAGER_OPTIONSst
     char proxyurl[MAX_URL_LEN];		// url of a http proxy server, '\0' otherwise
     char output_directory[SR_MAX_PATH];	// base directory to output files too
     char output_file[SR_MAX_PATH];	// filename base when ripping without splitting
+    char ifr_name[SR_MAX_PATH];		// local interface to use
     int relay_port;			// port to use for the relay server
     u_short max_port;			// highest port the relay server can look if it needs to search
     u_long maxMB_rip_size;		// max number of megabytes that can by writen out before we stop

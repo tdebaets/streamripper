@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-extern error_code	relaylib_init(BOOL search_ports, int relay_port, int max_port, int *port_used);
+extern error_code	relaylib_init(BOOL search_ports, int relay_port, int max_port, int *port_used, char *ifr_name);
 extern void			relaylib_shutdown();
 extern error_code	relaylib_set_response_header(char *http_header);
 extern error_code	relaylib_start();
