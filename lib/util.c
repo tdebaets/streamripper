@@ -20,15 +20,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#if defined (__UNIX__)
+#if defined HAVE_CONFIG_H
+#include "config.h"
+#endif
+#if defined HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #include <wchar.h>
 #include <wctype.h>
 #include <locale.h>
 #include <time.h>
+#if defined HAVE_ICONV
 #include <iconv.h>
+#endif
+#if defined HAVE_LANGINFO_CODESET
 #include <langinfo.h>
+#endif
 #include "debug.h"
 #include "types.h"
 
@@ -151,13 +158,75 @@ initialize_locale (void)
 
 
 /* Given a multibyte string containing the title, three names are 
-   suggested.  One in utf8 encoding, one in the multibyte encoding 
-   of the locale, and one is a "guaranteed-to-work" ascii name.
+   suggested.  One in utf8 encoding, one with wchar_t encoding,
+   one in the multibyte encoding of the locale, and one that 
+   is a "guaranteed-to-work" ascii name.
+
+   For saving, set up filename like this:
+
+   linux:   utf8 or locale_mbcs + open() or fopen()
+   osx:     utf8 + open() or utf8 + wfopen()
+   windows: utf8 + OpenFile() or locale_mbcs + OpenFile()
+
+   But still need to convert to wchar for stripping.  Note, this 
+   doesn't work all the time using mbstowcs.  
+
+   Finally, user should be able to override.
+
+   ------------------------------------------------------
+   Pseudocode:
+   ------------------------------------------------------
+   if have iconv
+     convert to wchar using iconv
+   else
+     convert to wchar using mbstowcs
+
+   if it seemed to work (non-null)
+     strip using wchar
+   else
+     give up, and use anonymous ascii
+
+   if target_lang user spec'd
+   if have iconv
+     convert wchar to user spec'd
+     try to open file
+     if successful, done
+
+   target_lang is utf8
+   if have iconv
+     convert wchar to utf8
+     try to open file
+     if successful, done
+
+   if have wchar_open
+     try to open file
+     if successful, done
+
+   target_lang is locale_mbcs
+   if have iconv
+     convert using wchar
+   else
+     convert using wcstombs
+   if successful, done
+
+   give up, and use anonymous ascii
+   ------------------------------------------------------
+   Note that even the above doesn't consider what 
+   to do about the id3 information. :-)
 */
 void
-suggest_filenames (char *title_string, char *utf8_name, 
-		   char *locale_name, char *ascii_name)
+suggest_filenames (char *input_string, char *utf8_name, char *wchar_name, 
+		   char *locale_mbcs_name, char *ascii_name,
+		   int buflen)
 {
+    static unsigned int anonymous_idx = 0;
+
+    *utf8_name = 0;
+    *wchar_name = 0;
+    *locale_mbcs_name = 0;
+    *ascii_name = 0;
+    if (!input_string) return;
+    if (buflen <= 1) return;
 }
 
 char*
