@@ -56,7 +56,6 @@
 /*********************************************************************************
  * Public functions
  *********************************************************************************/
-error_code	relaylib_init(BOOL search_ports, int base_port, int max_port, int *port_used, char *if_name);
 void		relaylib_shutdown();
 error_code	relaylib_set_response_header(char *http_header);
 error_code	relaylib_start();
@@ -81,10 +80,12 @@ static BOOL		m_initdone = FALSE;
 static THREAD_HANDLE m_hthread;
 static struct hostsocklist_t
 {
-	SOCKET						m_hostsock;
-	struct hostsocklist_t 	*m_next;
+	SOCKET m_hostsock;
+	struct hostsocklist_t *m_next;
 } *m_hostsocklist = NULL;
-static HSEM		m_sem_listlock;
+unsigned long m_hostsocklist_len = 0;
+static HSEM m_sem_listlock;
+int m_max_connections;
 
 
 #define BUFSIZE	(1024)
@@ -102,6 +103,7 @@ static void destroy_all_hostsocks(void)
 	m_hostsocklist = ptr->m_next;
 	free(ptr);
     }
+    m_hostsocklist_len = 0;
     threadlib_signel_sem(&m_sem_listlock);
 }
 
@@ -194,7 +196,8 @@ void catch_pipe(int code)
 #endif
 
 error_code
-relaylib_init(BOOL search_ports, int relay_port, int max_port, int *port_used, char *if_name)
+relaylib_init(BOOL search_ports, int relay_port, int max_port, 
+	      int *port_used, char *if_name, int max_connections)
 {
     int ret;
 #ifdef WIN32
@@ -212,21 +215,17 @@ relaylib_init(BOOL search_ports, int relay_port, int max_port, int *port_used, c
     signal(SIGPIPE, catch_pipe);
 #endif
 
-   if (m_initdone != TRUE)
-   {
-    m_sem_not_connected = threadlib_create_sem();
+    if (m_initdone != TRUE) {
+	m_sem_not_connected = threadlib_create_sem();
+	m_sem_listlock = threadlib_create_sem();
+	threadlib_signel_sem(&m_sem_listlock);
 
-    m_sem_listlock = threadlib_create_sem();
-    threadlib_signel_sem(&m_sem_listlock);
-
-    //
-    // NOTE: we need to signel it here in case we try to destroy
-    // relaylib before the thread starts!
-    //
-    threadlib_signel_sem(&m_sem_not_connected);
-    
-    m_initdone = TRUE;
-   }
+	// NOTE: we need to signel it here in case we try to destroy
+	// relaylib before the thread starts!
+	threadlib_signel_sem(&m_sem_not_connected);
+	m_initdone = TRUE;
+    }
+    m_max_connections = max_connections;
 
     *port_used = 0;
     if (!search_ports)
@@ -343,11 +342,9 @@ void thread_accept(void *notused)
 	fd_set fds;
 	struct timeval tv;
 		
-	//
 	// this event will keep use from accepting while we have a connection active
 	// when a connection gets dropped, or when streamripper shuts down
 	// this event will get signaled
-	//
 	DEBUG1(("***thread_accept:threadlib_waitfor_sem"));
 	threadlib_waitfor_sem(&m_sem_not_connected);
 	DEBUG1(("***thread_accept:threadlib_waitfor_sem returned!"));
@@ -362,11 +359,19 @@ void thread_accept(void *notused)
 	    tv.tv_sec = 1;
 	    tv.tv_usec = 0;
 	    ret = select(m_listensock + 1, &fds, NULL, NULL, &tv);
-	    if (ret == 1)
-	    {
+	    if (ret == 1) {
+		unsigned long num_connected;
+		/* If connections are full, do nothing.  Note that 
+		    m_max_connections is 0 for infinite connections allowed. */
+		threadlib_waitfor_sem(&m_sem_listlock);
+		num_connected = m_hostsocklist_len;
+		threadlib_signel_sem(&m_sem_listlock);
+		if (m_max_connections > 0 && num_connected >= (unsigned long) m_max_connections) {
+		    continue;
+		}
+		/* Check for connections */
 		newsock = accept(m_listensock, (struct sockaddr *)&client, &iAddrSize);
-		if (newsock != SOCKET_ERROR)
-		{
+		if (newsock != SOCKET_ERROR) {
 		    // Got successful accept
 		    make_nonblocking(newsock);
 
@@ -375,11 +380,9 @@ void thread_accept(void *notused)
 
 		    // Socket is new and its buffer had better have room to hold the entire HTTP header!
 		    good = FALSE;
-		    if (swallow_receive(newsock) == 0)
-		    {
+		    if (swallow_receive(newsock) == 0) {
 			ret = send(newsock, m_http_header, strlen(m_http_header), 0);
-			if (ret == strlen(m_http_header))
-			{
+			if (ret == (int) strlen(m_http_header)) {
 			    newhostsock = malloc(sizeof(*newhostsock));
 			    if (newhostsock != NULL)
 			    {
@@ -388,8 +391,8 @@ void thread_accept(void *notused)
 				newhostsock->m_hostsock = newsock;
 				newhostsock->m_next = m_hostsocklist;
 				m_hostsocklist = newhostsock;
+				m_hostsocklist_len++;
 				threadlib_signel_sem(&m_sem_listlock);
-								
 				good = TRUE;
 			    }
 			}
@@ -427,12 +430,12 @@ relaylib_send(char *data, int len)
     BOOL good;
     error_code err = SR_SUCCESS;
 
-	if (m_initdone != TRUE)
-	{
-		// Do nothing if relaylib not in use
-		return SR_ERROR_HOST_NOT_CONNECTED;
-	}
-	
+    if (m_initdone != TRUE)
+    {
+	    // Do nothing if relaylib not in use
+	    return SR_ERROR_HOST_NOT_CONNECTED;
+    }
+
     threadlib_waitfor_sem(&m_sem_listlock);
     ptr = m_hostsocklist;
     if (ptr != NULL)
@@ -486,6 +489,7 @@ relaylib_send(char *data, int len)
 		}
 		free(ptr);
 		ptr = NULL;
+		m_hostsocklist_len --;
 	    }
 			
 	    if (ptr != NULL)

@@ -192,21 +192,9 @@ ripstream_rip()
 	strcpy(m_last_track, m_current_track);
 
     // get the data
-    if ((ret = m_in->get_stream_data(m_getbuffer, m_current_track)) != SR_SUCCESS)
-    {
-	debug_printf("m_in->get_data bad return code: %d\n", ret);
-	// If it is a single track recording, finish the track
-	// if end_track is successful
-        /* GCS - This test is never true -- vestigal from live365 */
-	if (is_no_meta_track()) {
-	    int ret2;
-	    ret2 = end_track(cbuffer_get_used(&m_cbuffer),
-			     cbuffer_get_used(&m_cbuffer),
-			     m_no_meta_name);
-	    if (ret2 != SR_SUCCESS) {
-		return ret2;
-	    }
-	}
+    ret = m_in->get_stream_data(m_getbuffer, m_current_track);
+    if (ret != SR_SUCCESS) {
+	debug_printf("m_in->get_stream_data bad return code: %d\n", ret);
 	return ret;
     }
 
@@ -236,24 +224,12 @@ ripstream_rip()
 	if (ret != SR_SUCCESS) return ret;
     }
 
-    /* GCS - This test is never true -- vestigal from live365 */
-    // if the current track matchs with the special no track info 
-    // name we declair that we are no longer on the first track 
-    // (or the last for that matter)
-    // this is so end_track will actually call end.
-    if (is_no_meta_track() && (m_track_count == 0)) {
-	if ((ret = start_track(m_no_meta_name)) != SR_SUCCESS) {
-	    debug_printf("start_track had bad return code %d\n", ret);
-	    return ret;
-	}
-    }
     /* GCS - This is only true once? */
     // if this is the first time we have received a track name, then we
     // can start the track
-    else if (*m_current_track && *m_last_track == '\0') {
+    if (*m_current_track && *m_last_track == '\0') {
 	char artist[1024], title[1024], album[1024];
 	// The first track should not be ended. It will always be incomplete.
-	//if ((ret = rip_manager_start_track(m_current_track)) != SR_SUCCESS) {
 	debug_printf ("calling rip_manager_start_track(#1)\n");
 	ret = rip_manager_start_track(m_no_meta_name, m_track_count);
 	if (ret != SR_SUCCESS) {

@@ -600,7 +600,8 @@ start_ripping()
 	int new_port = 0;
 	ret = relaylib_init(GET_SEARCH_PORTS(m_options.flags), 
 			    m_options.relay_port, m_options.max_port, 
-			    &new_port, m_options.if_name);
+			    &new_port, m_options.if_name, 
+			    m_options.max_connections);
 	if (ret != SR_SUCCESS) {
 		goto RETURN_ERR;
 	}
@@ -689,8 +690,9 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
 	    OPT_SEPERATE_DIRS | 
 	    OPT_SEARCH_PORTS |
 	    OPT_ADD_ID3;
-	 m_opt->timeout = 0;
-	 
+    m_opt->timeout = 0;
+    m_opt->max_connections = 1;
+
     strcpy(m_opt->output_directory, "./");
     m_opt->proxyurl[0] = (char)NULL;
     m_opt->url[0] = '\0';

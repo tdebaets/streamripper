@@ -232,6 +232,7 @@ void print_usage()
     fprintf(stderr, "        -d <dir>       - The destination directory\n");
     fprintf(stderr, "        -s             - Don't create a directory for each stream\n");
     fprintf(stderr, "        -r <base port> - Create relay server on base port, default port 8000\n");
+    fprintf(stderr, "        -R <#connect>  - Max connections to relay, default 1, -R 0 is no limit\n");
     fprintf(stderr, "        -z             - Don't scan for free ports if base port is not avail\n");
     fprintf(stderr, "        -p <url>       - Use HTTP proxy server at <url>\n");
     fprintf(stderr, "        -o             - Overwrite tracks in complete\n");
@@ -248,6 +249,7 @@ void print_usage()
 #if !defined (WIN32)
     fprintf(stderr, "        -I <interface> - Rip from specified interface (e.g. eth0)\n");
 #endif
+    fprintf(stderr, "        --debug        - Save debugging trace\n");
     fprintf(stderr, "        --x            - Invoke splitpoint detection rules (see online guide)\n");
 }
 
@@ -278,7 +280,7 @@ void parse_arguments(int argc, char **argv)
 	if (argv[i][0] != '-')
 	    continue;
 
-	c = strchr("dplu", argv[i][1]);
+	c = strchr("dpluR", argv[i][1]);
         if (c != NULL) {
             if ((i == (argc-1)) || (argv[i+1][0] == '-')) {
 		fprintf(stderr, "option %s requires an argument\n", argv[i]);
@@ -315,9 +317,9 @@ void parse_arguments(int argc, char **argv)
 	    m_opt.flags ^= OPT_ADD_ID3;
 	    break;
 	case 'k':
-		 i++;
-		 m_opt.dropcount = atoi(argv[i]);
-		 break;
+	    i++;
+	    m_opt.dropcount = atoi(argv[i]);
+	    break;
 	case 'l':
 	    i++;
 	    time(&m_stop_time);
@@ -362,7 +364,12 @@ void parse_arguments(int argc, char **argv)
 	    m_opt.max_port = m_opt.relay_port+1000;
 	    break;
 	case 'I':
+	    i++;
 	    strncpy(m_opt.if_name, argv[i], SR_MAX_PATH);
+	    break;
+	case 'R':
+	    i++;
+	    m_opt.max_connections = atoi(argv[i]);
 	    break;
 	case '-':
 	    parse_extended_options(&argv[i][2]);

@@ -273,10 +273,14 @@ httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
     info->icy_bitrate = atoi(stempbr);
     info->have_icy_name = rc;
 
+    printf ("---------------\n");
+    printf (header);
+    printf ("---------------\n");
     // Lets try to guess the server :)
     // Try Shoutcast
-    if ((start = (char *)strstr(header, "SHOUTcast")) != NULL)
-    {
+    if ((start = (char *)strstr(header, "[relay stream]")) != NULL) {
+	strcpy(info->server, "Streamripper relay server");
+    } else if ((start = (char *)strstr(header, "SHOUTcast")) != NULL) {
 	strcpy(info->server, "SHOUTcast/");
 	if ((start = (char *)strstr(start, "Server/")) != NULL)
 	{
