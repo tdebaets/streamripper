@@ -150,7 +150,6 @@ findsep_silence(const u_char* mpgbuf, long mpgsize,
 	    silstart = ds.siltrackers[i].silencestart;
 	    break;
 	}
-
     }
 
     /* GCS FIX: Need to return middle of silence instead of beginning */
@@ -183,14 +182,8 @@ void init_siltrackers(SILENCETRACKER* siltrackers)
     }
 }
 
-/* 
-   Your input callback is called whenever the decoder's stream buffer 
-   lacks enough data to decode a complete frame. You should refill the 
-   buffer from your data source, taking care to place the unconsumed data 
-   from the end of the old buffer (starting from stream->next_frame) at 
-   the beginning of your new buffer.
-*/
-enum mad_flow input(void *data, struct mad_stream *ms)
+enum mad_flow
+input(void *data, struct mad_stream *ms)
 {
     DECODE_STRUCT *ds = (DECODE_STRUCT *)data;
     long frameoffset = 0;
@@ -202,18 +195,28 @@ enum mad_flow input(void *data, struct mad_stream *ms)
 
     if (ms->next_frame) {
 	frameoffset = &(ds->mpgbuf[ds->mpgpos]) - ms->next_frame;
-	/* GCS: This is the famous bug. */
+        /* GCS July 8, 2004
+	       This is the famous frameoffset != READSIZE bug.
+	       What appears to be happening is libmad is not syncing 
+	       properly on the broken initial frame.  Therefore, 
+	       if there is no header yet (hence no ds->samplerate),
+	       we'll nudge along the buffer to try to resync.
+         */
 	if (frameoffset == READSIZE) {
-	    FILE* fp;
-            debug_printf ("%p | %p | %p | %p | %d\n",
-		ds->mpgbuf, ds->mpgpos, &(ds->mpgbuf[ds->mpgpos]), 
-		ms->next_frame, frameoffset);
-    	    fprintf (stderr, "ERROR: frameoffset != READSIZE\n");
-	    debug_printf ("ERROR: frameoffset != READSIZE\n");
-	    fp = fopen ("gcs1.txt","w");
-	    fwrite(ds->mpgbuf,1,ds->mpgsize,fp);
-	    fclose(fp);
-	    exit (-1);
+	    if (!ds->samplerate) {
+		frameoffset--;
+	    } else {
+		FILE* fp;
+		debug_printf ("%p | %p | %p | %p | %d\n",
+		    ds->mpgbuf, ds->mpgpos, &(ds->mpgbuf[ds->mpgpos]), 
+		    ms->next_frame, frameoffset);
+    		fprintf (stderr, "ERROR: frameoffset != READSIZE\n");
+		debug_printf ("ERROR: frameoffset != READSIZE\n");
+		fp = fopen ("gcs1.txt","w");
+		fwrite(ds->mpgbuf,1,ds->mpgsize,fp);
+		fclose(fp);
+		exit (-1);
+	    }
 	}
     }
     debug_printf ("%p | %p | %p | %p | %d\n",
@@ -227,7 +230,6 @@ enum mad_flow input(void *data, struct mad_stream *ms)
 
     return MAD_FLOW_CONTINUE;
 }
-
 
 void search_for_silence(DECODE_STRUCT *ds, double vol)
 {
