@@ -185,6 +185,7 @@ void options_dialog_show(HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, 
 		MessageBox(parent, "There was an error while attempting to load the options dialog\r\n"
 						   "Please check http://streamripper.sourceforge.net for updates",
 						   "Can't load options dialog", MB_ICONEXCLAMATION);
+		return; //JCBUG
 
 	}
 	if (ret)

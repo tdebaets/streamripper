@@ -23,6 +23,7 @@
 #include "types.h"
 #include "http.h"
 #include "util.h"
+#include "debug.h"
 
 #if WIN32
 #define snprintf	_snprintf
@@ -171,11 +172,20 @@ error_code httplib_construct_page_request(const char *url, BOOL proxyformat, cha
 
 }
 
+void extract_header_value(char *header, char *dest, char *match)
+{
+	char* start = (char *)strstr(header, match);
+	if (start)
+		subnstr_until(start+strlen(match), "\n", dest, MAX_ICY_STRING);
+}
+
 
 error_code	httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
 {
     char *start;
 	char versionbuf[64];
+	char stempbr[50];
+
 	if (!header || !info)
 		return SR_ERROR_INVALID_PARAM;
 
@@ -191,6 +201,8 @@ error_code	httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
 
 	start = strstr(start, " ") + 1;
 	sscanf(start, "%i", &info->icy_code);
+
+	DEBUG2(("header:\n %s", header));
 
 	if (info->icy_code >= 400)
 	{
@@ -213,50 +225,32 @@ error_code	httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
 		}
 	}
 
-	start = (char *)strstr(header, "Location:");
-	if (start)
-		sscanf(start, "Location:%[^\n]\n", info->http_location);
-
-	start = (char *)strstr(header, "Server:");
-	if (start)
-		subnstr_until(start+strlen("Server:"), "\n", info->server, MAX_SERVER_LEN);
-
-
-    // Get the icy name
-    start = (char *)strstr(header, "icy-name:");
-    if (start)
-		subnstr_until(start+strlen("icy-name:"), "\n", info->icy_name, MAX_ICY_STRING);
-
-	// Get genre
-    start = (char *)strstr(header, "icy-genre:");
-    if (start)
-		subnstr_until(start+strlen("icy-genre:"), "\n", info->icy_genre, MAX_ICY_STRING);
-
-	// Get URL
-    start = (char *)strstr(header, "icy-url:");
-    if (start)
-		subnstr_until(start+strlen("icy-url:"), "\n", info->icy_url, MAX_ICY_STRING);
-
-	// Get bitrate
-    start = (char *)strstr(header, "icy-br:");
-    if (start)
-        sscanf(start, "icy-br:%i", &info->icy_bitrate);
+	// read the Shoutcast headers
+	// apparently some icecast streams use different headers
+	// but other then that it always works like this
+	//
+	extract_header_value(header, info->http_location, "Location:");
+	extract_header_value(header, info->server, "Server:");
+	extract_header_value(header, info->icy_name, "icy-name:");
+	extract_header_value(header, info->icy_url, "icy-url:");
+	extract_header_value(header, stempbr, "icy-br:");
+	info->icy_bitrate = atoi(stempbr);
 
 	// Lets try to guess the server :)
-	if (info->server[0] == '\0')
+	// Try Shoutcast
+	if ((start = (char *)strstr(header, "SHOUTcast")) != NULL)
 	{
-		// Try Shoutcast
-		if ((start = (char *)strstr(header, "SHOUTcast")) != NULL)
+		strcpy(info->server, "SHOUTcast/");
+		if ((start = (char *)strstr(start, "Server/")) != NULL)
 		{
-			strcpy(info->server, "SHOUTcast/");
-			if ((start = (char *)strstr(start, "Server/")) != NULL)
-			{
-				sscanf(start, "Server/%[^<]<", versionbuf);
-				strcat(info->server, versionbuf);
-			}
-
+			sscanf(start, "Server/%[^<]<", versionbuf);
+			strcat(info->server, versionbuf);
 		}
-		else if ((start = (char *)strstr(header, "icecast")) != NULL)
+
+	}
+	else if ((start = (char *)strstr(header, "icecast")) != NULL)
+	{
+		if (!info->server[0])
 		{
 			strcpy(info->server, "icecast/");
 			if ((start = (char *)strstr(start, "version ")) != NULL)
@@ -264,14 +258,18 @@ error_code	httplib_parse_sc_header(char *header, SR_HTTP_HEADER *info)
 				sscanf(start, "version %[^<]<", versionbuf);
 				strcat(info->server, versionbuf);
 			}
-
 		}
 
-		else if ((start = (char *)strstr(header, "Zwitterion v")) != NULL)
-		{
-			sscanf(start, "%[^<]<", info->server);
-		}
-
+		// icecast headers.
+		extract_header_value(header, info->icy_url, "x-audiocast-server-url:");
+		extract_header_value(header, info->icy_name, "x-audiocast-name:");
+		extract_header_value(header, info->icy_genre, "x-audiocast-genre:");
+		extract_header_value(header, stempbr, "x-audiocast-bitrate:");
+		info->icy_bitrate = atoi(stempbr);
+	}
+	else if ((start = (char *)strstr(header, "Zwitterion v")) != NULL)
+	{
+		sscanf(start, "%[^<]<", info->server);
 	}
 
 	// Make sure we don't have any CRLF's at the end of our strings
