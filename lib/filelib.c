@@ -17,6 +17,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include "compat.h"
@@ -50,6 +51,7 @@ static void trim_filename (char *filename, char* out);
 static void trim_mp3_suffix (char *filename, char* out);
 static error_code filelib_open_for_write (FHANDLE* fp, char *filename);
 static void set_show_filenames (void);
+static int is_absolute_path (char* fn);
 
 /*********************************************************************************
  * Private Vars
@@ -59,13 +61,13 @@ static FHANDLE 	m_show_file;
 static FHANDLE  m_cue_file;
 static int 	m_count;
 static int      m_do_show;
-static char 	m_output_directory[MAX_PATH];
-static char 	m_incomplete_directory[MAX_PATH];
+static char 	m_output_directory[SR_MAX_PATH];
+static char 	m_incomplete_directory[SR_MAX_PATH];
 static char 	m_filename_format[] = "%s%s.mp3";
 static BOOL	m_keep_incomplete = TRUE;
 static int      m_max_filename_length;
-static char 	m_show_name[MAX_PATH];
-static char 	m_cue_name[MAX_PATH];
+static char 	m_show_name[SR_MAX_PATH];
+static char 	m_cue_name[SR_MAX_PATH];
 
 
 // For now we're not going to care. If it makes it good. it not, will know 
@@ -90,14 +92,14 @@ filelib_init(BOOL do_count, BOOL keep_incomplete, BOOL do_show_file,
     m_cue_file = INVALID_FHANDLE;
     m_count = do_count ? 1 : -1;
     m_keep_incomplete = keep_incomplete;
-    memset(&m_output_directory, 0, MAX_PATH);
+    memset(&m_output_directory, 0, SR_MAX_PATH);
     m_show_name[0] = 0;
     m_do_show = do_show_file;
 
     if (do_show_file) {
 	if (show_file_name && *show_file_name) {
 	    trim_mp3_suffix (show_file_name, m_show_name);
-	    if (strlen(m_show_name) > MAX_PATH - 5) {
+	    if (strlen(m_show_name) > SR_MAX_PATH - 5) {
 		return SR_ERROR_DIR_PATH_TOO_LONG;
 	    }
 	} else {
@@ -140,8 +142,19 @@ filelib_set_output_directory (char* output_directory,
 	    return SR_ERROR_DIR_PATH_TOO_LONG;
 	}
 #else
-	/* DO SOMETHING HERE */
-	error !
+	/* I wish I could do something like "realpath()" here, but it 
+	 * doesn't have (e.g.) posix conformance. */
+	if (is_absolute_path (output_directory)) {
+	    strncpy (m_output_directory,output_directory,SR_MAX_PATH);
+	} else {
+	    char pwd[SR_MAX_PATH];
+	    if (!getcwd (pwd, SR_MAX_PATH)) {
+		debug_printf ("getcwd returned zero?\n");
+		return SR_ERROR_DIR_PATH_TOO_LONG;
+	    }
+	    snprintf (base_dir, SR_MAX_PATH, "%s%c%s", pwd, 
+		      PATH_SLASH,output_directory);
+	}
 #endif
     } else {
 	/* If no output dir specified, the base dir is pwd */
@@ -150,7 +163,7 @@ filelib_set_output_directory (char* output_directory,
 	    return SR_ERROR_DIR_PATH_TOO_LONG;
 	}
 #else
-	if (!getcwd (full, SR_MAX_PATH)) {
+	if (!getcwd (base_dir, SR_MAX_PATH)) {
 	    debug_printf ("getcwd returned zero?\n");
 	    return SR_ERROR_DIR_PATH_TOO_LONG;
 	}
@@ -230,132 +243,6 @@ filelib_set_output_directory (char* output_directory,
     return SR_SUCCESS;
 }
 
-#if defined (commentout)
-int
-set_output_directory()
-{
-    char newpath[MAX_PATH_LEN] = {'\0'};
-    char newpath_test[MAX_PATH_LEN];
-    char *striped_icy_name;
-    int min_mfl = 54; /* mfl: max_filename_length */
-    int min_stublen = 8;
-
-    if (*m_options.output_directory) {
-	snprintf (newpath, MAX_PATH_LEN, "%s%c",
-		  m_options.output_directory, PATH_SLASH);
-	debug_printf ("OUTDIR: |%s|\n",newpath);
-	if (dir_max_filename_length (newpath) < min_mfl)
-	    return SR_ERROR_DIR_PATH_TOO_LONG;
-    }
-    if (GET_SEPERATE_DIRS(m_options.flags)) {
-	char timestring[36];
-	time_t timestamp;
-	struct tm *theTime;
-	int time_len = 0;
-	timestring[0] = '\0';
-	if (GET_DATE_STAMP(m_options.flags)) {
-	    time(&timestamp);
-	    theTime = localtime(&timestamp);
-	    time_len = strftime(timestring, 35, "_%Y-%m-%d", theTime);
-	}
-
-	striped_icy_name = malloc(strlen(m_info.icy_name)+ 1);
-	strcpy(striped_icy_name, m_info.icy_name);
-	strip_invalid_chars(striped_icy_name);
-	left_str(striped_icy_name, MAX_DIR_LEN);
-	trim(striped_icy_name);
-	snprintf (newpath_test, MAX_DIR_LEN, "%s%s%s", newpath,
-		  striped_icy_name, timestring);
-	debug_printf ("OUTDIR(2): |%s|\n",newpath_test);
-	if (dir_max_filename_length (newpath_test) < min_mfl) {
-	    /* Try to shorten it */
-	    int icylen = strlen(striped_icy_name);
-	    int dml = dir_max_filename_length (newpath);
-	    if (icylen + dml - min_mfl < min_stublen) {
-		return SR_ERROR_DIR_PATH_TOO_LONG;
-	    }
-	    icylen = strlen(newpath) + dml - min_mfl - time_len;
-	    striped_icy_name[icylen] = '\0';
-	    snprintf (newpath_test,MAX_DIR_LEN,"%s%s%s",newpath,
-		      striped_icy_name,timestring);
-	    debug_printf ("OUTDIR(3): |%s|\n",newpath_test);
-	    if (dir_max_filename_length (newpath_test) < min_mfl) {
-		return SR_ERROR_DIR_PATH_TOO_LONG;
-	    }
-	}
-	strcpy (newpath,newpath_test);
-    }
-    filelib_set_output_directory (newpath);
-    filelib_set_max_filename_length (dir_max_filename_length (newpath));
-    m_status_callback(RM_OUTPUT_DIR, (void*)newpath);
-    return SR_SUCCESS;
-}
-
-error_code
-filelib_set_output_directory(char *str)
-{
-    if (!str) {
-	//JCBUG does this make sense?
-	memset(&m_output_directory, 0, MAX_DIR_LEN);	
-	return SR_SUCCESS;
-    }
-
-    /* GCS - convert to absolute path */
-#if defined (WIN32)
-    {
-        char full[2*MAX_PATH];
-	if (_fullpath (full, part, 2*MAX_PATH) == NULL) {
-	    return SR_BLAH; //kkk
-	}
-         printf( "Full path is: %s\n", full );
-      else
-         printf( "Invalid path\n" );
-    }
-#else
-    strncpy(m_output_directory, str, MAX_BASE_DIR_LEN);
-#endif
-
-    mkdir_if_needed(m_output_directory);
-    add_trailing_slash(m_output_directory);
-
-    // Make the incomplete directory
-    sprintf(m_incomplete_directory, "%s%s", m_output_directory,
-	    "incomplete");
-    mkdir_if_needed(m_incomplete_directory);
-    add_trailing_slash(m_incomplete_directory);
-    return SR_SUCCESS;
-}
-
-int
-dir_max_filename_length (char* dirname)
-{
-#if WIN32
-    char full[_MAX_PATH];
-    if (_fullpath( full, dirname, _MAX_PATH ) == NULL) {
-	debug_printf ("_fullpath returned zero?\n");
-	return 0;
-    }
-    debug_printf ("strlen(full) == %d\n",strlen(full));
-    return _MAX_PATH - strlen(full) - 1;
-#else
-    char full[MAX_PATH_LEN];
-    if (*dirname == '/') {
-	return MAX_PATH_LEN - strlen(dirname) - 1;
-    }
-    if (!getcwd (full,MAX_PATH_LEN)) {
-	debug_printf ("getcwd returned zero?\n");
-	return 0;
-    }
-    return MAX_PATH_LEN - strlen(full) - strlen(dirname) - 2;
-#endif
-}
-
-void
-filelib_set_max_filename_length (int mfl)
-{
-    m_max_filename_length = mfl - strlen("incomplete") - 1;
-}
-#endif
 
 void close_file(FHANDLE* fp)
 {
@@ -638,7 +525,7 @@ static void
 trim_mp3_suffix(char *filename, char* out)
 {
     char* suffix_ptr;
-    strncpy(out, filename, MAX_PATH);
+    strncpy(out, filename, SR_MAX_PATH);
     suffix_ptr = out + strlen(out) - 4;  // -4 for ".mp3"
     if (strcmp(suffix_ptr,".mp3") == 0) {
 	*suffix_ptr = 0;
@@ -649,6 +536,7 @@ static int
 is_absolute_path (char* fn)
 {
 #if WIN32
+    error ! /* This function is not enough (e.g. c:foo.mpg) */
     if (strchr(fn,':')) {
 	return 1;
     }
@@ -669,7 +557,8 @@ set_show_filenames (void)
     if (is_absolute_path(m_show_name)) {
 	strcpy (m_cue_name, m_show_name);
     } else {
-        snprintf (m_cue_name, MAX_PATH, "%s/%s", m_output_directory, m_show_name);
+        snprintf (m_cue_name, SR_MAX_PATH, "%s/%s", 
+		  m_output_directory, m_show_name);
 	strcpy (m_show_name, m_cue_name);
     }
     strcat (m_cue_name, ".cue");
