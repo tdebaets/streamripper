@@ -43,7 +43,7 @@
 #define PROP_SHEET_CON		0
 #define PROP_SHEET_FILE		1
 #define PROP_SHEET_SKINS	2
-#define SRVERSION			"1.55-pre1"	// *********** CHANGE THIS PER VERSION *************
+
 
 /**********************************************************************************
  * Public functions

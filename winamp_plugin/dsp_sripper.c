@@ -93,6 +93,7 @@ int init()
 	WNDCLASS wc;
 		
 	winamp_init(m_plugin.hDllInstance);
+	set_rip_manager_options_defaults (&m_rmoOpt);
 	options_load(&m_rmoOpt, &m_guiOpt);
 
 	if (!m_guiOpt.m_enabled)
