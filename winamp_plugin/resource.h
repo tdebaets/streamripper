@@ -58,5 +58,13 @@
 #define _APS_NEXT_COMMAND_VALUE         40006
 #define _APS_NEXT_CONTROL_VALUE         1013
 #define _APS_NEXT_SYMED_VALUE           101
+
+//
+// For comctl32 v6 stuff (aka XP styles)
+//
+#define MANIFEST_RESOURCE_ID 2
+#define RT_MANIFEST 24
+
+
 #endif
 #endif

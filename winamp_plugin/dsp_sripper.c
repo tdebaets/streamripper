@@ -34,6 +34,7 @@
 #include "../lib/util.h"	// because windows has a util.h, and gets very confused.
 #include "dock.h"
 #include "filelib.h"
+#include "commctrl.h"
 
 #define ID_TRAY	1
 
@@ -90,7 +91,7 @@ int dont_modify_samples(struct winampDSPModule *this_mod, short int *samples, in
 int init()
 {
 	WNDCLASS wc;
-
+	
 	winamp_init(m_plugin.hDllInstance);
 	options_load(&m_rmoOpt, &m_guiOpt);
 

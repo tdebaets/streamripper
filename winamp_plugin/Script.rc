@@ -76,16 +76,16 @@ BEGIN
                     IDC_SEPERATE_DIRS,"Button",BS_AUTOCHECKBOX | 
                     BS_MULTILINE | WS_TABSTOP,7,7,172,14
     CONTROL         "&Overwrite existing tracks",IDC_OVER_WRITE,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,24,123,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,24,96,14
     CONTROL         "&Add finished tracks to playlist",
                     IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,43,123,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,42,123,14
     CONTROL         "A&dd sequence numbers to tracks",IDC_COUNT_FILES,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,7,60,121,14
     CONTROL         "A&ppend the date to the directory",IDC_DATE_STAMP,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,77,121,14
     CONTROL         "Add &ID3 info to the tracks",IDC_ADD_ID3,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,94,121,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,96,91,14
     EDITTEXT        IDC_OUTPUT_DIRECTORY,13,127,154,15,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BROWSE,175,126,17,14
     GROUPBOX        "Output Directory",IDC_STATIC,7,114,196,33
