@@ -256,23 +256,88 @@ void thread_accept(void *notused)
 	m_running = FALSE;
 }
 
-//
-// this function will be called for us, if we're connected then we send some data
-// otherwise we just return with not connected
-//
-error_code relaylib_send(char *data, int len)
+// this function will be called for us, if we're connected then we send 
+// some data otherwise we just return with not connected
+error_code
+relaylib_send(char *data, int len)
 {
-	int ret;
+    int ret;
 
-	if (!m_hostsock)
-		return SR_ERROR_HOST_NOT_CONNECTED;
+    if (!m_hostsock)
+	return SR_ERROR_HOST_NOT_CONNECTED;
 
-	ret = send(m_hostsock, data, len, 0);
-	if (ret < 0)
-	{
-		m_hostsock = 0;
-		threadlib_signel_sem(&m_sem_not_connected);
-		return SR_ERROR_HOST_NOT_CONNECTED;
-	}
-	return SR_SUCCESS;
+    ret = send(m_hostsock, data, len, 0);
+    if (ret < 0)
+    {
+	m_hostsock = 0;
+	threadlib_signel_sem(&m_sem_not_connected);
+	return SR_ERROR_HOST_NOT_CONNECTED;
+    }
+    return SR_SUCCESS;
+}
+
+error_code
+relay_send_meta_data(char *track)
+{
+    int ret;
+    int track_len, meta_len, extra_len, chunks;
+    char zerobuf[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    const char header[] = "StreamTitle='";
+    const char footer[] = "';StreamUrl='';";
+    unsigned char c;
+
+    if (!m_hostsock)
+	return SR_ERROR_HOST_NOT_CONNECTED;
+
+    if (!track || !*track) {
+	goto send_zero_metadata;
+    }
+    track_len = strlen(track);
+    meta_len = track_len+strlen(header)+strlen(footer);
+    chunks = 1 + (meta_len-1) / 16;
+    /* GCS the following test is because c is assumed unsigned when read 
+	(see above code) */
+    if (chunks > 127) {
+	goto send_zero_metadata;
+    }
+
+    c = chunks;
+    extra_len = c*16 - meta_len;
+
+    ret = send(m_hostsock, &c, 1, 0);
+    if (ret < 0) {
+	m_hostsock = 0;
+	threadlib_signel_sem(&m_sem_not_connected);
+	return SR_ERROR_HOST_NOT_CONNECTED;
+    }
+    ret = send(m_hostsock, header, strlen(header), 0);
+    if (ret < 0) {
+	m_hostsock = 0;
+	threadlib_signel_sem(&m_sem_not_connected);
+	return SR_ERROR_HOST_NOT_CONNECTED;
+    }
+    ret = send(m_hostsock, track, track_len, 0);
+    if (ret < 0) {
+	m_hostsock = 0;
+	threadlib_signel_sem(&m_sem_not_connected);
+	return SR_ERROR_HOST_NOT_CONNECTED;
+    }
+    ret = send(m_hostsock, footer, strlen(footer), 0);
+    if (ret < 0) {
+	m_hostsock = 0;
+	threadlib_signel_sem(&m_sem_not_connected);
+	return SR_ERROR_HOST_NOT_CONNECTED;
+    }
+    ret = send(m_hostsock, zerobuf, extra_len, 0);
+    if (ret < 0) {
+	m_hostsock = 0;
+	threadlib_signel_sem(&m_sem_not_connected);
+	return SR_ERROR_HOST_NOT_CONNECTED;
+    }
+    return SR_SUCCESS;
+
+send_zero_metadata:
+    c = 0;
+    ret = send(m_hostsock, &c, 1, 0);
+    return SR_SUCCESS;
 }

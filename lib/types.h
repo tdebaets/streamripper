@@ -53,7 +53,7 @@ typedef unsigned short u_short;
  * only ripshout.c (and the R.I.P. riplive365.c)
  */
 typedef struct IO_DATA_INPUTst{
-	int (*get_data)(char* buffer, int size);
+	int (*get_input_data)(char* buffer, int size);
 } IO_DATA_INPUT;
 
 #define NO_TRACK_STR	"No track info..."
@@ -64,7 +64,7 @@ typedef struct IO_DATA_INPUTst{
  * does the "find silent point" shit.
  */
 typedef struct IO_GET_STREAMst{
-	int (*get_data)(char* buffer, char *track);
+	int (*get_stream_data)(char* buffer, char *track);
 	u_long getsize;
 } IO_GET_STREAM;
 

@@ -360,7 +360,7 @@ start_relay()
     char temp_icyname[MAX_SERVER_LEN];
 
     char headbuf[MAX_HEADER_LEN];
-    info.meta_interval = NO_META_INTERVAL;
+//    info.meta_interval = NO_META_INTERVAL;
     sprintf(temp_icyname, "[%s] %s", "relay stream", info.icy_name);
     strcpy(info.icy_name, temp_icyname);
     if ((ret = httplib_construct_sc_response(&info, headbuf, MAX_HEADER_LEN)) != SR_SUCCESS)
@@ -706,7 +706,7 @@ rip_manager_start(void (*status_callback)(int message, void *data),
 	socklib_init();
 
 	init_error_strings();
-	m_in.get_data = myrecv;
+	m_in.get_input_data = myrecv;
 	m_status_callback = status_callback;
 	m_destroy_func = NULL;
 	m_bytes_ripped = 0;

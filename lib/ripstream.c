@@ -32,6 +32,7 @@
 #include "ripstream.h"
 #include "debug.h"
 #include "filelib.h"
+#include "relaylib.h"
 
 /*********************************************************************************
  * Public functions
@@ -194,7 +195,7 @@ ripstream_rip()
 	strcpy(m_last_track, m_current_track);
 
     // get the data
-    if ((ret = m_in->get_data(m_getbuffer, m_current_track)) != SR_SUCCESS)
+    if ((ret = m_in->get_stream_data(m_getbuffer, m_current_track)) != SR_SUCCESS)
     {
 	debug_printf("m_in->get_data bad return code(?) %d", ret);
 	// If it is a single track recording, finish the track
@@ -257,6 +258,7 @@ ripstream_rip()
 #if defined (commentout)
 	debug_printf ("Got is_track_changed\n");
 #endif
+        relay_send_meta_data (m_current_track);
 	if (m_find_silence < 0) {
 	    if (m_mi_to_cbuffer_end > 0) {
 		m_find_silence = m_mi_to_cbuffer_end;
@@ -264,6 +266,8 @@ ripstream_rip()
 		m_find_silence = 0;
 	    }
 	}
+    } else {
+        relay_send_meta_data (0);
     }
 
     if (m_find_silence == 0) {
