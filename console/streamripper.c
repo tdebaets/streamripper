@@ -9,7 +9,6 @@
  * and a signal handler for when the user hits CTRL+C
  */
 
-#include <signal.h>
 #if WIN32
 #define sleep	Sleep
 #include <windows.h>
@@ -68,6 +67,7 @@ int main(int argc, char* argv[])
 	int ret;
 	time_t temp_time;
 	signal(SIGINT, catch_sig);
+	signal(SIGTERM, catch_sig);
 
 	parse_arguments(argc, argv);
 	fprintf(stderr, "Connecting...\n");
@@ -239,7 +239,7 @@ void print_usage()
     fprintf(stderr, "        -t             - Don't overwrite tracks in incomplete\n");
     fprintf(stderr, "        -c             - Don't auto-reconnect\n");
     fprintf(stderr, "        -v             - Print version info and quit\n");
-    fprintf(stderr, "        -l <seconds>   - number of seconds to run, otherwise runs forever\n");
+    fprintf(stderr, "        -l <seconds>   - Number of seconds to run, otherwise runs forever\n");
     fprintf(stderr, "        -q             - Add sequence number to output file\n");
     fprintf(stderr, "        -i             - Don't add ID3V1 Tags to output file\n");
     fprintf(stderr, "        -u <useragent> - Use a different UserAgent than \"Streamripper\"\n");
@@ -280,7 +280,7 @@ void parse_arguments(int argc, char **argv)
 	if (argv[i][0] != '-')
 	    continue;
 
-	c = strchr("dpluR", argv[i][1]);
+	c = strchr("dRplufmkI", argv[i][1]);
         if (c != NULL) {
             if ((i == (argc-1)) || (argv[i+1][0] == '-')) {
 		fprintf(stderr, "option %s requires an argument\n", argv[i]);
