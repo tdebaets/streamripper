@@ -444,3 +444,18 @@ How to open a new file (start track)
 3) Use open with utf8
 4) Recoded
 
+-----------------------------------------------------------------------
+How to connect to cf servers:
+
+(UNIX)
+roy@mesmer ~ $ eval `ssh-agent`
+Agent pid 4760
+roy@mesmer ~ $ ssh-add .ssh/sf_dsa
+Enter passphrase for .ssh/sf_dsa:
+Identity added: .ssh/sf_dsa (.ssh/sf_dsa)
+roy@mesmer ~ $ ssh cf.sourceforge.net -l codewhacker
+
+(PUTTY)
+C:\gsharp\my_putty_key\3>plink -v -i cf.ppk -l gregsharp -2 cf-shell.sf.net ls
+
+
