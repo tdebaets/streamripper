@@ -30,6 +30,6 @@ error_code httplib_parse_url(const char *url, URLINFO *urlinfo);
 error_code httplib_parse_sc_header(const char* url, char *header, SR_HTTP_HEADER *info);
 error_code httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, char *useragent);
 error_code httplib_construct_page_request(const char *url, BOOL proxyformat, char *buffer);
-error_code httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size);
+error_code httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size, int icy_meta_support);
 
 #endif //__HTTP_H__

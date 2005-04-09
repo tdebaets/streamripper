@@ -135,4 +135,7 @@ error_code rip_manager_end_track(TRACK_INFO* ti);
 error_code rip_manager_put_data(char *buf, int size);
 error_code rip_manager_put_raw_data(char *buf, int size);
 
+char *client_relay_header_generate (int icy_meta_support);
+void client_relay_header_release (char *ch);
+
 #endif //__RIP_MANANGER_H__

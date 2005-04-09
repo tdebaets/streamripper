@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <ctype.h>
 #endif
 
 #if __UNIX__
@@ -48,6 +49,7 @@
 #include "threadlib.h"
 #include "debug.h"
 #include "compat.h"
+#include "rip_manager.h"
 
 #if defined (WIN32)
 #ifdef errno
@@ -83,6 +85,7 @@ static struct hostsocklist_t
     int    m_LeftToSend;
     char*  m_Buffer;
     int    m_BufferSize;
+    int    m_icy_metadata;
     struct hostsocklist_t *m_next;
 } *m_hostsocklist = NULL;
 
@@ -93,6 +96,9 @@ int m_max_connections;
 
 #define BUFSIZE (1024)
 
+#define HTTP_HEADER_TIMEOUT 2
+#define HTTP_HEADER_DELIM "\n"
+#define ICY_METADATA_TAG "Icy-MetaData:"
 
 static void destroy_all_hostsocks(void)
 {
@@ -111,6 +117,83 @@ static void destroy_all_hostsocks(void)
     }
     m_hostsocklist_len = 0;
     threadlib_signel_sem(&m_sem_listlock);
+}
+
+
+static int tag_compare (char *str, char *tag)
+{
+    int i, a,b;
+    int len;
+
+
+    len = strlen(tag);
+
+    for (i=0; i<len; i++) 
+    {
+	a = tolower (str[i]);
+	b = tolower (tag[i]);
+	if ((a != b) || (a == 0))
+	    return 1;
+    }
+    return 0;
+}
+
+static int header_receive(int sock, int *icy_metadata)
+{
+    fd_set fds;
+    struct timeval tv;
+    int r;
+    char buf[BUFSIZE+1];
+    char *md;
+
+    *icy_metadata = 0;
+        
+    while (1)
+    {
+	// use select to prevent deadlock on malformed http header
+	// that lacks CRLF delimiter
+	FD_ZERO(&fds);
+        FD_SET(sock, &fds);
+        tv.tv_sec = HTTP_HEADER_TIMEOUT;
+        tv.tv_usec = 0;
+        r = select(sock + 1, &fds, NULL, NULL, &tv);
+        if (r != 1) {
+	    debug_printf ("header_receive: could not select\n");
+	    break;
+	}
+
+	r = recv(sock, buf, BUFSIZE, 0);
+	if (r <= 0) {
+	    debug_printf ("header_receive: could not select\n");
+	    break;
+	}
+
+	buf[r] = 0;
+	md = strtok (buf, HTTP_HEADER_DELIM);
+	while (md)
+	{
+	    debug_printf ("Got token: %s\n", md);
+	    // Finished when we are at end of header: only CRLF will be there.
+	    if ((md[0] == '\r') && (md[1] == 0))
+		return 0;
+	
+	    // Check for desired tag
+	    if (tag_compare (md, ICY_METADATA_TAG) == 0) 
+	    {
+		for (md += strlen(ICY_METADATA_TAG); md[0] && (isdigit(md[0]) == 0); md++);
+		
+		if (md[0])
+		    *icy_metadata = atoi(md);
+
+		debug_printf ("client flag ICY-METADATA is %d\n", 
+			      *icy_metadata);
+	    }
+	    
+	    md = strtok (NULL, HTTP_HEADER_DELIM);
+	}
+    }
+
+    return 1;
 }
 
 
@@ -345,6 +428,8 @@ void thread_accept(void *notused)
     struct sockaddr_in client;
     int iAddrSize = sizeof(client);
     struct hostsocklist_t *newhostsock;
+    int icy_metadata;
+    char *client_http_header;
 
     debug_printf("***thread_accept:start\n");
 
@@ -382,16 +467,18 @@ void thread_accept(void *notused)
                 newsock = accept(m_listensock, (struct sockaddr *)&client, &iAddrSize);
                 if (newsock != SOCKET_ERROR) {
                     // Got successful accept
-                    make_nonblocking(newsock);
 
                     debug_printf("Relay: Client %d new from %s:%hd\n", newsock,
                                  inet_ntoa(client.sin_addr), ntohs(client.sin_port));
 
                     // Socket is new and its buffer had better have room to hold the entire HTTP header!
                     good = FALSE;
-                    if (swallow_receive(newsock) == 0) {
-                        ret = send(newsock, m_http_header, strlen(m_http_header), 0);
-                        if (ret == (int) strlen(m_http_header)) {
+                    if (header_receive(newsock, &icy_metadata) == 0) {
+			make_nonblocking(newsock);
+			client_http_header = client_relay_header_generate(icy_metadata);
+			ret = send(newsock, client_http_header, strlen(client_http_header), 0);
+			client_relay_header_release(client_http_header);
+			if (ret == (int) strlen(client_http_header)) {
                             newhostsock = malloc(sizeof(*newhostsock));
                             if (newhostsock != NULL)
                             {
@@ -402,6 +489,7 @@ void thread_accept(void *notused)
                                 newhostsock->m_LeftToSend = 0;
                                 newhostsock->m_BufferSize = 0;
                                 newhostsock->m_Buffer=NULL;
+                                newhostsock->m_icy_metadata = icy_metadata;
 
                                 newhostsock->m_hostsock = newsock;
                                 newhostsock->m_next = m_hostsocklist;
@@ -437,7 +525,7 @@ void thread_accept(void *notused)
 // should be set for when it's ok to send the data to new clients.
 // This keeps us from sending metadata before data
 error_code
-relaylib_send(char *data, int len, int accept_new)
+relaylib_send(char *data, int len, int accept_new, int is_meta)
 {
     struct hostsocklist_t *prev;
     struct hostsocklist_t *ptr;
@@ -467,7 +555,7 @@ relaylib_send(char *data, int len, int accept_new)
 	    if (accept_new) {
 		ptr->m_is_new = 0;
 	    }
-	    if (!ptr->m_is_new) {
+	    if (!ptr->m_is_new && (!(is_meta && (ptr->m_icy_metadata == 0)))) {
 		/* GCS: Increase buffer size.  What happens is that
 		   at the beginning, right after connecting with the 
 		   shoutcast server, shoutcast pumps out a lot of data.
@@ -475,6 +563,7 @@ relaylib_send(char *data, int len, int accept_new)
 		   relay right away, they don't request as much as 
 		   the shoutcast server pumps out.  So we need to 
 		   buffer it here (or stop requesting so much). */
+		debug_printf ("Actually sending!\n");
 #if defined (commentout)
 		bsz= ( 8*len > BUFSIZE ) ? 8*len : BUFSIZE;
 #endif
@@ -539,7 +628,7 @@ relaylib_send_meta_data(char *track)
     buflen = 1;
 
     if (!track || !*track) {
-        return relaylib_send(buf, 1, 0);
+	return relaylib_send(buf, 1, 0, 1);
     }
     track_len = strlen(track);
     header_len = strlen(header);
@@ -549,7 +638,7 @@ relaylib_send_meta_data(char *track)
     /* GCS the following test is because c is assumed unsigned when read 
        (see above code) */
     if (chunks > 127) {
-        return relaylib_send(buf, 1, 0);
+	return relaylib_send(buf, 1, 0, 1);
     }
 
     c = chunks;
@@ -561,7 +650,7 @@ relaylib_send_meta_data(char *track)
     {
         // Avoid buffer overflow by just sending zero metadata instead
         debug_printf("Relay: Metadata overflow (%d bytes)\n", buflen);
-        return relaylib_send(buf, 1, 0);
+        return relaylib_send(buf, 1, 0, 1);
     }
         
     memcpy(bufptr, &c, 1);
@@ -575,7 +664,7 @@ relaylib_send_meta_data(char *track)
     memcpy(bufptr, zerobuf, extra_len);
     bufptr += extra_len;
         
-    return relaylib_send(buf, buflen, 0);
+    return relaylib_send(buf, buflen, 0, 1);
 }
 
 void thread_send(void *notused)

@@ -69,6 +69,7 @@ static BOOL			m_addID3tag = TRUE;
 static SPLITPOINT_OPTIONS	*m_sp_opt;
 static int			m_bitrate;
 static int			m_http_bitrate;
+static int			m_ripchunk_size;
 static int			m_meta_interval;
 static unsigned int		m_cue_sheet_bytes = 0;
 
@@ -116,6 +117,7 @@ ripstream_init (IO_GET_STREAM *in, char *no_meta_name,
 		int drop_count,
 		SPLITPOINT_OPTIONS *sp_opt, 
 		int bitrate, 
+		int meta_interval, 
 		int content_type, 
 		BOOL addID3tag)
 {
@@ -133,8 +135,10 @@ ripstream_init (IO_GET_STREAM *in, char *no_meta_name,
     m_http_bitrate = bitrate;
     m_bitrate = -1;
     m_content_type = content_type;
-    /* GCS RMK: If no meta data, then this is the default chunk size. */
-    m_meta_interval = in->getsize;
+    /* GCS RMK: Ripchunk_size is the metaint size, or default size
+       if stream doesn't have meta data */
+    m_ripchunk_size = in->getsize;
+    m_meta_interval = meta_interval;
     m_cue_sheet_bytes = 0;
 
     clear_track_info (&m_old_track);
@@ -237,7 +241,7 @@ ripstream_rip()
     }
 
     /* Immediately dump data to relay & show file */
-    rip_manager_put_raw_data (m_getbuffer, m_meta_interval);
+    rip_manager_put_raw_data (m_getbuffer, m_ripchunk_size);
 
     /* First time through, determine the bitrate. 
        The bitrate is needed to do the track splitting parameters 
@@ -246,7 +250,7 @@ ripstream_rip()
         unsigned long test_bitrate;
 	debug_printf("Querying stream for bitrate - first time.\n");
 	if (m_content_type == CONTENT_TYPE_MP3) {
-	    find_bitrate(&test_bitrate, m_getbuffer, m_meta_interval);
+	    find_bitrate(&test_bitrate, m_getbuffer, m_ripchunk_size);
 	    m_bitrate = test_bitrate / 1000;
 	    debug_printf("Got bitrate: %d\n",m_bitrate);
 	} else {
@@ -313,7 +317,8 @@ ripstream_rip()
 	    }
 	}
     } else {
-	relaylib_send_meta_data (0);
+	if (m_meta_interval != NO_META_INTERVAL)
+	    relaylib_send_meta_data (0);
     }
 
     debug_printf ("Checking for silence\n");
@@ -648,7 +653,7 @@ ms_to_blocks (int ms, int bitrate, int round_up)
     int ms_abs = ms > 0 ? ms : -ms;
     int ms_sign = ms > 0 ? 1 : 0;
     int bits = ms_abs * bitrate;
-    int bits_per_block = 8 * m_meta_interval;
+    int bits_per_block = 8 * m_ripchunk_size;
     int blocks = bits / bits_per_block;
     if (bits % bits_per_block > 0) {
 	if (!(round_up ^ ms_sign)) {

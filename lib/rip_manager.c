@@ -271,7 +271,7 @@ rip_manager_put_data(char *buf, int size)
 error_code
 rip_manager_put_raw_data(char *buf, int size)
 {
-    relaylib_send(buf, size, 1);
+    relaylib_send(buf, size, 1, 0);
     filelib_write_show (buf, size);
     return SR_SUCCESS;
 }
@@ -310,28 +310,39 @@ error_code
 start_relay(int content_type)
 {	
     int ret;
-    SR_HTTP_HEADER info = m_info;
-    char temp_icyname[MAX_SERVER_LEN];
-
-    char headbuf[MAX_HEADER_LEN];
-//    info.meta_interval = NO_META_INTERVAL;
-    sprintf(temp_icyname, "[%s] %s", "relay stream", info.icy_name);
-    strcpy(info.icy_name, temp_icyname);
-    info.content_type = content_type;
-
-    if ((ret = httplib_construct_sc_response(&info, headbuf, MAX_HEADER_LEN)) != SR_SUCCESS)
-	return ret;
 
     if (!relaylib_isrunning())
 	if ((ret = relaylib_start()) != SR_SUCCESS)
 	    return ret;
 
-    if ((ret = relaylib_set_response_header(headbuf)) != SR_SUCCESS)
-	return ret;
-
     return SR_SUCCESS;
 }
 
+char *
+client_relay_header_generate (int icy_meta_support)
+{
+    SR_HTTP_HEADER info = m_info;
+    char temp_icyname[MAX_SERVER_LEN];
+    int ret;
+    
+    char *headbuf;	
+    sprintf(temp_icyname, "[%s] %s", "relay stream", info.icy_name);
+    strcpy(info.icy_name, temp_icyname);
+    
+    headbuf = (char *) malloc(MAX_HEADER_LEN);
+    ret = httplib_construct_sc_response(&m_info, headbuf, MAX_HEADER_LEN, icy_meta_support);
+    if (ret != SR_SUCCESS) {
+	headbuf[0] = 0;
+    }
+    
+    return headbuf;
+}
+
+void
+client_relay_header_release (char *ch)
+{
+    free (ch);
+}
 
 void
 ripthread(void *notused)
@@ -540,8 +551,11 @@ start_ripping()
      */
     ripstream_destroy();
     ret = ripstream_init(&m_ripin, 
-			 m_info.icy_name, m_options.dropcount,
-			 &m_options.sp_opt, m_ripinfo.bitrate, 
+			 m_info.icy_name,
+			 m_options.dropcount,
+			 &m_options.sp_opt,
+			 m_ripinfo.bitrate, 
+			 m_info.meta_interval,
 			 m_info.content_type, 
 			 GET_ADD_ID3(m_options.flags));
     if (ret != SR_SUCCESS) {

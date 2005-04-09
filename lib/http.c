@@ -407,7 +407,7 @@ httplib_parse_sc_header(const char *url, char *header, SR_HTTP_HEADER *info)
  * added to the header
  */
 error_code
-httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size)
+httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size, int icy_meta_support)
 {
     char *buf = (char *)malloc(size);
 
@@ -481,7 +481,7 @@ httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size)
 	strcat(header, buf);
     }
 
-    if (info->meta_interval > 0)
+    if ((info->meta_interval > 0) && icy_meta_support)
     {
 	sprintf(buf, "icy-metaint:%d\r\n", info->meta_interval);
 	strcat(header, buf);
@@ -512,6 +512,9 @@ httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size)
 
     free(buf);
     strcat(header, "\r\n");
+
+    debug_printf ("Constructed response header:\n");
+    debug_printf ("%s", header);
 
     return SR_SUCCESS;
 }
