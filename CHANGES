@@ -1,5 +1,8 @@
 New for 1.61.6
 --------------
+* Add Daniel Potts' fix that cures relay artifacts for clients who 
+  don't request meta-data.
+* Fix relay artifacts on streams that don't have meta-data at all.
 * Fix two memory bugs that caused crashes on debian.
 * Change id3 genre from 0x00 (blues) to 0xff (unknown).
 
