@@ -76,7 +76,7 @@ BEGIN
     CONTROL         "&Overwrite existing tracks in the complete directory",
                     IDC_OVER_WRITE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,
                     22,184,14
-    CONTROL         "&Never overwrite files from incomplete folder",
+    CONTROL         "&Never overwrite files in incomplete folder",
                     IDC_KEEP_INCOMPLETE,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,7,37,160,14
     CONTROL         "&Add finished tracks to playlist",
