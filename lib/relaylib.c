@@ -474,11 +474,16 @@ void thread_accept(void *notused)
                     // Socket is new and its buffer had better have room to hold the entire HTTP header!
                     good = FALSE;
                     if (header_receive(newsock, &icy_metadata) == 0) {
+			int header_len;
 			make_nonblocking(newsock);
 			client_http_header = client_relay_header_generate(icy_metadata);
+			header_len = strlen(client_http_header);
 			ret = send(newsock, client_http_header, strlen(client_http_header), 0);
+			debug_printf ("Relay: Sent response header to client %d (%d)\n", 
+			    ret, header_len);
 			client_relay_header_release(client_http_header);
-			if (ret == (int) strlen(client_http_header)) {
+			if (ret == header_len) {
+			    debug_printf ("Relay: strlen(client_http_header) is now %d\n", strlen(client_http_header));
                             newhostsock = malloc(sizeof(*newhostsock));
                             if (newhostsock != NULL)
                             {
