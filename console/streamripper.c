@@ -262,7 +262,7 @@ void print_usage()
     fprintf(stderr, "       -P text       - Add a Prefix to each ripped file (Not shown on stdout).\n");
     fprintf(stderr, "       --quiet       - Don't print ripping status to console\n");
     fprintf(stderr, "       --debug       - Save debugging trace\n");
-    fprintf(stderr, "       --xs_???      - Invoke splitpoint detection rules (see README or man page)\n");
+    fprintf(stderr, "       --xs_???      - Invoke splitpoint detection rules (see README/man page)\n");
 }
 
 /* 
