@@ -1,363 +1,427 @@
-Streamripper 1.61.X
--------------------
-by Jon Clegg and Greg Sharp
+STREAMRIPPER(1)					  STREAMRIPPER(1)
+
+
 
 NAME
-----
-streamripper - rip shoutcast radio streams to mp3 files
+       streamripper - rip shoutcast radio streams to mp3 files
 
 SYNOPSIS
---------
-'streamripper' URL [options]
+       streamripper URL [options]
 
 DESCRIPTION
------------
-Streamripper records shoutcast and icecast compatible streams.  It uses 
-meta data within a shoutcast stream to determine the beginning and 
-end of each song, and stores the songs on your hard disk 
-as individual mp3 files.  In addition, streamripper includes 
-a relay server for listening to the station while you are recording.
+       Streamripper  records  shoutcast	 and  icecast  compatible
+       streams.	 It uses meta data within a shoutcast  stream  to
+       determine  the  beginning and end of each song, and stores
+       the songs on your hard disk as individual mp3  files.   In
+       addition, streamripper includes a relay server for listen­
+       ing to the station while you are recording.
 
 OPTIONS
--------
--h::
-Print help and exit.
+       -h     Print help and exit.
 
--v::
-Print version info and quit.
+       -v     Print version info and quit.
 
--d dir::
-The destination directory.
+       -d dir The destination directory.
 
-Select a different base directory for ripping, just in case you don't
-want to dump tons of mp3's into whatever directory your at.
+       Select a different base directory  for  ripping,	 just  in
+       case  you  don't	 want to dump tons of mp3's into whatever
+       directory your at.
 
--s::
-Don't create a directory for each stream.
+       -s     Don't create a directory for each stream.
 
-Normally streamripper will
-make a directory with the same name as the stream to place the tracks
-into, this disables that.
+       Normally streamripper will make a directory with the  same
+       name as the stream to place the tracks into, this disables
+       that.
 
--r [base port]::
-Create a relay server on base port, defaults to port 8000 
+       -r [base port]
+	      Create a relay server on	base  port,  defaults  to
+	      port 8000
 
-Creates a relay server on base port. if base port is not specified it
-defaults to 8000, otherwise whatever you entered for base port. Note
-that if the -z option is not used, it will keep trying higher 
-ports if the port is unavailable.
+       Creates	a  relay server on base port. if base port is not
+       specified it defaults  to  8000,	 otherwise  whatever  you
+       entered	for  base port. Note that if the -z option is not
+       used, it will keep trying higher	 ports	if  the	 port  is
+       unavailable.
 
--R num_conn::
-Maximum connections to relay stream.
+       -R num_conn
+	      Maximum connections to relay stream.
 
-In addition to creating a relay server, you can also control how many 
-clients are allowed to simultaneously connect.  The default is 1 client, 
-but if you specify the -R option you can increase this number 
-to <num_conn> clients.  If <num_conn> is set to 0, the number of connections
-is limited only by your processor and network speed.  The -R option has 
-no effect if -r was not used to create a relay stream.
+       In  addition to creating a relay server, you can also con­
+       trol how many clients are allowed to  simultaneously  con­
+       nect.   The default is 1 client, but if you specify the -R
+       option you can increase this number to <num_conn> clients.
+       If  <num_conn>  is  set to 0, the number of connections is
+       limited only by your processor and network speed.  The  -R
+       option  has no effect if -r was not used to create a relay
+       stream.
 
--z::
-Don't scan for free ports if base port is not avail
+       -z     Don't scan for free ports if base port is not avail
 
-Disables the "scan for free port" feature. use it if your paranoid. or
-don't like ports being open.
+       Disables	 the "scan for free port" feature. use it if your
+       paranoid. or don't like ports being open.
 
--p url::
-Use HTTP proxy server at <url>
+       -p url Use HTTP proxy server at <url>
 
-If your behind a proxy server, enter it here. This hasn't been tested
-in over 6 months. but it should still work. Please till me if it
-doesn't.
+       If your behind a proxy server, enter it here. This  hasn't
+       been  tested  in	 over 6 months. but it should still work.
+       Please till me if it doesn't.
 
--a [file]::
-Rip to single file.  
+       -a [file]
+	      Rip to single file.
 
-The default mode of operation is to separate the each track into a 
-separate file.  But sometimes this is not what you want.  
-Sometimes you want the stream recorded to a single (big) file 
-without splitting into tracks.  The -a option does this.  
-If you use -a without including the [file], a timestamped 
-filename will automatically be used.
+       The default mode of operation  is  to  separate	the  each
+       track  into  a  separate	 file.	But sometimes this is not
+       what you want.  Sometimes you want the stream recorded  to
+       a single (big) file without splitting into tracks.  The -a
+       option does this.  If you use  -a  without  including  the
+       [file], a timestamped filename will automatically be used.
 
--A::
-Don't create individual tracks.
+       -A     Don't create individual tracks.
 
-The default mode of operation is to create one file for each track.
-But sometimes you don't want these files.  For example, you might 
-prefer a single file (using the -a option), or you want to use 
-streamripper as a relay (using the -r option), without creating 
-these files.  Using the -A option, the individual files for each 
-track are not created.
+       The default mode of operation is to create  one	file  for
+       each  track.   But  sometimes  you don't want these files.
+       For example, you might prefer a single file (using the  -a
+       option), or you want to use streamripper as a relay (using
+       the -r option), without creating these files.   Using  the
+       -A  option,  the	 individual  files for each track are not
+       created.
 
--o::
-Overwrite tracks in complete directory.  
+       -o     Overwrite tracks in complete directory.
 
-When streamripper rips tracks they are first in the incomplete
-directory. if the tracks finishes properly it moves over to the main
-directory, but if they track is already there it doesn't. this make
-streamripper copy over tracks that already exist in the main
-directory. I didn't make this default because if your ripping a stream
-for a long time (trying to get the whole thing) it helps to see the
-incomplete directory fill up with tracks you already have. One the
-incomplete directory is as large (or larger) then your main directory
-you can be pretty sure you've got the whole stream.
+       When streamripper rips tracks they are first in the incom­
+       plete  directory. if the tracks finishes properly it moves
+       over to the main directory, but if they track  is  already
+       there  it doesn't. this make streamripper copy over tracks
+       that already exist in the main directory.  I  didn't  make
+       this  default  because if your ripping a stream for a long
+       time (trying to get the whole thing) it helps to	 see  the
+       incomplete directory fill up with tracks you already have.
+       One the incomplete directory is as large (or larger)  then
+       your  main directory you can be pretty sure you've got the
+       whole stream.
 
--t::
-Don't overwrite tracks in incomplete directory.
+       -t     Don't overwrite tracks in incomplete directory.
 
-Normally streamripper writes the files in the incomplete directory, and
-then moves it to the base directory (the complete directory) when it
-is done.  If the file with the name of the track already exists in 
-incomplete, it will overwrite the old track.  When you use the -t
-flag, however, this will tell streamripper to backup the existing file
-in incomplete (appending a version number), and then create the new file.
+       Normally streamripper writes the files in  the  incomplete
+       directory,  and	then  moves it to the base directory (the
+       complete directory) when it is done.  If the file with the
+       name  of	 the  track already exists in incomplete, it will
+       overwrite the old track.	 When you use the -t  flag,  how­
+       ever,  this  will tell streamripper to backup the existing
+       file in incomplete (appending a version number), and  then
+       create the new file.
 
-This is useful for streams that don't have meta-data.  Because these
-streams only have a single file, reconnects will cause overwriting the
-existing file, which is not desired.
+       This  is	 useful	 for  streams  that don't have meta-data.
+       Because these streams only have a single file,  reconnects
+       will  cause  overwriting	 the  existing file, which is not
+       desired.
 
--T::
-Truncate completed tracks in incomplete directory.
+       -T     Truncate completed tracks in incomplete  directory.
 
-When you are not overwriting files in the complete folder, the 
-duplicate files will normally stay in the incomplete folder.  This 
-option tells streamripper to truncate the files to zero bytes 
-in the incomplete folder if they are a duplicate.
+       When you are not overwriting files in the complete folder,
+       the duplicate files will normally stay in  the  incomplete
+       folder.	 This  option  tells streamripper to truncate the
+       files to zero bytes in the incomplete folder if they are a
+       duplicate.
 
--c::
-Don't auto-reconnect.
+       -c     Don't auto-reconnect.
 
-Normally streamripper will be very aggressive and try to re-connect 
-to a dropped stream.  This option disables this behavior.
+       Normally	 streamripper  will be very aggressive and try to
+       re-connect to a dropped stream.	This option disables this
+       behavior.
 
--l seconds::
-Run for a predetermined length of time, in seconds.
+       -l seconds
+	      Run for a predetermined length of time, in seconds.
 
-Usually, streamripper runs until it crashes.  Or rather, I meant to
-say that it runs until you kill it, yes, I'm sure that's what I meant.  
-But you can instead tell streamripper to run for a certain length of 
-time, and then exit using this flag.
+       Usually, streamripper runs until it crashes.  Or rather, I
+       meant to say that it runs until you kill it, yes, I'm sure
+       that's what I meant.  But you can instead tell  streamrip­
+       per  to	run  for  a certain length of time, and then exit
+       using this flag.
 
--M megabytes::
-Stop ripping after this many megabytes.
+       -M megabytes
+	      Stop ripping after this many megabytes.
 
-Use this flag to tell streamripper to rip a certain number of 
-megabytes, then stop.
+       Use this flag to tell streamripper to rip a certain number
+       of megabytes, then stop.
 
--q::
-Add sequence number to output filenames.
+       -q     Add sequence number to output filenames.
 
-When the files are copied from incomplete to complete, the filename 
-can be prepended with a sequence number (beginning with 0001).  This can
-be used to, for example, show the order that the files were created.
+       When the files are copied from incomplete to complete, the
+       filename can be prepended with a sequence  number  (begin­
+       ning  with  0001).  This can be used to, for example, show
+       the order that the files were created.
 
--P prefix::
-Add prefix to each ripped file.
+       -P prefix
+	      Add prefix to each ripped file.
 
-This prepends the prefix string to the filename of each individual
-track file created by streamripper.
+       This prepends the prefix string to the  filename	 of  each
+       individual track file created by streamripper.
 
--i::
-Don't add ID3V1 Tags to output file.
+       -i     Don't add ID3V1 Tags to output file.
 
-Mp3 files have two different kinds of header information which describe
-the contents of the file: ID3V1 and ID3V2.  By default, both are included
-in the mp3 files generated by streamripper, but you can choose not to 
-include the ID3V1 header if you like.
+       Mp3  files  have two different kinds of header information
+       which describe the contents of the file: ID3V1 and  ID3V2.
+       By  default,  both are included in the mp3 files generated
+       by streamripper, but you can choose  not	 to  include  the
+       ID3V1 header if you like.
 
--u useragent::
-Use a different UserAgent than "Streamripper".
+       -u useragent
+	      Use a different UserAgent than "Streamripper".
 
-In the http request, streamripper includes a string that identifies 
-what kind of program is requesting the connection.  Be default it is 
-the string "Streamripper/1.x".  Here you can decide to identify 
-yourself as a different agent if you like.
+       In  the	http request, streamripper includes a string that
+       identifies what kind of program is requesting the  connec­
+       tion.   Be  default  it	is the string "Streamripper/1.x".
+       Here you can decide to identify yourself	 as  a	different
+       agent if you like.
 
--w parse_file::
-Use customized parsing rules.
+       -w parse_file
+	      Use customized parsing rules.
 
-This tells streamripper to use custom meta-data parsing rules.  
-Without this flag, streamripper will use its built-in parsing rules.
+       This  tells  streamripper  to use custom meta-data parsing
+       rules.  Without	this  flag,  streamripper  will	 use  its
+       built-in parsing rules.
 
-There are two cases where you want to do this.  In the first case, 
-you are using a stream that changes the meta data within a song.  
-Usually this is a thank-you notice or possibly an advertisement 
-for an upcoming show.  When this happens, the current track will become 
-split into fragments.  To prevent this, you can tell streamripper to 
-ignore meta-data.
+       There  are  two	cases  where you want to do this.  In the
+       first case, you are using a stream that changes	the  meta
+       data within a song.  Usually this is a thank-you notice or
+       possibly an advertisement for an upcoming show.	When this
+       happens,	 the  current  track will become split into frag­
+       ments.  To prevent this,	 you  can  tell	 streamripper  to
+       ignore meta-data.
 
-The second case you might want to use this is if the artist and title 
-information is sent in an unusual format.  For example, they might be 
-separated by a comma instead of a hyphen, or there might be an 
-extra advertisement attached to the end of the meta-data string.
-In this case, you can tell streamripper how it should identify the 
-title, artist, album and track from the metadata string using
-regular expressions.
+       The  second  case  you  might  want  to use this is if the
+       artist and title information is sent in an unusual format.
+       For example, they might be separated by a comma instead of
+       a  hyphen,  or  there  might  be	 an  extra  advertisement
+       attached	 to  the  end  of  the meta-data string.  In this
+       case, you can tell streamripper how it should identify the
+       title,  artist,	album  and track from the metadata string
+       using regular expressions.
 
-See the file parse_rules.txt, which is included in your distribution, 
-for examples of the parse rules.  
+       See the file parse_rules.txt, which is  included	 in  your
+       distribution, for examples of the parse rules.
 
--k count::
-Skip over <count> tracks before starting to rip.
+       -k count
+	      Skip over <count> tracks before starting to rip.
 
-Sometimes the first few tracks generated by a stream are not useful,
-because they are advertisements, the station intro, broken songs, etc.
-Use this option and these tracks won't be saved.
+       Sometimes  the  first few tracks generated by a stream are
+       not useful, because they are advertisements,  the  station
+       intro,  broken  songs,  etc.   Use  this	 option and these
+       tracks won't be saved.
 
--m timeout::
-Timeout to restart connection.
+       -m timeout
+	      Timeout to restart connection.
 
-Some streams will "hang", which means they haven't disconnected, but 
-they aren't sending any data.  When this happens, if you used the -m flag,
-streamripper will shut down the stream and reconnect after <timeout> 
-seconds of inactivity.
+       Some streams will "hang", which means they haven't discon­
+       nected,	but they aren't sending any data.  When this hap­
+       pens, if you used the -m flag, streamripper will shut down
+       the  stream and reconnect after <timeout> seconds of inac­
+       tivity.
 
---debug::
-Save debugging log.
+       --debug
+	      Save debugging log.
 
-This creates a file called "gcs.txt" that contains all sorts of 
-debugging information.  
+       This creates a file called  "gcs.txt"  that  contains  all
+       sorts of debugging information.
 
---quiet::
-Don't write any text to the console, except error messages.
+       --quiet
+	      Don't  write  any text to the console, except error
+	      messages.
 
---xs_silence_length=num::
-The volume must be less than xsd_min_volume for a period 
-of time greater than this.
+       --xs_silence_length=num
+	      The volume must be less than xsd_min_volume  for	a
+	      period of time greater than this.
 
---xs_search_window=num:num::
-This is how long to search for the silence.  1st number 
-is # msec before nominal center, 2nd number is # msecs after
-nominal track change position.
+       --xs_search_window=num:num
+	      This  is	how  long to search for the silence.  1st
+	      number is # msec before nominal center, 2nd  number
+	      is # msecs after nominal track change position.
 
---xs_offset=num::
-Offset from center of silence window.
+       --xs_offset=num
+	      Offset from center of silence window.
 
---xs_padding=num:num::
-Amount to pad before and after splitpoint.
+       --xs_padding=num:num
+	      Amount to pad before and after splitpoint.
 
+GETTING STARTED
+       The  easiest  way  to  get started is to find the URL of a
+       stream you want to rip, usually I find the URL by  loading
+       it  up  in winamp or xmms and querying for the source URL.
+       (right clicking on the playlist) Once you have the URL you
+       can begin ripping.
 
-USING STREAMRIPPER
-------------------
-The easiest way to get started is to find the URL of a stream you want
-to rip, usually I find the URL by loading it up in winamp or xmms and
-querying for the source URL. (right clicking on the playlist) 
-Once you have the URL you can begin ripping.
+	 streamripper http://205.188.245.132:8038
 
-streamripper http://205.188.245.132:8038
+       This  would  rip Monkey Radio (as of 1/10/2001), it places
+       the tracks into two directory's one called "Monkey  Radio"
+       and  a  sub-directory "Monkey Radio/incomplete" the incom­
+       plete directory is for tracks that streamripper	does  not
+       know the begging or end of. the first and last tracks your
+       rip for instance, would be in incomplete.
 
-This would rip Monkey Radio (as of 1/10/2001), it places the tracks
-into two directory's one called "Monkey Radio" and a sub-directory
-"Monkey Radio/incomplete" the incomplete directory is for tracks that
-streamripper does not know the begging or end of. the first and last
-tracks your rip for instance, would be in incomplete.
+       Also you can listen to the  stream  by  creating	 a  relay
+       server..
 
-also you can listen to the stream by creating a relay server..
+	 streamripper http://205.188.245.132:8038 -r
 
-streamripper http://205.188.245.132:8038 -r
-
-When the program starts it will display what port it's relaying the
-stream on, it defaults to 8000 but you can choose another port. To
-listen to your relay server open up XMMS or Winamp and enter your
-machine name with the port as you would any other stream.
+       When  the  program  starts  it will display what port it's
+       relaying the stream on, it defaults to 8000  but	 you  can
+       choose  another	port. To listen to your relay server open
+       up XMMS or Winamp and enter your	 machine  name	with  the
+       port as you would any other stream.
 
 SPLITPOINT DETECTION
---------------------
-Streamripper automatically splits tracks based on detection of a
-silent near the meta interval where the track changes. However, this
-method is imperfect, and sometimes the track splitting occurs is too
-early or too late.  These options will fine tune the track 
-splitting capabilities for streams that use cross-fading,
-which causes streamripper's automatic silence detection routine to
-fail.  
+       Streamripper  automatically  splits tracks based on detec­
+       tion of a silent near the meta interval	where  the  track
+       changes.	 However, this method is imperfect, and sometimes
+       the track splitting occurs  is  too  early  or  too  late.
+       These options will fine tune the track splitting capabili­
+       ties for	 streams  that	use  cross-fading,  which  causes
+       streamripper's  automatic  silence  detection  routine  to
+       fail.
 
-Various --xs flags can be used to add an offset for streams that have a
-meta interval that comes too early or too late, to add extra padding
-to the beginning and end of each song, and to decide where the length
-of the search window and silence window.
+       Various --xs flags can  be  used	 to  add  an  offset  for
+       streams	that have a meta interval that comes too early or
+       too late, to add extra padding to the beginning and end of
+       each  song,  and	 to decide where the length of the search
+       window and silence window.
 
-Default splitting
-~~~~~~~~~~~~~~~~~
-The default spitting algorithm is used when no silent point can be found.
-Suppose you have a meta-int with track change information at the time "mi"
-(see figure below).
+   DEFAULT SPLITTING
+       The default spitting algorithm  is  used	 when  no  silent
+       point  can  be  found.	Suppose	 you have a meta-int with
+       track change information at  the	 time  "mi"  (see  figure
+       below).
 
-If the xs_offset is positive, the track separation point "ts" is later
-the "mi" point.  If xs_offset is negative, "ts" is earlier than "mi".
-Once "ts" is determined, a user-defined "prepad" and "postpad" 
-are used to determine where the next track begins "ntb", and where
-the previous track ends "pte".  The interval between "ntb" and "pte"
-will be copied to both songs.
-
-            /mi
-            |
-            |           /ts
-            |-----------|
-              xs_offset |
-                        |
-                        |
-              /ntb      |         /pte
-              |---------|---------|
-                prepad    postpad
+       If  the	xs_offset is positive, the track separation point
+       "ts" is later the "mi" point.  If xs_offset  is	negative,
+       "ts"  is	 earlier  than	"mi".  Once "ts" is determined, a
+       user-defined "prepad" and "postpad" are used to	determine
+       where  the next track begins "ntb", and where the previous
+       track ends "pte".  The interval between	"ntb"  and  "pte"
+       will be copied to both songs.
 
 
-Silence separation
-~~~~~~~~~~~~~~~~~~
-Splitting based on silence separation is similar to default splitting,
-only slightly more complex.  Again, suppose you have a meta-int 
-with track change information at the time "mi" (see figure below).
+	      /mi
+	      |
+	      |		  /ts
+	      |-----------|
+		xs_offset |
+			  |
+			  |
+		/ntb	  |	    /pte
+		|---------|---------|
+		  prepad    postpad
 
-A search window "search_win" is determined by the xs_offset, pre_sw, 
-and post_sw field.  The beginning of the search window is at:
-     mi + xs_offset - pre_sw
-and the end of the search window is at:
-     mi + xs_offset + post_sw.
+   SILENCE SEPARATION
+       Splitting  based	 on  silence  separation  is  similar  to
+       default splitting, only	slightly  more	complex.   Again,
+       suppose	you have a meta-int with track change information
+       at the time "mi" (see figure below).
 
-If there is a silent interval of length "silence_win" within the 
-"search_win", the center of "silence_win" is selected as the 
-track separation point "ts".
+       A search window "search_win" is determined by the  xs_off­
+       set,  pre_sw,  and  post_sw  field.   The beginning of the
+       search window is at: mi + xs_offset - pre_sw and	 the  end
+       of the search window is at: mi + xs_offset + post_sw.
 
-Once "ts" is determined, a user-defined "prepad" and "postpad" 
-are used to determine where the next track begins "ntb", and where
-the previous track ends "pte".  The interval between "ntb" and "pte"
-will be copied to both songs.
+       If  there  is  a	 silent	 interval of length "silence_win"
+       within the "search_win", the center  of	"silence_win"  is
+       selected as the track separation point "ts".
 
-            /mi
-            |  
-            |-----------|
-              xs_offset |
-                        |
-                    ts\ |
-              |-------+-|---------| *search_win
-               pre_sw |   post_sw
-                      |
-                  |---+---| *silence_win
-                      |
-        /ntb          |         /pte
-        |-------------|---------|
-              prepad    postpad
+       Once  "ts"  is  determined,  a  user-defined  "prepad" and
+       "postpad" are used  to  determine  where	 the  next  track
+       begins  "ntb",  and  where  the previous track ends "pte".
+       The interval between "ntb" and "pte"  will  be  copied  to
+       both songs.
+
+
+		  /mi
+		  |
+		  |-----------|
+		    xs_offset |
+			      |
+			  ts\ |
+		    |-------+-|---------| *search_win
+		     pre_sw |	post_sw
+			    |
+			|---+---| *silence_win
+			    |
+	      /ntb	    |	      /pte
+	      |-------------|---------|
+		    prepad    postpad
+
+USAGE EXAMPLES
+       Rip from a stream:
+
+	 streamripper URL
+
+       Rip from a stream for one hour:
+
+	 streamripper URL -l 3600
+
+       Rip  the	 stream, putting the mp3 files into the directory
+       /my/music/stream1:
+
+	 streamripper URL -d /my/music/stream1 -s
+
+       Rip the stream, creating a single file  and  don't  create
+       individual tracks:
+
+	 streamripper URL -a -A
+
+       Rip from a stream and create a relay stream at port 9000:
+
+	 streamripper URL -r 9000
+
+       Rip  from  a stream, creating a relay stream at port 8000,
+       and allowing twenty clients to connect:
+
+	 streamripper URL -r -R 20
+
+SPLITPOINT USAGE EXAMPLES
+       Each of my songs contain about 5 seconds of  the	 previous
+       song.  How can I fix this?
+
+	 streamripper URL --xs_offset=5000
+
+       Each of my songs contain about 5 seconds of the next song.
+       How can I fix?
+
+	 streamripper URL --xs_offset=-5000
+
+       Each of my songs contain between 5 and 10 seconds  of  the
+       previous	 song,	but  it	 depends  on the song.	How can I
+       include all of this zone within both songs, and edit  them
+       later?
+
+	 streamripper URL --xs_offset=7500 --xs_padding=2500:2500
+
+       or
+
+	 streamripper URL --xs_offset=5000 --xs_padding=0:5000
 
 RESOURCES
----------
-Please check out the following web
-sites.  Linked to the streamripper home page is a forum that can
-can be used to chat and ask questions.
+       Please  check  out the following web sites.  Linked to the
+       streamripper home page is a forum that can can be used  to
+       chat and ask questions.
 
-Streamripper home page:::
-http://streamripper.sourceforge.net/
+       Streamripper home page:
+	      http://streamripper.sourceforge.net/
 
-Sourceforge project page::
-http://sourceforge.net/projects/streamripper
+       Sourceforge project page
+	      http://sourceforge.net/projects/streamripper
 
-Shoutcast::
-http://www.shoutcast.com
+       Shoutcast
+	      http://www.shoutcast.com
 
-Icecast::
-http://www.icecast.org
+       Icecast
+	      http://www.icecast.org
 
 COPYING
--------
-Copyright (C) 2000-2002 Jon Clegg, (C) 2004-2005 Gregory C. Sharp.
-Free use of this software is
-granted under the terms of the GNU General Public License (GPL).
+       Copyright  (C)  2000-2002 Jon Clegg, (C) 2004-2005 Gregory
+       C. Sharp.  Free use of this software is granted under  the
+       terms of the GNU General Public License (GPL).
+
+
+
+			  10 April 2005		  STREAMRIPPER(1)
