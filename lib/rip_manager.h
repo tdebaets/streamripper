@@ -102,6 +102,8 @@ typedef struct RIP_MANAGER_OPTIONSst
     char output_file[SR_MAX_PATH];	// filename base when ripping without splitting
     char if_name[SR_MAX_PATH];		// local interface to use
     char rules_file[SR_MAX_PATH];       // file that holds rules for parsing metadata
+    char pls_file[SR_MAX_PATH];		// optional, where to create a .pls file
+    char relay_ip[SR_MAX_PATH];		// optional, ip to bind relaying socket to
     int relay_port;			// port to use for the relay server
     u_short max_port;			// highest port the relay server can look if it needs to search
     int max_connections;                // max number of connections to relay stream

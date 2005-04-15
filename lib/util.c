@@ -505,7 +505,6 @@ strip_invalid_chars_stable(char *str)
 					   *(strlen(invalid_chars)+2));
     wchar_t replacement;
     wchar_t *wstrp;
-    int i;
     size_t t;
 
     debug_printf ("strip_invalid_chars() mb_in:\n");

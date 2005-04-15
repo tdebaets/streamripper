@@ -62,7 +62,7 @@
  * Private functions
  *********************************************************************************/
 static void                     thread_accept(void *notused);
-static error_code       try_port(u_short port, char *if_name);
+static error_code       try_port(u_short port, char *if_name, char *relay_ip);
 static void thread_send(void *notused);
 
 
@@ -286,7 +286,8 @@ void catch_pipe(int code)
 
 error_code
 relaylib_init(BOOL search_ports, int relay_port, int max_port, 
-              int *port_used, char *if_name, int max_connections)
+              int *port_used, char *if_name, int max_connections, 
+	      char *relay_ip)
 {
     int ret;
 #ifdef WIN32
@@ -321,7 +322,7 @@ relaylib_init(BOOL search_ports, int relay_port, int max_port,
         max_port = relay_port;
 
     for(;relay_port <= max_port; relay_port++) {
-        ret = try_port((u_short)relay_port, if_name);
+        ret = try_port((u_short)relay_port, if_name, relay_ip);
         if (ret == SR_ERROR_CANT_BIND_ON_PORT)
             continue;           // Keep searching.
 
@@ -338,8 +339,9 @@ relaylib_init(BOOL search_ports, int relay_port, int max_port,
 }
 
 error_code
-try_port(u_short port, char *if_name)
+try_port(u_short port, char *if_name, char *relay_ip)
 {
+    struct hostent *he;
     struct sockaddr_in local;
 
     m_listensock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
@@ -347,8 +349,15 @@ try_port(u_short port, char *if_name)
         return SR_ERROR_SOCK_BASE;
     make_nonblocking(m_listensock);
 
-    if (read_interface(if_name,&local.sin_addr.s_addr) != 0)
-        local.sin_addr.s_addr = htonl(INADDR_ANY);
+    if ('\0' == *relay_ip) {
+	    if (read_interface(if_name,&local.sin_addr.s_addr) != 0)
+		local.sin_addr.s_addr = htonl(INADDR_ANY);
+    } else {
+	    he = gethostbyname(relay_ip);
+	    memcpy(&local.sin_addr, he->h_addr_list[0], he->h_length);
+    }
+	    
+
     local.sin_family = AF_INET;
     local.sin_port = htons(port);
 

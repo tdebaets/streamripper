@@ -123,7 +123,7 @@ error_code read_interface(char *if_name, u_int32_t *addr)
     struct ifreq ifr;
 
     memset(&ifr, 0, sizeof(struct ifreq));
-    if((fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) >= 0) {
+    if((fd = socket(AF_INET, SOCK_DGRAM, 0)) >= 0) {
 	ifr.ifr_addr.sa_family = AF_INET;
 	strcpy(ifr.ifr_name, if_name);
 	if (ioctl(fd, SIOCGIFADDR, &ifr) == 0)
@@ -132,7 +132,7 @@ error_code read_interface(char *if_name, u_int32_t *addr)
 	    close(fd);
 	    return -2;
 	}
-    } else
+    } else 
 	return -1;
     close(fd);
     return 0;

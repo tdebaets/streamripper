@@ -7,9 +7,10 @@ THANKS (v.1.61.X)
 "Martin Bockwinkel" <Bockwinkel a@t OzySoft.com> for -P flag.
 "Michael Ablassmeier" <abi a@t grinser.de> help with identifying 
 memory crashes.
-"Daniel Potts" <danielp@cse.unsw.edu.au> a nice patch to support relay 
+"Daniel Potts" <danielp a@t cse.unsw.edu.au> a nice patch to support relay 
 connections from clients that don't want metadata.
 "9EUvY5gQPB4=" patch for id3 genre.
+"bd" <bd a@t bc-bd.org> for -L flag that creates a relay server pls file.
 
 THANKS (v.1.60.X)
 ---------------------

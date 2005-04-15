@@ -32,6 +32,12 @@
 #include <string.h>
 #include <time.h>
 
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #include "filelib.h"
 #include "socklib.h"
 #include "http.h"
@@ -486,6 +492,31 @@ destroy_subsystems()
     filelib_shutdown();
 }
 
+int
+create_pls_file()
+{
+    FILE *fid;
+
+    if  ('\0' == m_options.relay_ip[0]) {
+	fprintf(stderr, "can not determine relaying ip, pass ip to -r \n");
+	return -1;
+    }
+
+    fid = fopen(m_options.pls_file, "w");
+
+    if (NULL == fid) {
+	fprintf(stderr, "could not create playlist file '%s': %d '%s'\n",
+		m_options.pls_file, errno, strerror(errno));
+    } else {
+	fprintf(fid, "[playlist]\n");
+	fprintf(fid, "NumberOfEntries=1\n");
+	fprintf(fid, "File1=http://%s:%d\n", m_options.relay_ip, m_options.relay_port);
+	fclose(fid);
+    }
+		
+    return 0;
+}
+
 error_code
 start_ripping()
 {
@@ -575,12 +606,17 @@ start_ripping()
 	ret = relaylib_init(GET_SEARCH_PORTS(m_options.flags), 
 			    m_options.relay_port, m_options.max_port, 
 			    &new_port, m_options.if_name, 
-			    m_options.max_connections);
+			    m_options.max_connections, m_options.relay_ip);
 	if (ret != SR_SUCCESS) {
 		goto RETURN_ERR;
 	}
+
 	m_options.relay_port = new_port;
 	start_relay(m_info.content_type);
+
+	if (0 != m_options.pls_file[0]) {
+		create_pls_file(new_port);
+	}
     }
     post_status(RM_STATUS_BUFFERING);
     return SR_SUCCESS;
@@ -655,6 +691,8 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
     m_opt->max_connections = 1;
 
     strcpy(m_opt->output_directory, "./");
+    m_opt->relay_ip[0] = 0;
+    m_opt->pls_file[0] = 0;
     m_opt->proxyurl[0] = 0;
     m_opt->url[0] = 0;
     m_opt->output_file[0] = 0;

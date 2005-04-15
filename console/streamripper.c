@@ -231,38 +231,36 @@ void rip_callback(int message, void *data)
 void print_usage()
 {
     fprintf(stderr, "Usage: streamripper URL [OPTIONS]\n");
-    fprintf(stderr, "Opts:  -h            - Print this listing\n");
-    fprintf(stderr, "       -v            - Print version info and quit\n");
-    fprintf(stderr, "       -a [file]     - Rip to single file, default name is timestamped\n");
-    fprintf(stderr, "       -A            - Don't write individual tracks\n");
-    fprintf(stderr, "       -d dir        - The destination directory\n");
-    fprintf(stderr, "       -s            - Don't create a directory for each stream\n");
-    fprintf(stderr, "       -r [port]     - Create relay server on base port, default port 8000\n");
-    fprintf(stderr, "       -R #connect   - Max connections to relay, default 1, -R 0 is no limit\n");
-    fprintf(stderr, "       -z            - Don't scan for free ports if base port is not avail\n");
-    fprintf(stderr, "       -p url        - Use HTTP proxy server at <url>\n");
-    fprintf(stderr, "       -o            - Overwrite tracks in complete\n");
-    fprintf(stderr, "       -t            - Don't overwrite tracks in incomplete\n");
-    fprintf(stderr, "       -c            - Don't auto-reconnect\n");
-    fprintf(stderr, "       -l seconds    - Number of seconds to run, otherwise runs forever\n");
-    fprintf(stderr, "       -M megabytes  - Stop ripping after this many megabytes\n");
-    fprintf(stderr, "       -q            - Add sequence number to output file\n");
-    fprintf(stderr, "       -i            - Don't add ID3V1 Tags to output file\n");
-    fprintf(stderr, "       -u useragent  - Use a different UserAgent than \"Streamripper\"\n");
-#if defined (commentout)
-    fprintf(stderr, "       -f <dstring>  - Don't create new track if metainfo contains <dstring>\n");
-#endif
-    fprintf(stderr, "       -w rulefile   - Parse metadata using rules in file.\n");
-    fprintf(stderr, "       -m timeout    - Number of seconds before force-closing stalled conn\n");
-    fprintf(stderr, "       -k count      - Skip over first <count> tracks before starting to rip\n");
+    fprintf(stderr, "Opts: -h             - Print this listing\n");
+    fprintf(stderr, "      -v             - Print version info and quit\n");
+    fprintf(stderr, "      -a [file]      - Rip to single file, default name is timestamped\n");
+    fprintf(stderr, "      -A             - Don't write individual tracks\n");
+    fprintf(stderr, "      -d dir         - The destination directory\n");
+    fprintf(stderr, "      -s             - Don't create a directory for each stream\n");
+    fprintf(stderr, "      -r [[ip:]port] - Create relay server on base ip:port, default port 8000\n");
+    fprintf(stderr, "      -R #connect    - Max connections to relay, default 1, -R 0 is no limit\n");
+    fprintf(stderr, "      -L file        - Create a relay playlist file\n");
+    fprintf(stderr, "      -z             - Don't scan for free ports if base port is not avail\n");
+    fprintf(stderr, "      -p url         - Use HTTP proxy server at <url>\n");
+    fprintf(stderr, "      -o             - Overwrite tracks in complete\n");
+    fprintf(stderr, "      -t             - Don't overwrite tracks in incomplete\n");
+    fprintf(stderr, "      -c             - Don't auto-reconnect\n");
+    fprintf(stderr, "      -l seconds     - Number of seconds to run, otherwise runs forever\n");
+    fprintf(stderr, "      -M megabytes   - Stop ripping after this many megabytes\n");
+    fprintf(stderr, "      -q             - Add sequence number to output file\n");
+    fprintf(stderr, "      -i             - Don't add ID3V1 Tags to output file\n");
+    fprintf(stderr, "      -u useragent   - Use a different UserAgent than \"Streamripper\"\n");
+    fprintf(stderr, "      -w rulefile    - Parse metadata using rules in file.\n");
+    fprintf(stderr, "      -m timeout     - Number of seconds before force-closing stalled conn\n");
+    fprintf(stderr, "      -k count       - Skip over first <count> tracks before starting to rip\n");
 #if !defined (WIN32)
-    fprintf(stderr, "       -I interface  - Rip from specified interface (e.g. eth0)\n");
+    fprintf(stderr, "      -I interface   - Rip from specified interface (e.g. eth0)\n");
 #endif
-    fprintf(stderr, "       -T            - Truncate duplicated tracks in incomplete\n");
-    fprintf(stderr, "       -P text       - Add a Prefix to each ripped file (Not shown on stdout).\n");
-    fprintf(stderr, "       --quiet       - Don't print ripping status to console\n");
-    fprintf(stderr, "       --debug       - Save debugging trace\n");
-    fprintf(stderr, "       --xs_???      - Invoke splitpoint detection rules (see README/man page)\n");
+    fprintf(stderr, "      -T             - Truncate duplicated tracks in incomplete\n");
+    fprintf(stderr, "      -P text        - Add a Prefix to each ripped file (Not shown on stdout).\n");
+    fprintf(stderr, "      --quiet        - Don't print ripping status to console\n");
+    fprintf(stderr, "      --debug        - Save debugging trace\n");
+    fprintf(stderr, "      --xs_???       - Invoke splitpoint detection rules (see README/man page)\n");
 }
 
 /* 
@@ -292,7 +290,7 @@ void parse_arguments(int argc, char **argv)
 	if (argv[i][0] != '-')
 	    continue;
 
-	c = strchr("dRplufmkIwPM", argv[i][1]);
+	c = strchr("dRplufmkIwPML", argv[i][1]);
         if (c != NULL) {
             if ((i == (argc-1)) || (argv[i+1][0] == '-')) {
 		fprintf(stderr, "option %s requires an argument\n", argv[i]);
@@ -364,7 +362,17 @@ void parse_arguments(int argc, char **argv)
 	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
 	    i++;
-	    m_opt.relay_port = atoi(argv[i]);
+
+	    c = strstr(argv[i], ":");
+
+	    if (NULL == c) {
+	    	m_opt.relay_port = atoi(argv[i]);
+	    } else {
+	    	*c = '\0';
+		strncpy(m_opt.relay_ip, argv[i], SR_MAX_PATH);
+		m_opt.relay_port = atoi(++c);
+ 	    }
+
 	    break;
 	case 's':
 	    m_opt.flags ^= OPT_SEPERATE_DIRS;
@@ -396,6 +404,10 @@ void parse_arguments(int argc, char **argv)
 	case 'I':
 	    i++;
 	    strncpy(m_opt.if_name, argv[i], SR_MAX_PATH);
+	    break;
+	case 'L':
+	    i++;
+	    strncpy(m_opt.pls_file, argv[i], SR_MAX_PATH);
 	    break;
  	case 'M':
  	    i++;
