@@ -24,7 +24,7 @@
 #if defined HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#if defined HAVE_WCHAR_T
+#if defined HAVE_SUPPORT
 #if defined HAVE_WCHAR_H
 #include <wchar.h>
 #endif
@@ -114,7 +114,7 @@ char *left_str(char *str, int len)
     return str;
 }
 
-#if HAVE_WCHAR_T
+#if HAVE_WCHAR_SUPPORT
 # if HAVE_ICONV
 int 
 iconv_convert_string (char* dst, int dst_len, char* src,
@@ -190,7 +190,7 @@ wstring_from_string (wchar_t* w, int wlen, char* c, const char* codeset)
     }
     return 0;
 }
-#endif /* HAVE_WCHAR_T */
+#endif /* HAVE_WCHAR_SUPPORT */
 
 void
 set_codeset (char* codeset_type, const char* codeset)
@@ -390,7 +390,7 @@ suggest_filenames (char *input_string, char *utf8_name, char *wchar_name,
 }
 #endif
 
-#if HAVE_WCHAR_T
+#if HAVE_WCHAR_SUPPORT
 char*
 strip_invalid_chars_testing(char *str)
 {
@@ -583,7 +583,7 @@ strip_invalid_chars_stable(char *str)
 
     return str;
 }
-#endif /* HAVE_WCHAR_T */
+#endif /* HAVE_WCHAR_SUPPORT */
 
 char*
 strip_invalid_chars_no_wchar(char *str)
@@ -650,7 +650,7 @@ parse_artist_title (char* artist, char* title, char* album,
 char* 
 strip_invalid_chars(char *str)
 {
-#if HAVE_WCHAR_T
+#if HAVE_WCHAR_SUPPORT
 #if defined (NEW_I18N_CODE)
     return strip_invalid_chars_testing(str);
 #else

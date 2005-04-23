@@ -11,8 +11,10 @@
 #include <sys/types.h>
 #endif
 
+#if HAVE_WCHAR_SUPPORT
 #if HAVE_WCHAR_H
 #include <wchar.h>
+#endif
 #endif
 #if STDC_HEADERS
 #include <stddef.h>
@@ -114,7 +116,7 @@ typedef struct CODESET_OPTIONSst
 /* 
  * TRACK_INFO is the parsed metadata
  */
-#if HAVE_WCHAR_T
+#if HAVE_WCHAR_SUPPORT
 typedef char mchar;
 #else
 typedef wchar_t mchar;

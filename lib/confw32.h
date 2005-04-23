@@ -14,18 +14,24 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
+/* Define to 1 if you have the `iswcntrl' function. */
+#define HAVE_ISWCNTRL 1
+
 /* Define if you have <langinfo.h> and nl_langinfo(CODESET). */
 /* #define HAVE_LANGINFO_CODESET 1 */
 #undef HAVE_LANGINFO_CODESET
-
-/* Define if you have <localcharset.h> and locale_charset(). */
-#define HAVE_LOCALE_CHARSET 1
 
 /* Define to 1 if you have the `m' library (-lm). */
 #define HAVE_LIBM 1
 
 /* Define to 1 if you have the `sem' library (-lsem). */
 /* #undef HAVE_LIBSEM */
+
+/* Define if you have <localcharset.h> and locale_charset(). */
+#define HAVE_LOCALE_CHARSET 1
+
+/* Define to 1 if mbrtowc and mbstate_t are properly declared. */
+#define HAVE_MBRTOWC 1
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
@@ -80,6 +86,9 @@
 
 /* Define to 1 if you have the <wchar.h> header file. */
 #define HAVE_WCHAR_H 1
+
+/* Define to 1 if wide characters is supported */
+#define HAVE_WCHAR_SUPPORT 1
 
 /* Define to 1 if the system has the type `wchar_t'. */
 #define HAVE_WCHAR_T 1

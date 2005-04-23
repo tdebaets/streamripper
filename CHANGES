@@ -1,6 +1,9 @@
 New for 1.61.8
 --------------
 * Add bd's patch for creating a relay server pls file.
+* Fix FreeBSD 4.10 configuration problem because of broken wchar support.
+* Fix problem on FreeBSD & MacOSX caused by non-POSIX compliant 
+  default parsing rules.
 
 New for 1.61.7
 --------------

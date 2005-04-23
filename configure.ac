@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl AC_INIT(lib/types.h)
 
-AC_INIT(streamripper,1.61.7)
+AC_INIT(streamripper,1.61.7b)
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([lib/config.h])
@@ -153,6 +153,19 @@ AC_CHECK_TYPES([wchar_t],[],[],[
 #include <stddef.h>
 #endif
 ])
+
+dnl More wide character madness.  FreeBSD doesn't have an iswcntrl().
+AC_CHECK_FUNCS(iswcntrl)
+AC_FUNC_MBRTOWC
+
+if test "$ac_cv_type_wchar_t" == yes; then
+if test "$ac_cv_func_mbrtowc" == yes; then
+if test "$ac_cv_func_iswcntrl" == yes; then
+  AC_DEFINE(HAVE_WCHAR_SUPPORT,1,[Define to 1 if wide characters is supported])
+fi
+fi
+fi
+
 
 dnl Check for iconv & related
 AM_ICONV
