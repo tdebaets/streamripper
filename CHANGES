@@ -1,5 +1,6 @@
 New for 1.61.8
 --------------
+Sat Apr 23 22:20:02 EDT 2005
 * Add bd's patch for creating a relay server pls file.
 * Fix FreeBSD 4.10 configuration problem because of broken wchar support.
   (half of #1024627).
