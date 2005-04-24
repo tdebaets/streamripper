@@ -24,7 +24,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #endif
-#include "types.h"
+#include "srtypes.h"
 #include "cbuffer.h"
 #include "findsep.h"
 #include "util.h"

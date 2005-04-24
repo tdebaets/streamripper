@@ -24,7 +24,7 @@
 #if defined HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#if defined HAVE_SUPPORT
+#if defined HAVE_WCHAR_SUPPORT
 #if defined HAVE_WCHAR_H
 #include <wchar.h>
 #endif
@@ -44,7 +44,7 @@
 #include <langinfo.h>
 #endif
 #include "debug.h"
-#include "types.h"
+#include "srtypes.h"
 
 
 /* uncomment to use new i18n code */
@@ -391,6 +391,7 @@ suggest_filenames (char *input_string, char *utf8_name, char *wchar_name,
 #endif
 
 #if HAVE_WCHAR_SUPPORT
+# if HAVE_ICONV
 char*
 strip_invalid_chars_testing(char *str)
 {
@@ -491,6 +492,7 @@ strip_invalid_chars_testing(char *str)
 
     return str;
 }
+# endif /* HAVE_ICONV */
 
 char*
 strip_invalid_chars_stable(char *str)

@@ -1,7 +1,7 @@
 #ifndef __MPEG_H__
 #define __MPEG_H__
 
-#include "types.h"
+#include "srtypes.h"
 
 typedef struct mp3_headerSt
 {

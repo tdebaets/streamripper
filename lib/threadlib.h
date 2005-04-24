@@ -1,7 +1,7 @@
 #ifndef __THREADLIB_H__
 #define __THREADLIB_H__
 
-#include "types.h"
+#include "srtypes.h"
 #include "compat.h"
 
 typedef struct THREAD_HANDLEst

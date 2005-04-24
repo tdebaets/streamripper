@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl AC_INIT(lib/types.h)
 
-AC_INIT(streamripper,1.61.7b)
+AC_INIT(streamripper,1.61.7)
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([lib/config.h])
@@ -135,6 +135,8 @@ dnl     ])
 
 dnl Check for semaphore library
 AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(sem, sem_init,))
+dnl Solaris needs this: -lrt
+AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(rt, sem_init,))
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
@@ -158,24 +160,69 @@ dnl More wide character madness.  FreeBSD doesn't have an iswcntrl().
 AC_CHECK_FUNCS(iswcntrl)
 AC_FUNC_MBRTOWC
 
-if test "$ac_cv_type_wchar_t" == yes; then
-if test "$ac_cv_func_mbrtowc" == yes; then
-if test "$ac_cv_func_iswcntrl" == yes; then
+if test "$ac_cv_type_wchar_t" = yes; then
+if test "$ac_cv_func_mbrtowc" = yes; then
+if test "$ac_cv_func_iswcntrl" = yes; then
   AC_DEFINE(HAVE_WCHAR_SUPPORT,1,[Define to 1 if wide characters is supported])
 fi
 fi
 fi
-
 
 dnl Check for iconv & related
 AM_ICONV
 AM_LANGINFO_CODESET
 SR_FIND_LOCALE_CHARSET
 
-dnl SR_TEST_DECL
+dnl uint32_t vs. u_int32_t
+dnl ISO C 99 requires uint32_t, but u_int32_t is more common(?)
+AC_CHECK_HEADERS(stdint.h)
+AC_CHECK_HEADERS(inttypes.h)
+AC_CHECK_TYPES([uint32_t, u_int32_t])
+dnl (maybe these are needed in the future)
+dnl AC_CHECK_SIZEOF(short)
+dnl AC_CHECK_SIZEOF(int)
+dnl AC_CHECK_SIZEOF(long)
 
-dnl ** GCS Why testing twice??
-dnl AC_CHECK_LIB(dce,pthread_create,THREADLIBS="-ldce",)
+dnl Sockets header needed on Solaris
+AC_CHECK_HEADERS(sys/sockio.h)
+
+dnl -- GCS: Taken from distcc --
+dnl The following test taken from the cvs sources via Samba:
+dnl If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
+dnl The Irix 5 libc.so has connect and gethostbyname, but Irix 5 also has
+dnl libsocket.so which has a bad implementation of gethostbyname (it
+dnl only looks in /etc/hosts), so we only look for -lsocket if we need
+dnl it.
+AC_CHECK_FUNCS(connect)
+if test x"$ac_cv_func_connect" = x"no"; then
+    case "$LIBS" in
+    *-lnsl*) ;;
+    *) AC_CHECK_LIB(nsl_s, printf) ;;
+    esac
+    case "$LIBS" in
+    *-lnsl*) ;;
+    *) AC_CHECK_LIB(nsl, printf) ;;
+    esac
+    case "$LIBS" in
+    *-lsocket*) ;;
+    *) AC_CHECK_LIB(socket, connect) ;;
+    esac
+    case "$LIBS" in
+    *-linet*) ;;
+    *) AC_CHECK_LIB(inet, connect) ;;
+    esac
+    dnl We can't just call AC_CHECK_FUNCS(connect) here, because the value
+    dnl has been cached.
+    if test x"$ac_cv_lib_socket_connect" = x"yes" || 
+       test x"$ac_cv_lib_inet_connect" = x"yes"; then
+        dnl ac_cv_func_connect=yes
+        dnl don't!  it would cause AC_CHECK_FUNC to succeed next time configure is run
+        AC_DEFINE(HAVE_CONNECT,1,[Whether the system has connect()])
+    fi
+fi
+dnl (GCS: I don't think I need these)
+dnl AC_CHECK_LIB(resolv, hstrerror, , , [-lnsl -lsocket])
+dnl AC_CHECK_LIB(resolv, inet_aton, , , [-lnsl -lsocket])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T

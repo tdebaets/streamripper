@@ -21,7 +21,7 @@
 #include <ctype.h>
 #include "srconfig.h"
 #include "debug.h"
-#include "types.h"
+#include "srtypes.h"
 #include "util.h"
 #include "regex.h"
 

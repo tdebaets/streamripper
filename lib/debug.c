@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include "types.h"
+#include "srtypes.h"
 #include "threadlib.h"
 #include "rip_manager.h"
 #include "debug.h"

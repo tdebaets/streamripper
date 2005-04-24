@@ -42,7 +42,7 @@
 #include <be/net/netdb.h>   
 #endif
 
-#include "types.h"
+#include "srtypes.h"
 #include "util.h"
 #include "socklib.h"
 #include "threadlib.h"
@@ -78,7 +78,7 @@ error_code socklib_recvall_alloc(HSOCKET *socket_handle, char** buffer,
 				 int (*recvall)(HSOCKET *socket_handle, 
 						char* buffer, int size, 
 						int timeout));
-error_code read_interface(char *if_name, u_int32_t *addr);
+error_code read_interface(char *if_name, uint32_t *addr);
 
 /*********************************************************************************
  * Private Vars 
@@ -114,7 +114,8 @@ error_code socklib_init()
 /*
  * try to find the local interface to bind to
  */
-error_code read_interface(char *if_name, u_int32_t *addr)
+error_code
+read_interface(char *if_name, uint32_t *addr)
 {
 #if defined (WIN32)
     return -1;

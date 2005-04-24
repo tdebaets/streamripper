@@ -1,14 +1,17 @@
 #ifndef __SOCKETS_H__
 #define __SOCKETS_H__
 
-#include "types.h"
+#include "srtypes.h"
+#if HAVE_SYS_SOCKIO_H
+#include <sys/sockio.h>
+#endif
 
 #ifndef WIN32
 typedef int SOCKET;
 #endif
 
-#if defined (WIN32)
-typedef unsigned int u_int32_t;
+#ifndef INADDR_NONE
+#define INADDR_NONE (-1)
 #endif
 
 typedef struct HSOCKETst
@@ -29,6 +32,6 @@ extern int			socklib_recvall(HSOCKET *socket_handle, char* buffer, int size, int
 extern int			socklib_sendall(HSOCKET *socket_handle, char* buffer, int size);
 extern error_code	socklib_recvall_alloc(HSOCKET *socket_handle, char** buffer, unsigned long *size, 
 								int (*recvall)(HSOCKET *sock, char* buffer, int size, int timeout));
-extern error_code read_interface(char *if_name, u_int32_t *addr);
+extern error_code read_interface(char *if_name, uint32_t *addr);
 
 #endif	//__SOCKETS_H__

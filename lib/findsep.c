@@ -29,7 +29,7 @@
 #include <assert.h>
 #include "findsep.h"
 #include "util.h"
-#include "types.h"
+#include "srtypes.h"
 #include "cbuffer.h"
 #include "debug.h"
 

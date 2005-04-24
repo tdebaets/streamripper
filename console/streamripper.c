@@ -22,7 +22,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
-#include "types.h"
+#include "srtypes.h"
 #include "rip_manager.h"
 #include "util.h"
 #include "filelib.h"

@@ -1,7 +1,7 @@
 #ifndef __CBUFFER_H__
 #define __CBUFFER_H__
 
-#include "types.h"
+#include "srtypes.h"
 
 typedef struct CBUFFERst
 {

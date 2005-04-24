@@ -28,7 +28,7 @@
 #include "http.h"
 #include "util.h"
 #include "inet.h"
-#include "types.h"
+#include "srtypes.h"
 #include "socklib.h"
 #include "threadlib.h"
 #include "live365info.h"

@@ -1,7 +1,7 @@
 #ifndef __HTTP_H__
 #define __HTTP_H__
 
-#include "types.h"
+#include "srtypes.h"
 
 typedef struct SR_HTTP_HEADERst
 {

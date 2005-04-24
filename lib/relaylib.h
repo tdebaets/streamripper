@@ -1,7 +1,7 @@
 #ifndef __RELAYLIB_H__
 #define __RELAYLIB_H__
 
-#include "types.h"
+#include "srtypes.h"
 
 error_code relaylib_init (BOOL search_ports, int relay_port, int max_port, 
 			  int *port_used, char *if_name, 

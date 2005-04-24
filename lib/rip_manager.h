@@ -1,7 +1,7 @@
 #ifndef __RIP_MANANGER_H__
 #define __RIP_MANANGER_H__
 
-#include "types.h"
+#include "srtypes.h"
 
 #define SRVERSION	"1.61.7"
 

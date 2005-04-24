@@ -1,7 +1,7 @@
 #ifndef __INET_H__
 #define __INET_H__
 
-#include "types.h"
+#include "srtypes.h"
 #include "socklib.h"
 #include "http.h"
 

@@ -1,7 +1,7 @@
 #ifndef __FILELIB_H__
 #define __FILELIB_H__
 
-#include "types.h"
+#include "srtypes.h"
 #if WIN32
 #include <windows.h>
 #endif

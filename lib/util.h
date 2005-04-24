@@ -1,7 +1,7 @@
 #ifndef __UTIL_H__
 #define __UTIL_H__
 
-#include "types.h"
+#include "srtypes.h"
 
 char *escape_string_alloc(const char *str);
 char *left_str(char *str, int len);

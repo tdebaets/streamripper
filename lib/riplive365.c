@@ -22,7 +22,7 @@
 
 #include "riplive365.h"
 #include "live365info.h"
-#include "types.h"
+#include "srtypes.h"
 #include "threadlib.h"
 
 /* Note; 

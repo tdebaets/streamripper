@@ -1,5 +1,5 @@
-#ifndef __SRIPPER_H__
-#define __SRIPPER_H__
+#ifndef __SRTYPES_H__
+#define __SRTYPES_H__
 
 ////////////////////////////////////////////////
 // Types
@@ -9,6 +9,23 @@
 #include <windows.h>
 #else
 #include <sys/types.h>
+#endif
+
+#if HAVE_INTTYPES_H
+# include <inttypes.h>
+#else
+# if HAVE_STDINT_H
+#  include <stdint.h>
+# endif
+#endif
+
+/* Note: uint32_t is standardized in ISO C99, so let's use that one */
+#if !HAVE_UINT32_T
+# if HAVE_U_INT32_T
+typedef u_int32_t uint32_t;
+# else
+typedef unsigned int uint32_t;
+# endif
 #endif
 
 #if HAVE_WCHAR_SUPPORT
@@ -45,9 +62,9 @@ typedef int error_code;
 //#define MAX_DROPSTRING_LEN      255
 
 #ifdef WIN32
-	#ifndef _WINSOCKAPI_
-		#define __DEFINE_TYPES__
-	#endif
+  #ifndef _WINSOCKAPI_
+    #define __DEFINE_TYPES__
+  #endif
 #endif
 
 #ifdef __DEFINE_TYPES__

@@ -20,7 +20,7 @@
 #include <string.h>
 
 //#include <windows.h>
-#include "types.h"
+#include "srtypes.h"
 #include "http.h"
 #include "socklib.h"
 #include "debug.h"

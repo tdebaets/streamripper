@@ -1,7 +1,7 @@
 #ifndef __LIVE365INFO_H__
 #define __LIVE365INFO_H__
 
-#include "types.h"
+#include "srtypes.h"
 
 #define MAX_SEARCH_STR	64
 #define	MAX_MEMBER_NAME	256

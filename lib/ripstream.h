@@ -1,7 +1,7 @@
 #ifndef __RIPLIB_H__
 #define __RIPLIB_H__
 
-#include "types.h"
+#include "srtypes.h"
 
 error_code
 ripstream_init (IO_GET_STREAM *in, 

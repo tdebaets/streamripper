@@ -22,7 +22,7 @@
 
 #include "util.h"
 #include "ripshout.h"
-#include "types.h"
+#include "srtypes.h"
 #include "debug.h"
 
 #define DEFAULT_BUFFER_SIZE	1024

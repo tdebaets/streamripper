@@ -43,7 +43,7 @@
 #include <string.h>
 #include "util.h"
 #include "relaylib.h"
-#include "types.h"
+#include "srtypes.h"
 #include "http.h"
 #include "socklib.h"
 #include "threadlib.h"
