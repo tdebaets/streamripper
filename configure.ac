@@ -117,6 +117,17 @@ AC_SUBST(VORBIS_LIBS)
 AC_SUBST(OGG_CFLAGS)
 AC_SUBST(OGG_LIBS)
 dnl -------- (coming soon) ------
+sr_have_ogg=no
+XIPH_PATH_OGG([
+  XIPH_PATH_VORBIS([
+    AC_SUBST(OGG_CFLAGS)
+    AC_SUBST(OGG_LIBS)
+    AC_SUBST(VORBIS_CFLAGS)
+    AC_SUBST(VORBIS_LIBS)
+    AC_DEFINE(HAVE_OGG_VORBIS,1,[Define to 1 if you have both the ogg and vorbis libraries installed])
+    ])
+  ])
+
 dnl XIPH_PATH_OGG([
 dnl     AC_SUBST(OGG_CFLAGS)
 dnl     AC_SUBST(OGG_LIBS)
