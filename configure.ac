@@ -128,22 +128,6 @@ XIPH_PATH_OGG([
     ])
   ])
 
-dnl XIPH_PATH_OGG([
-dnl     AC_SUBST(OGG_CFLAGS)
-dnl     AC_SUBST(OGG_LIBS)
-dnl     AC_DEFINE(HAVE_OGG,1,[Define to 1 if you have the ogg libraries installed])
-dnl     ],
-dnl     [AC_MSG_ERROR([must have Ogg Vorbis v1.0 or above installed])
-dnl     ])
-dnl XIPH_PATH_VORBIS([
-dnl     AC_SUBST(VORBIS_CFLAGS)
-dnl     AC_SUBST(VORBIS_LIBS)
-dnl     AC_DEFINE(HAVE_VORBIS,1,[Define to 1 if you have the vorbis libraries installed])
-dnl     ],
-dnl     [AC_MSG_ERROR([must have Ogg Vorbis v1.0 or above installed])
-dnl     ])
-
-
 dnl Check for semaphore library
 AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(sem, sem_init,))
 dnl Solaris needs this: -lrt

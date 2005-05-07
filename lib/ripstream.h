@@ -17,4 +17,3 @@ void ripstream_destroy();
 
 
 #endif //__RIPLIB__
-

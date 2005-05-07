@@ -21,9 +21,13 @@ ictest_SOURCES = \
 	lib/debug.c \
 	lib/ictest.c
 
+##	lib/cbuffer.c \
+
 streamripper_SOURCES = \
 	console/streamripper.c \
-	lib/cbuffer.c \
+	lib/cbuf2.c \
+	lib/cbuf2.h \
+	lib/srlist.h \
 	lib/debug.c \
 	lib/filelib.c \
 	lib/findsep.c \

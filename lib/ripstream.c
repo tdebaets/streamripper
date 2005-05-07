@@ -25,7 +25,7 @@
 #include <netinet/in.h>
 #endif
 #include "srtypes.h"
-#include "cbuffer.h"
+#include "cbuf2.h"
 #include "findsep.h"
 #include "util.h"
 #include "parse.h"
@@ -47,7 +47,7 @@ static error_code find_sep (u_long *pos1, u_long *pos2);
 static error_code end_track(u_long pos1, u_long pos2, TRACK_INFO* ti);
 static error_code start_track (TRACK_INFO* ti);
 
-static void compute_cbuffer_size (SPLITPOINT_OPTIONS *sp_opt,
+static void compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt,
 				  int bitrate, int meta_interval);
 static int ms_to_bytes (int ms, int bitrate);
 static int bytes_to_secs (unsigned int bytes);
@@ -56,7 +56,7 @@ static void clear_track_info (TRACK_INFO* ti);
 /*********************************************************************************
  * Private Vars
  *********************************************************************************/
-static CBUFFER			m_cbuffer;
+static CBUF2			m_cbuffer;
 static IO_GET_STREAM	*m_in;
 static TRACK_INFO m_old_track;	    /* The track that's being ripped now */
 static TRACK_INFO m_new_track;	    /* The track that's gonna start soon */
@@ -73,11 +73,11 @@ static int			m_ripchunk_size;
 static int			m_meta_interval;
 static unsigned int		m_cue_sheet_bytes = 0;
 
-static int			m_cbuffer_size;
-static int			m_mi_to_cbuffer_start;
-static int			m_mi_to_cbuffer_end;
-static int			m_sw_start_to_cbuffer_end;
-static int			m_sw_end_to_cbuffer_end;
+static int			m_cbuf2_size;
+static int			m_mi_to_cbuf2_start;
+static int			m_mi_to_cbuf2_end;
+static int			m_sw_start_to_cbuf2_end;
+static int			m_sw_end_to_cbuf2_end;
 static int			m_min_search_win;
 static int			m_drop_count;
 static int			m_track_count = 0;
@@ -159,8 +159,8 @@ ripstream_destroy()
     if (m_getbuffer) {free(m_getbuffer); m_getbuffer = NULL;}
     m_find_silence = -1;
     m_in = NULL;
-    m_cbuffer_size = 0;
-    cbuffer_destroy(&m_cbuffer);
+    m_cbuf2_size = 0;
+    cbuf2_destroy(&m_cbuffer);
 
     clear_track_info (&m_old_track);
     clear_track_info (&m_new_track);
@@ -174,7 +174,7 @@ ripstream_destroy()
 
 BOOL is_buffer_full()
 {
-    return (cbuffer_get_free(&m_cbuffer) - m_in->getsize) < m_in->getsize;
+    return (cbuf2_get_free(&m_cbuffer) - m_in->getsize) < m_in->getsize;
 }
 
 BOOL
@@ -265,8 +265,8 @@ ripstream_rip()
 	    else
 		m_bitrate = 24;
 	}
-        compute_cbuffer_size (m_sp_opt, m_bitrate, m_in->getsize);
-	ret = cbuffer_init(&m_cbuffer, m_in->getsize * m_cbuffer_size);
+        compute_cbuf2_size (m_sp_opt, m_bitrate, m_in->getsize);
+	ret = cbuf2_init(&m_cbuffer, m_in->getsize * m_cbuf2_size);
 	if (ret != SR_SUCCESS) return ret;
     }
 
@@ -295,11 +295,11 @@ ripstream_rip()
     }
 
     /* Copy the data into cbuffer */
-    ret = cbuffer_insert(&m_cbuffer, m_getbuffer, m_in->getsize);
+    ret = cbuf2_insert_chunk(&m_cbuffer, m_getbuffer, m_in->getsize);
     if (ret != SR_SUCCESS) {
 	debug_printf("start_track had bad return code %d\n", ret);
 	return ret;
-    }													
+    }
 
     /* Check for track change. */
     if (m_current_track.have_track_info && is_track_changed()) {
@@ -310,8 +310,8 @@ ripstream_rip()
 	copy_track_info (&m_new_track, &m_current_track);
 	relaylib_send_meta_data (m_current_track.raw_metadata);
 	if (m_find_silence < 0) {
-	    if (m_mi_to_cbuffer_end > 0) {
-		m_find_silence = m_mi_to_cbuffer_end;
+	    if (m_mi_to_cbuf2_end > 0) {
+		m_find_silence = m_mi_to_cbuf2_end;
 	    } else {
 		m_find_silence = 0;
 	    }
@@ -352,12 +352,12 @@ ripstream_rip()
     if (m_find_silence >= 0) m_find_silence --;
 
     /* If buffer almost full, dump extra to current song. */
-    if (cbuffer_get_free(&m_cbuffer) < m_in->getsize) {
+    if (cbuf2_get_free(&m_cbuffer) < m_in->getsize) {
         /* Extract only as much as needed */
-	extract_size = m_in->getsize - cbuffer_get_free(&m_cbuffer);
-        ret = cbuffer_extract(&m_cbuffer, m_getbuffer, extract_size);
+	extract_size = m_in->getsize - cbuf2_get_free(&m_cbuffer);
+        ret = cbuf2_extract(&m_cbuffer, m_getbuffer, extract_size);
         if (ret != SR_SUCCESS) {
-	    debug_printf("cbuffer_extract had bad return code %d\n", ret);
+	    debug_printf("cbuf2_extract had bad return code %d\n", ret);
 	    return ret;
 	}
 	/* Post to caller */
@@ -373,8 +373,8 @@ clip_to_cbuffer (int pos)
 {
     if (pos < 0) {
 	return 0;
-    } else if ((u_long)pos > cbuffer_get_used(&m_cbuffer)) {
-	return cbuffer_get_used(&m_cbuffer);
+    } else if ((u_long)pos > cbuf2_get_used(&m_cbuffer)) {
+	return cbuf2_get_used(&m_cbuffer);
     } else {
 	return (u_long) pos;
     }
@@ -392,12 +392,12 @@ find_sep (u_long *pos1, u_long *pos2)
     debug_printf ("*** Finding separation point\n");
 
     /* First, find the search region w/in cbuffer. */
-    sw_start = cbuffer_get_used(&m_cbuffer) - m_sw_start_to_cbuffer_end;
+    sw_start = cbuf2_get_used(&m_cbuffer) - m_sw_start_to_cbuf2_end;
     if (sw_start < 0) sw_start = 0;
-    sw_end = cbuffer_get_used(&m_cbuffer) - m_sw_end_to_cbuffer_end;
+    sw_end = cbuf2_get_used(&m_cbuffer) - m_sw_end_to_cbuf2_end;
     if (sw_end < 0) sw_end = 0;
     debug_printf ("search window (bytes): %d,%d,%d\n", sw_start, sw_end,
-		  cbuffer_get_used(&m_cbuffer));
+		  cbuf2_get_used(&m_cbuffer));
 
     if (m_content_type != CONTENT_TYPE_MP3) {
         /* If the search region is too small, take the middle. */
@@ -412,7 +412,7 @@ find_sep (u_long *pos1, u_long *pos2)
 	/* Otherwise, copy from search window into private buffer */
 	int bufsize = sw_end - sw_start;
 	char* buf = (u_char *)malloc(bufsize);
-	ret = cbuffer_peek_rgn (&m_cbuffer, buf, sw_start, bufsize);
+	ret = cbuf2_peek_rgn (&m_cbuffer, buf, sw_start, bufsize);
 	if (ret != SR_SUCCESS) {
 	    debug_printf ("PEEK FAILED: %d\n", ret);
 	    free(buf);
@@ -463,18 +463,18 @@ end_track(u_long pos1, u_long pos2, TRACK_INFO* ti)
 
     // First, dump the part only in prev track
     if (pos1 <= pos2) {
-	if ((ret = cbuffer_extract(&m_cbuffer, buf, pos1)) != SR_SUCCESS)
+	if ((ret = cbuf2_extract(&m_cbuffer, buf, pos1)) != SR_SUCCESS)
 	    goto BAIL;
 	// Next, skip past portion not in either track
 	if (pos1 < pos2) {
-	    if ((ret = cbuffer_fastforward(&m_cbuffer, pos2-pos1)) != SR_SUCCESS)
+	    if ((ret = cbuf2_fastforward(&m_cbuffer, pos2-pos1)) != SR_SUCCESS)
 		goto BAIL;
 	}
     } else {
-	if ((ret = cbuffer_extract(&m_cbuffer, buf, pos2)) != SR_SUCCESS)
+	if ((ret = cbuf2_extract(&m_cbuffer, buf, pos2)) != SR_SUCCESS)
 	    goto BAIL;
 	// Next, grab, but don't skip, past portion in both tracks
-	if ((ret = cbuffer_peek(&m_cbuffer, buf+pos2, pos1-pos2)) != SR_SUCCESS)
+	if ((ret = cbuf2_peek(&m_cbuffer, buf+pos2, pos1-pos2)) != SR_SUCCESS)
 	    goto BAIL;
     }
 
@@ -687,7 +687,7 @@ bytes_to_secs (unsigned int bytes)
 }
 
 static void
-compute_cbuffer_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate, 
+compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate, 
 		      int meta_interval)
 {
     u_long sws;
@@ -705,82 +705,82 @@ compute_cbuffer_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate,
     sws = sp_opt->xs_search_window_1 + sp_opt->xs_search_window_2;
 
     /* compute interval from mi to beginning of buffer */
-    m_mi_to_cbuffer_start = sp_opt->xs_offset - sp_opt->xs_search_window_1
+    m_mi_to_cbuf2_start = sp_opt->xs_offset - sp_opt->xs_search_window_1
 	+ sp_opt->xs_silence_length/2 - sp_opt->xs_padding_1;
-    debug_printf ("m_mi_to_cbuffer_start (ms): %d\n", m_mi_to_cbuffer_start);
+    debug_printf ("m_mi_to_cbuf2_start (ms): %d\n", m_mi_to_cbuf2_start);
 
     /* compute interval from mi to end of buffer */
-    m_mi_to_cbuffer_end = sp_opt->xs_offset + sp_opt->xs_search_window_2
+    m_mi_to_cbuf2_end = sp_opt->xs_offset + sp_opt->xs_search_window_2
 	- sp_opt->xs_silence_length/2 + sp_opt->xs_padding_2;
-    debug_printf ("m_mi_to_cbuffer_end (ms): %d\n", m_mi_to_cbuffer_end);
+    debug_printf ("m_mi_to_cbuf2_end (ms): %d\n", m_mi_to_cbuf2_end);
     debug_printf ("bitrate = %d, meta_inf = %d\n", bitrate, meta_interval);
 
-    debug_printf ("CBUFFER (ms): %d:%d\n",m_mi_to_cbuffer_start,
-	m_mi_to_cbuffer_end);
+    debug_printf ("CBUF2 (ms): %d:%d\n",m_mi_to_cbuf2_start,
+	m_mi_to_cbuf2_end);
 
     /* convert from ms to meta-inf blocks */
-    m_mi_to_cbuffer_start = ms_to_blocks (m_mi_to_cbuffer_start, bitrate, 0);
-    m_mi_to_cbuffer_end = ms_to_blocks (m_mi_to_cbuffer_end, bitrate, 1);
+    m_mi_to_cbuf2_start = ms_to_blocks (m_mi_to_cbuf2_start, bitrate, 0);
+    m_mi_to_cbuf2_end = ms_to_blocks (m_mi_to_cbuf2_end, bitrate, 1);
 
     /* Case 1 -- see readme (GCS) */
-    if (m_mi_to_cbuffer_start > 0) {
+    if (m_mi_to_cbuf2_start > 0) {
 	debug_printf ("CASE 1\n");
-        m_cbuffer_size = m_mi_to_cbuffer_end;
-	m_sw_end_to_cbuffer_end = sp_opt->xs_padding_2 
+        m_cbuf2_size = m_mi_to_cbuf2_end;
+	m_sw_end_to_cbuf2_end = sp_opt->xs_padding_2 
 	    - sp_opt->xs_silence_length/2;
 	/* GCS: Mar 27, 2004 - it's possible for padding to be less 
 	   than search window */
-	if (m_sw_end_to_cbuffer_end < 0) {
-	    m_sw_end_to_cbuffer_end = 0;
+	if (m_sw_end_to_cbuf2_end < 0) {
+	    m_sw_end_to_cbuf2_end = 0;
 	}
-	m_sw_start_to_cbuffer_end = m_sw_end_to_cbuffer_end + sws;
+	m_sw_start_to_cbuf2_end = m_sw_end_to_cbuf2_end + sws;
     }
 
     /* Case 2 */
-    else if (m_mi_to_cbuffer_end >= 0) {
+    else if (m_mi_to_cbuf2_end >= 0) {
 	debug_printf ("CASE 2\n");
-        m_cbuffer_size = m_mi_to_cbuffer_end - m_mi_to_cbuffer_start;
-	m_sw_end_to_cbuffer_end = sp_opt->xs_padding_2 
+        m_cbuf2_size = m_mi_to_cbuf2_end - m_mi_to_cbuf2_start;
+	m_sw_end_to_cbuf2_end = sp_opt->xs_padding_2 
 	    - sp_opt->xs_silence_length/2;
 	/* GCS: Mar 27, 2004 - it's possible for padding to be less 
 	   than search window */
-	if (m_sw_end_to_cbuffer_end < 0) {
-	    m_sw_end_to_cbuffer_end = 0;
+	if (m_sw_end_to_cbuf2_end < 0) {
+	    m_sw_end_to_cbuf2_end = 0;
 	}
-	m_sw_start_to_cbuffer_end = m_sw_end_to_cbuffer_end + sws;
+	m_sw_start_to_cbuf2_end = m_sw_end_to_cbuf2_end + sws;
     }
 
     /* Case 3 */
     else {
 	debug_printf ("CASE 3\n");
-        m_cbuffer_size = - m_mi_to_cbuffer_start;
-        m_sw_start_to_cbuffer_end = m_cbuffer_size 
+        m_cbuf2_size = - m_mi_to_cbuf2_start;
+        m_sw_start_to_cbuf2_end = m_cbuf2_size 
 	    + sp_opt->xs_silence_length/2 
 	    - sp_opt->xs_padding_1;
 	/* GCS: Mar 27, 2004 - it's possible for padding to be less 
 	   than search window */
-	if (m_sw_start_to_cbuffer_end > m_cbuffer_size) {
-	    m_sw_start_to_cbuffer_end = m_cbuffer_size;
+	if (m_sw_start_to_cbuf2_end > m_cbuf2_size) {
+	    m_sw_start_to_cbuf2_end = m_cbuf2_size;
 	}
-	m_sw_end_to_cbuffer_end = m_sw_start_to_cbuffer_end + sws;
+	m_sw_end_to_cbuf2_end = m_sw_start_to_cbuf2_end + sws;
     }
 
     /* Convert these from ms to bytes */
     debug_printf ("SEARCH WIN (ms): %d | %d | %d\n",
-		  m_sw_start_to_cbuffer_end,
-		  sws, m_sw_end_to_cbuffer_end);
-    m_sw_start_to_cbuffer_end = ms_to_bytes (m_sw_start_to_cbuffer_end, 
+		  m_sw_start_to_cbuf2_end,
+		  sws, m_sw_end_to_cbuf2_end);
+    m_sw_start_to_cbuf2_end = ms_to_bytes (m_sw_start_to_cbuf2_end, 
 	bitrate);
-    m_sw_end_to_cbuffer_end = ms_to_bytes (m_sw_end_to_cbuffer_end, bitrate);
+    m_sw_end_to_cbuf2_end = ms_to_bytes (m_sw_end_to_cbuf2_end, bitrate);
 
     /* Get minimum search window (in bytes) */
     m_min_search_win = sp_opt->xs_silence_length + (sws - sp_opt->xs_silence_length) / 2 ;
     m_min_search_win = ms_to_bytes (m_min_search_win, bitrate);
 
-    debug_printf ("CBUFFER (BLOCKS): %d:%d -> %d\n",m_mi_to_cbuffer_start,
-	m_mi_to_cbuffer_end, m_cbuffer_size);
+    debug_printf ("CBUF2 (BLOCKS): %d:%d -> %d\n",m_mi_to_cbuf2_start,
+	m_mi_to_cbuf2_end, m_cbuf2_size);
     debug_printf ("SEARCH WIN (bytes): %d | %d | %d\n",
-		  m_sw_start_to_cbuffer_end,
+		  m_sw_start_to_cbuf2_end,
 		  ms_to_bytes(sws,bitrate),
-		  m_sw_end_to_cbuffer_end);
+		  m_sw_end_to_cbuf2_end);
 }
