@@ -196,13 +196,15 @@ format_track_info (TRACK_INFO* ti, char* tag)
 	"RAW_MD: %s\n"
 	"ARTIST: %s\n"
 	"TITLE:  %s\n"
-	"ALBUM:  %s\n",
+	"ALBUM:  %s\n"
+	"SAVE:   %d\n",
 	tag,
         ti->have_track_info,
 	ti->raw_metadata,
 	ti->artist,
 	ti->title,
-	ti->album);
+	ti->album,
+	ti->save_track);
 }
 
 static void
@@ -213,6 +215,7 @@ clear_track_info (TRACK_INFO* ti)
     ti->artist[0] = 0;
     ti->title[0] = 0;
     ti->album[0] = 0;
+    ti->save_track = TRUE;
 }
 
 static void
@@ -223,6 +226,7 @@ copy_track_info (TRACK_INFO* dest, TRACK_INFO* src)
     strcpy (dest->artist, src->artist);
     strcpy (dest->title, src->title);
     strcpy (dest->album, src->album);
+    dest->save_track = src->save_track;
 }
 
 error_code

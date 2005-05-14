@@ -41,6 +41,7 @@
 #define PARSERULE_SKIP               0x01
 #define PARSERULE_GLOBAL             0x02
 #define PARSERULE_ICASE              0x04
+#define PARSERULE_SAVE               0x08
 
 
 struct parse_rule {
@@ -154,6 +155,10 @@ parse_flags (Parse_Rule* pr, char* flags)
 	    break;
 	case 'i':
 	    pr->flags |= PARSERULE_ICASE;
+	    break;
+	case 'r':
+	    pr->flags |= PARSERULE_SAVE;
+	    if (pr->cmd != PARSERULE_CMD_MATCH) return 0;
 	    break;
 	case 'A':
 	    tag = &pr->artist_idx;
@@ -340,10 +345,23 @@ parse_metadata (TRACK_INFO* ti)
     char query_string[MAX_TRACK_LEN];
     Parse_Rule* rulep;
 
+    /* The matching rules that restrict the writing of tracks to
+     * a file form a disjunction. That means if one rule matches 
+     * the track gets written.
+     * 
+     * By default we need to set ti->save_track to TRUE, since 
+     * there might be no restrictions at all. That's why we need 
+     * this additional variable "save_track_matched" to show that
+     * when matching a rule if a previous rule already matched 
+     * because we may not set ti->save_track to FALSE then.
+     */
+    BOOL save_track_matched = FALSE;
+
     ti->have_track_info = 0;
     ti->artist[0] = 0;
     ti->title[0] = 0;
     ti->album[0] = 0;
+    ti->save_track = TRUE;
     if (!ti->raw_metadata[0]) {
 	return;
     }
@@ -365,8 +383,19 @@ parse_metadata (TRACK_INFO* ti)
 		}
 		/* GCS FIX: We need to return to the 
 		    caller that the metadata should be dropped. */
+		ti->save_track = FALSE;
 		ti->have_track_info = 0;
 		return;
+	    } else if (rulep->flags & PARSERULE_SAVE) {
+		rc = regexec(rulep->reg, query_string, 0, NULL, eflags);
+		if (rc != 0) {
+		    /* Didn't match rule. */
+		    if (!save_track_matched)
+		        ti->save_track = FALSE;
+		    continue;
+		}
+		ti->save_track = TRUE;
+		save_track_matched = TRUE;
 	    } else {
     		eflags = 0;
 		rc = regexec(rulep->reg, query_string, MAX_SUBMATCHES+1, pmatch, eflags);

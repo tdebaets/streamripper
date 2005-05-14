@@ -9,6 +9,11 @@
 # The trailing "e" means drop the metadata
 m/^A suivre:/e
 
+# Only save tracks that contain the given expression
+# The leading "m" says this is a match rule
+# The trailing "r" means restrict to matching metadata
+m/[Ff]unk/r
+
 # Strip off anything like "- Mp3Pro" from the end of the string
 # The leading "s" says this is a substitution rule
 # The trailing "i" means case insensitive matching

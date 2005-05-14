@@ -92,6 +92,7 @@ static IO_GET_STREAM		m_ripin;		// Raw stream data + song information
 static void			(*m_status_callback)(int message, void *data);
 static BOOL			m_ripping = FALSE;
 static u_long			m_bytes_ripped;
+static BOOL			m_write_data = TRUE;	// Should we actually write to a file or not
 static HSEM			m_started_sem;	// to prevent deadlocks when ripping is stopped before its
 													// started.
 
@@ -229,10 +230,11 @@ rip_manager_start_track (TRACK_INFO* ti, int track_count)
 
     /* GCS FIX */
     char* trackname = ti->raw_metadata;
+    m_write_data = ti->save_track;
 
     debug_printf("rip_manager_start_track: %s\n", trackname);
 
-    if ((ret = filelib_start(trackname)) != SR_SUCCESS) {
+    if (m_write_data && (ret = filelib_start(trackname)) != SR_SUCCESS) {
         return ret;
     }
 
@@ -256,7 +258,9 @@ rip_manager_end_track(TRACK_INFO* ti)
     char fullpath[SR_MAX_PATH];
 
     /* GCS FIX */
-    filelib_end(ti->raw_metadata, GET_OVER_WRITE_TRACKS(m_options.flags), GET_TRUNCATE_DUPS(m_options.flags), fullpath, m_options.szPrefix);
+    if (m_write_data)
+        filelib_end(ti->raw_metadata, GET_OVER_WRITE_TRACKS(m_options.flags), GET_TRUNCATE_DUPS(m_options.flags), fullpath, m_options.szPrefix);
+
     post_status(0);
     m_status_callback(RM_TRACK_DONE, (void*)fullpath);
 
@@ -266,7 +270,8 @@ rip_manager_end_track(TRACK_INFO* ti)
 error_code
 rip_manager_put_data(char *buf, int size)
 {
-    filelib_write_track(buf, size);
+    if (m_write_data)
+        filelib_write_track(buf, size);
 
     m_ripinfo.filesize += size;
     m_bytes_ripped += size;

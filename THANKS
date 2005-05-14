@@ -11,6 +11,8 @@ memory crashes.
 connections from clients that don't want metadata.
 "9EUvY5gQPB4=" patch for id3 genre.
 "bd" <bd a@t bc-bd.org> for -L flag that creates a relay server pls file.
+"Albert Bachmann" <lbert.bachmann a@t gmx.de> For new metadata rule
+parsing to restrict file output.
 
 THANKS (v.1.60.X)
 ---------------------
