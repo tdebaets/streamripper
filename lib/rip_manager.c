@@ -34,9 +34,11 @@
 
 #include <errno.h>
 #include <sys/types.h>
+#if !defined (WIN32)
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif
 
 #include "filelib.h"
 #include "socklib.h"

@@ -22,7 +22,7 @@
 #include <assert.h>
 #include <windows.h>
 #include "resource.h"
-#include "types.h"
+#include "srtypes.h"
 #include "rip_manager.h"
 #include "winamp.h"
 #include "gen.h"

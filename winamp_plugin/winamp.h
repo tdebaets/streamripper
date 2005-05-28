@@ -1,7 +1,7 @@
 #ifndef __WINAMP_H__
 #define __WINAMP_H__
 
-#include "types.h"
+#include "srtypes.h"
 
 #define SKIN_PATH "Skins\\SrSkins\\"
 

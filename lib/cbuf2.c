@@ -156,7 +156,7 @@ cbuf2_insert (CBUF2 *buffer, const char *items, u_long count)
 error_code
 cbuf2_insert_chunk (CBUF2 *buffer, const char *items, u_long count)
 {
-    cbuf2_insert (buffer, items, count);
+    return cbuf2_insert (buffer, items, count);
     /* Add metadata to list */
 }
 

@@ -165,11 +165,11 @@ SOURCE=.\winamp.h
 # PROP Default_Filter "ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 # Begin Source File
 
-SOURCE=.\bob.ico
+SOURCE=..\..\..\sripper\winamp_plugin\bob.ico
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\..\sripper\winamp_plugin\bob.ico
+SOURCE=.\bob.ico
 # End Source File
 # Begin Source File
 
@@ -197,11 +197,11 @@ SOURCE=.\sricon.ico
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\lib\cbuffer.c
+SOURCE=..\lib\cbuf2.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\lib\cbuffer.h
+SOURCE=..\lib\cbuf2.h
 # End Source File
 # Begin Source File
 
@@ -246,6 +246,10 @@ SOURCE=..\lib\inet.c
 # Begin Source File
 
 SOURCE=..\lib\inet.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\list.h
 # End Source File
 # Begin Source File
 
@@ -305,15 +309,15 @@ SOURCE=..\lib\socklib.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\lib\srtypes.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\lib\threadlib.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\lib\threadlib.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\lib\types.h
 # End Source File
 # Begin Source File
 

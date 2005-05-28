@@ -104,11 +104,11 @@ SOURCE=..\console\streamripper.c
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\lib\cbuffer.c
+SOURCE=..\lib\cbuf2.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\lib\cbuffer.h
+SOURCE=..\lib\cbuf2.h
 # End Source File
 # Begin Source File
 
@@ -157,6 +157,10 @@ SOURCE=..\lib\inet.c
 # Begin Source File
 
 SOURCE=..\lib\inet.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\list.h
 # End Source File
 # Begin Source File
 

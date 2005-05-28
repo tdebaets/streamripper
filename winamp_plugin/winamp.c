@@ -19,7 +19,7 @@
 #include <windows.h>
 #include <stdio.h>
 
-#include "types.h"
+#include "srtypes.h"
 #include "winamp.h"
 
 /*********************************************************************************

@@ -3,6 +3,10 @@
 
 /* GCS: I ripped this off from the linux kernel */
 
+#if defined (WIN32)
+#define inline __inline
+#endif
+
 /*
  * Simple doubly linked list implementation.
  *
