@@ -76,7 +76,7 @@ static Parse_Rule m_default_rule_list[] = {
 	PARSERULE_ICASE,
 	1, 2, 0, 0,
 	0, 
-	"^[[:space:]]*([^-]*)[[:space:]]*-[[:space:]]*(.*)[[:space:]]*$",
+	"^[[:space:]]*([^-]*[^-[:space:]])[[:space:]]*-[[:space:]]*(.*)[[:space:]]*$",
 	""
     },
     { 0x00, 
@@ -232,7 +232,7 @@ init_metadata_parser (char* rules_file)
     FILE* fp;
     int ri;     /* Rule index */
 
-    if (!rules_file) {
+    if (!rules_file || !*rules_file) {
 	use_default_rules ();
 	return;
     }
