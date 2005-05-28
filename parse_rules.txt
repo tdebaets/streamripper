@@ -4,6 +4,10 @@
 
 # Lines that start with '#' are comments, and blank lines are ignored.
 
+#################################################
+### BEGIN: NOT YET IMPLEMENTED
+#################################################
+
 # Ignore metadata that begins with "A suivre"
 # The leading "m" says this is a match rule
 # The trailing "e" means drop the metadata
@@ -11,8 +15,23 @@ m/^A suivre:/e
 
 # Only save tracks that contain the given expression
 # The leading "m" says this is a match rule
-# The trailing "r" means restrict to matching metadata
-m/[Ff]unk/r
+# The trailing "s" means that the track should be saved
+m/[Ff]unk/s
+
+# Only save tracks that contain the given expression
+# The leading "m" says this is a match rule
+# The trailing "x" means that the track should not be saved (excluded)
+m/advertisement/x
+
+# The first m//e, m//s or m//x rule that matches determines the 
+# action that is performed.  If none match, then by default the file 
+# will be saved.  If you prefer having the default being that the 
+# files aren't saved, include the following as the last rule
+m//x
+
+#################################################
+### END: NOT YET IMPLEMENTED
+#################################################
 
 # Strip off anything like "- Mp3Pro" from the end of the string
 # The leading "s" says this is a substitution rule
