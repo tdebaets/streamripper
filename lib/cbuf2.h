@@ -26,5 +26,7 @@ u_long		cbuf2_get_free(CBUF2 *buffer);
 u_long 		cbuf2_get_used(CBUF2 *buffer);
 u_long		cbuf2_get_size(CBUF2 *buffer);
 error_code  cbuf2_peek_rgn (CBUF2 *buffer, char *out_buf, u_long start, u_long length);
+error_code
+cbuf2_insert_chunk (CBUF2 *buffer, const char *items, u_long count);
 
 #endif

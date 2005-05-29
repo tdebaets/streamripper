@@ -27,7 +27,7 @@ streamripper_SOURCES = \
 	console/streamripper.c \
 	lib/cbuf2.c \
 	lib/cbuf2.h \
-	lib/srlist.h \
+	lib/list.h \
 	lib/debug.c \
 	lib/filelib.c \
 	lib/findsep.c \
