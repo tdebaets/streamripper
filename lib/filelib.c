@@ -52,6 +52,10 @@ static void trim_mp3_suffix (char *filename, char* out);
 static error_code filelib_open_for_write (FHANDLE* fp, char *filename);
 static void set_show_filenames (void);
 static int is_absolute_path (char* fn);
+static error_code set_output_directories_old ();
+static error_code set_output_directories_new ();
+static error_code sr_getcwd (char* dirbuf);
+static char *add_trailing_slash(char *str);
 
 /*********************************************************************************
  * Private Vars
@@ -85,10 +89,20 @@ mkdir_if_needed(char *str)
 }
 
 error_code
-filelib_init(BOOL do_individual_tracks,
-	     BOOL do_count, BOOL keep_incomplete, BOOL do_show_file,
-	     int content_type, char* show_file_name)
+filelib_init (BOOL do_individual_tracks,
+	      BOOL do_count,
+	      BOOL keep_incomplete,
+	      BOOL do_show_file,
+	      int content_type,
+	      char* show_file_name,
+	      char* output_directory,
+	      char* output_pattern,
+	      int get_separate_dirs,
+	      int get_date_stamp,
+	      char* icy_name)
 {
+    error_code ret;
+
     m_file = INVALID_FHANDLE;
     m_show_file = INVALID_FHANDLE;
     m_cue_file = INVALID_FHANDLE;
@@ -126,8 +140,8 @@ filelib_init(BOOL do_individual_tracks,
 		return SR_ERROR_DIR_PATH_TOO_LONG;
 	    }
 	} else {
-	    char datebuf[50];												\
-	    time_t now = time(NULL);										\
+	    char datebuf[50];
+	    time_t now = time(NULL);
 	    strftime (datebuf, 50, "%Y_%m_%d_%H_%M_%S", localtime(&now));
 	    sprintf (m_show_name,"sr_program_%s",datebuf);
 	}
@@ -141,24 +155,77 @@ filelib_init(BOOL do_individual_tracks,
 	    first write (until above problem is fixed).  */
     }
 
+    /* Get the path to the "parent" directory.  This is the directory
+       that contains the incomplete dir and the show files.
+       It might not contain the individual files if an output_pattern
+       was specified. */
+    if (output_pattern && *output_pattern) {
+	set_output_directories_new (output_pattern);
+    } else {
+	set_output_directories_old (output_directory,
+				    get_separate_dirs,
+				    get_date_stamp,
+				    icy_name);
+    }
+
+    /* Finally, compute the amount of remaining path length for the 
+     * music filenames */
+    add_trailing_slash(m_incomplete_directory);
+    m_max_filename_length = SR_MAX_PATH - strlen(m_incomplete_directory);
+
     return SR_SUCCESS;
 }
 
-char* 
-filelib_get_output_directory ()
+/* This is the new way, using the -D flag and the stream name. */
+error_code 
+set_output_directories_new (char* output_pattern)
 {
-    return m_output_directory;
+    char bp[SR_MAX_PATH];
+    char* pp = output_pattern;
+    int bi = 0;
+    int pi = 0;
+
+    /* Parse & substitute the output pattern */
+    while (bi < SR_MAX_PATH) {
+	if (pp[pi] == '\0') {
+	    break;
+	}
+	if (ISSLASH(pp[pi])) {
+	    
+	}
+	if (pp[pi] != '%') {
+	    bp[bi++] = pp[pi++];
+	    continue;
+	}
+	switch (pp[pi+1]) {
+	case '%':
+	    bp[bi++]='%';
+	    pi+=2;
+	    continue;
+	case '\0':
+	default:
+	    bp[bi++]='%';
+	    pi++;
+	    continue;
+	}
+    }
+
+    return SR_SUCCESS;
 }
 
-error_code
-filelib_set_output_directory (char* output_directory, 
-	int get_separate_dirs, int get_date_stamp, char* icy_name)
+/* This is the old way, using the -d & -s flags and the stream name. */
+error_code 
+set_output_directories_old (char* output_directory,
+			    int get_separate_dirs,
+			    int get_date_stamp,
+			    char* icy_name
+			    )
 {
+    error_code ret;
     char base_dir[SR_MAX_PATH];
     char *stripped_icy_name;
     unsigned int base_dir_len = 0;
 
-    /* First, get full path to base directory */
     if (output_directory && *output_directory) {
 #if defined (WIN32)
 	if (_fullpath (base_dir, output_directory, SR_MAX_PATH) == NULL) {
@@ -183,17 +250,9 @@ filelib_set_output_directory (char* output_directory,
 #endif
     } else {
 	/* If no output dir specified, the base dir is pwd */
-#if defined (WIN32)
-	if (!_getcwd (base_dir, SR_MAX_PATH)) {
-	    return SR_ERROR_DIR_PATH_TOO_LONG;
-	}
-#else
-	if (!getcwd (base_dir, SR_MAX_PATH)) {
-	    debug_printf ("getcwd returned zero?\n");
-	    return SR_ERROR_DIR_PATH_TOO_LONG;
-	}
-	debug_printf("Had null output dir\n");
-#endif
+	debug_printf("No output directory specified.\n");
+	ret = sr_getcwd (base_dir);
+	if (!ret) return ret;
     }
     add_trailing_slash (base_dir);
 
@@ -269,14 +328,84 @@ filelib_set_output_directory (char* output_directory,
 	    mkdir_if_needed(m_incomplete_directory);
 	}
     }
-    /* Finally, compute the amount of remaining path length for the 
-     * music filenames */
-    add_trailing_slash(m_incomplete_directory);
-    m_max_filename_length = SR_MAX_PATH - strlen(m_incomplete_directory);
-
     return SR_SUCCESS;
 }
 
+static char*
+add_trailing_slash (char *str)
+{
+#if defined (commentout)
+#if WIN32
+    if (str[strlen(str)-1] != '\\')
+	strcat(str, "\\");
+#else
+    if (str[strlen(str)-1] != '/')
+	strcat(str, "/");
+#endif
+#endif
+
+    if (!ISSLASH(str[strlen(str)-1]))
+	strcat (str, PATH_SLASH_STR);
+
+    return str;
+}
+
+static error_code 
+pathsplit (char* dirname,
+	   char* fullname,
+	   char* device,
+	   char* path,
+	   char* file
+	   )
+{
+    error_code ret;
+    int di = 0;
+
+    if (HAS_DEVICE(dirname)) {
+	device[0] = dirname[0];
+	device[1] = dirname[1];
+	device[2] = '\0';
+	di = 2;
+    } else {
+	device[0] = '\0';
+    }
+
+    if (!IS_ABSOLUTE_PATH(&dirname[di])) {
+	ret = sr_getcwd (path);
+	if (ret != SR_SUCCESS) return ret;
+	/* GCS FIX: path might be too long?? */
+	add_trailing_slash (path);
+    } else {
+	*path = 0;
+    }
+    return SR_SUCCESS;
+}
+
+static error_code 
+sr_getcwd (char* dirbuf)
+{
+#if defined (WIN32)
+    if (!_getcwd (dirbuf, SR_MAX_PATH)) {
+	debug_printf ("getcwd returned zero?\n");
+	return SR_ERROR_DIR_PATH_TOO_LONG;
+    }
+#else
+    if (!getcwd (dirbuf, SR_MAX_PATH)) {
+	debug_printf ("getcwd returned zero?\n");
+	return SR_ERROR_DIR_PATH_TOO_LONG;
+    }
+#endif
+    return SR_SUCCESS;
+}
+
+/* GCS Testing... I don't think this function is used any more. */
+#if defined (commentout)
+char* 
+filelib_get_output_directory ()
+{
+    return m_output_directory;
+}
+#endif
 
 void close_file(FHANDLE* fp)
 {
@@ -358,9 +487,10 @@ filelib_start(char *filename)
     if (!m_do_individual_tracks) return SR_SUCCESS;
 
     close_file(&m_file);
-	
+
     trim_filename(filename, tfile);
-    sprintf(newfile, m_filename_format, m_incomplete_directory, tfile, m_extension);
+    sprintf (newfile, m_filename_format, m_incomplete_directory,
+	     tfile, m_extension);
     temp = strlen(newfile);
     temp = strlen(tfile);
     temp = SR_MAX_PATH;
@@ -387,7 +517,8 @@ filelib_start(char *filename)
 // Moves the file from incomplete to complete directory
 // fullpath is an output parameter
 error_code
-filelib_end(char *filename, BOOL over_write_existing, BOOL truncate_dup, char *fullpath, char* a_pszPrefix)
+filelib_end (char *filename, BOOL over_write_existing, BOOL truncate_dup, 
+	     char *fullpath, char* a_pszPrefix)
 {
     BOOL ok_to_write = TRUE;
     BOOL file_exists = FALSE;
@@ -398,7 +529,7 @@ filelib_end(char *filename, BOOL over_write_existing, BOOL truncate_dup, char *f
 
     if (!m_do_individual_tracks) return SR_SUCCESS;
 
-    trim_filename(filename, tfile);
+    trim_filename (filename, tfile);
     close_file (&m_file);
 
     // Make new paths for the old path and new
@@ -407,9 +538,10 @@ filelib_end(char *filename, BOOL over_write_existing, BOOL truncate_dup, char *f
     sprintf(oldfile, m_filename_format, m_incomplete_directory, tfile, m_extension);
 
     if (m_count != -1)
-        sprintf(newfile, "%s%s%03d_%s%s", m_output_directory, a_pszPrefix, m_count, tfile, m_extension);
+        sprintf (newfile, "%s%s%03d_%s%s", m_output_directory, a_pszPrefix, 
+		 m_count, tfile, m_extension);
     else
-	sprintf(newfile, m_filename_format, m_output_directory, tfile, m_extension);
+	sprintf (newfile, m_filename_format, m_output_directory, tfile, m_extension);
 
     // If we are over writing existing tracks
     if (!over_write_existing) {
@@ -419,8 +551,8 @@ filelib_end(char *filename, BOOL over_write_existing, BOOL truncate_dup, char *f
 #if WIN32
 	OutputDebugString(newfile);
 	test_file = CreateFile(newfile, GENERIC_WRITE, FILE_SHARE_READ, 
-				NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 
-				NULL);
+			       NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 
+			       NULL);
 #else
 	test_file = open(newfile, O_WRONLY | O_EXCL);
 #endif
@@ -551,7 +683,9 @@ filelib_shutdown()
      * We're just calling this to zero out 
      * the vars, it's not really nessasary.
      */
+#if defined (commentout)
     filelib_init(TRUE, FALSE, TRUE, FALSE, CONTENT_TYPE_MP3, 0);
+#endif
 }
 
 error_code

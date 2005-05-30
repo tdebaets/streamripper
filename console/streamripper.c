@@ -236,6 +236,7 @@ void print_usage()
     fprintf(stderr, "      -a [file]      - Rip to single file, default name is timestamped\n");
     fprintf(stderr, "      -A             - Don't write individual tracks\n");
     fprintf(stderr, "      -d dir         - The destination directory\n");
+    fprintf(stderr, "      -D pattern     - Write files using specified pattern\n");
     fprintf(stderr, "      -s             - Don't create a directory for each stream\n");
     fprintf(stderr, "      -r [[ip:]port] - Create relay server on base ip:port, default port 8000\n");
     fprintf(stderr, "      -R #connect    - Max connections to relay, default 1, -R 0 is no limit\n");
@@ -290,7 +291,7 @@ void parse_arguments(int argc, char **argv)
 	if (argv[i][0] != '-')
 	    continue;
 
-	c = strchr("dRplufmkIwPML", argv[i][1]);
+	c = strchr("dDfIklLmMpPRuw", argv[i][1]);
         if (c != NULL) {
             if ((i == (argc-1)) || (argv[i+1][0] == '-')) {
 		fprintf(stderr, "option %s requires an argument\n", argv[i]);
@@ -314,6 +315,10 @@ void parse_arguments(int argc, char **argv)
 	case 'd':
 	    i++;
 	    strncpy(m_opt.output_directory, argv[i], SR_MAX_PATH);
+	    break;
+	case 'D':
+	    i++;
+	    strncpy(m_opt.output_pattern, argv[i], SR_MAX_PATH);
 	    break;
 	case 'f':
 	    i++;

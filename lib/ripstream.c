@@ -236,7 +236,7 @@ ripstream_rip()
     int real_ret = SR_SUCCESS;
     u_long extract_size;
 
-    /* get the data & title */
+    /* get the data & meta-data from the stream */
     debug_printf ("RIPSTREAM_RIP: get_stream_data:%p\n",m_in);
     ret = m_in->get_stream_data(m_getbuffer, m_current_track.raw_metadata);
     if (ret != SR_SUCCESS) {
@@ -517,7 +517,6 @@ start_track (TRACK_INFO* ti)
 #define HEADER_SIZE 1600
     int ret;
     int i;
-    //ID3V2head id3v2header;
     ID3V2frame id3v2frame1;
     ID3V2frame id3v2frame2;
     char comment[1024] = "Ripped with Streamripper";
@@ -544,27 +543,9 @@ start_track (TRACK_INFO* ti)
     /* Oddsock's ID3 stuff, (oddsock@oddsock.org) */
     if (m_addID3tag) {
 	memset(bigbuf, '\000', sizeof(bigbuf));
-	//memset(&id3v2header, '\000', sizeof(id3v2header));
 	memset(&id3v2frame1, '\000', sizeof(id3v2frame1));
 	memset(&id3v2frame2, '\000', sizeof(id3v2frame2));
 
-#if defined (commentout)
-	strncpy(id3v2header.tag, "ID3", 3);
-	id3v2header.size = 1599;
-	framesize = htonl(id3v2header.size);
-	id3v2header.version = 3;
-	buf[0] = 3;
-	buf[1] = '\000';
-	ret = rip_manager_put_data((char *)&(id3v2header.tag), 3);
-	if (ret != SR_SUCCESS) return ret;
-	ret = rip_manager_put_data((char *)&buf, 2);
-	if (ret != SR_SUCCESS) return ret;
-	ret = rip_manager_put_data((char *)&(id3v2header.flags), 1);
-	if (ret != SR_SUCCESS) return ret;
-	ret = rip_manager_put_data((char *)&(framesize), sizeof(framesize));
-	if (ret != SR_SUCCESS) return ret;
-	sent += sizeof(id3v2header);
-#endif
 	/* Write header */
 	ret = rip_manager_put_data(header1, 6);
 	if (ret != SR_SUCCESS) return ret;

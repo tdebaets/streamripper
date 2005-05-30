@@ -17,7 +17,8 @@
 #define MAX_PREFIX_LEN 50
 
 // Messages for status_callback hook in rip_manager_init()
-// used for notifing to client whats going on *DO NOT* call rip_mananger_start or rip_mananger_stop from
+// used for notifing to client whats going on *DO NOT* call 
+// rip_mananger_start or rip_mananger_stop from
 // these functions!!! it will cause a deadlock
 #define RM_UPDATE	0x01		// returns a pointer RIP_MANAGER_INFO struct
 #define RM_ERROR	0x02		// returns the error code
@@ -25,13 +26,14 @@
 #define RM_STARTED	0x04		// NULL
 #define RM_NEW_TRACK	0x05		// Name of the new track
 #define RM_TRACK_DONE	0x06		// pull path of the track completed
+// RM_OUTPUT_DIR is now OBSOLETE
 #define RM_OUTPUT_DIR	0x07		// Full path of the output directory
 
 
 // The following are the possible status values for RIP_MANAGER_INFO
 #define RM_STATUS_BUFFERING		0x01
 #define RM_STATUS_RIPPING		0x02
-#define RM_STATUS_RECONNECTING	0x03
+#define RM_STATUS_RECONNECTING		0x03
 
 
 typedef struct RIP_MANAGER_INFOst
@@ -99,6 +101,7 @@ typedef struct RIP_MANAGER_OPTIONSst
     char url[MAX_URL_LEN];		// url of the stream to connect to
     char proxyurl[MAX_URL_LEN];		// url of a http proxy server, '\0' otherwise
     char output_directory[SR_MAX_PATH];	// base directory to output files too
+    char output_pattern[SR_MAX_PATH];	// filename pattern when ripping with splitting
     char output_file[SR_MAX_PATH];	// filename base when ripping without splitting
     char if_name[SR_MAX_PATH];		// local interface to use
     char rules_file[SR_MAX_PATH];       // file that holds rules for parsing metadata

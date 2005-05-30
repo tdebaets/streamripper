@@ -383,9 +383,12 @@ void RipCallback(int message, void *data)
     case RM_STARTED:
 	stop_button_enable();
 	break;
+#if defined (commentout)
+    /* GCS: This no longer applies as of adding the filename patterns */
     case RM_OUTPUT_DIR:
 	strcpy(m_output_dir, (char*)data);
     }
+#endif
 }
 
 

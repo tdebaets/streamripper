@@ -156,6 +156,40 @@ Content-Type: audio/mpeg
 ---------
 
 
+* New filename output stuff
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pattern specifiers you can use:
+
+%S     Stream
+%A     Artist
+%T     Title
+%a     Album
+%D     Date and time (per song)
+%d     Date and time (per execution)
+%Q     Sequence number (parsing files to find it)
+%q     Sequence number (starting from zero)
+%V     Song version number (?)
+%%     Percent sign
+
+The default pattern is:
+
+%S/%A - %T
+
+Extensions, such as ".mp3", ".aac", ".ogg", or ".nsv" are 
+automatically appended.
+
+Incomplete directory will be the most deeply nested directory 
+that doesn't depend on the pattern specifiers %A, %T, %a, %D, 
+%q, or %Q.  The directory may depend on %d and %S.
+
+Thus, the default incomplete directory is:
+
+%S/incomplete
+
+The filename within the incomplete directory is ??
+
+
 * How to upgrade the version number
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

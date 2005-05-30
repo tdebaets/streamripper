@@ -60,7 +60,6 @@ int	word_count(char *str);
 char	*subnstr_until(const char *str, char *until, char *newstr, int maxlen);
 char	*strip_invalid_chars(char *str);
 char	*format_byte_size(char *str, long size);
-char	*add_trailing_slash(char *str);
 void	trim(char *str);
 void 	null_printf(char *s, ...);
 
@@ -73,20 +72,6 @@ const char* codeset_relay;
 const char* codeset_id3;
 const char* codeset_filesys;
 
-
-char*
-add_trailing_slash (char *str)
-{
-#if WIN32
-    if (str[strlen(str)-1] != '\\')
-	strcat(str, "\\");
-#else
-    if (str[strlen(str)-1] != '/')
-	strcat(str, "/");
-#endif
-
-    return str;
-}
 
 char *subnstr_until(const char *str, char *until, char *newstr, int maxlen)
 {
@@ -608,45 +593,6 @@ strip_invalid_chars_no_wchar(char *str)
     }
     *newstr = '\0';
     return str;
-}
-
-void
-parse_artist_title (char* artist, char* title, char* album, 
-		    int bufsize, char* trackname)
-{
-    char *p1,*p2;
-
-    /* Parse artist, album & title. Look for a '-' in the track name,
-     * i.e. Moby - sux0rs (artist/track)
-     */
-    memset(album, '\000', bufsize);
-    memset(artist, '\000', bufsize);
-    memset(title, '\000', bufsize);
-    p1 = strchr(trackname, '-');
-    if (p1) {
-	strncpy(artist, trackname, p1-trackname);
-	p1++;
-	p2 = strchr(p1, '-');
-	if (p2) {
-	    if (*p1 == ' ') {
-		p1++;
-	    }
-	    strncpy(album, p1, p2-p1);
-	    p2++;
-	    if (*p2 == ' ') {
-		p2++;
-	    }
-	    strcpy(title, p2);
-	} else {
-	    if (*p1 == ' ') {
-		p1++;
-	    }
-	    strcpy(title, p1);
-	}
-    } else {
-        strcpy(artist, trackname);
-        strcpy(title, trackname);
-    }
 }
 
 char* 

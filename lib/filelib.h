@@ -8,8 +8,10 @@
 
 #if WIN32
 #define PATH_SLASH '\\'
+#define PATH_SLASH_STR "\\"
 #else
 #define PATH_SLASH '/'
+#define PATH_SLASH_STR "/"
 #endif
 
 
@@ -19,21 +21,22 @@
    Licence: GNU LGPL */
 /* ISSLASH(C)           tests whether C is a directory separator character.
    IS_ABSOLUTE_PATH(P)  tests whether P is an absolute path.  If it is not,
-                        it may be concatenated to a directory pathname.
- */
+                        it may be concatenated to a directory pathname. */
 #if defined _WIN32 || defined __WIN32__ || defined __EMX__ || defined __DJGPP__
   /* Win32, OS/2, DOS */
 # define ISSLASH(C) ((C) == '/' || (C) == '\\')
 # define HAS_DEVICE(P) \
     ((((P)[0] >= 'A' && (P)[0] <= 'Z') || ((P)[0] >= 'a' && (P)[0] <= 'z')) \
      && (P)[1] == ':')
-# define IS_ABSOLUTE_PATH(P) (ISSLASH ((P)[0]) || HAS_DEVICE (P))
+/* GCS: This is not correct, because it could be c:foo which is relative */
+/* # define IS_ABSOLUTE_PATH(P) (ISSLASH ((P)[0]) || HAS_DEVICE (P)) */
+# define IS_ABSOLUTE_PATH(P) ISSLASH ((P)[0])
 #else
   /* Unix */
 # define ISSLASH(C) ((C) == '/')
+# define HAS_DEVICE(P) (0)
 # define IS_ABSOLUTE_PATH(P) ISSLASH ((P)[0])
 #endif
-
 
 
 #if defined (commentout)
@@ -58,10 +61,24 @@
 #define SR_MAX_BASE_W_DATE (SR_MAX_BASE-SR_MIN_COMPLETE_W_DATE)
 
 
+error_code
+filelib_init (BOOL do_individual_tracks,
+	      BOOL do_count,
+	      BOOL keep_incomplete,
+	      BOOL do_show_file,
+	      int content_type,
+	      char* show_file_name,
+	      char* output_directory,
+	      char* output_pattern,
+	      int get_separate_dirs,
+	      int get_date_stamp, 
+	      char* icy_name);
+#if defined (commentout)
 error_code filelib_init(BOOL do_individual_tracks,
 			BOOL do_count, BOOL keep_incomplete, 
 			BOOL do_single_file, 	     
 			int content_type, char* show_file_name);
+#endif
 error_code filelib_start(char *filename);
 error_code filelib_end(char *filename, BOOL over_write_existing, 
 		       BOOL truncate_dup,
@@ -70,9 +87,11 @@ error_code filelib_end(char *filename, BOOL over_write_existing,
 error_code filelib_write_track(char *buf, u_long size);
 error_code filelib_write_show(char *buf, u_long size);
 void filelib_shutdown();
+#if defined (commentout)
 error_code filelib_set_output_directory (char* output_directory, 
 		int get_separate_dirs, int get_date_stamp, char* icy_name);
 char* filelib_get_output_directory ();
+#endif
 error_code filelib_remove(char *filename);
 error_code filelib_write_cue(TRACK_INFO* ti, int secs);
 

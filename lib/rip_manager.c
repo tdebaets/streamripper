@@ -71,7 +71,6 @@ static void			ripthread(void *bla);
 static int			myrecv(char* buffer, int size);
 static error_code		start_relay(int content_type);
 static void			post_status(int status);
-static int			set_output_directory();
 //static error_code		start_track(char *track);
 //static error_code		rip_manager_end_track(char *track);
 //static error_code		rip_manager_put_data(char *buf, int size);
@@ -230,8 +229,9 @@ rip_manager_start_track (TRACK_INFO* ti, int track_count)
 {
     int ret;
 
-    /* GCS FIX */
+    /* GCS FIX -- here is where i would compose the incomplete filename */
     char* trackname = ti->raw_metadata;
+
     m_write_data = ti->save_track;
 
     debug_printf("rip_manager_start_track: %s\n", trackname);
@@ -261,7 +261,9 @@ rip_manager_end_track(TRACK_INFO* ti)
 
     /* GCS FIX */
     if (m_write_data)
-        filelib_end(ti->raw_metadata, GET_OVER_WRITE_TRACKS(m_options.flags), GET_TRUNCATE_DUPS(m_options.flags), fullpath, m_options.szPrefix);
+        filelib_end (ti->raw_metadata, GET_OVER_WRITE_TRACKS(m_options.flags),
+		     GET_TRUNCATE_DUPS(m_options.flags), fullpath, 
+		     m_options.szPrefix);
 
     post_status(0);
     m_status_callback(RM_TRACK_DONE, (void*)fullpath);
@@ -289,30 +291,6 @@ rip_manager_put_raw_data(char *buf, int size)
     return SR_SUCCESS;
 }
 
-
-/* GCS - Honestly, the filename code needs to be ripped out and rewritten.
-   Problems include: (1) no wchar support, (2) truncation and stripping
-   should not be applied to ID3 data, (3) MAX_PATH and NAME_MAX should 
-   be properly used, or even better pathconf (see glibc manual for example),
-   (4) why is it smeared across rip_manager.c and filelib.c ?
-
-   But "for now", I've hacked it to do better truncation at least in this 
-   limited circumstance: ASCII streams with MAX_PATH == NAME_MAX.
-*/
-int
-set_output_directory()
-{
-    int rc;
-    rc = filelib_set_output_directory (m_options.output_directory, 
-	GET_SEPERATE_DIRS(m_options.flags),
-	GET_DATE_STAMP(m_options.flags),
-	m_info.icy_name);
-    if (rc != SR_SUCCESS)
-	return rc;
-//    m_status_callback(RM_OUTPUT_DIR, (void*)newpath);
-    m_status_callback(RM_OUTPUT_DIR, (void*)filelib_get_output_directory);
-    return rc;
-}
 
 /* 
  * Fires up the relaylib stuff. Most of it is so relaylib 
@@ -564,18 +542,25 @@ start_ripping()
     strcpy(m_ripinfo.streamname, m_info.icy_name);
     strcpy(m_ripinfo.server_name, m_info.server);
 
-    /* GCS testing... moved from rip_manager_start() */
-    filelib_init(GET_INDIVIDUAL_TRACKS(m_options.flags),
-		 GET_COUNT_FILES(m_options.flags),
-		 GET_KEEP_INCOMPLETE(m_options.flags),
-		 GET_SINGLE_FILE_OUTPUT(m_options.flags),
-		 m_info.content_type, 
-		 m_options.output_file);
-
-    ret = set_output_directory();
-    if (ret != SR_SUCCESS) {
+    /* Initialize file writing code. */
+    ret = filelib_init
+	    (GET_INDIVIDUAL_TRACKS(m_options.flags),
+	     GET_COUNT_FILES(m_options.flags),
+	     GET_KEEP_INCOMPLETE(m_options.flags),
+	     GET_SINGLE_FILE_OUTPUT(m_options.flags),
+	     m_info.content_type, 
+	     m_options.output_file,
+	     m_options.output_directory,
+	     m_options.output_pattern,
+	     GET_SEPERATE_DIRS(m_options.flags),
+	     GET_DATE_STAMP(m_options.flags),
+	     m_info.icy_name);
+    if (ret != SR_SUCCESS)
 	goto RETURN_ERR;
-    }
+
+#if defined (commentout)
+    m_status_callback(RM_OUTPUT_DIR, (void*)filelib_get_output_directory);
+#endif
 
     /* prepares the ripshout lib for ripping */
     ret = ripshout_init(&m_in, &m_ripin, m_info.meta_interval);
@@ -698,6 +683,7 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
     m_opt->max_connections = 1;
 
     strcpy(m_opt->output_directory, "./");
+    m_opt->output_pattern[0] = 0;
     m_opt->relay_ip[0] = 0;
     m_opt->pls_file[0] = 0;
     m_opt->proxyurl[0] = 0;
