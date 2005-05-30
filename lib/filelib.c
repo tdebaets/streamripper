@@ -42,6 +42,7 @@ error_code filelib_remove(char *filename);
 /*********************************************************************************
  * Private Functions
  *********************************************************************************/
+static error_code device_split (char* dirname, char* device, char* path);
 static error_code mkdir_if_needed (char *str);
 static void close_file (FHANDLE* fp);
 static void close_files ();
@@ -52,10 +53,19 @@ static void trim_mp3_suffix (char *filename, char* out);
 static error_code filelib_open_for_write (FHANDLE* fp, char *filename);
 static void set_show_filenames (void);
 static int is_absolute_path (char* fn);
-static error_code set_output_directories_old ();
-static error_code set_output_directories_new ();
+static error_code set_output_directories_old (char* output_directory,
+					      int get_separate_dirs,
+					      int get_date_stamp,
+					      char* icy_name
+					      );
+static error_code set_output_directories_new (char* output_pattern,
+					      char* output_directory,
+					      int get_separate_dirs,
+					      int get_date_stamp,
+					      char* icy_name
+					      );
 static error_code sr_getcwd (char* dirbuf);
-static char *add_trailing_slash(char *str);
+static error_code add_trailing_slash (char *str);
 
 /*********************************************************************************
  * Private Vars
@@ -160,7 +170,11 @@ filelib_init (BOOL do_individual_tracks,
        It might not contain the individual files if an output_pattern
        was specified. */
     if (output_pattern && *output_pattern) {
-	set_output_directories_new (output_pattern);
+	set_output_directories_new (output_pattern,
+				    output_directory,
+				    get_separate_dirs,
+				    get_date_stamp,
+				    icy_name);
     } else {
 	set_output_directories_old (output_directory,
 				    get_separate_dirs,
@@ -178,13 +192,85 @@ filelib_init (BOOL do_individual_tracks,
 
 /* This is the new way, using the -D flag and the stream name. */
 error_code 
-set_output_directories_new (char* output_pattern)
+set_output_directories_new (char* output_pattern,
+			    char* output_directory,
+			    int get_separate_dirs,
+			    int get_date_stamp,
+			    char* icy_name
+			    )
 {
+    error_code ret;
+    char opat_device[3];
+    char odir_device[3];
+    char cwd_device[3];
+    char* device;
+    char opat_path[SR_MAX_PATH];
+    char odir_path[SR_MAX_PATH];
+    char cwd_path[SR_MAX_PATH];
+    char cwd[SR_MAX_PATH];
+    char pattern_buf[SR_MAX_PATH];
+    char* default_pattern;
+
     char bp[SR_MAX_PATH];
     char* pp = output_pattern;
     int bi = 0;
     int pi = 0;
 
+    /* Initialize strings */
+    cwd[0] = '\0';
+    odir_device[0] = '\0';
+    opat_device[0] = '\0';
+    odir_path[0] = '\0';
+    opat_path[0] = '\0';
+    ret = sr_getcwd (cwd);
+    if (ret != SR_SUCCESS) return ret;
+    if (get_separate_dirs) {
+	default_pattern = "%S" PATH_SLASH_STR "%A - %T";
+    } else {
+	default_pattern = "%A - %T";
+    }
+
+    if (!output_pattern || !(*output_pattern)) {
+	output_pattern = default_pattern;
+    }
+
+    /* Get the device. It can be empty. */
+    if (output_directory && *output_directory) {
+	device_split (output_directory, odir_device, odir_path);
+    }
+    device_split (output_pattern, opat_device, opat_path);
+    device_split (cwd, cwd_device, cwd_path);
+    if (*opat_device) {
+	device = opat_device;
+    } else if (*odir_device) {
+	device = odir_device;
+    } else {
+	device = cwd_device;
+    }
+
+    /* Generate the output file pattern. */
+    if (IS_ABSOLUTE_PATH(opat_path)) {
+	cwd_path[0] = '\0';
+	odir_path[0] = '\0';
+    } else if (IS_ABSOLUTE_PATH(odir_path)) {
+	cwd_path[0] = '\0';
+    }
+    if (*odir_path) {
+	ret = add_trailing_slash(odir_path);
+	if (ret != SR_SUCCESS) return ret;
+    }
+    if (*cwd_path) {
+	ret = add_trailing_slash(cwd_path);
+	if (ret != SR_SUCCESS) return ret;
+    }
+    if (strlen(device)+strlen(cwd_path)+strlen(opat_path)
+	+strlen(odir_path) > SR_MAX_PATH-1) {
+	return SR_ERROR_DIR_PATH_TOO_LONG;
+    }
+    sprintf (pattern_buf, "%s%s%s%s", device, cwd_path, 
+	     odir_path, opat_path);
+
+    /* <<LEFT OFF HERE>> */
     /* Parse & substitute the output pattern */
     while (bi < SR_MAX_PATH) {
 	if (pp[pi] == '\0') {
@@ -331,7 +417,7 @@ set_output_directories_old (char* output_directory,
     return SR_SUCCESS;
 }
 
-static char*
+static error_code
 add_trailing_slash (char *str)
 {
 #if defined (commentout)
@@ -344,22 +430,22 @@ add_trailing_slash (char *str)
 #endif
 #endif
 
+    int len = strlen(str);
+    if (len >= SR_MAX_PATH-1)
+	return SR_ERROR_DIR_PATH_TOO_LONG;
     if (!ISSLASH(str[strlen(str)-1]))
 	strcat (str, PATH_SLASH_STR);
-
-    return str;
+    return SR_SUCCESS;
 }
 
+/* Split off the device */
 static error_code 
-pathsplit (char* dirname,
-	   char* fullname,
-	   char* device,
-	   char* path,
-	   char* file
-	   )
+device_split (char* dirname,
+	      char* device,
+	      char* path
+	      )
 {
-    error_code ret;
-    int di = 0;
+    int di;
 
     if (HAS_DEVICE(dirname)) {
 	device[0] = dirname[0];
@@ -368,16 +454,9 @@ pathsplit (char* dirname,
 	di = 2;
     } else {
 	device[0] = '\0';
+	di = 0;
     }
-
-    if (!IS_ABSOLUTE_PATH(&dirname[di])) {
-	ret = sr_getcwd (path);
-	if (ret != SR_SUCCESS) return ret;
-	/* GCS FIX: path might be too long?? */
-	add_trailing_slash (path);
-    } else {
-	*path = 0;
-    }
+    strcpy (path, &dirname[di]);
     return SR_SUCCESS;
 }
 
