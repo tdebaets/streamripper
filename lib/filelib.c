@@ -111,8 +111,6 @@ filelib_init (BOOL do_individual_tracks,
 	      int get_date_stamp,
 	      char* icy_name)
 {
-    error_code ret;
-
     m_file = INVALID_FHANDLE;
     m_show_file = INVALID_FHANDLE;
     m_cue_file = INVALID_FHANDLE;
@@ -208,8 +206,11 @@ set_output_directories_new (char* output_pattern,
     char odir_path[SR_MAX_PATH];
     char cwd_path[SR_MAX_PATH];
     char cwd[SR_MAX_PATH];
-    char pattern_buf[SR_MAX_PATH];
     char* default_pattern;
+
+    char pattern_buf[SR_MAX_PATH];
+    char pattern_head[SR_MAX_PATH];
+    char pattern_tail[SR_MAX_PATH];
 
     char bp[SR_MAX_PATH];
     char* pp = output_pattern;
@@ -267,11 +268,16 @@ set_output_directories_new (char* output_pattern,
 	+strlen(odir_path) > SR_MAX_PATH-1) {
 	return SR_ERROR_DIR_PATH_TOO_LONG;
     }
+#if defined (commentout)
     sprintf (pattern_buf, "%s%s%s%s", device, cwd_path, 
 	     odir_path, opat_path);
+#endif
 
-    /* <<LEFT OFF HERE>> */
-    /* Parse & substitute the output pattern */
+    /* Parse & substitute the output pattern.  What we're trying to
+       get is everything up to the pattern specifiers that change 
+       from track to track: %A, %T, %a, %D, %q, or %Q. */
+    sprintf (pattern_head, "%s%s%s", device, cwd_path, odir_path);
+    bi = strlen (pattern_head);
     while (bi < SR_MAX_PATH) {
 	if (pp[pi] == '\0') {
 	    break;

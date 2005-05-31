@@ -10,7 +10,6 @@ int word_count(char *str);
 char *subnstr_until(const char *str, char *until, char *newstr, int maxlen);
 char *strip_invalid_chars(char *str);
 char *format_byte_size(char *str, long size);
-char *add_trailing_slash(char *str);
 void trim(char *str);
 void null_printf(char *str, ...);
 int dir_max_filename_length (char* dirname);
