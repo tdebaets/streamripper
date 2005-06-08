@@ -66,6 +66,7 @@ static error_code set_output_directories_new (char* output_pattern,
 					      );
 static error_code sr_getcwd (char* dirbuf);
 static error_code add_trailing_slash (char *str);
+static void fill_date_buf (char* datebuf, int datebuf_len);
 
 /*********************************************************************************
  * Private Vars
@@ -212,10 +213,13 @@ set_output_directories_new (char* output_pattern,
     char pattern_head[SR_MAX_PATH];
     char pattern_tail[SR_MAX_PATH];
 
-    char bp[SR_MAX_PATH];
-    char* pp = output_pattern;
-    int bi = 0;
-    int pi = 0;
+    int opi = 0;
+    int phi = 0;
+    int ph_base_len;
+    int op_tail_idx;
+
+    #define DATEBUF_LEN 50
+    char datebuf[DATEBUF_LEN];
 
     /* Initialize strings */
     cwd[0] = '\0';
@@ -268,39 +272,81 @@ set_output_directories_new (char* output_pattern,
 	+strlen(odir_path) > SR_MAX_PATH-1) {
 	return SR_ERROR_DIR_PATH_TOO_LONG;
     }
-#if defined (commentout)
-    sprintf (pattern_buf, "%s%s%s%s", device, cwd_path, 
-	     odir_path, opat_path);
-#endif
 
     /* Parse & substitute the output pattern.  What we're trying to
        get is everything up to the pattern specifiers that change 
-       from track to track: %A, %T, %a, %D, %q, or %Q. */
+       from track to track: %A, %T, %a, %D, %q, or %Q. 
+       If %S or %d appear before this, substitute in. */
     sprintf (pattern_head, "%s%s%s", device, cwd_path, odir_path);
-    bi = strlen (pattern_head);
-    while (bi < SR_MAX_PATH) {
-	if (pp[pi] == '\0') {
+    phi = strlen(pattern_head);
+    opi = 0;
+    ph_base_len = phi;
+    op_tail_idx = opi;
+    while (phi < SR_MAX_BASE) {
+	if (ISSLASH(opat_path[opi])) {
+	    pattern_head[phi++] = PATH_SLASH;
+	    opi++;
+	    ph_base_len = phi;
+	    op_tail_idx = opi;
+	    continue;
+	}
+	if (opat_path[opi] == '\0') {
+	    /* Generally this shouldn't happen; it means there are no
+	       artist/title info in the filename.  Oh well. */
+	    ph_base_len = phi;
+	    op_tail_idx = opi;
 	    break;
 	}
-	if (ISSLASH(pp[pi])) {
-	    
-	}
-	if (pp[pi] != '%') {
-	    bp[bi++] = pp[pi++];
+	if (opat_path[opi] != '%') {
+	    pattern_head[phi++] = opat_path[opi++];
 	    continue;
 	}
-	switch (pp[pi+1]) {
+	/* If we got here, we have a '%' */
+	switch (opat_path[opi+1]) {
 	case '%':
-	    bp[bi++]='%';
-	    pi+=2;
+	    pattern_head[phi++]='%';
+	    opi+=2;
 	    continue;
+	case 'S':
+	    /* append stream name */
+	    strncat (pattern_head, icy_name, SR_MAX_BASE-phi);
+	    phi = strlen (pattern_head);
+	    opi+=2;
+	    continue;
+	case 'd':
+	    /* append date info */
+	    fill_date_buf (datebuf, DATEBUF_LEN);
+	    strncat (pattern_head, datebuf, SR_MAX_BASE-phi);
+	    phi = strlen (pattern_head);
+	    opi+=2;
+	    continue;
+	case 'a':
+	case 'A':
+	case 'D':
+	case 'q':
+	case 'Q':
+	case 'T':
+	    /* Specific stuff */
+	    break;
 	case '\0':
+	    /* Generally this shouldn't happen; it means there are no
+	       artist/title info in the filename.  Oh well. */
+	    pattern_head[phi++] = opat_path[opi++];
+	    ph_base_len = phi;
+	    op_tail_idx = opi;
+	    break;
 	default:
-	    bp[bi++]='%';
-	    pi++;
+	    /* This is an illegal pattern, so copy the '%' and continue */
+	    pattern_head[phi++] = opat_path[opi++];
 	    continue;
 	}
+	/* If we got to here, it means that we hit something like %A or %T */
+	break;
     }
+    /* Terminate the pattern_head string */
+    pattern_head[ph_base_len] = 0;
+    debug_printf ("Got pattern head: %s\n", pattern_head);
+    debug_printf ("Got opat tail:    %s\n", &opat_path[op_tail_idx]);
 
     return SR_SUCCESS;
 }
@@ -421,6 +467,13 @@ set_output_directories_old (char* output_directory,
 	}
     }
     return SR_SUCCESS;
+}
+
+static void
+fill_date_buf (char* datebuf, int datebuf_len)
+{
+    time_t now = time(NULL);
+    strftime (datebuf, datebuf_len, "%Y_%m_%d_%H_%M_%S", localtime(&now));
 }
 
 static error_code
