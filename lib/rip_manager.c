@@ -231,7 +231,7 @@ rip_manager_start_track (TRACK_INFO* ti, int track_count)
 
     /* GCS FIX -- here is where i would compose the incomplete filename */
     char* trackname = ti->raw_metadata;
-
+    
     m_write_data = ti->save_track;
 
     debug_printf("rip_manager_start_track: %s\n", trackname);

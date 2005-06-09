@@ -13,15 +13,15 @@
 # The trailing "e" means drop the metadata
 m/^A suivre:/e
 
-# Only save tracks that contain the given expression
-# The leading "m" says this is a match rule
-# The trailing "s" means that the track should be saved
-m/[Ff]unk/s
-
-# Only save tracks that contain the given expression
+# Exclude tracks that contain the given expression
 # The leading "m" says this is a match rule
 # The trailing "x" means that the track should not be saved (excluded)
 m/advertisement/x
+
+# Save tracks that contain the given expression
+# The leading "m" says this is a match rule
+# The trailing "s" means that the track should be saved
+m/[Ff]unk/s
 
 # The first m//e, m//s or m//x rule that matches determines the 
 # action that is performed.  If none match, then by default the file 

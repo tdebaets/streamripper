@@ -42,6 +42,7 @@
 #define PARSERULE_GLOBAL             0x02
 #define PARSERULE_ICASE              0x04
 #define PARSERULE_SAVE               0x08
+#define PARSERULE_EXCLUDE            0x10
 
 
 struct parse_rule {
@@ -156,8 +157,12 @@ parse_flags (Parse_Rule* pr, char* flags)
 	case 'i':
 	    pr->flags |= PARSERULE_ICASE;
 	    break;
-	case 'r':
+	case 's':
 	    pr->flags |= PARSERULE_SAVE;
+	    if (pr->cmd != PARSERULE_CMD_MATCH) return 0;
+	    break;
+	case 'x':
+	    pr->flags |= PARSERULE_EXCLUDE;
 	    if (pr->cmd != PARSERULE_CMD_MATCH) return 0;
 	    break;
 	case 'A':
@@ -345,17 +350,11 @@ parse_metadata (TRACK_INFO* ti)
     char query_string[MAX_TRACK_LEN];
     Parse_Rule* rulep;
 
-    /* The matching rules that restrict the writing of tracks to
-     * a file form a disjunction. That means if one rule matches 
-     * the track gets written.
-     * 
-     * By default we need to set ti->save_track to TRUE, since 
-     * there might be no restrictions at all. That's why we need 
-     * this additional variable "save_track_matched" to show that
-     * when matching a rule if a previous rule already matched 
-     * because we may not set ti->save_track to FALSE then.
-     */
+    /* Has any m/.../s rule matched? */
     BOOL save_track_matched = FALSE;
+
+    /* Has any m/.../x rule matched? */
+    BOOL exclude_track_matched = FALSE;
 
     ti->have_track_info = 0;
     ti->artist[0] = 0;
@@ -392,10 +391,21 @@ parse_metadata (TRACK_INFO* ti)
 		    /* Didn't match rule. */
 		    if (!save_track_matched)
 		        ti->save_track = FALSE;
+
 		    continue;
 		}
-		ti->save_track = TRUE;
-		save_track_matched = TRUE;
+		if (!exclude_track_matched)
+		{
+		    ti->save_track = TRUE;
+		    save_track_matched = TRUE;
+		}
+	    } else if (rulep->flags & PARSERULE_EXCLUDE) {
+		rc = regexec(rulep->reg, query_string, 0, NULL, eflags);
+		if (rc == 0 && !save_track_matched) {
+		    /* Rule matched => Exclude track */
+		    ti->save_track = FALSE;
+		    exclude_track_matched = TRUE;
+		}
 	    } else {
     		eflags = 0;
 		rc = regexec(rulep->reg, query_string, MAX_SUBMATCHES+1, pmatch, eflags);
