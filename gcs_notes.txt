@@ -169,6 +169,7 @@ Pattern specifiers you can use:
 %d     Date and time (per execution)
 %Q     Sequence number (parsing files to find it)
 %q     Sequence number (starting from zero)
+%0203q Sequence number (starting from 203)
 %V     Song version number (?)
 %%     Percent sign
 
@@ -188,6 +189,7 @@ Thus, the default incomplete directory is:
 %S/incomplete
 
 The filename within the incomplete directory is ??
+
 
 
 * How to upgrade the version number

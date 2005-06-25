@@ -28,22 +28,21 @@
 
 #define TEMP_STR_LEN	(SR_MAX_PATH*2)
 
-/*********************************************************************************
+/*****************************************************************************
  * Public functions
- *********************************************************************************/
-error_code filelib_start(char *filename);
+ *****************************************************************************/
 error_code filelib_write_track(char *buf, u_long size);
 error_code filelib_write_show(char *buf, u_long size);
-error_code filelib_end(char *filename, BOOL over_write_existing, BOOL truncate_dup, char *fullpath, char* a_pszPrefix);
 void filelib_shutdown();
 error_code filelib_remove(char *filename);
 
 
-/*********************************************************************************
+/*****************************************************************************
  * Private Functions
- *********************************************************************************/
+ *****************************************************************************/
 static error_code device_split (char* dirname, char* device, char* path);
 static error_code mkdir_if_needed (char *str);
+static error_code mkdir_recursive (char *str);
 static void close_file (FHANDLE* fp);
 static void close_files ();
 static error_code filelib_write (FHANDLE fp, char *buf, u_long size);
@@ -53,42 +52,49 @@ static void trim_mp3_suffix (char *filename, char* out);
 static error_code filelib_open_for_write (FHANDLE* fp, char *filename);
 static void set_show_filenames (void);
 static int is_absolute_path (char* fn);
-static error_code set_output_directories_old (char* output_directory,
-					      int get_separate_dirs,
-					      int get_date_stamp,
-					      char* icy_name
-					      );
-static error_code set_output_directories_new (char* output_pattern,
-					      char* output_directory,
-					      int get_separate_dirs,
-					      int get_date_stamp,
-					      char* icy_name
-					      );
+static void parse_and_subst_dir (char* pattern_head, char* pattern_tail,
+				 char* opat_path, char* icy_name);
+static void parse_and_subst_pat (char* newfile, TRACK_INFO* ti);
+static error_code set_output_directory_old (char* output_directory,
+					    int get_separate_dirs,
+					    int get_date_stamp,
+					    char* icy_name
+					    );
+static error_code set_output_directory_new (char* output_pattern,
+					    char* output_directory,
+					    int get_separate_dirs,
+					    int get_date_stamp,
+					    char* icy_name
+					    );
 static error_code sr_getcwd (char* dirbuf);
 static error_code add_trailing_slash (char *str);
 static void fill_date_buf (char* datebuf, int datebuf_len);
 
-/*********************************************************************************
+/*****************************************************************************
  * Private Vars
- *********************************************************************************/
+ *****************************************************************************/
+#define DATEBUF_LEN 50
 static FHANDLE 	m_file;
 static FHANDLE 	m_show_file;
 static FHANDLE  m_cue_file;
 static int 	m_count;
 static int      m_do_show;
 static char 	m_output_directory[SR_MAX_PATH];
+static char 	m_output_pattern[SR_MAX_PATH];
 static char 	m_incomplete_directory[SR_MAX_PATH];
-static char 	m_filename_format[] = "%s%s%s";
+static char     m_incomplete_filename[SR_MAX_PATH];
 static BOOL	m_keep_incomplete = TRUE;
 static int      m_max_filename_length;
 static char 	m_show_name[SR_MAX_PATH];
 static char 	m_cue_name[SR_MAX_PATH];
+static char 	m_icy_name[SR_MAX_PATH];
 static char*	m_extension;
 static BOOL	m_do_individual_tracks;
+static char     m_session_datebuf[DATEBUF_LEN];
 
 // For now we're not going to care. If it makes it good. it not, will know 
 // When we try to create a file in the path.
-error_code
+static error_code
 mkdir_if_needed(char *str)
 {
 #if WIN32
@@ -99,9 +105,28 @@ mkdir_if_needed(char *str)
     return SR_SUCCESS;
 }
 
+static error_code
+mkdir_recursive (char *str)
+{
+    char buf[SR_MAX_PATH];
+    char* p = buf;
+    char q;
+
+    buf[0] = '\0';
+    while (q = *p++ = *str++) {
+	if (ISSLASH(q)) {
+	    *p = '\0';
+	    mkdir_if_needed (buf);
+	}
+    }
+    mkdir_if_needed (str);
+    return SR_SUCCESS;
+}
+
 error_code
 filelib_init (BOOL do_individual_tracks,
 	      BOOL do_count,
+	      int count_start,
 	      BOOL keep_incomplete,
 	      BOOL do_show_file,
 	      int content_type,
@@ -115,12 +140,14 @@ filelib_init (BOOL do_individual_tracks,
     m_file = INVALID_FHANDLE;
     m_show_file = INVALID_FHANDLE;
     m_cue_file = INVALID_FHANDLE;
-    m_count = do_count ? 1 : -1;
+    // m_count = do_count ? 1 : -1;
+    m_count = do_count ? count_start : -1;
     m_keep_incomplete = keep_incomplete;
     memset(&m_output_directory, 0, SR_MAX_PATH);
     m_show_name[0] = 0;
     m_do_show = do_show_file;
     m_do_individual_tracks = do_individual_tracks;
+    sr_strncpy (m_icy_name, icy_name, SR_MAX_PATH);
 
     switch (content_type) {
     case CONTENT_TYPE_MP3:
@@ -138,7 +165,7 @@ filelib_init (BOOL do_individual_tracks,
 	break;
     default:
 	fprintf (stderr, "Error (wrong suggested content type: %d)\n", 
-	    content_type);
+		 content_type);
 	return SR_ERROR_PROGRAM_ERROR;
     }
 
@@ -160,8 +187,8 @@ filelib_init (BOOL do_individual_tracks,
 	strcat (m_show_name, ".mp3");
 #endif
 	/* Normally I would open the show & cue files here, but
-	    I don't yet know the output directory.  So do nothing until
-	    first write (until above problem is fixed).  */
+	   I don't yet know the output directory.  So do nothing until
+	   first write (until above problem is fixed).  */
     }
 
     /* Get the path to the "parent" directory.  This is the directory
@@ -169,21 +196,35 @@ filelib_init (BOOL do_individual_tracks,
        It might not contain the individual files if an output_pattern
        was specified. */
     if (output_pattern && *output_pattern) {
-	set_output_directories_new (output_pattern,
-				    output_directory,
-				    get_separate_dirs,
-				    get_date_stamp,
-				    icy_name);
+	set_output_directory_new (output_pattern,
+				  output_directory,
+				  get_separate_dirs,
+				  get_date_stamp,
+				  icy_name);
     } else {
-	set_output_directories_old (output_directory,
-				    get_separate_dirs,
-				    get_date_stamp,
-				    icy_name);
+	set_output_directory_old (output_directory,
+				  get_separate_dirs,
+				  get_date_stamp,
+				  icy_name);
+    }
+
+    sprintf (m_incomplete_directory, "%s%s%c", m_output_directory,
+	     "incomplete", PATH_SLASH);
+
+    /* Recursively make the output directory & incomplete directory */
+    if (m_do_individual_tracks || m_do_show) {
+	debug_printf("Trying to make output_directory: %s\n", 
+		     m_output_directory);
+	mkdir_recursive (m_output_directory);
+
+	/* Next, make the incomplete directory */
+	if (m_do_individual_tracks) {
+	    mkdir_if_needed(m_incomplete_directory);
+	}
     }
 
     /* Finally, compute the amount of remaining path length for the 
      * music filenames */
-    add_trailing_slash(m_incomplete_directory);
     m_max_filename_length = SR_MAX_PATH - strlen(m_incomplete_directory);
 
     return SR_SUCCESS;
@@ -191,12 +232,12 @@ filelib_init (BOOL do_individual_tracks,
 
 /* This is the new way, using the -D flag and the stream name. */
 error_code 
-set_output_directories_new (char* output_pattern,
-			    char* output_directory,
-			    int get_separate_dirs,
-			    int get_date_stamp,
-			    char* icy_name
-			    )
+set_output_directory_new (char* output_pattern,
+			  char* output_directory,
+			  int get_separate_dirs,
+			  int get_date_stamp,
+			  char* icy_name
+			  )
 {
     error_code ret;
     char opat_device[3];
@@ -209,17 +250,8 @@ set_output_directories_new (char* output_pattern,
     char cwd[SR_MAX_PATH];
     char* default_pattern;
 
-    char pattern_buf[SR_MAX_PATH];
     char pattern_head[SR_MAX_PATH];
     char pattern_tail[SR_MAX_PATH];
-
-    int opi = 0;
-    int phi = 0;
-    int ph_base_len;
-    int op_tail_idx;
-
-    #define DATEBUF_LEN 50
-    char datebuf[DATEBUF_LEN];
 
     /* Initialize strings */
     cwd[0] = '\0';
@@ -273,15 +305,42 @@ set_output_directories_new (char* output_pattern,
 	return SR_ERROR_DIR_PATH_TOO_LONG;
     }
 
-    /* Parse & substitute the output pattern.  What we're trying to
-       get is everything up to the pattern specifiers that change 
-       from track to track: %A, %T, %a, %D, %q, or %Q. 
-       If %S or %d appear before this, substitute in. */
+    /* Fill in %S and %d patterns */
     sprintf (pattern_head, "%s%s%s", device, cwd_path, odir_path);
+    parse_and_subst_dir (pattern_head, pattern_tail, opat_path, icy_name);
+
+    /* In case there is no %A, no %T, etc., use the default pattern */
+    if (!*pattern_tail) strcpy (pattern_tail, "%A - %T");
+
+    /* Set the global variables */
+    strcpy (m_output_directory, pattern_head);
+    add_trailing_slash (m_output_directory);
+    strcpy (m_output_pattern, pattern_tail);
+
+    return SR_SUCCESS;
+}
+
+/* Parse & substitute the output pattern.  What we're trying to
+   get is everything up to the pattern specifiers that change 
+   from track to track: %A, %T, %a, %D, %q, or %Q. 
+   If %S or %d appear before this, substitute in. */
+static void
+parse_and_subst_dir (char* pattern_head, char* pattern_tail,
+		     char* opat_path, char* icy_name)
+{
+    int opi = 0;
+    int phi = 0;
+    int ph_base_len;
+    int op_tail_idx;
+
     phi = strlen(pattern_head);
     opi = 0;
     ph_base_len = phi;
     op_tail_idx = opi;
+
+    /* Initialize session date */
+    fill_date_buf (m_session_datebuf, DATEBUF_LEN);
+
     while (phi < SR_MAX_BASE) {
 	if (ISSLASH(opat_path[opi])) {
 	    pattern_head[phi++] = PATH_SLASH;
@@ -292,7 +351,8 @@ set_output_directories_new (char* output_pattern,
 	}
 	if (opat_path[opi] == '\0') {
 	    /* Generally this shouldn't happen; it means there are no
-	       artist/title info in the filename.  Oh well. */
+	       artist/title info in the filename.  In this case, we 
+	       fall back on the default pattern. */
 	    ph_base_len = phi;
 	    op_tail_idx = opi;
 	    break;
@@ -315,8 +375,7 @@ set_output_directories_new (char* output_pattern,
 	    continue;
 	case 'd':
 	    /* append date info */
-	    fill_date_buf (datebuf, DATEBUF_LEN);
-	    strncat (pattern_head, datebuf, SR_MAX_BASE-phi);
+	    strncat (pattern_head, m_session_datebuf, SR_MAX_BASE-phi);
 	    phi = strlen (pattern_head);
 	    opi+=2;
 	    continue;
@@ -326,11 +385,11 @@ set_output_directories_new (char* output_pattern,
 	case 'q':
 	case 'Q':
 	case 'T':
-	    /* Specific stuff */
 	    break;
 	case '\0':
 	    /* Generally this shouldn't happen; it means there are no
-	       artist/title info in the filename.  Oh well. */
+	       artist/title info in the filename.  In this case, we 
+	       fall back on the default pattern. */
 	    pattern_head[phi++] = opat_path[opi++];
 	    ph_base_len = phi;
 	    op_tail_idx = opi;
@@ -347,17 +406,16 @@ set_output_directories_new (char* output_pattern,
     pattern_head[ph_base_len] = 0;
     debug_printf ("Got pattern head: %s\n", pattern_head);
     debug_printf ("Got opat tail:    %s\n", &opat_path[op_tail_idx]);
-
-    return SR_SUCCESS;
+    strcpy (pattern_tail, &opat_path[op_tail_idx]);
 }
 
 /* This is the old way, using the -d & -s flags and the stream name. */
 error_code 
-set_output_directories_old (char* output_directory,
-			    int get_separate_dirs,
-			    int get_date_stamp,
-			    char* icy_name
-			    )
+set_output_directory_old (char* output_directory,
+			  int get_separate_dirs,
+			  int get_date_stamp,
+			  char* icy_name
+			  )
 {
     error_code ret;
     char base_dir[SR_MAX_PATH];
@@ -536,15 +594,6 @@ sr_getcwd (char* dirbuf)
     return SR_SUCCESS;
 }
 
-/* GCS Testing... I don't think this function is used any more. */
-#if defined (commentout)
-char* 
-filelib_get_output_directory ()
-{
-    return m_output_directory;
-}
-#endif
-
 void close_file(FHANDLE* fp)
 {
     if (*fp != INVALID_FHANDLE) {
@@ -563,11 +612,7 @@ void close_files()
 BOOL
 file_exists(char *filename)
 {
-#if defined (commentout)
-    FHANDLE f = OpenFile(filename);
-#endif
     FHANDLE f;
-
 #if defined (WIN32)
     f = CreateFile (filename, GENERIC_READ,
 	    FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
@@ -575,11 +620,9 @@ file_exists(char *filename)
 #else
     f = open(filename, O_RDONLY);
 #endif
-
     if (f == INVALID_FHANDLE) {
 	return FALSE;
     }
-
     CloseFile(f);
     return TRUE;
 }
@@ -615,71 +658,172 @@ filelib_write_cue(TRACK_INFO* ti, int secs)
     return SR_SUCCESS;
 }
 
+/* It's a bit touch and go here. My artist substitution might 
+   be into a directory, in which case I don't have enough 
+   room for a legit file name */
+/* Also, what about versioning of completed filenames? */
+static void
+parse_and_subst_pat (char* newfile, TRACK_INFO* ti)
+{
+#define DATEBUF_LEN 50
+    char temp[DATEBUF_LEN];
+    char datebuf[DATEBUF_LEN];
+    int opi = 0;
+    int nfi = 0;
+    int done;
+    char* pat = m_output_pattern;
+
+    strcpy (newfile, m_incomplete_directory);
+
+    opi = 0;
+    nfi = strlen(newfile);
+    done = 0;
+    do {
+	while (nfi < SR_MAX_PATH-1) {
+	    if (pat[opi] == '\0') {
+		done = 1;
+		break;
+	    }
+	    if (pat[opi] != '%') {
+		newfile[nfi++] = pat[opi++];
+		continue;
+	    }
+	    /* If we got here, we have a '%' */
+	    switch (pat[opi+1]) {
+	    case '%':
+		newfile[nfi++]='%';
+		opi+=2;
+		continue;
+	    case 'S':
+		/* stream name */
+		/* oops */
+		strncat (newfile, m_icy_name, SR_MAX_PATH-nfi);
+		nfi = strlen (newfile);
+		opi+=2;
+		continue;
+	    case 'd':
+		/* timestamp for start of session */
+		/* oops */
+		break;
+	    case 'D':
+		/* current timestamp */
+		fill_date_buf (datebuf, DATEBUF_LEN);
+		strncat (newfile, datebuf, SR_MAX_PATH-nfi);
+		nfi = strlen (newfile);
+		opi+=2;
+		continue;
+	    case 'a':
+		/* album */
+		strncat (newfile, ti->album, SR_MAX_PATH-nfi);
+		nfi = strlen (newfile);
+		opi+=2;
+		continue;
+	    case 'A':
+		/* artist */
+		strncat (newfile, ti->artist, SR_MAX_PATH-nfi);
+		nfi = strlen (newfile);
+		opi+=2;
+		continue;
+	    case 'q':
+		snprintf (temp, DATEBUF_LEN, "%04d", m_count);
+		strncat (newfile, temp, SR_MAX_PATH-nfi);
+		nfi = strlen (newfile);
+		continue;
+	    case 'Q':
+		/* not yet implemented */
+		break;
+	    case 'T':
+		/* title */
+		strncat (newfile, ti->artist, SR_MAX_PATH-nfi);
+		nfi = strlen (newfile);
+		opi+=2;
+		continue;
+	    case '\0':
+		/* The pattern ends in '%', but that's ok. */
+		newfile[nfi++] = pat[opi++];
+		done = 1;
+		break;
+	    default:
+		/* Illegal pattern, but that's ok. */
+		newfile[nfi++] = pat[opi++];
+		continue;
+	    }
+	    /* If we got to here, it means we're done with substitution.
+	       Maybe everything went ok (done == 1), and we can create 
+	       the file as it was substituted.  Otherwise, we overflowed
+	       MAX_PATH, and we need to try something simpler. */
+	    if (nfi < SR_MAX_PATH-1) {
+	    }
+	}
+    } while (!done);
+}
+
 error_code
-filelib_start(char *filename)
+filelib_start (TRACK_INFO* ti)
 {
     char newfile[TEMP_STR_LEN];
-    char tfile[TEMP_STR_LEN];
-    long temp = 0;
+    char fnbase[TEMP_STR_LEN];
+    char fnbase1[TEMP_STR_LEN];
+    char fnbase2[TEMP_STR_LEN];
 
     if (!m_do_individual_tracks) return SR_SUCCESS;
 
     close_file(&m_file);
 
-    trim_filename(filename, tfile);
-    sprintf (newfile, m_filename_format, m_incomplete_directory,
-	     tfile, m_extension);
-    temp = strlen(newfile);
-    temp = strlen(tfile);
-    temp = SR_MAX_PATH;
-    temp = strlen(m_incomplete_directory);
-
+    /* Compose and trim filename (not including directory) */
+    sprintf (fnbase1, "%s - %s", ti->artist, ti->title);
+    debug_printf ("Composed filename: %s\n", fnbase1);
+    trim_filename (fnbase1, fnbase);
+    debug_printf ("Trimmed filename: %s\n", fnbase);
+    sprintf (newfile, "%s%s%s", m_incomplete_directory, fnbase, m_extension);
     if (m_keep_incomplete) {
 	int n = 1;
 	char oldfilename[TEMP_STR_LEN];
 	char oldfile[TEMP_STR_LEN];
-	strcpy(oldfilename, tfile);
-	sprintf(oldfile, m_filename_format, m_incomplete_directory, tfile, m_extension);
+	strcpy(oldfilename, fnbase);
+	sprintf(oldfile, "%s%s%s", m_incomplete_directory, 
+		fnbase, m_extension);
+	strcpy (fnbase1, fnbase);
 	while(file_exists(oldfile)) {
-	    sprintf(oldfilename, "%s(%d)", tfile, n);
-	    sprintf(oldfile, m_filename_format, m_incomplete_directory, oldfilename, m_extension);
+	    sprintf(fnbase1, "(%d)%s", n, fnbase);
+	    trim_filename (fnbase1, fnbase2);
+	    sprintf(oldfile, "%s%s%s", m_incomplete_directory,
+		    fnbase2, m_extension);
 	    n++;
 	}
-	if (strcmp(newfile, oldfile) != 0)
+	if (strcmp(newfile, oldfile) != 0) {
 	    MoveFile(newfile, oldfile);
+	}
     }
-
+    strcpy (m_incomplete_filename, newfile);
     return filelib_open_for_write(&m_file, newfile);
 }
 
 // Moves the file from incomplete to complete directory
 // fullpath is an output parameter
 error_code
-filelib_end (char *filename, BOOL over_write_existing, BOOL truncate_dup, 
+filelib_end (TRACK_INFO* ti, BOOL over_write_existing, BOOL truncate_dup, 
 	     char *fullpath, char* a_pszPrefix)
 {
     BOOL ok_to_write = TRUE;
     BOOL file_exists = FALSE;
     FHANDLE test_file;
     char newfile[TEMP_STR_LEN];
-    char oldfile[TEMP_STR_LEN];
     char tfile[TEMP_STR_LEN];
 
     if (!m_do_individual_tracks) return SR_SUCCESS;
 
-    trim_filename (filename, tfile);
     close_file (&m_file);
 
-    // Make new paths for the old path and new
-    memset(newfile, 0, TEMP_STR_LEN);
-    memset(oldfile, 0, TEMP_STR_LEN);
-    sprintf(oldfile, m_filename_format, m_incomplete_directory, tfile, m_extension);
+    /* Construct filename for completed file */
+    parse_and_subst_pat (newfile, ti);
 
+    memset (newfile, 0, TEMP_STR_LEN);
     if (m_count != -1)
         sprintf (newfile, "%s%s%03d_%s%s", m_output_directory, a_pszPrefix, 
 		 m_count, tfile, m_extension);
     else
-	sprintf (newfile, m_filename_format, m_output_directory, tfile, m_extension);
+	sprintf (newfile, "%s%s%s", m_output_directory, tfile, m_extension);
 
     // If we are over writing existing tracks
     if (!over_write_existing) {
@@ -704,10 +848,10 @@ filelib_end (char *filename, BOOL over_write_existing, BOOL truncate_dup,
     if (ok_to_write) {
 	// JCBUG -- clean this up
 	int x = DeleteFile(newfile);
-	x = MoveFile(oldfile, newfile);
+	x = MoveFile(m_incomplete_filename, newfile);
     } else {
 	if (truncate_dup && file_exists) {
-	    TruncateFile(oldfile);
+	    TruncateFile(m_incomplete_filename);
 	}
     }
 
@@ -826,6 +970,7 @@ filelib_shutdown()
 #endif
 }
 
+#if defined (commentout)
 error_code
 filelib_remove(char *filename)
 {
@@ -837,6 +982,7 @@ filelib_remove(char *filename)
 
     return SR_SUCCESS;
 }
+#endif
 
 /* GCS: This should get only the name, not the directory */
 static void

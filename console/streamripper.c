@@ -248,7 +248,7 @@ void print_usage()
     fprintf(stderr, "      -c             - Don't auto-reconnect\n");
     fprintf(stderr, "      -l seconds     - Number of seconds to run, otherwise runs forever\n");
     fprintf(stderr, "      -M megabytes   - Stop ripping after this many megabytes\n");
-    fprintf(stderr, "      -q             - Add sequence number to output file\n");
+    fprintf(stderr, "      -q [start]     - Add sequence number to output file\n");
     fprintf(stderr, "      -i             - Don't add ID3V1 Tags to output file\n");
     fprintf(stderr, "      -u useragent   - Use a different UserAgent than \"Streamripper\"\n");
     fprintf(stderr, "      -w rulefile    - Parse metadata using rules in file.\n");
@@ -361,6 +361,11 @@ void parse_arguments(int argc, char **argv)
 	    break;
 	case 'q':
 	    m_opt.flags ^= OPT_COUNT_FILES;
+	    m_opt.count_start = 0;
+	    if (i == (argc-1) || argv[i+1][0] == '-')
+		break;
+	    i++;
+	    m_opt.count_start = atoi(argv[i]);
 	    break;
 	case 'r':
 	    m_opt.flags ^= OPT_MAKE_RELAY;

@@ -119,6 +119,8 @@ typedef struct RIP_MANAGER_OPTIONSst
     int dropcount;			// number of tracks at beginning of connection to always ignore
     CODESET_OPTIONS cs_opt;             // which codeset should i use?
     char szPrefix[MAX_PREFIX_LEN];      // might want to use a prefix for each file
+    int count_start;                    // which number to start counting?
+
 } RIP_MANAGER_OPTIONS;
 
 typedef struct ERROR_INFOst

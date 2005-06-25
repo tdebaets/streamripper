@@ -362,6 +362,7 @@ parse_metadata (TRACK_INFO* ti)
     ti->album[0] = 0;
     ti->save_track = TRUE;
     if (!ti->raw_metadata[0]) {
+	debug_printf ("Couldn't parse because no meta data\n");
 	return;
     }
 
@@ -442,4 +443,7 @@ parse_metadata (TRACK_INFO* ti)
 	    sr_strncpy(query_string, subst_string, MAX_TRACK_LEN);
 	}
     }
+    debug_printf ("Fell through while parsing data...\n");
+    strcpy (ti->title, ti->raw_metadata);
+    ti->have_track_info = 1;
 }

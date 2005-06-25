@@ -1,7 +1,8 @@
 New for 1.61.9
 --------------
-* Under development, new buffering code
-* Add patch from Albert for metadata restriction rules
+* Under development, new buffering code.
+* Mostly finished, new -D flag for output file patterns.
+* Add patch from Albert for metadata restriction rules.
 
 New for 1.61.8
 --------------

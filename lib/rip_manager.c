@@ -229,21 +229,30 @@ rip_manager_start_track (TRACK_INFO* ti, int track_count)
 {
     int ret;
 
+#if defined (commmentout)
     /* GCS FIX -- here is where i would compose the incomplete filename */
     char* trackname = ti->raw_metadata;
-    
-    m_write_data = ti->save_track;
-
     debug_printf("rip_manager_start_track: %s\n", trackname);
-
     if (m_write_data && (ret = filelib_start(trackname)) != SR_SUCCESS) {
         return ret;
     }
+#endif
 
-    strcpy(m_ripinfo.filename, trackname);
+    m_write_data = ti->save_track;
+
+    if (m_write_data && (ret = filelib_start (ti)) != SR_SUCCESS) {
+        return ret;
+    }
+
     m_ripinfo.filesize = 0;
     m_ripinfo.track_count = track_count;
+
+#if defined (commentout)
+    /* This doesn't seem to be used */
+    strcpy(m_ripinfo.filename, trackname);
     m_status_callback(RM_NEW_TRACK, (void *)trackname);
+#endif
+
     post_status(0);
 
     return SR_SUCCESS;
@@ -261,7 +270,7 @@ rip_manager_end_track(TRACK_INFO* ti)
 
     /* GCS FIX */
     if (m_write_data)
-        filelib_end (ti->raw_metadata, GET_OVER_WRITE_TRACKS(m_options.flags),
+        filelib_end (ti, GET_OVER_WRITE_TRACKS(m_options.flags),
 		     GET_TRUNCATE_DUPS(m_options.flags), fullpath, 
 		     m_options.szPrefix);
 
@@ -546,6 +555,7 @@ start_ripping()
     ret = filelib_init
 	    (GET_INDIVIDUAL_TRACKS(m_options.flags),
 	     GET_COUNT_FILES(m_options.flags),
+	     m_options.count_start,
 	     GET_KEEP_INCOMPLETE(m_options.flags),
 	     GET_SINGLE_FILE_OUTPUT(m_options.flags),
 	     m_info.content_type, 

@@ -64,6 +64,7 @@
 error_code
 filelib_init (BOOL do_individual_tracks,
 	      BOOL do_count,
+	      int count_start,
 	      BOOL keep_incomplete,
 	      BOOL do_show_file,
 	      int content_type,
@@ -71,27 +72,16 @@ filelib_init (BOOL do_individual_tracks,
 	      char* output_directory,
 	      char* output_pattern,
 	      int get_separate_dirs,
-	      int get_date_stamp, 
+	      int get_date_stamp,
 	      char* icy_name);
-#if defined (commentout)
-error_code filelib_init(BOOL do_individual_tracks,
-			BOOL do_count, BOOL keep_incomplete, 
-			BOOL do_single_file, 	     
-			int content_type, char* show_file_name);
-#endif
-error_code filelib_start(char *filename);
-error_code filelib_end(char *filename, BOOL over_write_existing, 
+error_code filelib_start (TRACK_INFO* ti);
+error_code filelib_end (TRACK_INFO* ti, BOOL over_write_existing,
 		       BOOL truncate_dup,
 		       char *fullpath,
 		       char* a_pszPrefix);
 error_code filelib_write_track(char *buf, u_long size);
 error_code filelib_write_show(char *buf, u_long size);
 void filelib_shutdown();
-#if defined (commentout)
-error_code filelib_set_output_directory (char* output_directory, 
-		int get_separate_dirs, int get_date_stamp, char* icy_name);
-char* filelib_get_output_directory ();
-#endif
 error_code filelib_remove(char *filename);
 error_code filelib_write_cue(TRACK_INFO* ti, int secs);
 

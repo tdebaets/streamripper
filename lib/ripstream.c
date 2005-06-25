@@ -289,6 +289,8 @@ ripstream_rip()
 	if (!m_current_track.have_track_info) {
 	    strcpy (m_current_track.raw_metadata, m_no_meta_name);
 	}
+	debug_printf ("rip_manager_start_track: ti=%s\n", 
+		      m_current_track.title);
 	ret = rip_manager_start_track (&m_current_track, m_track_count);
 	if (ret != SR_SUCCESS) {
 	    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
