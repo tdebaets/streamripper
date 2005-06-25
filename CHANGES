@@ -1,32 +1,33 @@
 New for 1.61.9
 --------------
-* Under development, new buffering code.
-* Mostly finished, new -D flag for output file patterns.
-* Add patch from Albert for metadata restriction rules.
+* Add patch from Albert for metadata restriction rules
+* New -D flag for output file patterns
+* Start numbering for -q flag with number other than 0001
+* Under development, new buffering code
 
 New for 1.61.8
 --------------
 Sat Apr 23 22:20:02 EDT 2005
-* Add bd's patch for creating a relay server pls file.
+* Add bd's patch for creating a relay server pls file
 * Fix FreeBSD 4.10 configuration problem because of broken wchar support.
-  (half of #1024627).
+  (half of #1024627)
 * Fix problem on FreeBSD & MacOSX caused by non-POSIX compliant 
-  default parsing rules (#1096005).
+  default parsing rules (#1096005)
 * Fix compile problems on Solaris 9 (#1116304)
 
 New for 1.61.7
 --------------
 Sun Apr 10 15:58:07 EDT 2005
-* Fix memory bug in relay lib.
+* Fix memory bug in relay lib
 
 New for 1.61.6
 --------------
 Sun Apr 10 10:41:51 EDT 2005
 * Add Daniel Potts' fix that cures relay artifacts for clients who 
-  don't request meta-data.
-* Fix relay artifacts on streams that don't have meta-data at all.
-* Fix two memory bugs that caused crashes on debian.
-* Change id3 genre from 0x00 (blues) to 0xff (unknown).
+  don't request meta-data
+* Fix relay artifacts on streams that don't have meta-data at all
+* Fix two memory bugs that caused crashes on debian
+* Change id3 genre from 0x00 (blues) to 0xff (unknown)
 
 New for 1.61.5
 --------------

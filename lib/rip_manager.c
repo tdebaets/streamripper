@@ -247,12 +247,11 @@ rip_manager_start_track (TRACK_INFO* ti, int track_count)
     m_ripinfo.filesize = 0;
     m_ripinfo.track_count = track_count;
 
-#if defined (commentout)
-    /* This doesn't seem to be used */
-    strcpy(m_ripinfo.filename, trackname);
-    m_status_callback(RM_NEW_TRACK, (void *)trackname);
-#endif
-
+    /* Compose the string for the console output */
+    snprintf (m_ripinfo.filename, SR_MAX_PATH, "%s - %s", 
+	      ti->artist, ti->title);
+    m_ripinfo.filename[SR_MAX_PATH-1] = '\0';
+    m_status_callback(RM_NEW_TRACK, (void*) m_ripinfo.filename);
     post_status(0);
 
     return SR_SUCCESS;
@@ -569,6 +568,7 @@ start_ripping()
 	goto RETURN_ERR;
 
 #if defined (commentout)
+    /* This doesn't seem to be used */
     m_status_callback(RM_OUTPUT_DIR, (void*)filelib_get_output_directory);
 #endif
 

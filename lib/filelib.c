@@ -42,7 +42,7 @@ error_code filelib_remove(char *filename);
  *****************************************************************************/
 static error_code device_split (char* dirname, char* device, char* path);
 static error_code mkdir_if_needed (char *str);
-static error_code mkdir_recursive (char *str);
+static error_code mkdir_recursive (char *str, int make_last);
 static void close_file (FHANDLE* fp);
 static void close_files ();
 static error_code filelib_write (FHANDLE fp, char *buf, u_long size);
@@ -105,8 +105,11 @@ mkdir_if_needed(char *str)
     return SR_SUCCESS;
 }
 
+/* Recursively make directories.  If make_last == 1, then the final 
+   substring (after the last '/') is considered a directory rather 
+   than a file name */
 static error_code
-mkdir_recursive (char *str)
+mkdir_recursive (char *str, int make_last)
 {
     char buf[SR_MAX_PATH];
     char* p = buf;
@@ -119,7 +122,9 @@ mkdir_recursive (char *str)
 	    mkdir_if_needed (buf);
 	}
     }
-    mkdir_if_needed (str);
+    if (make_last) {
+	mkdir_if_needed (str);
+    }
     return SR_SUCCESS;
 }
 
@@ -215,7 +220,7 @@ filelib_init (BOOL do_individual_tracks,
     if (m_do_individual_tracks || m_do_show) {
 	debug_printf("Trying to make output_directory: %s\n", 
 		     m_output_directory);
-	mkdir_recursive (m_output_directory);
+	mkdir_recursive (m_output_directory, 1);
 
 	/* Next, make the incomplete directory */
 	if (m_do_individual_tracks) {
@@ -673,89 +678,99 @@ parse_and_subst_pat (char* newfile, TRACK_INFO* ti)
     int done;
     char* pat = m_output_pattern;
 
-    strcpy (newfile, m_incomplete_directory);
+    /* Reserve 5 bytes: 4 for the .mp3 extension, and 1 for null char */
+    int MAX_FILEBASELEN = SR_MAX_PATH-5;
 
+    strcpy (newfile, m_output_directory);
     opi = 0;
     nfi = strlen(newfile);
     done = 0;
-    do {
-	while (nfi < SR_MAX_PATH-1) {
-	    if (pat[opi] == '\0') {
-		done = 1;
-		break;
-	    }
-	    if (pat[opi] != '%') {
-		newfile[nfi++] = pat[opi++];
-		continue;
-	    }
-	    /* If we got here, we have a '%' */
-	    switch (pat[opi+1]) {
-	    case '%':
-		newfile[nfi++]='%';
-		opi+=2;
-		continue;
-	    case 'S':
-		/* stream name */
-		/* oops */
-		strncat (newfile, m_icy_name, SR_MAX_PATH-nfi);
-		nfi = strlen (newfile);
-		opi+=2;
-		continue;
-	    case 'd':
-		/* timestamp for start of session */
-		/* oops */
-		break;
-	    case 'D':
-		/* current timestamp */
-		fill_date_buf (datebuf, DATEBUF_LEN);
-		strncat (newfile, datebuf, SR_MAX_PATH-nfi);
-		nfi = strlen (newfile);
-		opi+=2;
-		continue;
-	    case 'a':
-		/* album */
-		strncat (newfile, ti->album, SR_MAX_PATH-nfi);
-		nfi = strlen (newfile);
-		opi+=2;
-		continue;
-	    case 'A':
-		/* artist */
-		strncat (newfile, ti->artist, SR_MAX_PATH-nfi);
-		nfi = strlen (newfile);
-		opi+=2;
-		continue;
-	    case 'q':
-		snprintf (temp, DATEBUF_LEN, "%04d", m_count);
-		strncat (newfile, temp, SR_MAX_PATH-nfi);
-		nfi = strlen (newfile);
-		continue;
-	    case 'Q':
-		/* not yet implemented */
-		break;
-	    case 'T':
-		/* title */
-		strncat (newfile, ti->artist, SR_MAX_PATH-nfi);
-		nfi = strlen (newfile);
-		opi+=2;
-		continue;
-	    case '\0':
-		/* The pattern ends in '%', but that's ok. */
-		newfile[nfi++] = pat[opi++];
-		done = 1;
-		break;
-	    default:
-		/* Illegal pattern, but that's ok. */
-		newfile[nfi++] = pat[opi++];
-		continue;
-	    }
-	    /* If we got to here, it means we're done with substitution.
-	       Maybe everything went ok (done == 1), and we can create 
-	       the file as it was substituted.  Otherwise, we overflowed
-	       MAX_PATH, and we need to try something simpler. */
-	    if (nfi < SR_MAX_PATH-1) {
-	    }
+
+    while (nfi < MAX_FILEBASELEN) {
+	debug_printf ("COMPOSING OUTPUT PATTERN:%s\n", newfile);
+	if (pat[opi] == '\0') {
+	    done = 1;
+	    break;
 	}
-    } while (!done);
+	if (pat[opi] != '%') {
+	    newfile[nfi++] = pat[opi++];
+	    newfile[nfi] = '\0';
+	    continue;
+	}
+	/* If we got here, we have a '%' */
+	switch (pat[opi+1]) {
+	case '%':
+	    newfile[nfi++]='%';
+	    newfile[nfi] = '\0';
+	    opi+=2;
+	    continue;
+	case 'S':
+	    /* stream name */
+	    /* oops */
+	    strncat (newfile, m_icy_name, MAX_FILEBASELEN-nfi);
+	    nfi = strlen (newfile);
+	    opi+=2;
+	    continue;
+	case 'd':
+	    /* append date info */
+	    strncat (newfile, m_session_datebuf, MAX_FILEBASELEN-nfi);
+	    nfi = strlen (newfile);
+	    opi+=2;
+	    continue;
+	case 'D':
+	    /* current timestamp */
+	    fill_date_buf (datebuf, DATEBUF_LEN);
+	    strncat (newfile, datebuf, MAX_FILEBASELEN-nfi);
+	    nfi = strlen (newfile);
+	    opi+=2;
+	    continue;
+	case 'a':
+	    /* album */
+	    strncat (newfile, ti->album, MAX_FILEBASELEN-nfi);
+	    nfi = strlen (newfile);
+	    opi+=2;
+	    continue;
+	case 'A':
+	    /* artist */
+	    strncat (newfile, ti->artist, MAX_FILEBASELEN-nfi);
+	    nfi = strlen (newfile);
+	    opi+=2;
+	    continue;
+	case 'q':
+	    /* sequence number */
+	    if (m_count == -1) {
+		m_count = 1;
+	    }
+	    snprintf (temp, DATEBUF_LEN, "%04d", m_count);
+	    strncat (newfile, temp, MAX_FILEBASELEN-nfi);
+	    nfi = strlen (newfile);
+	    opi+=2;
+	    continue;
+	case 'Q':
+	    /* not yet implemented */
+	    break;
+	case 'T':
+	    /* title */
+	    strncat (newfile, ti->title, MAX_FILEBASELEN-nfi);
+	    nfi = strlen (newfile);
+	    opi+=2;
+	    continue;
+	case '\0':
+	    /* The pattern ends in '%', but that's ok. */
+	    newfile[nfi++] = pat[opi++];
+	    newfile[nfi] = '\0';
+	    done = 1;
+	    break;
+	default:
+	    /* Illegal pattern, but that's ok. */
+	    newfile[nfi++] = pat[opi++];
+	    newfile[nfi] = '\0';
+	    continue;
+	}
+    }
+
+    /* Pop on the extension */
+    strcat (newfile, m_extension);
 }
 
 error_code
@@ -809,7 +824,6 @@ filelib_end (TRACK_INFO* ti, BOOL over_write_existing, BOOL truncate_dup,
     BOOL file_exists = FALSE;
     FHANDLE test_file;
     char newfile[TEMP_STR_LEN];
-    char tfile[TEMP_STR_LEN];
 
     if (!m_do_individual_tracks) return SR_SUCCESS;
 
@@ -817,13 +831,19 @@ filelib_end (TRACK_INFO* ti, BOOL over_write_existing, BOOL truncate_dup,
 
     /* Construct filename for completed file */
     parse_and_subst_pat (newfile, ti);
+    debug_printf ("Final output pattern:%s\n", newfile);
 
+#if defined (commentout)
     memset (newfile, 0, TEMP_STR_LEN);
     if (m_count != -1)
         sprintf (newfile, "%s%s%03d_%s%s", m_output_directory, a_pszPrefix, 
 		 m_count, tfile, m_extension);
     else
 	sprintf (newfile, "%s%s%s", m_output_directory, tfile, m_extension);
+#endif
+
+    /* Build up the output directory */
+    mkdir_recursive (newfile, 0);
 
     // If we are over writing existing tracks
     if (!over_write_existing) {
