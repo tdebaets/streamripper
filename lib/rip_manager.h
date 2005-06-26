@@ -14,7 +14,6 @@
 #define MAX_STATUS_LEN		256
 #define MAX_STREAMNAME_LEN	1024
 #define MAX_SERVER_LEN		1024
-#define MAX_PREFIX_LEN 50
 
 // Messages for status_callback hook in rip_manager_init()
 // used for notifing to client whats going on *DO NOT* call 
@@ -118,7 +117,6 @@ typedef struct RIP_MANAGER_OPTIONSst
     int timeout;			// timeout, in seconds, before a stalled connection is forcefully closed
     int dropcount;			// number of tracks at beginning of connection to always ignore
     CODESET_OPTIONS cs_opt;             // which codeset should i use?
-    char szPrefix[MAX_PREFIX_LEN];      // might want to use a prefix for each file
     int count_start;                    // which number to start counting?
 
 } RIP_MANAGER_OPTIONS;

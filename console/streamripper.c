@@ -258,7 +258,6 @@ void print_usage()
     fprintf(stderr, "      -I interface   - Rip from specified interface (e.g. eth0)\n");
 #endif
     fprintf(stderr, "      -T             - Truncate duplicated tracks in incomplete\n");
-    fprintf(stderr, "      -P text        - Add a Prefix to each ripped file (Not shown on stdout).\n");
     fprintf(stderr, "      --quiet        - Don't print ripping status to console\n");
     fprintf(stderr, "      --debug        - Save debugging trace\n");
     fprintf(stderr, "      --xs_???       - Invoke splitpoint detection rules (see README/man page)\n");
@@ -291,7 +290,7 @@ void parse_arguments(int argc, char **argv)
 	if (argv[i][0] != '-')
 	    continue;
 
-	c = strchr("dDfIklLmMpPRuw", argv[i][1]);
+	c = strchr("dDfIklLmMpRuw", argv[i][1]);
         if (c != NULL) {
             if ((i == (argc-1)) || (argv[i+1][0] == '-')) {
 		fprintf(stderr, "option %s requires an argument\n", argv[i]);
@@ -322,12 +321,9 @@ void parse_arguments(int argc, char **argv)
 	    break;
 	case 'f':
 	    i++;
-#if defined (commentout)
-	    strncpy(m_opt.dropstring, argv[i], MAX_DROPSTRING_LEN);
-#endif
 	    printf ("Error: -f dropstring option is obsolete. "
 		    "Please use -w parse_rules instead.\n");
-	    break;
+	    exit (1);
 	case 'h':
 	    print_usage();
             exit(0);
@@ -357,8 +353,9 @@ void parse_arguments(int argc, char **argv)
 	    break;
 	case 'P':
 	    i++;
-	    strncpy(m_opt.szPrefix, argv[i], MAX_PREFIX_LEN);
-	    break;
+	    printf ("Error: -P prefix option is obsolete. "
+		    "Please use -D pattern instead.\n");
+	    exit (1);
 	case 'q':
 	    m_opt.flags ^= OPT_COUNT_FILES;
 	    m_opt.count_start = 0;

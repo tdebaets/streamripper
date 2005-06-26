@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <errno.h>
 #include "compat.h"
 #include "filelib.h"
@@ -55,15 +56,18 @@ static int is_absolute_path (char* fn);
 static void parse_and_subst_dir (char* pattern_head, char* pattern_tail,
 				 char* opat_path, char* icy_name);
 static void parse_and_subst_pat (char* newfile, TRACK_INFO* ti);
+#if defined (commentout)
 static error_code set_output_directory_old (char* output_directory,
 					    int get_separate_dirs,
 					    int get_date_stamp,
 					    char* icy_name
 					    );
+#endif
 static error_code set_output_directory_new (char* output_pattern,
 					    char* output_directory,
 					    int get_separate_dirs,
 					    int get_date_stamp,
+					    int do_count,
 					    char* icy_name
 					    );
 static error_code sr_getcwd (char* dirbuf);
@@ -116,7 +120,7 @@ mkdir_recursive (char *str, int make_last)
     char q;
 
     buf[0] = '\0';
-    while (q = *p++ = *str++) {
+    while ((q = *p++ = *str++) != '\0') {
 	if (ISSLASH(q)) {
 	    *p = '\0';
 	    mkdir_if_needed (buf);
@@ -200,6 +204,7 @@ filelib_init (BOOL do_individual_tracks,
        that contains the incomplete dir and the show files.
        It might not contain the individual files if an output_pattern
        was specified. */
+#if defined (commentout)
     if (output_pattern && *output_pattern) {
 	set_output_directory_new (output_pattern,
 				  output_directory,
@@ -212,6 +217,14 @@ filelib_init (BOOL do_individual_tracks,
 				  get_date_stamp,
 				  icy_name);
     }
+#endif
+
+    set_output_directory_new (output_pattern,
+			      output_directory,
+			      get_separate_dirs,
+			      get_date_stamp,
+			      do_count,
+			      icy_name);
 
     sprintf (m_incomplete_directory, "%s%s%c", m_output_directory,
 	     "incomplete", PATH_SLASH);
@@ -241,6 +254,7 @@ set_output_directory_new (char* output_pattern,
 			  char* output_directory,
 			  int get_separate_dirs,
 			  int get_date_stamp,
+			  int do_count,
 			  char* icy_name
 			  )
 {
@@ -267,9 +281,17 @@ set_output_directory_new (char* output_pattern,
     ret = sr_getcwd (cwd);
     if (ret != SR_SUCCESS) return ret;
     if (get_separate_dirs) {
-	default_pattern = "%S" PATH_SLASH_STR "%A - %T";
+	if (do_count) {
+	    default_pattern = "%S" PATH_SLASH_STR "%q_%A - %T";
+	} else {
+	    default_pattern = "%S" PATH_SLASH_STR "%A - %T";
+	}
     } else {
-	default_pattern = "%A - %T";
+	if (do_count) {
+	    default_pattern = "%q_%A - %T";
+	} else {
+	    default_pattern = "%A - %T";
+	}
     }
 
     if (!output_pattern || !(*output_pattern)) {
@@ -384,12 +406,15 @@ parse_and_subst_dir (char* pattern_head, char* pattern_tail,
 	    phi = strlen (pattern_head);
 	    opi+=2;
 	    continue;
+	case '0': case '1': case '2': case '3': case '4': 
+	case '5': case '6': case '7': case '8': case '9': 
 	case 'a':
 	case 'A':
 	case 'D':
 	case 'q':
 	case 'Q':
 	case 'T':
+	    /* These are track specific patterns */
 	    break;
 	case '\0':
 	    /* Generally this shouldn't happen; it means there are no
@@ -542,16 +567,6 @@ fill_date_buf (char* datebuf, int datebuf_len)
 static error_code
 add_trailing_slash (char *str)
 {
-#if defined (commentout)
-#if WIN32
-    if (str[strlen(str)-1] != '\\')
-	strcat(str, "\\");
-#else
-    if (str[strlen(str)-1] != '/')
-	strcat(str, "/");
-#endif
-#endif
-
     int len = strlen(str);
     if (len >= SR_MAX_PATH-1)
 	return SR_ERROR_DIR_PATH_TOO_LONG;
@@ -642,14 +657,6 @@ filelib_write_cue(TRACK_INFO* ti, int secs)
     if (!m_do_show) return SR_SUCCESS;
     if (!m_cue_file) return SR_SUCCESS;
 
-#if defined (commentout)
-    /* Oops, forgot that Jon doesn't like the easy way... */
-    fprintf (m_cue_file, "  TRACK %02d AUDIO\n",track_no++);
-    fprintf (m_cue_file, "    TITLE \"%s\"\n",title);
-    fprintf (m_cue_file, "    PERFORMER \"%s\"\n",artist);
-    fprintf (m_cue_file, "    INDEX 01 %02d:%02d\n",
-	secs / 60, secs % 60);
-#endif
     rc = snprintf(buf,1024,"  TRACK %02d AUDIO\n",track_no++);
     filelib_write(m_cue_file,buf,rc);
     rc = snprintf(buf,1024,"    TITLE \"%s\"\n",ti->title);
@@ -677,6 +684,7 @@ parse_and_subst_pat (char* newfile, TRACK_INFO* ti)
     int nfi = 0;
     int done;
     char* pat = m_output_pattern;
+    debug_printf ("OUTPUT PATTERN:%s\n", m_output_pattern);
 
     /* Reserve 5 bytes: 4 for the .mp3 extension, and 1 for null char */
     int MAX_FILEBASELEN = SR_MAX_PATH-5;
@@ -739,7 +747,7 @@ parse_and_subst_pat (char* newfile, TRACK_INFO* ti)
 	case 'q':
 	    /* sequence number */
 	    if (m_count == -1) {
-		m_count = 1;
+		m_count = 0;
 	    }
 	    snprintf (temp, DATEBUF_LEN, "%04d", m_count);
 	    strncat (newfile, temp, MAX_FILEBASELEN-nfi);
@@ -761,6 +769,30 @@ parse_and_subst_pat (char* newfile, TRACK_INFO* ti)
 	    newfile[nfi] = '\0';
 	    done = 1;
 	    break;
+	case '0': case '1': case '2': case '3': case '4': 
+	case '5': case '6': case '7': case '8': case '9': 
+	    {
+		/* Get integer */
+		int ai = 0;
+		char ascii_buf[7];      /* max 6 chars */
+		while (isdigit (pat[opi+1+ai]) && ai < 6) {
+		    ascii_buf[ai] = pat[opi+1+ai];
+		    ai ++;
+		}
+		ascii_buf[ai] = '\0';
+		/* If we got a q, get starting number */
+		if (pat[opi+1+ai] == 'q') {
+		    if (m_count == -1) {
+			m_count = atoi(ascii_buf);
+		    }
+		    snprintf (temp, DATEBUF_LEN, "%04d", m_count);
+		    strncat (newfile, temp, MAX_FILEBASELEN-nfi);
+		    nfi = strlen (newfile);
+		    opi+=ai+2;
+		    continue;
+		}
+		/* Otherwise, no 'q', so drop through to default case */
+	    }
 	default:
 	    /* Illegal pattern, but that's ok. */
 	    newfile[nfi++] = pat[opi++];
@@ -818,7 +850,7 @@ filelib_start (TRACK_INFO* ti)
 // fullpath is an output parameter
 error_code
 filelib_end (TRACK_INFO* ti, BOOL over_write_existing, BOOL truncate_dup, 
-	     char *fullpath, char* a_pszPrefix)
+	     char *fullpath)
 {
     BOOL ok_to_write = TRUE;
     BOOL file_exists = FALSE;
@@ -832,15 +864,6 @@ filelib_end (TRACK_INFO* ti, BOOL over_write_existing, BOOL truncate_dup,
     /* Construct filename for completed file */
     parse_and_subst_pat (newfile, ti);
     debug_printf ("Final output pattern:%s\n", newfile);
-
-#if defined (commentout)
-    memset (newfile, 0, TEMP_STR_LEN);
-    if (m_count != -1)
-        sprintf (newfile, "%s%s%03d_%s%s", m_output_directory, a_pszPrefix, 
-		 m_count, tfile, m_extension);
-    else
-	sprintf (newfile, "%s%s%s", m_output_directory, tfile, m_extension);
-#endif
 
     /* Build up the output directory */
     mkdir_recursive (newfile, 0);

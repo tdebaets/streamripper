@@ -76,9 +76,7 @@ filelib_init (BOOL do_individual_tracks,
 	      char* icy_name);
 error_code filelib_start (TRACK_INFO* ti);
 error_code filelib_end (TRACK_INFO* ti, BOOL over_write_existing,
-		       BOOL truncate_dup,
-		       char *fullpath,
-		       char* a_pszPrefix);
+			BOOL truncate_dup, char *fullpath);
 error_code filelib_write_track(char *buf, u_long size);
 error_code filelib_write_show(char *buf, u_long size);
 void filelib_shutdown();
