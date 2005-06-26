@@ -402,7 +402,6 @@ parse_and_subst_dir (char* pattern_head, char* pattern_tail,
 	case 'A':
 	case 'D':
 	case 'q':
-	case 'Q':
 	case 'T':
 	    /* These are track specific patterns */
 	    break;
