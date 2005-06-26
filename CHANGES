@@ -2,7 +2,8 @@ New for 1.61.9
 --------------
 * Add patch from Albert for metadata restriction rules
 * New -D flag for output file patterns
-* Add option to start numbering for -q flag with number other than 0000
+* The -q flag now autodetects the correct number to start with
+* The -q flag now takes an optional starting number
 * Remove support for -P prefix, it is now a fatal error
 * Using -f dropstring option is now a fatal error
 * Under development, new buffering code

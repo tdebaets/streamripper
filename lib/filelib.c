@@ -27,6 +27,9 @@
 #include "debug.h"
 #include <assert.h>
 
+#include <sys/types.h>
+#include <dirent.h>
+
 #define TEMP_STR_LEN	(SR_MAX_PATH*2)
 
 /*****************************************************************************
@@ -56,22 +59,16 @@ static int is_absolute_path (char* fn);
 static void parse_and_subst_dir (char* pattern_head, char* pattern_tail,
 				 char* opat_path, char* icy_name);
 static void parse_and_subst_pat (char* newfile, TRACK_INFO* ti);
-#if defined (commentout)
-static error_code set_output_directory_old (char* output_directory,
-					    int get_separate_dirs,
-					    int get_date_stamp,
-					    char* icy_name
-					    );
-#endif
+static void set_default_pattern (BOOL get_separate_dirs, BOOL do_count);
 static error_code set_output_directory_new (char* output_pattern,
 					    char* output_directory,
 					    int get_separate_dirs,
 					    int get_date_stamp,
-					    int do_count,
 					    char* icy_name
 					    );
 static error_code sr_getcwd (char* dirbuf);
 static error_code add_trailing_slash (char *str);
+static int get_next_sequence_number (char* fn_base);
 static void fill_date_buf (char* datebuf, int datebuf_len);
 
 /*****************************************************************************
@@ -83,6 +80,7 @@ static FHANDLE 	m_show_file;
 static FHANDLE  m_cue_file;
 static int 	m_count;
 static int      m_do_show;
+static char 	m_default_pattern[SR_MAX_PATH];
 static char 	m_output_directory[SR_MAX_PATH];
 static char 	m_output_pattern[SR_MAX_PATH];
 static char 	m_incomplete_directory[SR_MAX_PATH];
@@ -149,7 +147,6 @@ filelib_init (BOOL do_individual_tracks,
     m_file = INVALID_FHANDLE;
     m_show_file = INVALID_FHANDLE;
     m_cue_file = INVALID_FHANDLE;
-    // m_count = do_count ? 1 : -1;
     m_count = do_count ? count_start : -1;
     m_keep_incomplete = keep_incomplete;
     memset(&m_output_directory, 0, SR_MAX_PATH);
@@ -198,32 +195,20 @@ filelib_init (BOOL do_individual_tracks,
 	/* Normally I would open the show & cue files here, but
 	   I don't yet know the output directory.  So do nothing until
 	   first write (until above problem is fixed).  */
+	/* GCS FIX: Now it is fixed. */
     }
+
+    /* Set up the proper pattern if we're using -q and -s flags */
+    set_default_pattern (get_separate_dirs, do_count);
 
     /* Get the path to the "parent" directory.  This is the directory
        that contains the incomplete dir and the show files.
        It might not contain the individual files if an output_pattern
        was specified. */
-#if defined (commentout)
-    if (output_pattern && *output_pattern) {
-	set_output_directory_new (output_pattern,
-				  output_directory,
-				  get_separate_dirs,
-				  get_date_stamp,
-				  icy_name);
-    } else {
-	set_output_directory_old (output_directory,
-				  get_separate_dirs,
-				  get_date_stamp,
-				  icy_name);
-    }
-#endif
-
     set_output_directory_new (output_pattern,
 			      output_directory,
 			      get_separate_dirs,
 			      get_date_stamp,
-			      do_count,
 			      icy_name);
 
     sprintf (m_incomplete_directory, "%s%s%c", m_output_directory,
@@ -248,13 +233,32 @@ filelib_init (BOOL do_individual_tracks,
     return SR_SUCCESS;
 }
 
+/* Set up a default pattern using -q & -s flags */
+static void
+set_default_pattern (BOOL get_separate_dirs, BOOL do_count)
+{
+    /* None of these operations can overflow m_default_pattern */
+    m_default_pattern[0] = '\0';
+    if (get_separate_dirs) {
+	strcpy (m_default_pattern, "%S" PATH_SLASH_STR);
+    }
+    if (do_count) {
+	if (m_count < 0) {
+	    strcat (m_default_pattern, "%q_");
+	} else {
+	    sprintf (&m_default_pattern[strlen(m_default_pattern)], 
+		     "%%%dq_", m_count);
+	}
+    }
+    strcat (m_default_pattern, "%A - %T");
+}
+
 /* This is the new way, using the -D flag and the stream name. */
 error_code 
 set_output_directory_new (char* output_pattern,
 			  char* output_directory,
 			  int get_separate_dirs,
 			  int get_date_stamp,
-			  int do_count,
 			  char* icy_name
 			  )
 {
@@ -267,7 +271,6 @@ set_output_directory_new (char* output_pattern,
     char odir_path[SR_MAX_PATH];
     char cwd_path[SR_MAX_PATH];
     char cwd[SR_MAX_PATH];
-    char* default_pattern;
 
     char pattern_head[SR_MAX_PATH];
     char pattern_tail[SR_MAX_PATH];
@@ -280,22 +283,9 @@ set_output_directory_new (char* output_pattern,
     opat_path[0] = '\0';
     ret = sr_getcwd (cwd);
     if (ret != SR_SUCCESS) return ret;
-    if (get_separate_dirs) {
-	if (do_count) {
-	    default_pattern = "%S" PATH_SLASH_STR "%q_%A - %T";
-	} else {
-	    default_pattern = "%S" PATH_SLASH_STR "%A - %T";
-	}
-    } else {
-	if (do_count) {
-	    default_pattern = "%q_%A - %T";
-	} else {
-	    default_pattern = "%A - %T";
-	}
-    }
 
     if (!output_pattern || !(*output_pattern)) {
-	output_pattern = default_pattern;
+	output_pattern = m_default_pattern;
     }
 
     /* Get the device. It can be empty. */
@@ -745,18 +735,13 @@ parse_and_subst_pat (char* newfile, TRACK_INFO* ti)
 	    opi+=2;
 	    continue;
 	case 'q':
-	    /* sequence number */
-	    if (m_count == -1) {
-		m_count = 0;
-	    }
-	    snprintf (temp, DATEBUF_LEN, "%04d", m_count);
+	    /* automatic sequence number */
+	    snprintf (temp, DATEBUF_LEN, "%04d", 
+		      get_next_sequence_number (newfile));
 	    strncat (newfile, temp, MAX_FILEBASELEN-nfi);
 	    nfi = strlen (newfile);
 	    opi+=2;
 	    continue;
-	case 'Q':
-	    /* not yet implemented */
-	    break;
 	case 'T':
 	    /* title */
 	    strncat (newfile, ti->title, MAX_FILEBASELEN-nfi);
@@ -1080,4 +1065,59 @@ set_show_filenames (void)
     }
     strcat (m_cue_name, ".cue");
     strcat (m_show_name, m_extension);
+}
+
+static int
+get_next_sequence_number (char* fn_base)
+{
+    int di = 0;
+    int edi = 0;
+    int seq;
+    char dir_name[SR_MAX_PATH];
+    char fn_prefix[SR_MAX_PATH];
+    DIR* dp;
+    struct dirent* de;
+
+#if defined (WIN32)
+    /* Not yet implemented */
+    return 0;
+#else
+    /* Get directory from fn_base */
+    while (fn_base[di]) {
+	if (ISSLASH(fn_base[di])) {
+	    edi = di;
+	}
+	di++;
+    }
+    dir_name[0] = '\0';
+    strncpy (dir_name, fn_base, edi);
+
+    /* Get fn prefix from fn_base */
+    fn_prefix[0] = '\0';
+    strcpy (fn_prefix, &fn_base[edi+1]);
+
+    /* Look through directory for a filenames that match prefix */
+    if ((dp = opendir (dir_name)) == 0) {
+	return 0;
+    }
+    debug_printf ("dir:%s\nprefix:%s\n", dir_name, fn_prefix);
+    seq = 0;
+    while ((de = readdir (dp)) != 0) {
+	debug_printf ("Checking file for sequence number: %s\n", de->d_name);
+	if (strncmp(de->d_name, fn_prefix, strlen(fn_prefix)) == 0) {
+	    debug_printf ("Prefix match\n", de->d_name);
+	    if (isdigit(de->d_name[strlen(fn_prefix)])) {
+		int this_seq = atoi(&de->d_name[strlen(fn_prefix)]);
+		debug_printf ("Digit match:%c,%d\n", 
+			      de->d_name[strlen(fn_prefix)], this_seq);
+		if (seq <= this_seq) {
+		    seq = this_seq + 1;
+		}
+	    }
+	}
+    }
+    closedir (dp);
+    debug_printf ("Final sequence number found: %d\n",seq);
+    return seq;
+#endif
 }

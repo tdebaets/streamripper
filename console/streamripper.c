@@ -358,7 +358,7 @@ void parse_arguments(int argc, char **argv)
 	    exit (1);
 	case 'q':
 	    m_opt.flags ^= OPT_COUNT_FILES;
-	    m_opt.count_start = 0;
+	    m_opt.count_start = -1;     /* -1 means auto-detect */
 	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
 	    i++;
