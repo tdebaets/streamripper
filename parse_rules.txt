@@ -2,11 +2,9 @@
 # Use it this like this:
 #     streamripper URL -w parse_rules.txt
 
-# Lines that start with '#' are comments, and blank lines are ignored.
+## THIS IS AN EXAMPLE FILE ## PLEASE READ AND EDIT BEFORE USING ##
 
-#################################################
-### BEGIN: NOT YET IMPLEMENTED
-#################################################
+# Lines that start with '#' are comments, and blank lines are ignored.
 
 # Ignore metadata that begins with "A suivre"
 # The leading "m" says this is a match rule
@@ -26,12 +24,9 @@ m/[Ff]unk/s
 # The first m//e, m//s or m//x rule that matches determines the 
 # action that is performed.  If none match, then by default the file 
 # will be saved.  If you prefer having the default being that the 
-# files aren't saved, include the following as the last rule
+# files aren't saved, include the following rule after all your 
+# other m//e, m//s or m//x rules.
 m//x
-
-#################################################
-### END: NOT YET IMPLEMENTED
-#################################################
 
 # Strip off anything like "- Mp3Pro" from the end of the string
 # The leading "s" says this is a substitution rule
@@ -41,6 +36,10 @@ s/[[:space:]]*-?[[:space:]]*mp3pro$//i
 # Strip off something like "- " from the beginning of the string
 s/^[[:space:]]*-[[:space:]]*//
 
+# The strip rules don't have to be after the m//e, m//s and m//x 
+# rules.  You can interleave them.  Rules are always processed
+# in order.
+
 # This is the normal parsing rule: "Artist - Title"
 # The trailing "A1" means that the artist (A) matches subpattern 1
 # The trailing "T2" means that the title (T) matches subpattern 2
@@ -48,6 +47,9 @@ m/^[[:space:]]*([^-]*[^-[:space:]])[[:space:]]*-[[:space:]]*(.*)[[:space:]]*$/A1
 
 # This is slightly different parsing rule: "Artist, Title"
 m/^[[:space:]]*([^,]*[^,[:space:]])[[:space:]]*,[[:space:]]*(.*)[[:space:]]*$/A1T2
+
+# After the first match with an m//A or m//T rule, no more rules 
+# will be checked.
 
 # If the metadata doesn't match any of the "m" rules, then the remaining 
 # metadata string (with substitutions) is entered into the "Title" field.

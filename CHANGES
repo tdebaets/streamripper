@@ -1,5 +1,6 @@
 New for 1.61.9
 --------------
+Mon Jun 27 08:16:04 EDT 2005
 * Add patch from Albert for metadata restriction rules
 * New -D flag for output file patterns
 * The -q flag now autodetects the correct number to start with

@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "STREAMRIPPER" "1" "25 June 2005" "" ""
+.TH "STREAMRIPPER" "1" "29 June 2005" "" ""
 
 .SH NAME
 streamripper \- rip shoutcast radio streams to mp3 files
@@ -42,9 +42,11 @@ into, this disables that.
 Use a pattern to format the output file names
 .PP
 This option tells streamripper how to form the filenames.
-If -D is used, options -q, -s, and -P will be ignored.
+If -D is used, the options -s and -P will be ignored.
 If the pattern represents an absolute path, the -d
 optoin will also be ignored.
+If both -D and -q are specified, -q will only be used
+to set the start count if a %q token is included.
 .PP
 By default the output files are put in a directory that has
 the same name as the stream, and files are formed from the
@@ -61,8 +63,7 @@ tokens can be used for substitution.
     %a        Album
     %D        Date and time (per song)
     %d        Date and time (per execution)
-    %Q        Sequence number (parsing files to find it)
-    %q        Sequence number (starting from zero)
+    %q        Sequence number (automatic detection)
     %Nq       Sequence number (starting from number N)
     %%        Percent sign
 .fi
@@ -189,7 +190,7 @@ megabytes, then stop.
 Add sequence number to output filenames
 .PP
 When the files are copied from incomplete to complete, the filename
-can be prepended with a sequence number (beginning with 0001).  This can
+can be prepended with a sequence number (beginning with 0000).  This can
 be used to, for example, show the order that the files were created.
 If desired, a starting count can be used with -q to begin
 the sequence at any number you like.
@@ -288,7 +289,7 @@ Set amount to pad before and after splitpoint
 .PP
 The easiest way to get started is to find the URL of a stream you want
 to rip, usually I find the URL by loading it up in winamp or xmms and
-querying for the source URL. (right clicking on the playlist)
+querying for the source URL (right click on the playlist)
 Once you have the URL you can begin ripping.
 
 .nf
@@ -298,10 +299,10 @@ Once you have the URL you can begin ripping.
 This would rip Monkey Radio (as of 1/10/2001), it places the tracks
 into two directory's one called "Monkey Radio" and a sub-directory
 "Monkey Radio/incomplete" the incomplete directory is for tracks that
-streamripper does not know the begging or end of. the first and last
+streamripper does not know the begging or end of. The first and last
 tracks your rip for instance, would be in incomplete.
 .PP
-Also you can listen to the stream by creating a relay server..
+Also you can listen to the stream by creating a relay server.
 
 .nf
   streamripper http://205.188.245.132:8038 -r

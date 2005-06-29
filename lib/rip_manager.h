@@ -3,7 +3,7 @@
 
 #include "srtypes.h"
 
-#define SRVERSION	"1.61.8.1"
+#define SRVERSION	"1.61.9"
 
 #if defined (WIN32)
 #define SRPLATFORM      "windows"
