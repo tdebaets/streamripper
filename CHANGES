@@ -1,3 +1,8 @@
+New for 1.61.10
+---------------
+Fri Jul  8 02:05:22 EDT 2005
+* Fix problem with -q flag always using 0000
+
 New for 1.61.9
 --------------
 Mon Jun 27 08:16:04 EDT 2005
