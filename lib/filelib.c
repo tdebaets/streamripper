@@ -1088,14 +1088,15 @@ get_next_sequence_number (char* fn_base)
 	}
 	di++;
     }
-    dir_name[0] = '\0';
     strncpy (dir_name, fn_base, edi);
+    dir_name[edi] = '\0';
 
     /* Get fn prefix from fn_base */
     fn_prefix[0] = '\0';
     strcpy (fn_prefix, &fn_base[edi+1]);
 
     /* Look through directory for a filenames that match prefix */
+    debug_printf ("Trying to opendir: %s\n", dir_name);
     if ((dp = opendir (dir_name)) == 0) {
 	return 0;
     }
