@@ -51,7 +51,6 @@ typedef struct RIP_MANAGER_INFOst
 // Rip manager flags options
 #define OPT_AUTO_RECONNECT	0x00000001		// reconnect automatticly if dropped
 #define OPT_SEPERATE_DIRS	0x00000002		// create a directory named after the server
-#define OPT_OVER_WRITE_TRACKS	0x00000004		// should files in the complete directory be overwritten
 #define OPT_SEARCH_PORTS	0x00000008		// relay server should search for a open port
 #define OPT_MAKE_RELAY		0x00000010		// don't make a relay server
 #define OPT_COUNT_FILES		0x00000020		// add a index counter to the filenames
@@ -62,13 +61,14 @@ typedef struct RIP_MANAGER_INFOst
 #define OPT_SINGLE_FILE_OUTPUT	0x00000800		// enable ripping to single file
 #define OPT_TRUNCATE_DUPS	0x00001000		// truncate file in the incomplete directory already present in complete
 #define OPT_INDIVIDUAL_TRACKS	0x00002000		// should we write the individual tracks?
+#define OPT_ALWAYS_OVER_WRITE	0x00004000		// should files in the complete directory be overwritten
+#define OPT_NEVER_OVER_WRITE	0x00008000		// should files in the complete directory be overwritten
 
 #define OPT_FLAG_ISSET(flags, opt)	((flags & opt) > 0)
 #define OPT_FLAG_SET(flags, opt)	(flags =| opt)
 
 #define GET_AUTO_RECONNECT(flags)		(OPT_FLAG_ISSET(flags, OPT_AUTO_RECONNECT))
 #define GET_SEPERATE_DIRS(flags)		(OPT_FLAG_ISSET(flags, OPT_SEPERATE_DIRS))
-#define GET_OVER_WRITE_TRACKS(flags)		(OPT_FLAG_ISSET(flags, OPT_OVER_WRITE_TRACKS))
 #define GET_SEARCH_PORTS(flags)			(OPT_FLAG_ISSET(flags, OPT_SEARCH_PORTS))
 #define GET_MAKE_RELAY(flags)			(OPT_FLAG_ISSET(flags, OPT_MAKE_RELAY))
 #define GET_COUNT_FILES(flags)			(OPT_FLAG_ISSET(flags, OPT_COUNT_FILES))
@@ -79,6 +79,8 @@ typedef struct RIP_MANAGER_INFOst
 #define GET_SINGLE_FILE_OUTPUT(flags)		(OPT_FLAG_ISSET(flags, OPT_SINGLE_FILE_OUTPUT))
 #define GET_TRUNCATE_DUPS(flags)		(OPT_FLAG_ISSET(flags, OPT_TRUNCATE_DUPS))
 #define GET_INDIVIDUAL_TRACKS(flags)		(OPT_FLAG_ISSET(flags, OPT_INDIVIDUAL_TRACKS))
+#define GET_ALWAYS_OVER_WRITE(flags)		(OPT_FLAG_ISSET(flags, OPT_ALWAYS_OVER_WRITE))
+#define GET_NEVER_OVER_WRITE(flags)		(OPT_FLAG_ISSET(flags, OPT_NEVER_OVER_WRITE))
 
 #define SET_AUTO_RECONNECT(flags)		(OPT_FLAG_SET(flags, OPT_AUTO_RECONNECT))
 #define SET_SEPERATE_DIRS(flags)		(OPT_FLAG_SET(flags, OPT_SEPERATE_DIRS))
@@ -93,6 +95,8 @@ typedef struct RIP_MANAGER_INFOst
 #define SET_SINGLE_FILE_OUTPUT(flags)		(OPT_FLAG_SET(flags, OPT_SINGLE_FILE_OUTPUT))
 #define SET_TRUNCATE_DUPS(flags)		(OPT_FLAG_SET(flags, OPT_TRUNCATE_DUPS))
 #define SET_INDIVIDUAL_TRACKS(flags)		(OPT_FLAG_SET(flags, OPT_INDIVIDUAL_TRACKS))
+#define SET_ALWAYS_OVER_WRITE(flags)		(OPT_FLAG_SET(flags, OPT_ALWAYS_OVER_WRITE))
+#define SET_NEVER_OVER_WRITE(flags)		(OPT_FLAG_SET(flags, OPT_NEVER_OVER_WRITE))
 
 
 typedef struct RIP_MANAGER_OPTIONSst

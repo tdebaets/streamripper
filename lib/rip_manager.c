@@ -268,8 +268,11 @@ rip_manager_end_track(TRACK_INFO* ti)
     char fullpath[SR_MAX_PATH];
 
     if (m_write_data) {
-        filelib_end (ti, GET_OVER_WRITE_TRACKS(m_options.flags),
-		     GET_TRUNCATE_DUPS(m_options.flags), fullpath);
+        filelib_end (ti,
+		     GET_ALWAYS_OVER_WRITE(m_options.flags),
+		     GET_NEVER_OVER_WRITE(m_options.flags),
+		     GET_TRUNCATE_DUPS(m_options.flags),
+		     fullpath);
     }
 
     post_status(0);

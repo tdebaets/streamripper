@@ -13,6 +13,7 @@ connections from clients that don't want metadata.
 "bd" <bd a@t bc-bd.org> for -L flag that creates a relay server pls file.
 "Albert Bachmann" <lbert.bachmann a@t gmx.de> For new metadata rules 
 which let you choose which files to save or delete.
+"Daniel Lord" patch for overwriting complete files when bigger.
 
 THANKS (v.1.60.X)
 ---------------------

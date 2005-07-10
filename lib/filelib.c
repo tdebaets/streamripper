@@ -28,7 +28,7 @@
 #include <assert.h>
 
 #include <sys/types.h>
-#include <dirent.h>
+#include "uce_dirent.h"
 
 #define TEMP_STR_LEN	(SR_MAX_PATH*2)
 
@@ -830,15 +830,87 @@ filelib_start (TRACK_INFO* ti)
     return filelib_open_for_write(&m_file, newfile);
 }
 
+static long
+get_file_size (char *filename)
+{
+    long len;
+    FILE* fp = fopen(filename, "r");
+    if (!fp) return 0;
+
+    if (fseek (fp, 0, SEEK_END)) {
+	fclose(fp);
+	return 0;
+    }
+
+    len = ftell (fp);
+    if (len < 0) {
+	fclose(fp);
+	return 0;
+    }
+
+    fclose (fp);
+    return len;
+}
+
+/*
+ * Added by Daniel Lord 29.06.2005 to only overwrite files with better 
+ * captures, modified by GCS to get file size from file system 
+ */
+static BOOL
+new_file_is_better (char *oldfile, char *newfile)
+{
+    long oldfilesize=0;
+    long newfilesize=0;
+
+#if defined (commentout)
+    test_file=open(oldfile, O_RDWR | O_EXCL);
+    oldfilesize=FileSize(test_file);
+#endif
+
+    oldfilesize = get_file_size (oldfile);
+    newfilesize = get_file_size (newfile);
+    
+    /*
+     * simple size check for now. Newfile should have at least 1Meg. Else it's
+     * not very usefull most of the time.
+     */
+    if (newfilesize <= 524288) {
+	debug_printf("NFB: newfile smaller as 524288\n");
+	return FALSE;
+    }
+
+    if (oldfilesize == -1) {
+	/* make sure we get the file in case of errors */
+	debug_printf("NFB: could not get old filesize\n");
+	return TRUE;
+    }
+
+    if (oldfilesize == newfilesize) {
+	debug_printf("NFB: Size Match\n");
+	return FALSE;
+    }
+
+    if (newfilesize < oldfilesize) {
+	debug_printf("NFB:newfile bigger as oldfile\n");
+	return FALSE;
+    }
+
+    debug_printf ("NFB:oldfilesize = %li, newfilesize = %li, "
+		  "overwriting file\n", oldfilesize, newfilesize);
+    return TRUE;
+}
+ 
+
 // Moves the file from incomplete to complete directory
 // fullpath is an output parameter
 error_code
-filelib_end (TRACK_INFO* ti, BOOL over_write_existing, BOOL truncate_dup, 
+filelib_end (TRACK_INFO* ti, 
+	     BOOL always_overwrite,
+	     BOOL never_overwrite,
+	     BOOL truncate_dup, 
 	     char *fullpath)
 {
     BOOL ok_to_write = TRUE;
-    BOOL file_exists = FALSE;
-    FHANDLE test_file;
     char newfile[TEMP_STR_LEN];
 
     if (!m_do_individual_tracks) return SR_SUCCESS;
@@ -853,31 +925,22 @@ filelib_end (TRACK_INFO* ti, BOOL over_write_existing, BOOL truncate_dup,
     mkdir_recursive (newfile, 0);
 
     // If we are over writing existing tracks
-    if (!over_write_existing) {
+    if (always_overwrite) {
+	ok_to_write = TRUE;
+    } else if (never_overwrite) {
 	ok_to_write = FALSE;
-
-	// test if we can open the file we would be overwriting
-#if WIN32
-	OutputDebugString(newfile);
-	test_file = CreateFile(newfile, GENERIC_WRITE, FILE_SHARE_READ, 
-			       NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 
-			       NULL);
-#else
-	test_file = open(newfile, O_WRONLY | O_EXCL);
-#endif
-	file_exists = (test_file != INVALID_FHANDLE);
-	if (!file_exists)
-	    ok_to_write = TRUE;
-	else
-	    CloseFile(test_file);
+    } else {
+	/* Smart overwriting -- only overwrite if new file is bigger */
+	ok_to_write = new_file_is_better (newfile, m_incomplete_filename);
     }
 
     if (ok_to_write) {
-	// JCBUG -- clean this up
-	int x = DeleteFile(newfile);
-	x = MoveFile(m_incomplete_filename, newfile);
+	if (file_exists (newfile)) {
+	    DeleteFile (newfile);
+	}
+	MoveFile (m_incomplete_filename, newfile);
     } else {
-	if (truncate_dup && file_exists) {
+	if (truncate_dup && file_exists(m_incomplete_filename)) {
 	    TruncateFile(m_incomplete_filename);
 	}
     }

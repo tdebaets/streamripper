@@ -1,6 +1,12 @@
 New for 1.61.11
 ---------------
-* Always strip trailing period (see bug #1202516)
+* Always strip trailing period (see bug #1202516), note that this 
+  is not a complete fix because directories could be created by %A
+  for example
+* Add Daniel Lord's patch for overwrite-when-larger
+* Modify DL's patch to support three states: always-overwrite, 
+  never-overwrite, and overwrite-when-larger
+* 
 
 New for 1.61.10
 ---------------

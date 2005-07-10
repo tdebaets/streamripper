@@ -243,7 +243,8 @@ void print_usage()
     fprintf(stderr, "      -L file        - Create a relay playlist file\n");
     fprintf(stderr, "      -z             - Don't scan for free ports if base port is not avail\n");
     fprintf(stderr, "      -p url         - Use HTTP proxy server at <url>\n");
-    fprintf(stderr, "      -o             - Overwrite tracks in complete\n");
+    fprintf(stderr, "      -o always      - Always overwrite tracks in complete\n");
+    fprintf(stderr, "      -o never       - Never overwrite tracks in complete\n");
     fprintf(stderr, "      -t             - Don't overwrite tracks in incomplete\n");
     fprintf(stderr, "      -c             - Don't auto-reconnect\n");
     fprintf(stderr, "      -l seconds     - Number of seconds to run, otherwise runs forever\n");
@@ -290,7 +291,7 @@ void parse_arguments(int argc, char **argv)
 	if (argv[i][0] != '-')
 	    continue;
 
-	c = strchr("dDfIklLmMpRuw", argv[i][1]);
+	c = strchr("dDfIklLmMopRuw", argv[i][1]);
         if (c != NULL) {
             if ((i == (argc-1)) || (argv[i+1][0] == '-')) {
 		fprintf(stderr, "option %s requires an argument\n", argv[i]);
@@ -345,7 +346,18 @@ void parse_arguments(int argc, char **argv)
 	    m_opt.timeout = atoi(argv[i]);
 	    break;
 	case 'o':
-	    m_opt.flags |= OPT_OVER_WRITE_TRACKS;
+	    i++;
+	    if (!strcmp(argv[i],"always")) {
+		m_opt.flags |= OPT_ALWAYS_OVER_WRITE;
+		m_opt.flags &= ~OPT_NEVER_OVER_WRITE;
+	    } else if (!strcmp(argv[i],"never")) {
+		m_opt.flags &= ~OPT_ALWAYS_OVER_WRITE;
+		m_opt.flags |= OPT_NEVER_OVER_WRITE;
+	    } else {
+		printf ("Error: -o option requires an argument\n"
+			"Please use \"-o always\" or \"-o never\"\n");
+		exit (1);
+	    }
 	    break;
 	case 'p':
 	    i++;
