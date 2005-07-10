@@ -59,6 +59,7 @@ streamripper_SOURCES = \
 	lib/srconfig.h \
 	lib/threadlib.h \
 	lib/srtypes.h \
+	lib/uce_dirent.h \
 	lib/util.h
 
 libmad_manifest = \
