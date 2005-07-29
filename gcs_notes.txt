@@ -660,6 +660,15 @@ C:\gsharp\my_putty_key\3>plink -v -i cf.ppk -l gregsharp -2 cf-shell.sf.net ls
 
 
 -----------------------------------------------------------------------
+Other OS's
+
+http://www.yellowtab.com/products/   (commercial BeOS)
+http://www.haiku-os.org/             (free, BeOS-compatible)
+http://www.syllable.org/
+http://l4hq.org/
+
+
+-----------------------------------------------------------------------
 Bootleg sites
 
 Torrent/web sites:
