@@ -217,7 +217,7 @@ parse_escaped_string (char* outbuf, char* inbuf)
 		return inbuf;
 	    }
 	    break;
-	case '0':
+	case 0:
 	    return 0;
 	    break;
 	default:
