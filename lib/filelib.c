@@ -26,7 +26,6 @@
 #include "util.h"
 #include "debug.h"
 #include <assert.h>
-
 #include <sys/types.h>
 #include "uce_dirent.h"
 
@@ -673,11 +672,11 @@ parse_and_subst_pat (char* newfile, TRACK_INFO* ti)
     int nfi = 0;
     int done;
     char* pat = m_output_pattern;
-    debug_printf ("OUTPUT PATTERN:%s\n", m_output_pattern);
 
     /* Reserve 5 bytes: 4 for the .mp3 extension, and 1 for null char */
     int MAX_FILEBASELEN = SR_MAX_PATH-5;
 
+    debug_printf ("OUTPUT PATTERN:%s\n", m_output_pattern);
     strcpy (newfile, m_output_directory);
     opi = 0;
     nfi = strlen(newfile);
@@ -1137,13 +1136,12 @@ get_next_sequence_number (char* fn_base)
     int seq;
     char dir_name[SR_MAX_PATH];
     char fn_prefix[SR_MAX_PATH];
+#if defined (WIN32)
+#else
     DIR* dp;
     struct dirent* de;
+#endif
 
-#if defined (WIN32)
-    /* Not yet implemented */
-    return 0;
-#else
     /* Get directory from fn_base */
     while (fn_base[di]) {
 	if (ISSLASH(fn_base[di])) {
@@ -1158,6 +1156,10 @@ get_next_sequence_number (char* fn_base)
     fn_prefix[0] = '\0';
     strcpy (fn_prefix, &fn_base[edi+1]);
 
+#if defined (WIN32)
+    /* Not yet implemented */
+    return 0;
+#else
     /* Look through directory for a filenames that match prefix */
     debug_printf ("Trying to opendir: %s\n", dir_name);
     if ((dp = opendir (dir_name)) == 0) {
