@@ -658,4 +658,3 @@ sr_strncpy(char* dst, char* src, int n)
     }
     dst[i] = 0;
 }
-

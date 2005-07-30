@@ -220,6 +220,10 @@ SOURCE=..\lib\socklib.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\lib\srtypes.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\lib\threadlib.c
 # End Source File
 # Begin Source File

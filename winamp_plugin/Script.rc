@@ -73,21 +73,18 @@ BEGIN
     CONTROL         "&Make separate directories for each stream",
                     IDC_SEPERATE_DIRS,"Button",BS_AUTOCHECKBOX | 
                     BS_MULTILINE | WS_TABSTOP,7,7,172,14
-    CONTROL         "&Overwrite existing tracks in the complete directory",
-                    IDC_OVER_WRITE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,
-                    22,184,14
     CONTROL         "&Never overwrite files in incomplete folder",
                     IDC_KEEP_INCOMPLETE,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,37,160,14
+                    WS_TABSTOP,7,22,160,14
     CONTROL         "&Add finished tracks to playlist",
                     IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,52,123,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,37,123,14
     CONTROL         "A&dd sequence numbers to tracks",IDC_COUNT_FILES,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,67,121,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,52,121,14
     CONTROL         "A&ppend the date to the directory",IDC_DATE_STAMP,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,82,121,14
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,67,121,14
     CONTROL         "Add &ID3 info to the tracks",IDC_ADD_ID3,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,97,91,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,82,91,14
     CONTROL         "Rip to &single file (leave name empty for automatic naming):",
                     IDC_RIP_SINGLE_CHECK,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,7,112,196,14
@@ -96,6 +93,9 @@ BEGIN
     EDITTEXT        IDC_OUTPUT_DIRECTORY,17,160,154,15,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BROWSE_OUTDIR,178,160,17,14
     LTEXT           "Output directory:",IDC_STATIC,16,148,49,8
+    COMBOBOX        IDC_OVERWRITE_COMPLETE,115,97,71,46,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Overwrite Tracks in Complete:",IDC_STATIC,17,99,90,8
 END
 
 IDD_PROPPAGE_SKIN DIALOG DISCARDABLE  0, 0, 210, 154

@@ -96,6 +96,12 @@ static u_long			m_bytes_ripped;
 static BOOL			m_write_data = TRUE;	// Should we actually write to a file or not
 static HSEM			m_started_sem;	// to prevent deadlocks when ripping is stopped before its
 													// started.
+static char* overwrite_opt_strings[] = {
+    "",		// UNKNOWN
+    "always",
+    "never",
+    "larger"
+};
 
 /*
  * Needs english type messages, just copy pasted for now
@@ -268,9 +274,7 @@ rip_manager_end_track(TRACK_INFO* ti)
     char fullpath[SR_MAX_PATH];
 
     if (m_write_data) {
-        filelib_end (ti,
-		     GET_ALWAYS_OVER_WRITE(m_options.flags),
-		     GET_NEVER_OVER_WRITE(m_options.flags),
+        filelib_end (ti, m_options.overwrite, 
 		     GET_TRUNCATE_DUPS(m_options.flags),
 		     fullpath);
     }
@@ -669,6 +673,24 @@ rip_manager_start(void (*status_callback)(int message, void *data),
     return SR_SUCCESS;
 }
 
+enum OverwriteOpt
+string_to_overwrite_opt (char* str)
+{
+    int i;
+    for (i = 0; i < 4; i++) {
+	if (strcmp(str, overwrite_opt_strings[i]) == 0) {
+	    return i;
+	}
+    }
+    return OVERWRITE_UNKNOWN;
+}
+
+char*
+overwrite_opt_to_string (enum OverwriteOpt oo)
+{
+    return overwrite_opt_strings[(int) oo];
+}
+
 void
 set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
 {
@@ -697,6 +719,7 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
     m_opt->output_file[0] = 0;
     m_opt->rules_file[0] = 0;
     strcpy(m_opt->useragent, "sr-POSIX/" SRVERSION);
+    m_opt->overwrite = OVERWRITE_ALWAYS;
 
     // Defaults for splitpoint
     // Times are in ms

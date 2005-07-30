@@ -148,6 +148,16 @@ typedef struct TRACK_INFOst
     BOOL save_track;
 } TRACK_INFO;
 
+/* 
+ * OverwriteOpt controls how files in complete directory are overwritten
+ */
+enum OverwriteOpt {
+    OVERWRITE_UNKNOWN,	// Error case
+    OVERWRITE_ALWAYS,	// Always replace file in complete with newer
+    OVERWRITE_NEVER,	// Never replace file in complete with newer
+    OVERWRITE_LARGER	// Replace file in complete if newer is larger
+};
+
 
 ////////////////////////////////////////////////
 // StreamRipper Codes

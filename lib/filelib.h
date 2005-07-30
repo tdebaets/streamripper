@@ -76,8 +76,7 @@ filelib_init (BOOL do_individual_tracks,
 	      char* icy_name);
 error_code filelib_start (TRACK_INFO* ti);
 error_code filelib_end (TRACK_INFO* ti, 
-	     BOOL always_overwrite,
-	     BOOL never_overwrite,
+	     enum OverwriteOpt overwrite,
 	     BOOL truncate_dup, 
 	     char *fullpath);
 error_code filelib_write_track(char *buf, u_long size);

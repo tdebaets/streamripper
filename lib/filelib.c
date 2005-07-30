@@ -54,7 +54,9 @@ static void trim_filename (char *filename, char* out);
 static void trim_mp3_suffix (char *filename, char* out);
 static error_code filelib_open_for_write (FHANDLE* fp, char *filename);
 static void set_show_filenames (void);
+#if defined (commentout)
 static int is_absolute_path (char* fn);
+#endif
 static void parse_and_subst_dir (char* pattern_head, char* pattern_tail,
 				 char* opat_path, char* icy_name);
 static void parse_and_subst_pat (char* newfile, TRACK_INFO* ti);
@@ -345,7 +347,7 @@ parse_and_subst_dir (char* pattern_head, char* pattern_tail,
 		     char* opat_path, char* icy_name)
 {
     int opi = 0;
-    int phi = 0;
+    unsigned int phi = 0;
     int ph_base_len;
     int op_tail_idx;
 
@@ -482,7 +484,7 @@ set_output_directory_old (char* output_directory,
 	struct tm *theTime;
 	int time_len = 0;
 	int length_used = base_dir_len;
-	int length_available;
+	unsigned int length_available;
 	int rc;
 
 	if (base_dir_len > SR_MAX_BASE) {
@@ -904,8 +906,7 @@ new_file_is_better (char *oldfile, char *newfile)
 // fullpath is an output parameter
 error_code
 filelib_end (TRACK_INFO* ti, 
-	     BOOL always_overwrite,
-	     BOOL never_overwrite,
+	     enum OverwriteOpt overwrite,
 	     BOOL truncate_dup, 
 	     char *fullpath)
 {
@@ -924,13 +925,18 @@ filelib_end (TRACK_INFO* ti,
     mkdir_recursive (newfile, 0);
 
     // If we are over writing existing tracks
-    if (always_overwrite) {
+    switch (overwrite) {
+    case OVERWRITE_ALWAYS:
 	ok_to_write = TRUE;
-    } else if (never_overwrite) {
+	break;
+    case OVERWRITE_NEVER:
 	ok_to_write = FALSE;
-    } else {
+	break;
+    case OVERWRITE_LARGER:
+    default:
 	/* Smart overwriting -- only overwrite if new file is bigger */
 	ok_to_write = new_file_is_better (newfile, m_incomplete_filename);
+	break;
     }
 
     if (ok_to_write) {
@@ -1094,6 +1100,7 @@ trim_mp3_suffix(char *filename, char* out)
     }
 }
 
+#if defined (commentout)
 static int
 is_absolute_path (char* fn)
 {
@@ -1112,12 +1119,13 @@ is_absolute_path (char* fn)
     }
     return 0;
 }
+#endif
 
 static void
 set_show_filenames (void)
 {
     if (!*m_show_name) return;
-    if (is_absolute_path(m_show_name)) {
+    if (IS_ABSOLUTE_PATH(m_show_name)) {
 	strcpy (m_cue_name, m_show_name);
     } else {
         snprintf (m_cue_name, SR_MAX_PATH, "%s/%s", 

@@ -20,20 +20,32 @@ int debug_on = 0;
 int command_line_debug = 0;
 FILE* gcsfp = 0;
 static HSEM m_debug_lock;
+static char* debug_filename = 0;
+static char filename_buf[SR_MAX_PATH];
+static char* default_filename = "gcs.txt";
+
+void
+debug_set_filename (char* filename)
+{
+    strcpy (filename_buf, filename);
+    debug_filename = filename_buf;
+}
 
 void
 debug_enable (void)
 {
     debug_on = 1;
+    if (!debug_filename) {
+	debug_filename = default_filename;
+    }
 }
 
 void
 debug_open (void)
 {
-    char* filename = "gcs.txt";
     if (!debug_on) return;
     if (!gcsfp) {
-	gcsfp = fopen(filename, "a");
+	gcsfp = fopen(debug_filename, "a");
     }
 }
 

@@ -351,6 +351,35 @@ void add_useragent_strings(HWND hdlg)
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"UnknownPlayer/1.x");
 }
 
+void
+set_overwrite_combo(HWND hdlg)
+{
+    HWND hcombo = GetDlgItem(hdlg, IDC_OVERWRITE_COMPLETE);
+    int combo_idx = m_opt->overwrite - 1;
+
+    LRESULT rc = SendMessage(hcombo, CB_SETCURSEL, combo_idx, 0);
+    debug_printf("Setting combo, idx=%d, rc=%d\n", combo_idx, rc);
+}
+
+void
+get_overwrite_combo(HWND hdlg)
+{
+    HWND hcombo = GetDlgItem(hdlg, IDC_OVERWRITE_COMPLETE);
+    int combo_idx = SendMessage(hcombo, CB_GETCURSEL, 0, 0);
+    debug_printf("Getting combo, idx=%d\n", combo_idx);
+    m_opt->overwrite = combo_idx + 1;
+}
+
+void
+add_overwrite_complete_strings(HWND hdlg)
+{
+    HWND hcombo = GetDlgItem(hdlg, IDC_OVERWRITE_COMPLETE);
+
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"Always");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"Never");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"When larger");
+}
+
 void saveload_fileopts(HWND hWnd, BOOL saveload)
 {
     /*
@@ -368,8 +397,8 @@ void saveload_fileopts(HWND hWnd, BOOL saveload)
     if (saveload)
     {
 	set_to_checkbox(hWnd, IDC_SEPERATE_DIRS, &m_opt->flags, OPT_SEPERATE_DIRS);
-	set_to_checkbox(hWnd, IDC_OVER_WRITE, &m_opt->flags, OPT_OVER_WRITE_TRACKS);
-	m_guiOpt->m_add_finshed_tracks_to_playlist =	get_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST);
+	get_overwrite_combo(hWnd);
+	m_guiOpt->m_add_finshed_tracks_to_playlist = get_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST);
 	set_to_checkbox(hWnd, IDC_COUNT_FILES, &m_opt->flags, OPT_COUNT_FILES);
 	set_to_checkbox(hWnd, IDC_DATE_STAMP, &m_opt->flags, OPT_DATE_STAMP);
 	set_to_checkbox(hWnd, IDC_ADD_ID3, &m_opt->flags, OPT_ADD_ID3);
@@ -381,7 +410,7 @@ void saveload_fileopts(HWND hWnd, BOOL saveload)
     else
     {
 	set_checkbox(hWnd, IDC_SEPERATE_DIRS, OPT_FLAG_ISSET(m_opt->flags, OPT_SEPERATE_DIRS));
-	set_checkbox(hWnd, IDC_OVER_WRITE, OPT_FLAG_ISSET(m_opt->flags, OPT_OVER_WRITE_TRACKS));
+	set_overwrite_combo(hWnd);
 	set_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST, m_guiOpt->m_add_finshed_tracks_to_playlist);
 	set_checkbox(hWnd, IDC_COUNT_FILES, OPT_FLAG_ISSET(m_opt->flags, OPT_COUNT_FILES));
 	set_checkbox(hWnd, IDC_DATE_STAMP, OPT_FLAG_ISSET(m_opt->flags, OPT_DATE_STAMP));
@@ -571,6 +600,9 @@ options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
     switch(message)
     {
     case WM_INITDIALOG:
+	add_useragent_strings(hWnd);
+	add_overwrite_complete_strings(hWnd);
+
 	if (confile == 0)
 	    saveload_fileopts(hWnd, FALSE);
 	else if (confile == 1)
@@ -580,7 +612,6 @@ options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 
 	PropSheet_UnChanged(GetParent(hWnd), hWnd);
 
-	add_useragent_strings(hWnd);
 
 	return TRUE;
     case WM_COMMAND:
@@ -678,7 +709,6 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     char filename[MAX_INI_LINE_LEN];
     BOOL    seperate_dirs,
 	    auto_reconnect,
-	    over_write_tracks,
 	    make_relay,
 	    count_files,
 	    date_stamp,
@@ -686,6 +716,7 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	    check_max_btyes,
 	    keep_incomplete,
 	    rip_single_file;
+    char overwrite_string[MAX_INI_LINE_LEN];
 
     if (!get_desktop_folder(desktop_path))
     {
@@ -710,12 +741,15 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     GetPrivateProfileString(APPNAME, "useragent", DEFAULT_USERAGENT, opt->useragent, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "default_skin", DEFAULT_SKINFILE, guiOpt->default_skin, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "rip_single_path", "", opt->output_file, MAX_INI_LINE_LEN, filename);
+    GetPrivateProfileString(APPNAME, "over_write_complete", "larger", overwrite_string, MAX_INI_LINE_LEN, filename);
+    //debug_enable();
+    //debug_set_filename ("C:\\gcs.txt");
+    debug_printf ("Got PPS: %s\n", overwrite_string);
 
     seperate_dirs = GetPrivateProfileInt(APPNAME, "seperate_dirs", TRUE, filename);
     opt->relay_port = GetPrivateProfileInt(APPNAME, "relay_port", DEFAULT_RELAY_PORT, filename);
     opt->max_port = opt->relay_port+1000;
     auto_reconnect = GetPrivateProfileInt(APPNAME, "auto_reconnect", TRUE, filename);
-    over_write_tracks = GetPrivateProfileInt(APPNAME, "over_write_tracks", FALSE, filename);
     make_relay = GetPrivateProfileInt(APPNAME, "make_relay", FALSE, filename);
     count_files = GetPrivateProfileInt(APPNAME, "count_files", FALSE, filename);
     date_stamp = GetPrivateProfileInt(APPNAME, "date_stamp", FALSE, filename);
@@ -748,6 +782,9 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     if (guiOpt->oldpos.x < 0 || guiOpt->oldpos.y < 0)
 	guiOpt->oldpos.x = guiOpt->oldpos.y = 0;
 
+    opt->overwrite = string_to_overwrite_opt (overwrite_string);
+    debug_printf ("Got overwrite enum: %d\n", opt->overwrite);
+
     /* GCS: Why zero this out? I can just keep defaults */
 #if defined (commentout)
     opt->flags = 0;
@@ -755,7 +792,6 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     opt->flags |= OPT_SEARCH_PORTS;			// not having this caused a bad bug, must remember this.
     if (seperate_dirs) opt->flags |= OPT_SEPERATE_DIRS;
     if (auto_reconnect) opt->flags |= OPT_AUTO_RECONNECT;
-    if (over_write_tracks) opt->flags |= OPT_OVER_WRITE_TRACKS;
     if (make_relay) opt->flags |= OPT_MAKE_RELAY;
     if (count_files) opt->flags |= OPT_COUNT_FILES;
     if (date_stamp) opt->flags |= OPT_DATE_STAMP;
@@ -788,7 +824,7 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     fprintf(fp, "seperate_dirs=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_SEPERATE_DIRS));
     fprintf(fp, "relay_port=%d\n", opt->relay_port);
     fprintf(fp, "auto_reconnect=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_AUTO_RECONNECT));
-    fprintf(fp, "over_write_tracks=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_OVER_WRITE_TRACKS));
+    fprintf(fp, "over_write_complete=%s\n", overwrite_opt_to_string (opt->overwrite));
     fprintf(fp, "make_relay=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_MAKE_RELAY));
     fprintf(fp, "count_files=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_COUNT_FILES));
     fprintf(fp, "date_stamp=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_DATE_STAMP));

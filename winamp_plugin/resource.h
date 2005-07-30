@@ -46,6 +46,7 @@
 #define IDC_SKIN_LIST                   1371
 #define IDC_USE_OLD_PLAYLIST_RET        1372
 #define IDC_XS_OFFSET                   1373
+#define IDC_OVERWRITE_COMPLETE          1374
 #define ID_MENU_STARTRIPPING            40001
 #define ID_MENU_STOPRIPPING             40003
 #define ID_MENU_OPTIONS                 40004
@@ -55,9 +56,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        119
+#define _APS_NEXT_RESOURCE_VALUE        120
 #define _APS_NEXT_COMMAND_VALUE         40006
-#define _APS_NEXT_CONTROL_VALUE         1374
+#define _APS_NEXT_CONTROL_VALUE         1375
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

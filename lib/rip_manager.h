@@ -61,11 +61,9 @@ typedef struct RIP_MANAGER_INFOst
 #define OPT_SINGLE_FILE_OUTPUT	0x00000800		// enable ripping to single file
 #define OPT_TRUNCATE_DUPS	0x00001000		// truncate file in the incomplete directory already present in complete
 #define OPT_INDIVIDUAL_TRACKS	0x00002000		// should we write the individual tracks?
-#define OPT_ALWAYS_OVER_WRITE	0x00004000		// should files in the complete directory be overwritten
-#define OPT_NEVER_OVER_WRITE	0x00008000		// should files in the complete directory be overwritten
 
-#define OPT_FLAG_ISSET(flags, opt)	((flags & opt) > 0)
-#define OPT_FLAG_SET(flags, opt)	(flags =| opt)
+#define OPT_FLAG_ISSET(flags, opt)	    ((flags & opt) > 0)
+#define OPT_FLAG_SET(flags, opt)	    (flags =| opt)
 
 #define GET_AUTO_RECONNECT(flags)		(OPT_FLAG_ISSET(flags, OPT_AUTO_RECONNECT))
 #define GET_SEPERATE_DIRS(flags)		(OPT_FLAG_ISSET(flags, OPT_SEPERATE_DIRS))
@@ -79,8 +77,6 @@ typedef struct RIP_MANAGER_INFOst
 #define GET_SINGLE_FILE_OUTPUT(flags)		(OPT_FLAG_ISSET(flags, OPT_SINGLE_FILE_OUTPUT))
 #define GET_TRUNCATE_DUPS(flags)		(OPT_FLAG_ISSET(flags, OPT_TRUNCATE_DUPS))
 #define GET_INDIVIDUAL_TRACKS(flags)		(OPT_FLAG_ISSET(flags, OPT_INDIVIDUAL_TRACKS))
-#define GET_ALWAYS_OVER_WRITE(flags)		(OPT_FLAG_ISSET(flags, OPT_ALWAYS_OVER_WRITE))
-#define GET_NEVER_OVER_WRITE(flags)		(OPT_FLAG_ISSET(flags, OPT_NEVER_OVER_WRITE))
 
 #define SET_AUTO_RECONNECT(flags)		(OPT_FLAG_SET(flags, OPT_AUTO_RECONNECT))
 #define SET_SEPERATE_DIRS(flags)		(OPT_FLAG_SET(flags, OPT_SEPERATE_DIRS))
@@ -95,9 +91,6 @@ typedef struct RIP_MANAGER_INFOst
 #define SET_SINGLE_FILE_OUTPUT(flags)		(OPT_FLAG_SET(flags, OPT_SINGLE_FILE_OUTPUT))
 #define SET_TRUNCATE_DUPS(flags)		(OPT_FLAG_SET(flags, OPT_TRUNCATE_DUPS))
 #define SET_INDIVIDUAL_TRACKS(flags)		(OPT_FLAG_SET(flags, OPT_INDIVIDUAL_TRACKS))
-#define SET_ALWAYS_OVER_WRITE(flags)		(OPT_FLAG_SET(flags, OPT_ALWAYS_OVER_WRITE))
-#define SET_NEVER_OVER_WRITE(flags)		(OPT_FLAG_SET(flags, OPT_NEVER_OVER_WRITE))
-
 
 typedef struct RIP_MANAGER_OPTIONSst
 {
@@ -116,12 +109,12 @@ typedef struct RIP_MANAGER_OPTIONSst
     u_long maxMB_rip_size;		// max number of megabytes that can by writen out before we stop
     u_short flags;			// all booleans logically OR'd together (see above)
     char useragent[MAX_USERAGENT_STR];	// optional, use a different useragent
-    //char dropstring[MAX_DROPSTRING_LEN];// optional dropstring to be searched in metainfo;if found: metainfo dropped
     SPLITPOINT_OPTIONS sp_opt;		// More options concerning splitpoint rules
     int timeout;			// timeout, in seconds, before a stalled connection is forcefully closed
     int dropcount;			// number of tracks at beginning of connection to always ignore
     CODESET_OPTIONS cs_opt;             // which codeset should i use?
     int count_start;                    // which number to start counting?
+    enum OverwriteOpt overwrite;	// overwrite file in complete?
 
 } RIP_MANAGER_OPTIONS;
 
@@ -146,5 +139,8 @@ error_code rip_manager_put_raw_data(char *buf, int size);
 
 char *client_relay_header_generate (int icy_meta_support);
 void client_relay_header_release (char *ch);
+
+char* overwrite_opt_to_string (enum OverwriteOpt oo);
+enum OverwriteOpt string_to_overwrite_opt (char* str);
 
 #endif //__RIP_MANANGER_H__

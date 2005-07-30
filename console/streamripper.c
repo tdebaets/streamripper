@@ -347,13 +347,8 @@ void parse_arguments(int argc, char **argv)
 	    break;
 	case 'o':
 	    i++;
-	    if (!strcmp(argv[i],"always")) {
-		m_opt.flags |= OPT_ALWAYS_OVER_WRITE;
-		m_opt.flags &= ~OPT_NEVER_OVER_WRITE;
-	    } else if (!strcmp(argv[i],"never")) {
-		m_opt.flags &= ~OPT_ALWAYS_OVER_WRITE;
-		m_opt.flags |= OPT_NEVER_OVER_WRITE;
-	    } else {
+	    m_opt.overwrite = string_to_overwrite_opt (argv[i]);
+	    if (m_opt.overwrite == OVERWRITE_UNKNOWN) {
 		printf ("Error: -o option requires an argument\n"
 			"Please use \"-o always\" or \"-o never\"\n");
 		exit (1);
