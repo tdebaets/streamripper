@@ -450,7 +450,7 @@ set_output_directory_old (char* output_directory,
 #else
 	/* I wish I could do something like "realpath()" here, but it 
 	 * doesn't have (e.g.) posix conformance. */
-	if (is_absolute_path (output_directory)) {
+	if (IS_ABSOLUTE_PATH (output_directory)) {
 	    strncpy (base_dir,output_directory,SR_MAX_PATH);
 	    debug_printf("Had absolute path\n");
 	} else {
