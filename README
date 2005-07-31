@@ -38,7 +38,7 @@ OPTIONS
 
        This option tells streamripper how to form the  filenames.
        If  -D is used, the options -s and -P will be ignored.  If
-       the pattern represents an absolute  path,  the  -d  optoin
+       the pattern represents an absolute  path,  the  -d  option
        will also be ignored.  If both -D and -q are specified, -q
        will only be used to set the start count if a %q token  is
        included.
@@ -472,4 +472,4 @@ COPYING
 
 
 
-			   08 July 2005		  STREAMRIPPER(1)
+			   31 July 2005		  STREAMRIPPER(1)
