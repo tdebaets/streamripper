@@ -2,8 +2,6 @@
 # Use it this like this:
 #     streamripper URL -w parse_rules.txt
 
-## THIS IS AN EXAMPLE FILE ## PLEASE READ AND EDIT BEFORE USING ##
-
 # Lines that start with '#' are comments, and blank lines are ignored.
 
 # Ignore metadata that begins with "A suivre"
@@ -14,19 +12,19 @@ m/^A suivre:/e
 # Exclude tracks that contain the given expression
 # The leading "m" says this is a match rule
 # The trailing "x" means that the track should not be saved (excluded)
-m/advertisement/x
+## m/advertisement/x
 
 # Save tracks that contain the given expression
 # The leading "m" says this is a match rule
 # The trailing "s" means that the track should be saved
-m/[Ff]unk/s
+## m/[Ff]unk/s
 
 # The first m//e, m//s or m//x rule that matches determines the 
 # action that is performed.  If none match, then by default the file 
 # will be saved.  If you prefer having the default being that the 
 # files aren't saved, include the following rule after all your 
 # other m//e, m//s or m//x rules.
-m//x
+## m//x
 
 # Strip off anything like "- Mp3Pro" from the end of the string
 # The leading "s" says this is a substitution rule
@@ -46,7 +44,7 @@ s/^[[:space:]]*-[[:space:]]*//
 m/^[[:space:]]*([^-]*[^-[:space:]])[[:space:]]*-[[:space:]]*(.*)[[:space:]]*$/A1T2
 
 # This is slightly different parsing rule: "Artist, Title"
-m/^[[:space:]]*([^,]*[^,[:space:]])[[:space:]]*,[[:space:]]*(.*)[[:space:]]*$/A1T2
+## m/^[[:space:]]*([^,]*[^,[:space:]])[[:space:]]*,[[:space:]]*(.*)[[:space:]]*$/A1T2
 
 # After the first match with an m//A or m//T rule, no more rules 
 # will be checked.
