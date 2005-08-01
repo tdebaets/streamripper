@@ -8,6 +8,8 @@ New for 1.61.11
 * Modify DL's patch to support three states: always-overwrite, 
   never-overwrite, and overwrite-when-larger
 * Fix bug reported in forum about malformed regular expressions
+* Update winamp plugin gui for output file naming
+* Update winamp plugin to install and use parse_rules.txt
 
 New for 1.61.10
 ---------------
