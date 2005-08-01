@@ -65,39 +65,6 @@ BEGIN
     LTEXT           "Megs:",IDC_STATIC,97,46,20,8
 END
 
-IDD_PROPPAGE_FILE DIALOG DISCARDABLE  0, 0, 210, 186
-STYLE WS_CHILD | WS_DISABLED | WS_CAPTION
-CAPTION "File"
-FONT 8, "MS Sans Serif"
-BEGIN
-    CONTROL         "&Make separate directories for each stream",
-                    IDC_SEPERATE_DIRS,"Button",BS_AUTOCHECKBOX | 
-                    BS_MULTILINE | WS_TABSTOP,7,7,172,14
-    CONTROL         "&Never overwrite files in incomplete folder",
-                    IDC_KEEP_INCOMPLETE,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,22,160,14
-    CONTROL         "&Add finished tracks to playlist",
-                    IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,37,123,14
-    CONTROL         "A&dd sequence numbers to tracks",IDC_COUNT_FILES,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,52,121,14
-    CONTROL         "A&ppend the date to the directory",IDC_DATE_STAMP,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,67,121,14
-    CONTROL         "Add &ID3 info to the tracks",IDC_ADD_ID3,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,82,91,14
-    CONTROL         "Rip to &single file (leave name empty for automatic naming):",
-                    IDC_RIP_SINGLE_CHECK,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,112,196,14
-    EDITTEXT        IDC_RIP_SINGLE_EDIT,17,128,154,15,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_BROWSE_RIPSINGLE,178,128,17,14
-    EDITTEXT        IDC_OUTPUT_DIRECTORY,17,160,154,15,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_BROWSE_OUTDIR,178,160,17,14
-    LTEXT           "Output directory:",IDC_STATIC,16,148,49,8
-    COMBOBOX        IDC_OVERWRITE_COMPLETE,115,97,71,46,CBS_DROPDOWNLIST | 
-                    WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Overwrite Tracks in Complete:",IDC_STATIC,17,99,90,8
-END
-
 IDD_PROPPAGE_SKIN DIALOG DISCARDABLE  0, 0, 210, 154
 STYLE WS_CHILD | WS_DISABLED | WS_CAPTION
 CAPTION "Skins"
@@ -134,6 +101,45 @@ BEGIN
                     36,120,132,8
 END
 
+IDD_PROPPAGE_PATTERN DIALOG DISCARDABLE  0, 0, 210, 146
+STYLE WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "Pattern"
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_PATTERN_EDIT,14,23,167,14,ES_AUTOHSCROLL
+    LTEXT           "%S\tStream\n%A\tArtist\n%T\tTitle\n%a\tAlbum\n%D\tDate and time (per song)\n%d\tDate and time (per execution)\n%q\tSequence number (automatic detection)\n%Nq\tSequence number (starting from number N)\n%%\tPercent sign\n\nThe default pattern is ""%S/%A - %T""",
+                    IDC_STATIC,30,41,159,91
+    LTEXT           "Output file pattern:",IDC_STATIC,7,7,54,8
+END
+
+IDD_PROPPAGE_FILE DIALOG DISCARDABLE  0, 0, 210, 171
+STYLE WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "File"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "Rip to &single file (leave name empty for automatic naming):",
+                    IDC_RIP_SINGLE_CHECK,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,7,52,196,14
+    PUSHBUTTON      "...",IDC_BROWSE_RIPSINGLE,186,68,17,14
+    EDITTEXT        IDC_OUTPUT_DIRECTORY,14,19,167,15,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BROWSE_OUTDIR,186,19,17,14
+    LTEXT           "Output directory:",IDC_STATIC,7,7,49,8
+    EDITTEXT        IDC_RIP_SINGLE_EDIT,14,67,167,14,ES_AUTOHSCROLL
+    CONTROL         "&Rip to separate files",IDC_RIP_INDIVIDUAL_CHECK,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,38,196,14
+    CONTROL         "&Never overwrite files in incomplete folder",
+                    IDC_KEEP_INCOMPLETE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,7,117,160,14
+    CONTROL         "&Add finished tracks to playlist",
+                    IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,143,123,14
+    CONTROL         "Add &ID3 info to the tracks",IDC_ADD_ID3,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,130,91,14
+    COMBOBOX        IDC_OVERWRITE_COMPLETE,14,99,87,46,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Overwrite Tracks in Complete:",IDC_STATIC,7,88,90,8
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -159,14 +165,6 @@ BEGIN
         BOTTOMMARGIN, 173
     END
 
-    IDD_PROPPAGE_FILE, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 203
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 179
-    END
-
     IDD_PROPPAGE_SKIN, DIALOG
     BEGIN
         LEFTMARGIN, 7
@@ -181,6 +179,22 @@ BEGIN
         RIGHTMARGIN, 203
         TOPMARGIN, 7
         BOTTOMMARGIN, 147
+    END
+
+    IDD_PROPPAGE_PATTERN, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 203
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 132
+    END
+
+    IDD_PROPPAGE_FILE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 203
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 157
     END
 END
 #endif    // APSTUDIO_INVOKED

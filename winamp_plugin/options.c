@@ -20,7 +20,6 @@
 #include <windowsx.h>
 #include <shlobj.h>
 #include <stdio.h>
-//#include <shfolder.h>
 #include <prsht.h>
 
 #include "rip_manager.h"
@@ -35,16 +34,16 @@
 #define DEFAULT_RELAY_PORT	8000
 #define APPNAME			"sripper"
 #define DEFAULT_USERAGENT	"FreeAmp/2.x"
-#define NUM_PROP_PAGES		4
+#define NUM_PROP_PAGES		5
 #define DEFAULT_SKINFILE	"srskin.bmp"
 //#define SKIN_PREV_LEFT	158
 //#define SKIN_PREV_TOP		79
 #define SKIN_PREV_LEFT		(2*110)
 #define SKIN_PREV_TOP		(2*50)
 #define	MAX_SKINS		256
-#define PROP_SHEET_CON		0
-#define PROP_SHEET_FILE		1
-#define PROP_SHEET_SKINS	2
+//#define PROP_SHEET_CON		0
+//#define PROP_SHEET_FILE		1
+//#define PROP_SHEET_SKINS	2
 
 
 /**********************************************************************************
@@ -59,18 +58,20 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt);
  * Private functions
  **********************************************************************************/
 static BOOL browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder, long foldersize);
-static BOOL				get_desktop_folder(char *path);
-static LRESULT CALLBACK file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+static BOOL get_desktop_folder(char *path);
 static LRESULT CALLBACK con_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK pat_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK splitting_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, BOOL confile);
-static void				saveload_fileopts(HWND hWnd, BOOL saveload);
-static void				saveload_conopts(HWND hWnd, BOOL saveload);
-static HPROPSHEETPAGE	create_prop_sheet_page(HINSTANCE inst, DWORD iddres, DLGPROC dlgproc);
-static void				add_useragent_strings();
-static BOOL				get_skin_list();
-static void				free_skin_list();
+static void saveload_conopts(HWND hWnd, BOOL saveload);
+static void saveload_file_opts(HWND hWnd, BOOL saveload);
+static void saveload_pat_opts(HWND hWnd, BOOL saveload);
+static HPROPSHEETPAGE create_prop_sheet_page(HINSTANCE inst, DWORD iddres, DLGPROC dlgproc);
+static void add_useragent_strings();
+static BOOL get_skin_list();
+static void free_skin_list();
 
 /**********************************************************************************
  * Private Vars
@@ -278,8 +279,9 @@ void options_dialog_show(HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, 
     options_load(m_opt, m_guiOpt);
     hPage[0] = create_prop_sheet_page(inst, IDD_PROPPAGE_CON, con_dlg);
     hPage[1] = create_prop_sheet_page(inst, IDD_PROPPAGE_FILE, file_dlg);
-    hPage[2] = create_prop_sheet_page(inst, IDD_PROPPAGE_SKIN, skin_dlg);
-    hPage[3] = create_prop_sheet_page(inst, IDD_PROPPAGE_SPLITTING, splitting_dlg);
+    hPage[2] = create_prop_sheet_page(inst, IDD_PROPPAGE_PATTERN, pat_dlg);
+    hPage[3] = create_prop_sheet_page(inst, IDD_PROPPAGE_SKIN, skin_dlg);
+    hPage[4] = create_prop_sheet_page(inst, IDD_PROPPAGE_SPLITTING, splitting_dlg);
     memset(&psh, 0, sizeof(PROPSHEETHEADER));
     psh.dwSize = sizeof(PROPSHEETHEADER);
     psh.dwFlags = PSH_DEFAULT;
@@ -380,7 +382,7 @@ add_overwrite_complete_strings(HWND hdlg)
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"When larger");
 }
 
-void saveload_fileopts(HWND hWnd, BOOL saveload)
+void saveload_file_opts(HWND hWnd, BOOL saveload)
 {
     /*
       - seperate dir
@@ -396,32 +398,51 @@ void saveload_fileopts(HWND hWnd, BOOL saveload)
     */
     if (saveload)
     {
-	set_to_checkbox(hWnd, IDC_SEPERATE_DIRS, &m_opt->flags, OPT_SEPERATE_DIRS);
 	get_overwrite_combo(hWnd);
 	m_guiOpt->m_add_finshed_tracks_to_playlist = get_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST);
-	set_to_checkbox(hWnd, IDC_COUNT_FILES, &m_opt->flags, OPT_COUNT_FILES);
-	set_to_checkbox(hWnd, IDC_DATE_STAMP, &m_opt->flags, OPT_DATE_STAMP);
 	set_to_checkbox(hWnd, IDC_ADD_ID3, &m_opt->flags, OPT_ADD_ID3);
 	GetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory, SR_MAX_PATH);
 	set_to_checkbox(hWnd, IDC_KEEP_INCOMPLETE, &m_opt->flags, OPT_KEEP_INCOMPLETE);
+	set_to_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, &m_opt->flags, OPT_INDIVIDUAL_TRACKS);
 	set_to_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, &m_opt->flags, OPT_SINGLE_FILE_OUTPUT);
 	GetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->output_file, SR_MAX_PATH);
     }
     else
     {
-	set_checkbox(hWnd, IDC_SEPERATE_DIRS, OPT_FLAG_ISSET(m_opt->flags, OPT_SEPERATE_DIRS));
 	set_overwrite_combo(hWnd);
 	set_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST, m_guiOpt->m_add_finshed_tracks_to_playlist);
-	set_checkbox(hWnd, IDC_COUNT_FILES, OPT_FLAG_ISSET(m_opt->flags, OPT_COUNT_FILES));
-	set_checkbox(hWnd, IDC_DATE_STAMP, OPT_FLAG_ISSET(m_opt->flags, OPT_DATE_STAMP));
 	set_checkbox(hWnd, IDC_ADD_ID3, OPT_FLAG_ISSET(m_opt->flags, OPT_ADD_ID3));
 	SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory);
 	set_checkbox(hWnd, IDC_KEEP_INCOMPLETE, OPT_FLAG_ISSET(m_opt->flags, OPT_KEEP_INCOMPLETE));
+	set_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, OPT_FLAG_ISSET(m_opt->flags, OPT_INDIVIDUAL_TRACKS));
 	set_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, OPT_FLAG_ISSET(m_opt->flags, OPT_SINGLE_FILE_OUTPUT));
 	SetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->output_file);
     }
 }
 
+void saveload_pat_opts(HWND hWnd, BOOL saveload)
+{
+    /*
+      - seperate dir
+      - overwrite
+      - add finished to winamp
+      - add seq numbers/count files
+      - append date
+      - add id3
+      - output dir
+      - keep incomplete
+      - rip single file check
+      - rip single file filename
+    */
+    if (saveload)
+    {
+	GetDlgItemText(hWnd, IDC_PATTERN_EDIT, m_opt->output_pattern, SR_MAX_PATH);
+    }
+    else
+    {
+	SetDlgItemText(hWnd, IDC_PATTERN_EDIT, m_opt->output_pattern);
+    }
+}
 
 void saveload_conopts(HWND hWnd, BOOL saveload)
 {
@@ -502,17 +523,21 @@ saveload_splittingopts(HWND hWnd, BOOL saveload)
 // it'll dispatch the calls forward with a confile boolean which tells if
 // it's the connection of file pages 
 //
-LRESULT CALLBACK file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    return options_dlg(hWnd, message, wParam, lParam, 0);
-}
 LRESULT CALLBACK con_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     return options_dlg(hWnd, message, wParam, lParam, 1);
 }
-LRESULT CALLBACK splitting_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     return options_dlg(hWnd, message, wParam, lParam, 2);
+}
+LRESULT CALLBACK pat_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    return options_dlg(hWnd, message, wParam, lParam, 3);
+}
+LRESULT CALLBACK splitting_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    return options_dlg(hWnd, message, wParam, lParam, 4);
 }
 
 BOOL populate_skin_list(HWND dlg)
@@ -589,9 +614,10 @@ LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 
-/* confile == 0  -> file_dlg */
 /* confile == 1  -> con_dlg */
-/* confile == 2  -> splitting_dlg */
+/* confile == 2  -> file_dlg */
+/* confile == 3  -> pat_dlg */
+/* confile == 4  -> splitting_dlg */
 LRESULT CALLBACK
 options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 {
@@ -603,15 +629,21 @@ options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 	add_useragent_strings(hWnd);
 	add_overwrite_complete_strings(hWnd);
 
-	if (confile == 0)
-	    saveload_fileopts(hWnd, FALSE);
-	else if (confile == 1)
+	switch (confile) {
+	case 1:
 	    saveload_conopts(hWnd, FALSE);
-	else if (confile == 2)
+	    break;
+	case 2:
+	    saveload_file_opts(hWnd, FALSE);
+	    break;
+	case 3:
+	    saveload_pat_opts(hWnd, FALSE);
+	    break;
+	case 4:
 	    saveload_splittingopts(hWnd, FALSE);
-
+	    break;
+	}
 	PropSheet_UnChanged(GetParent(hWnd), hWnd);
-
 
 	return TRUE;
     case WM_COMMAND:
@@ -656,19 +688,14 @@ options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 		break;
 	    }
 
-	case IDC_SEPERATE_DIRS:
 	case IDC_RECONNECT:
-	case IDC_OVER_WRITE:
 	case IDC_RELAY_PORT_EDIT:
 	case IDC_MAX_BYTES:
-	case IDC_COUNT_FILES:
-	case IDC_DATE_STAMP:
 	case IDC_ADD_ID3:
 	case IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST:
 	case IDC_PROXY:
 	case IDC_OUTPUT_DIRECTORY:
 	case IDC_LOCALHOST:
-	case IDC_ALLOW_TOUCH:
 	case IDC_KEEP_INCOMPLETE:
 	case IDC_USERAGENT:
 	case IDC_USE_OLD_PLAYLIST_RET:
@@ -690,13 +717,20 @@ options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 	    switch ( phdr->code )
 	    {
 	    case PSN_APPLY:
-		if (confile == 0)
-		    saveload_fileopts(hWnd, TRUE);
-		else if (confile == 1)
+		switch (confile) {
+		case 1:
 		    saveload_conopts(hWnd, TRUE);
-		else if (confile == 2)
+		    break;
+		case 2:
+		    saveload_file_opts(hWnd, TRUE);
+		    break;
+		case 3:
+		    saveload_pat_opts(hWnd, TRUE);
+		    break;
+		case 4:
 		    saveload_splittingopts(hWnd, TRUE);
-		break;
+		    break;
+		}
 	    }
 	}
     }
@@ -707,14 +741,12 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 {
     char desktop_path[MAX_INI_LINE_LEN];
     char filename[MAX_INI_LINE_LEN];
-    BOOL    seperate_dirs,
-	    auto_reconnect,
+    BOOL    auto_reconnect,
 	    make_relay,
-	    count_files,
-	    date_stamp,
 	    add_id3,
 	    check_max_btyes,
 	    keep_incomplete,
+	    rip_individual_tracks,
 	    rip_single_file;
     char overwrite_string[MAX_INI_LINE_LEN];
 
@@ -741,22 +773,21 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     GetPrivateProfileString(APPNAME, "useragent", DEFAULT_USERAGENT, opt->useragent, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "default_skin", DEFAULT_SKINFILE, guiOpt->default_skin, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "rip_single_path", "", opt->output_file, MAX_INI_LINE_LEN, filename);
+    GetPrivateProfileString(APPNAME, "output_pattern", "%S/%A - %T", opt->output_pattern, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "over_write_complete", "larger", overwrite_string, MAX_INI_LINE_LEN, filename);
     //debug_enable();
     //debug_set_filename ("C:\\gcs.txt");
     debug_printf ("Got PPS: %s\n", overwrite_string);
 
-    seperate_dirs = GetPrivateProfileInt(APPNAME, "seperate_dirs", TRUE, filename);
     opt->relay_port = GetPrivateProfileInt(APPNAME, "relay_port", DEFAULT_RELAY_PORT, filename);
     opt->max_port = opt->relay_port+1000;
     auto_reconnect = GetPrivateProfileInt(APPNAME, "auto_reconnect", TRUE, filename);
     make_relay = GetPrivateProfileInt(APPNAME, "make_relay", FALSE, filename);
-    count_files = GetPrivateProfileInt(APPNAME, "count_files", FALSE, filename);
-    date_stamp = GetPrivateProfileInt(APPNAME, "date_stamp", FALSE, filename);
     add_id3 = GetPrivateProfileInt(APPNAME, "add_id3", TRUE, filename);
     check_max_btyes = GetPrivateProfileInt(APPNAME, "check_max_bytes", FALSE, filename);
     opt->maxMB_rip_size = GetPrivateProfileInt(APPNAME, "maxMB_bytes", 0, filename);
     keep_incomplete = GetPrivateProfileInt(APPNAME, "keep_incomplete", TRUE, filename);
+    rip_individual_tracks = GetPrivateProfileInt(APPNAME, "rip_individual_tracks", TRUE, filename);
     rip_single_file = GetPrivateProfileInt(APPNAME, "rip_single_file", FALSE, filename);
 
     opt->sp_opt.xs_offset = GetPrivateProfileInt(APPNAME, "xs_offset", 
@@ -790,14 +821,12 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     opt->flags = 0;
 #endif
     opt->flags |= OPT_SEARCH_PORTS;			// not having this caused a bad bug, must remember this.
-    if (seperate_dirs) opt->flags |= OPT_SEPERATE_DIRS;
     if (auto_reconnect) opt->flags |= OPT_AUTO_RECONNECT;
     if (make_relay) opt->flags |= OPT_MAKE_RELAY;
-    if (count_files) opt->flags |= OPT_COUNT_FILES;
-    if (date_stamp) opt->flags |= OPT_DATE_STAMP;
     if (add_id3) opt->flags |= OPT_ADD_ID3;
     if (check_max_btyes) opt->flags |= OPT_CHECK_MAX_BYTES;
     if (keep_incomplete) opt->flags |= OPT_KEEP_INCOMPLETE;
+    if (rip_individual_tracks) opt->flags |= OPT_INDIVIDUAL_TRACKS;
     if (rip_single_file) opt->flags |= OPT_SINGLE_FILE_OUTPUT;
 
     return TRUE;
@@ -806,7 +835,6 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 
 BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 {
-
     char filename[MAX_INI_LINE_LEN];
     FILE *fp;
     winamp_get_path(filename);
@@ -821,19 +849,26 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     fprintf(fp, "output_dir=%s\n", opt->output_directory);
     fprintf(fp, "localhost=%s\n", guiOpt->localhost);
     fprintf(fp, "useragent=%s\n", opt->useragent);
+#if defined (commentout)
     fprintf(fp, "seperate_dirs=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_SEPERATE_DIRS));
+#endif
     fprintf(fp, "relay_port=%d\n", opt->relay_port);
     fprintf(fp, "auto_reconnect=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_AUTO_RECONNECT));
     fprintf(fp, "over_write_complete=%s\n", overwrite_opt_to_string (opt->overwrite));
     fprintf(fp, "make_relay=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_MAKE_RELAY));
+#if defined (commentout)
     fprintf(fp, "count_files=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_COUNT_FILES));
     fprintf(fp, "date_stamp=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_DATE_STAMP));
+#endif
     fprintf(fp, "add_id3=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_ADD_ID3));
     fprintf(fp, "check_max_bytes=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_CHECK_MAX_BYTES));
     fprintf(fp, "maxMB_bytes=%d\n", opt->maxMB_rip_size);
     fprintf(fp, "keep_incomplete=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_KEEP_INCOMPLETE));
+    fprintf(fp, "rip_individual_tracks=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_INDIVIDUAL_TRACKS));
     fprintf(fp, "rip_single_file=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_SINGLE_FILE_OUTPUT));
     fprintf(fp, "rip_single_path=%s\n", opt->output_file);
+
+    fprintf(fp, "output_pattern=%s\n", opt->output_pattern);
 
     fprintf(fp, "xs_offset=%d\n", opt->sp_opt.xs_offset);
     fprintf(fp, "xs_silence_length=%d\n", opt->sp_opt.xs_silence_length);

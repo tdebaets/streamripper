@@ -141,10 +141,6 @@ SOURCE=.\gen.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\mpglib\interface.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\options.h
 # End Source File
 # Begin Source File
