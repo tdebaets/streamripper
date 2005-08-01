@@ -707,6 +707,9 @@ options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 	case IDC_XS_SEARCH_WIN_POST:
 	case IDC_XS_PADDING_PRE:
 	case IDC_XS_PADDING_POST:
+	case IDC_OVERWRITE_COMPLETE:
+	case IDC_RIP_INDIVIDUAL_CHECK:
+	case IDC_PATTERN_EDIT:
 	    PropSheet_Changed(GetParent(hWnd), hWnd);
 	    break;
 	}
@@ -828,6 +831,12 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     if (keep_incomplete) opt->flags |= OPT_KEEP_INCOMPLETE;
     if (rip_individual_tracks) opt->flags |= OPT_INDIVIDUAL_TRACKS;
     if (rip_single_file) opt->flags |= OPT_SINGLE_FILE_OUTPUT;
+
+    /* Note, there is no way to change the rules file location (for now) */
+    if (!winamp_get_path(opt->rules_file))
+	return FALSE;
+    strcat (opt->rules_file, "Plugins\\parse_rules.txt");
+    debug_printf ("RULES: %s\n", opt->rules_file);
 
     return TRUE;
 }

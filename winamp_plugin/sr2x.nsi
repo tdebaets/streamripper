@@ -134,6 +134,7 @@ Section "ThisNameIsIgnoredSoWhyBother?"
   ; File to extract
   File "C:\program files\winamp\plugins\gen_sripper.dll"
   File "sripper_howto.txt"
+  File "..\parse_rules.txt"
 
   SetOutPath $INSTDIR\Skins\SrSkins
   File srskin.bmp
