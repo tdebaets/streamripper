@@ -426,6 +426,14 @@ parse_and_subst_dir (char* pattern_head, char* pattern_tail,
     pattern_head[ph_base_len] = 0;
     debug_printf ("Got pattern head: %s\n", pattern_head);
     debug_printf ("Got opat tail:    %s\n", &opat_path[op_tail_idx]);
+
+    /* Still have to do this for the file system */
+    strip_invalid_chars (pattern_head);
+
+    error here.  Need to strip only the %S, not others.
+
+    debug_printf ("Got pattern head: %s\n", pattern_head);
+
     strcpy (pattern_tail, &opat_path[op_tail_idx]);
 }
 
