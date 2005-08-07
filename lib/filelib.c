@@ -58,14 +58,13 @@ static void set_show_filenames (void);
 static int is_absolute_path (char* fn);
 #endif
 static void parse_and_subst_dir (char* pattern_head, char* pattern_tail,
-				 char* opat_path, char* icy_name);
+				 char* opat_path);
 static void parse_and_subst_pat (char* newfile, TRACK_INFO* ti);
 static void set_default_pattern (BOOL get_separate_dirs, BOOL do_count);
 static error_code set_output_directory_new (char* output_pattern,
 					    char* output_directory,
 					    int get_separate_dirs,
-					    int get_date_stamp,
-					    char* icy_name
+					    int get_date_stamp
 					    );
 static error_code sr_getcwd (char* dirbuf);
 static error_code add_trailing_slash (char *str);
@@ -94,6 +93,7 @@ static char 	m_icy_name[SR_MAX_PATH];
 static char*	m_extension;
 static BOOL	m_do_individual_tracks;
 static char     m_session_datebuf[DATEBUF_LEN];
+static char     m_stripped_icy_name[SR_MAX_PATH];
 
 // For now we're not going to care. If it makes it good. it not, will know 
 // When we try to create a file in the path.
@@ -154,7 +154,10 @@ filelib_init (BOOL do_individual_tracks,
     m_show_name[0] = 0;
     m_do_show = do_show_file;
     m_do_individual_tracks = do_individual_tracks;
+
     sr_strncpy (m_icy_name, icy_name, SR_MAX_PATH);
+    sr_strncpy (m_stripped_icy_name, icy_name, SR_MAX_PATH);
+    strip_invalid_chars (m_stripped_icy_name);
 
     switch (content_type) {
     case CONTENT_TYPE_MP3:
@@ -209,8 +212,7 @@ filelib_init (BOOL do_individual_tracks,
     set_output_directory_new (output_pattern,
 			      output_directory,
 			      get_separate_dirs,
-			      get_date_stamp,
-			      icy_name);
+			      get_date_stamp);
 
     sprintf (m_incomplete_directory, "%s%s%c", m_output_directory,
 	     "incomplete", PATH_SLASH);
@@ -259,8 +261,7 @@ error_code
 set_output_directory_new (char* output_pattern,
 			  char* output_directory,
 			  int get_separate_dirs,
-			  int get_date_stamp,
-			  char* icy_name
+			  int get_date_stamp
 			  )
 {
     error_code ret;
@@ -325,7 +326,7 @@ set_output_directory_new (char* output_pattern,
 
     /* Fill in %S and %d patterns */
     sprintf (pattern_head, "%s%s%s", device, cwd_path, odir_path);
-    parse_and_subst_dir (pattern_head, pattern_tail, opat_path, icy_name);
+    parse_and_subst_dir (pattern_head, pattern_tail, opat_path);
 
     /* In case there is no %A, no %T, etc., use the default pattern */
     if (!*pattern_tail) strcpy (pattern_tail, "%A - %T");
@@ -343,8 +344,7 @@ set_output_directory_new (char* output_pattern,
    from track to track: %A, %T, %a, %D, %q, or %Q. 
    If %S or %d appear before this, substitute in. */
 static void
-parse_and_subst_dir (char* pattern_head, char* pattern_tail,
-		     char* opat_path, char* icy_name)
+parse_and_subst_dir (char* pattern_head, char* pattern_tail, char* opat_path)
 {
     int opi = 0;
     unsigned int phi = 0;
@@ -387,7 +387,7 @@ parse_and_subst_dir (char* pattern_head, char* pattern_tail,
 	    continue;
 	case 'S':
 	    /* append stream name */
-	    strncat (pattern_head, icy_name, SR_MAX_BASE-phi);
+	    strncat (pattern_head, m_stripped_icy_name, SR_MAX_BASE-phi);
 	    phi = strlen (pattern_head);
 	    opi+=2;
 	    continue;
@@ -426,13 +426,6 @@ parse_and_subst_dir (char* pattern_head, char* pattern_tail,
     pattern_head[ph_base_len] = 0;
     debug_printf ("Got pattern head: %s\n", pattern_head);
     debug_printf ("Got opat tail:    %s\n", &opat_path[op_tail_idx]);
-
-    /* Still have to do this for the file system */
-    strip_invalid_chars (pattern_head);
-
-    error here.  Need to strip only the %S, not others.
-
-    debug_printf ("Got pattern head: %s\n", pattern_head);
 
     strcpy (pattern_tail, &opat_path[op_tail_idx]);
 }
@@ -692,6 +685,17 @@ parse_and_subst_pat (char* newfile, TRACK_INFO* ti)
     nfi = strlen(newfile);
     done = 0;
 
+    /* Strip artist, title, album */
+    char stripped_artist[SR_MAX_PATH];
+    char stripped_title[SR_MAX_PATH];
+    char stripped_album[SR_MAX_PATH];
+    sr_strncpy (stripped_artist, ti->artist, SR_MAX_PATH);
+    sr_strncpy (stripped_title, ti->title, SR_MAX_PATH);
+    sr_strncpy (stripped_album, ti->album, SR_MAX_PATH);
+    strip_invalid_chars(stripped_artist);
+    strip_invalid_chars(stripped_title);
+    strip_invalid_chars(stripped_album);
+
     while (nfi < MAX_FILEBASELEN) {
 	debug_printf ("COMPOSING OUTPUT PATTERN:%s\n", newfile);
 	if (pat[opi] == '\0') {
@@ -732,13 +736,13 @@ parse_and_subst_pat (char* newfile, TRACK_INFO* ti)
 	    continue;
 	case 'a':
 	    /* album */
-	    strncat (newfile, ti->album, MAX_FILEBASELEN-nfi);
+	    strncat (newfile, stripped_album, MAX_FILEBASELEN-nfi);
 	    nfi = strlen (newfile);
 	    opi+=2;
 	    continue;
 	case 'A':
 	    /* artist */
-	    strncat (newfile, ti->artist, MAX_FILEBASELEN-nfi);
+	    strncat (newfile, stripped_artist, MAX_FILEBASELEN-nfi);
 	    nfi = strlen (newfile);
 	    opi+=2;
 	    continue;
@@ -752,7 +756,7 @@ parse_and_subst_pat (char* newfile, TRACK_INFO* ti)
 	    continue;
 	case 'T':
 	    /* title */
-	    strncat (newfile, ti->title, MAX_FILEBASELEN-nfi);
+	    strncat (newfile, stripped_title, MAX_FILEBASELEN-nfi);
 	    nfi = strlen (newfile);
 	    opi+=2;
 	    continue;

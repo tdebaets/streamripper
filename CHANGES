@@ -1,6 +1,7 @@
 New for 1.61.11
 ---------------
 * Implement new output file naming code for windows
+* Perform stripping separately on stream, artist, title, album
 * Always strip trailing period (see bug #1202516), note that this 
   is not a complete fix because directories could be created by %A 
   for example
