@@ -753,6 +753,11 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	    rip_single_file;
     char overwrite_string[MAX_INI_LINE_LEN];
 
+    // GCS uncomment these to get debugging log
+    //debug_enable();
+    //debug_set_filename ("C:\\gcs.txt");
+    //debug_set_filename ("d:\\sripper_1x\\gcs.txt");
+
     if (!get_desktop_folder(desktop_path))
     {
 	// Maybe an error message? nahhh..
@@ -778,8 +783,6 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     GetPrivateProfileString(APPNAME, "rip_single_path", "", opt->output_file, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "output_pattern", "%S/%A - %T", opt->output_pattern, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "over_write_complete", "larger", overwrite_string, MAX_INI_LINE_LEN, filename);
-    debug_enable();
-    debug_set_filename ("C:\\gcs.txt");
     debug_printf ("Got PPS: %s\n", overwrite_string);
 
     opt->relay_port = GetPrivateProfileInt(APPNAME, "relay_port", DEFAULT_RELAY_PORT, filename);

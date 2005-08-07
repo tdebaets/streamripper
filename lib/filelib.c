@@ -157,7 +157,9 @@ filelib_init (BOOL do_individual_tracks,
 
     sr_strncpy (m_icy_name, icy_name, SR_MAX_PATH);
     sr_strncpy (m_stripped_icy_name, icy_name, SR_MAX_PATH);
+    debug_printf ("Stripping icy name...\n");
     strip_invalid_chars (m_stripped_icy_name);
+    debug_printf ("Done stripping icy name.\n");
 
     switch (content_type) {
     case CONTENT_TYPE_MP3:
@@ -668,6 +670,9 @@ filelib_write_cue(TRACK_INFO* ti, int secs)
 static void
 parse_and_subst_pat (char* newfile, TRACK_INFO* ti)
 {
+    char stripped_artist[SR_MAX_PATH];
+    char stripped_title[SR_MAX_PATH];
+    char stripped_album[SR_MAX_PATH];
 #define DATEBUF_LEN 50
     char temp[DATEBUF_LEN];
     char datebuf[DATEBUF_LEN];
@@ -686,9 +691,6 @@ parse_and_subst_pat (char* newfile, TRACK_INFO* ti)
     done = 0;
 
     /* Strip artist, title, album */
-    char stripped_artist[SR_MAX_PATH];
-    char stripped_title[SR_MAX_PATH];
-    char stripped_album[SR_MAX_PATH];
     sr_strncpy (stripped_artist, ti->artist, SR_MAX_PATH);
     sr_strncpy (stripped_title, ti->title, SR_MAX_PATH);
     sr_strncpy (stripped_album, ti->album, SR_MAX_PATH);
@@ -887,10 +889,13 @@ new_file_is_better (char *oldfile, char *newfile)
      * simple size check for now. Newfile should have at least 1Meg. Else it's
      * not very usefull most of the time.
      */
+    /* GCS: This isn't quite true for low bitrate streams.  */
+#if defined (commentout)
     if (newfilesize <= 524288) {
 	debug_printf("NFB: newfile smaller as 524288\n");
 	return FALSE;
     }
+#endif
 
     if (oldfilesize == -1) {
 	/* make sure we get the file in case of errors */
@@ -1157,6 +1162,8 @@ get_next_sequence_number (char* fn_base)
     char dir_name[SR_MAX_PATH];
     char fn_prefix[SR_MAX_PATH];
 #if defined (WIN32)
+    DIR* dp;
+    struct dirent* de;
 #else
     DIR* dp;
     struct dirent* de;
@@ -1177,8 +1184,30 @@ get_next_sequence_number (char* fn_base)
     strcpy (fn_prefix, &fn_base[edi+1]);
 
 #if defined (WIN32)
-    /* Not yet implemented */
-    return 0;
+    /* Look through directory for a filenames that match prefix */
+    debug_printf ("Trying to opendir: %s\n", dir_name);
+    if ((dp = opendir (dir_name)) == 0) {
+	return 0;
+    }
+    debug_printf ("dir:%s\nprefix:%s\n", dir_name, fn_prefix);
+    seq = 0;
+    while ((de = readdir (dp)) != 0) {
+	debug_printf ("Checking file for sequence number: %s\n", de->d_name);
+	if (strncmp(de->d_name, fn_prefix, strlen(fn_prefix)) == 0) {
+	    debug_printf ("Prefix match\n", de->d_name);
+	    if (isdigit(de->d_name[strlen(fn_prefix)])) {
+		int this_seq = atoi(&de->d_name[strlen(fn_prefix)]);
+		debug_printf ("Digit match:%c,%d\n", 
+			      de->d_name[strlen(fn_prefix)], this_seq);
+		if (seq <= this_seq) {
+		    seq = this_seq + 1;
+		}
+	    }
+	}
+    }
+    closedir (dp);
+    debug_printf ("Final sequence number found: %d\n",seq);
+    return seq;
 #else
     /* Look through directory for a filenames that match prefix */
     debug_printf ("Trying to opendir: %s\n", dir_name);

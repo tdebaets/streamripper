@@ -1,5 +1,6 @@
 New for 1.61.11
 ---------------
+Sun 08-07-2005
 * Implement new output file naming code for windows
 * Perform stripping separately on stream, artist, title, album
 * Always strip trailing period (see bug #1202516), note that this 
