@@ -1,3 +1,7 @@
+New for 1.61.12
+---------------
+* Partial fix for overflow using -M flag (see bug #1261305).
+
 New for 1.61.11
 ---------------
 Sun 08-07-2005

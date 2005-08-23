@@ -379,7 +379,8 @@ ripthread(void *notused)
 	 * the interface it's a weird combonation of threads
 	 * wnd locks, etc.. all i know is that this appeared to work
 	 */
-	if (m_bytes_ripped >= (m_options.maxMB_rip_size*1000000) &&
+        /* GCS Aug 23, 2003: m_bytes_ripped can still overflow */
+	if (m_bytes_ripped/1000000 >= (m_options.maxMB_rip_size) &&
 	    GET_CHECK_MAX_BYTES(m_options.flags)) {
 	    socklib_close(&m_sock);
 	    destroy_subsystems();

@@ -14,6 +14,7 @@ connections from clients that don't want metadata.
 "Albert Bachmann" <lbert.bachmann a@t gmx.de> For new metadata rules 
 which let you choose which files to save or delete.
 "Daniel Lord" patch for overwriting complete files when bigger.
+"Chris Pearson" partial fix for overflows using the -M flag.
 
 THANKS (v.1.60.X)
 ---------------------
