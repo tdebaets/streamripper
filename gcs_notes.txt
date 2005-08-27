@@ -706,3 +706,37 @@ Links to BT sites:
 Smiler's links (http://smiler.no-ip.org/BT/BTlinks.php
 
 -----------------------------------------------------------------------
+Shoutcast lists
+
+shoutcast.com (mp3)
+icecast.org (mp3/ogg)
+oddsock.org
+jetcast/jetaudio (mp3)
+peercast (relay-to-shoutcast)
+www.tuner2.com (aac)
+live365
+
+A couple of korean ones
+inlive.co.kr (?)
+http://www.mukulcast.com/ (?)
+
+A japanese one
+http://live.ladio.livedoor.com/
+-----------------------------------------------------------------------
+Goals of reorganization:
+
+1) Combine ripshout/ripstream, and separate code by parent and ripping 
+   threads.
+
+2) Tighter coupling between relay and cbuf
+
+   Still use the same architecture, with one accept thread and 
+   one send thread
+
+   Need a function to safely add/delete data to the cbuf, respecting 
+   relay pointers.  Need a function to safely send data to relays.
+
+   There are two locks.  One on the list of relay clients, called 
+   relay_list_sem, and one on the cbuf, called cbuf_access.
+
+-----------------------------------------------------------------------
