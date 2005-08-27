@@ -660,13 +660,30 @@ C:\gsharp\my_putty_key\3>plink -v -i cf.ppk -l gregsharp -2 cf-shell.sf.net ls
 
 
 -----------------------------------------------------------------------
+Clients (windows)
+winamp 5
+foobar2000
+windows media player
+media player classic
+itunes player
+sonique (sonique.lycos.com)
+
+Clients (unix)
+xmms w/ and w/o metadata
+mpg123
+mpg321
+ogg123
+bmp (http://www.sosdg.org/~larne/w/BMP_Homepage)
+lamip (http://fondriest.frederic.free.fr/realisations/lamip/index.html)
+RhythmBox (gnome), Amarok (KDE), or Juk(KDE)
+
+-----------------------------------------------------------------------
 Other OS's
 
 http://www.yellowtab.com/products/   (commercial BeOS)
 http://www.haiku-os.org/             (free, BeOS-compatible)
 http://www.syllable.org/
 http://l4hq.org/
-
 
 -----------------------------------------------------------------------
 Bootleg sites
