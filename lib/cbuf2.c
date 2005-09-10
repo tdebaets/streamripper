@@ -173,7 +173,7 @@ u_long cbuf2_get_free(CBUF2 *buffer)
 
 u_long cbuf2_get_used(CBUF2 *buffer)
 {
-	return buffer->item_count;
+    return buffer->item_count;
 }
 
 void increment(CBUF2 *buffer, u_long *index)

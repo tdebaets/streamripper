@@ -172,11 +172,6 @@ ripstream_destroy()
     m_addID3tag = TRUE;
 }
 
-BOOL is_buffer_full()
-{
-    return (cbuf2_get_free(&m_cbuffer) - m_in->getsize) < m_in->getsize;
-}
-
 BOOL
 is_track_changed()
 {
