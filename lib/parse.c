@@ -343,6 +343,20 @@ init_metadata_parser (char* rules_file)
 }
 
 void
+compose_metadata (TRACK_INFO* ti)
+{
+    if (ti->have_track_info) {
+	if (ti->artist[0]) {
+	    sprintf (ti->composed_metadata, "StreamTitle='%s - %s';",
+		     ti->artist, ti->title);
+	} else {
+	    sprintf (ti->composed_metadata, "StreamTitle='%s';",
+		     ti->title);
+	}
+    }
+}
+
+void
 parse_metadata (TRACK_INFO* ti)
 {
     int eflags;
@@ -360,6 +374,7 @@ parse_metadata (TRACK_INFO* ti)
     ti->artist[0] = 0;
     ti->title[0] = 0;
     ti->album[0] = 0;
+    ti->composed_metadata[0] = 0;
     ti->save_track = TRUE;
     if (!ti->raw_metadata[0]) {
 	debug_printf ("Couldn't parse because no meta data\n");
@@ -417,6 +432,7 @@ parse_metadata (TRACK_INFO* ti)
 		copy_rule_result (ti->artist, query_string, pmatch, rulep->artist_idx);
 		copy_rule_result (ti->title, query_string, pmatch, rulep->title_idx);
 		copy_rule_result (ti->album, query_string, pmatch, rulep->album_idx);
+		compose_metadata (ti);
 		/* GCS FIX: We don't have a track no */
 		ti->have_track_info = 1;
 		debug_printf ("Parsed track info.\nARTIST: %s\nTITLE: %s\nALBUM: %s\n",

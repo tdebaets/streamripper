@@ -72,7 +72,7 @@ debug_printf (char* fmt, ...)
 
     if (!initialized) {
         m_debug_lock = threadlib_create_sem();
-        threadlib_signel_sem(&m_debug_lock);
+        threadlib_signal_sem(&m_debug_lock);
     }
     threadlib_waitfor_sem (&m_debug_lock);
 
@@ -107,5 +107,5 @@ debug_printf (char* fmt, ...)
 	debug_close ();
     }
 #endif
-    threadlib_signel_sem (&m_debug_lock);
+    threadlib_signal_sem (&m_debug_lock);
 }

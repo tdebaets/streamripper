@@ -739,4 +739,7 @@ Goals of reorganization:
    There are two locks.  One on the list of relay clients, called 
    relay_list_sem, and one on the cbuf, called cbuf_access.
 
+3) Cbuf only needs read & length, not write.
+   Should cbuf be chunk oriented, or byte oriented?
+
 -----------------------------------------------------------------------

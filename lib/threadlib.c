@@ -52,7 +52,7 @@ void		threadlib_endthread(THREAD_HANDLE *thread);
 
 HSEM		threadlib_create_sem();
 error_code	threadlib_waitfor_sem(HSEM *e);
-error_code	threadlib_signel_sem(HSEM *e);
+error_code	threadlib_signal_sem(HSEM *e);
 void		threadlib_destroy_sem(HSEM *e);
 
 
@@ -84,7 +84,7 @@ error_code threadlib_waitfor_sem(HSEM *e)
 	SemWait(*e);
 	return SR_SUCCESS;
 }
-error_code threadlib_signel_sem(HSEM *e)
+error_code threadlib_signal_sem(HSEM *e)
 {
 	if (!e)
 		return SR_ERROR_INVALID_PARAM;

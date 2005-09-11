@@ -2,25 +2,10 @@
 #define __SOCKETS_H__
 
 #include "srtypes.h"
-#if HAVE_SYS_SOCKIO_H
-#include <sys/sockio.h>
-#endif
-
-#ifndef WIN32
-typedef int SOCKET;
-#endif
 
 #ifndef INADDR_NONE
 #define INADDR_NONE (-1)
 #endif
-
-typedef struct HSOCKETst
-{
-	SOCKET	s;
-	BOOL	closed;
-} HSOCKET;
-
-
 
 extern error_code	socklib_init();
 extern error_code	socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_name);

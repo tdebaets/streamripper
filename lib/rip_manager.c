@@ -44,8 +44,6 @@
 #include "socklib.h"
 #include "http.h"
 #include "util.h"
-#include "riplive365.h"
-#include "ripshout.h"
 #include "findsep.h"
 #include "inet.h"
 #include "relaylib.h"
@@ -68,7 +66,6 @@ u_short			rip_mananger_get_relay_port();
  * Private functions
  ******************************************************************************/
 static void			ripthread(void *bla);
-static int			myrecv(char* buffer, int size);
 static error_code		start_relay(int content_type);
 static void			post_status(int status);
 //static error_code		start_track(char *track);
@@ -83,12 +80,14 @@ static void			destroy_subsystems();
  ******************************************************************************/
 static SR_HTTP_HEADER		m_info;
 static HSOCKET			m_sock;
+#if defined (commentout)
 static void			(*m_destroy_func)();
+#endif
 static RIP_MANAGER_INFO		m_ripinfo;		// used for UPDATE callback messages
 static RIP_MANAGER_OPTIONS	m_options;		// local copy of the options passed to rip_manager_start()
 static THREAD_HANDLE		m_hthread;		// rip thread handle
-static IO_DATA_INPUT		m_in;			// Gets raw stream data
-static IO_GET_STREAM		m_ripin;		// Raw stream data + song information
+//static IO_DATA_INPUT		m_in;			// Gets raw stream data
+//static IO_GET_STREAM		m_ripin;		// Raw stream data + song information
 //static IO_PUT_STREAM		m_ripout;		// Generic output interface
 static void			(*m_status_callback)(int message, void *data);
 static BOOL			m_ripping = FALSE;
@@ -209,21 +208,6 @@ post_status(int status)
 }
 
 
-int
-myrecv(char* buffer, int size)
-{
-    int ret;
-    /* GCS: Jun 5, 2004.  Here is where I think we are getting aussie's 
-       problem with the SR_ERROR_INVALID_METADATA or SR_ERROR_NO_TRACK_INFO
-       messages */
-    ret = socklib_recvall(&m_sock, buffer, size, m_options.timeout);
-    if (ret >= 0 && ret != size) {
-	debug_printf ("rip_manager_recv: expected %d, got %d\n",size,ret);
-	ret = SR_ERROR_RECV_FAILED;
-    }
-    return ret;
-}
-
 /* 
  * This is called by ripstream when we get a new track. 
  * most logic is handled by filelib_start() so we just
@@ -300,7 +284,9 @@ rip_manager_put_data(char *buf, int size)
 error_code
 rip_manager_put_raw_data(char *buf, int size)
 {
+#if defined (commentout)
     relaylib_send(buf, size, 1, 0);
+#endif
     filelib_write_show (buf, size);
     return SR_SUCCESS;
 }
@@ -355,13 +341,13 @@ ripthread(void *notused)
     error_code ret;
 
     if ((ret = start_ripping()) != SR_SUCCESS) {
-	threadlib_signel_sem(&m_started_sem);
+	threadlib_signal_sem(&m_started_sem);
 	post_error(ret);
 	goto DONE;
     }
     m_status_callback(RM_STARTED, (void *)NULL);
     post_status(RM_STATUS_BUFFERING);
-    threadlib_signel_sem(&m_started_sem);
+    threadlib_signal_sem(&m_started_sem);
 
     while(TRUE) {
         ret = ripstream_rip();
@@ -424,9 +410,10 @@ ripthread(void *notused)
 		// GCS testing...
 		filelib_shutdown();
 		ripstream_destroy();
+#if defined (commentout)
 		if (m_destroy_func)
 		    m_destroy_func();
-
+#endif
 		ret = start_ripping();
 		if (ret == SR_SUCCESS)
 		    break;
@@ -465,6 +452,7 @@ rip_manager_stop()
 	    return;
     
     // Make sure the ripping started before we try to stop
+    debug_printf ("Waiting for m_started_sem...\n");
     threadlib_waitfor_sem(&m_started_sem);
     m_ripping = FALSE;
 
@@ -472,21 +460,28 @@ rip_manager_stop()
     /* destroy_metadata_parser (); */
 
     // Causes the code running in the thread to bail
+    debug_printf ("Closing m_sock...\n");
     socklib_close(&m_sock);
 
     // blocks until everything is ok and closed
+    debug_printf ("Waiting for m_hthread to close...\n");
     threadlib_waitforclose(&m_hthread);
+    debug_printf ("Destroying subsystems...\n");
     destroy_subsystems();
+    debug_printf ("Destroying m_started_sem\n");
     threadlib_destroy_sem(&m_started_sem);
+    debug_printf ("Done with rip_manager_stop\n");
 }
 
 void
 destroy_subsystems()
 {
     ripstream_destroy();
+#if defined (commentout)
     if (m_destroy_func) {
 	m_destroy_func();
     }
+#endif
     relaylib_shutdown();
     socklib_cleanup();
     filelib_shutdown();
@@ -579,18 +574,22 @@ start_ripping()
     m_status_callback(RM_OUTPUT_DIR, (void*)filelib_get_output_directory);
 #endif
 
+    /* GCS moving this into ripstream_init() */
+#if defined (commentout)
     /* prepares the ripshout lib for ripping */
     ret = ripshout_init(&m_in, &m_ripin, m_info.meta_interval);
     if (ret != SR_SUCCESS)
 	goto RETURN_ERR;
     m_destroy_func = ripshout_destroy;
+#endif
 
     /*
      * ripstream is good to go, it knows how to get data, and where
      * it's sending it to
      */
     ripstream_destroy();
-    ret = ripstream_init(&m_ripin, 
+    ret = ripstream_init(m_sock, 
+			 m_options.timeout, 
 			 m_info.icy_name,
 			 m_options.dropcount,
 			 &m_options.sp_opt,
@@ -632,8 +631,10 @@ start_ripping()
 
 RETURN_ERR:
     socklib_close(&m_sock);
+#if defined (commentout)
     if (m_destroy_func)
 	m_destroy_func();
+#endif
     return ret;	
 }
 
@@ -656,9 +657,11 @@ rip_manager_start(void (*status_callback)(int message, void *data),
     socklib_init();
 
     init_error_strings();
-    m_in.get_input_data = myrecv;
     m_status_callback = status_callback;
+#if defined (commentout)
+    m_in.get_input_data = myrecv;
     m_destroy_func = NULL;
+#endif
     m_bytes_ripped = 0;
 
     /* Initialize the parsing rules */

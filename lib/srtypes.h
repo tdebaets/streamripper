@@ -19,6 +19,10 @@
 # endif
 #endif
 
+#if HAVE_SYS_SOCKIO_H
+#include <sys/sockio.h>
+#endif
+
 /* Note: uint32_t is standardized in ISO C99, so let's use that one */
 #if !HAVE_UINT32_T
 # if HAVE_U_INT32_T
@@ -31,6 +35,9 @@ typedef unsigned int uint32_t;
 #if HAVE_WCHAR_SUPPORT
 #if HAVE_WCHAR_H
 #include <wchar.h>
+#endif
+#if HAVE_WCTYPE_H
+#include <wctype.h>
 #endif
 #endif
 #if STDC_HEADERS
@@ -97,10 +104,12 @@ typedef struct IO_DATA_INPUTst{
  * a better splite on the track seperation. it keeps a back buffer and 
  * does the "find silent point" shit.
  */
+#if defined (commentout)
 typedef struct IO_GET_STREAMst{
 	int (*get_stream_data)(char* data_buf, char *track_buf);
 	u_long getsize;
 } IO_GET_STREAM;
+#endif
 
 /* 
  * SPLITPOINT_OPTIONS are the options used to tweek how the silence 
@@ -145,8 +154,20 @@ typedef struct TRACK_INFOst
     char artist[MAX_TRACK_LEN];
     char title[MAX_TRACK_LEN];
     char album[MAX_TRACK_LEN];
+    char composed_metadata[MAX_TRACK_LEN];
     BOOL save_track;
 } TRACK_INFO;
+
+
+#ifndef WIN32
+typedef int SOCKET;
+#endif
+
+typedef struct HSOCKETst
+{
+	SOCKET	s;
+	BOOL	closed;
+} HSOCKET;
 
 /* 
  * OverwriteOpt controls how files in complete directory are overwritten

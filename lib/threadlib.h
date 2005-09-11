@@ -21,7 +21,7 @@ extern BOOL		threadlib_sem_signaled(HSEM *e);
 
 extern HSEM		threadlib_create_sem();
 extern error_code	threadlib_waitfor_sem(HSEM *e);
-extern error_code	threadlib_signel_sem(HSEM *e);
+extern error_code	threadlib_signal_sem(HSEM *e);
 extern void		threadlib_destroy_sem(HSEM *e);
 
 

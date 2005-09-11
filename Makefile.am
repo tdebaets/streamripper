@@ -37,7 +37,6 @@ streamripper_SOURCES = \
 	lib/parse.c \
 	lib/relaylib.c \
 	lib/rip_manager.c \
-	lib/ripshout.c \
 	lib/ripstream.c \
 	lib/socklib.c \
 	lib/threadlib.c \
@@ -53,7 +52,6 @@ streamripper_SOURCES = \
 	lib/parse.h \
 	lib/relaylib.h \
 	lib/rip_manager.h \
-	lib/ripshout.h \
 	lib/ripstream.h \
 	lib/socklib.h \
 	lib/srconfig.h \
@@ -61,6 +59,9 @@ streamripper_SOURCES = \
 	lib/srtypes.h \
 	lib/uce_dirent.h \
 	lib/util.h
+
+##	lib/ripshout.c \
+##	lib/ripshout.h \
 
 libmad_manifest = \
 	libmad-0.15.1b/README \

@@ -1005,7 +1005,7 @@ filelib_open_for_write(FHANDLE* fp, char* filename)
 }
 
 error_code
-filelib_write(FHANDLE fp, char *buf, u_long size)
+filelib_write (FHANDLE fp, char *buf, u_long size)
 {
     if (!fp) {
 	debug_printf("filelib_write: fp = 0\n");

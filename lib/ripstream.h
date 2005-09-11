@@ -2,11 +2,13 @@
 #define __RIPLIB_H__
 
 #include "srtypes.h"
+#include "socklib.h"
 
 error_code
-ripstream_init (IO_GET_STREAM *in, 
+ripstream_init (HSOCKET sock, 
+		int timeout, 
 		char *no_meta_name, 
-		int drop_count, 
+		int drop_count,
 		SPLITPOINT_OPTIONS *sp_opt, 
 		int bitrate, 
 		int meta_interval, 

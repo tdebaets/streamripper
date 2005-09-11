@@ -1,11 +1,13 @@
 #ifndef __LIST_H__
 #define __LIST_H__
 
-/* GCS: I ripped this off from the linux kernel */
+/* GCS: I ripped this off from the linux kernel.  Minor modifications. */
 
 #if defined (WIN32)
 #define inline __inline
 #endif
+
+#define prefetch(a) (a)
 
 /*
  * Simple doubly linked list implementation.

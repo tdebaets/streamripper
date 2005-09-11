@@ -534,7 +534,7 @@ strip_invalid_chars_stable(char *str)
        I used to do this only for WIN32, but now I understand that 
        the user could be running cygwin/mingw32, or even mounting 
        a remote win32 filesystem.  Thus, now I always do it. */
-    for (wstrp = w_in + wcslen(w_in) - 1; wstrp >= 0; wstrp--) {
+    for (wstrp = w_in + wcslen(w_in) - 1; wstrp >= w_in; wstrp--) {
 	if (*wstrp == L'.')
 	    *wstrp = 0;
 	else
