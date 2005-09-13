@@ -444,10 +444,10 @@ find_sep (u_long *pos1, u_long *pos2)
 		  g_cbuf2.item_count);
 
     if (m_content_type != CONTENT_TYPE_MP3) {
-        /* If the search region is too small, take the middle. */
 	sw_sil = (sw_end + sw_start) / 2;
 	debug_printf ("(not mp3) taking middle: sw_sil=%d\n", sw_sil);
-	/* GCS FIX: Need to set pos1 and pos2 here. */
+	*pos1 = sw_start + sw_sil;
+	*pos2 = sw_start + sw_sil;
     } else {
 	int bufsize = sw_end - sw_start;
 	char* buf = (u_char *)malloc(bufsize);

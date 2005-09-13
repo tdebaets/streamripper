@@ -947,7 +947,11 @@ filelib_end (TRACK_INFO* ti,
 	ok_to_write = TRUE;
 	break;
     case OVERWRITE_NEVER:
-	ok_to_write = FALSE;
+	if (file_exists (newfile)) {
+	    ok_to_write = FALSE;
+	} else {
+	    ok_to_write = TRUE;
+	}
 	break;
     case OVERWRITE_LARGER:
     default:
