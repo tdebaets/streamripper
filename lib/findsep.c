@@ -236,7 +236,7 @@ apply_padding (DECODE_STRUCT* ds,
     if (pos2s < pos->m_pcmpos) {
 	*pos2 = pos->m_framepos - ds->mpgbuf;
     }
-    list_for_each_entry (pos, &(ds->frame_list), m_list) {
+    list_for_each_entry (pos, FRAME_LIST, &(ds->frame_list), m_list) {
 	if (pos1s >= pos->m_pcmpos) {
 	    *pos1 = pos->m_framepos - ds->mpgbuf - 1;
 	}
@@ -256,7 +256,7 @@ free_frame_list (DECODE_STRUCT* ds)
     FRAME_LIST *pos, *n;
     /* GCS: This seems to be the best way to go through a list.
        Note no compiler warnings. */
-    list_for_each_entry_safe (pos, n, &(ds->frame_list), m_list) {
+    list_for_each_entry_safe (pos, FRAME_LIST, n, &(ds->frame_list), m_list) {
 	list_del (&(pos->m_list));
 	free (pos);
     }

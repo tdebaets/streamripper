@@ -1,8 +1,10 @@
 New for 1.61.12-b1
 ------------------
 * Rewrite internal buffering code
+* Burst on connect for relay streams
 * Fix broken mp3 frames in split files (#525936)
-  Note, however, we still have broken frames in show files
+  Note, however, we still have broken initial frame when ripping
+  to single file
 * Partial fix for overflow using -M flag (see bug #1261305)
 * Fix wrong default overwriting behavior (#1269511)
 * Fix a couple of memory errors

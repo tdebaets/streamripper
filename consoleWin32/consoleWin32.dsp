@@ -196,14 +196,6 @@ SOURCE=..\lib\rip_manager.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\lib\ripshout.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\lib\ripshout.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\lib\ripstream.c
 # End Source File
 # Begin Source File
