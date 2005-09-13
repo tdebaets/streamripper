@@ -425,9 +425,55 @@ clip_to_cbuffer (int pos)
     }
 }
 
-
 error_code
 find_sep (u_long *pos1, u_long *pos2)
+{
+    int pos1i, pos2i;
+    int sw_start, sw_end, sw_sil;
+    u_long psilence;
+    int ret;
+
+    debug_printf ("*** Finding separation point\n");
+
+    /* First, find the search region w/in cbuffer. */
+    sw_start = g_cbuf2.item_count - m_sw_start_to_cbuf2_end;
+    if (sw_start < 0) sw_start = 0;
+    sw_end = g_cbuf2.item_count - m_sw_end_to_cbuf2_end;
+    if (sw_end < 0) sw_end = 0;
+    debug_printf ("search window (bytes): %d,%d,%d\n", sw_start, sw_end,
+		  g_cbuf2.item_count);
+
+    if (m_content_type != CONTENT_TYPE_MP3) {
+        /* If the search region is too small, take the middle. */
+	sw_sil = (sw_end + sw_start) / 2;
+	debug_printf ("(not mp3) taking middle: sw_sil=%d\n", sw_sil);
+	/* GCS FIX: Need to set pos1 and pos2 here. */
+    } else {
+	int bufsize = sw_end - sw_start;
+	char* buf = (u_char *)malloc(bufsize);
+	ret = cbuf2_peek_rgn (&g_cbuf2, buf, sw_start, bufsize);
+	if (ret != SR_SUCCESS) {
+	    debug_printf ("PEEK FAILED: %d\n", ret);
+	    free(buf);
+	    return ret;
+	}
+	debug_printf ("PEEK OK\n");
+
+	/* Find silence point */
+	ret = findsep_silence (buf, bufsize,
+			       m_sp_opt->xs_silence_length,
+			       m_sp_opt->xs_padding_1,
+			       m_sp_opt->xs_padding_2,
+			       pos1, pos2);
+	pos1 += sw_start;
+	pos2 += sw_start;
+    }
+    return SR_SUCCESS;
+}
+
+#if defined (commentout)
+error_code
+find_sep_old (u_long *pos1, u_long *pos2)
 {
     int pos1i, pos2i;
     int sw_start, sw_end, sw_sil;
@@ -491,74 +537,6 @@ find_sep (u_long *pos1, u_long *pos2)
 
     return SR_SUCCESS;
 }
-
-#if defined (commentout)
-/* OLD version -- before new buffer code */
-error_code
-find_sep (u_long *pos1, u_long *pos2)
-{
-    int pos1i, pos2i;
-    int sw_start, sw_end, sw_sil;
-    u_long psilence;
-    int ret;
-
-    debug_printf ("*** Finding separation point\n");
-
-    /* First, find the search region w/in cbuffer. */
-    sw_start = g_cbuf2.item_count - m_sw_start_to_cbuf2_end;
-    if (sw_start < 0) sw_start = 0;
-    sw_end = g_cbuf2.item_count - m_sw_end_to_cbuf2_end;
-    if (sw_end < 0) sw_end = 0;
-    debug_printf ("search window (bytes): %d,%d,%d\n", sw_start, sw_end,
-		  g_cbuf2.item_count);
-
-    if (m_content_type != CONTENT_TYPE_MP3) {
-        /* If the search region is too small, take the middle. */
-	sw_sil = (sw_end + sw_start) / 2;
-	debug_printf ("(not mp3) taking middle: sw_sil=%d\n", sw_sil);
-    }
-    else if (sw_end - sw_start < m_min_search_win) {
-        /* If the search region is too small, take the middle. */
-	sw_sil = (sw_end + sw_start) / 2;
-	debug_printf ("taking middle: sw_sil=%d\n", sw_sil);
-    } else {
-	/* Otherwise, copy from search window into private buffer */
-	int bufsize = sw_end - sw_start;
-	char* buf = (u_char *)malloc(bufsize);
-	ret = cbuf2_peek_rgn (&g_cbuf2, buf, sw_start, bufsize);
-	if (ret != SR_SUCCESS) {
-	    debug_printf ("PEEK FAILED: %d\n", ret);
-	    free(buf);
-	    return ret;
-	}
-	debug_printf ("PEEK OK\n");
-
-	/* Find silence point */
-	ret = findsep_silence(buf, bufsize, m_sp_opt->xs_silence_length,
-			      &psilence);
-	free(buf);
-	if (ret != SR_SUCCESS && ret != SR_ERROR_CANT_DECODE_MP3) {
-	    return ret;
-	}
-	sw_sil = sw_start + psilence;
-
-	/* Add 1/2 of the silence window to get middle */
-	sw_sil = sw_sil + ms_to_bytes(m_sp_opt->xs_silence_length/2,m_bitrate);
-    }
-
-    /* Compute padding.  We need pos1 == end of 1st song and 
-       pos2 == beginning of 2nd song. */
-    pos1i = sw_sil + ms_to_bytes(m_sp_opt->xs_padding_2,m_bitrate);
-    pos2i = sw_sil - ms_to_bytes(m_sp_opt->xs_padding_1,m_bitrate);
-
-    /* Clip padding to amount available in cbuffer (there could be 
-       less than the full cbuffer in a few cases, such as track 
-       changes close to each other). */
-    *pos1 = clip_to_cbuffer (pos1i);
-    *pos2 = clip_to_cbuffer (pos2i);
-
-    return SR_SUCCESS;
-}
 #endif
 
 error_code
@@ -583,29 +561,12 @@ end_track(u_long pos1, u_long pos2, TRACK_INFO* ti)
     // Let cbuf know about the start of the next track
     cbuf2_set_next_song (&g_cbuf2, pos2);
 
-#if defined (commentout)
-    if (pos1 <= pos2) {
-	if ((ret = cbuf2_extract(&g_cbuf2, buf, pos1)) != SR_SUCCESS)
-	    goto BAIL;
-	// Next, skip past portion not in either track
-	if (pos1 < pos2) {
-	    if ((ret = cbuf2_fastforward(&g_cbuf2, pos2-pos1)) != SR_SUCCESS)
-		goto BAIL;
-	}
-    } else {
-	if ((ret = cbuf2_extract(&g_cbuf2, buf, pos2)) != SR_SUCCESS)
-	    goto BAIL;
-	// Next, grab, but don't skip, past portion in both tracks
-	if ((ret = cbuf2_peek(&g_cbuf2, buf+pos2, pos1-pos2)) != SR_SUCCESS)
-	    goto BAIL;
-    }
-#endif
-
     // Write that out to the current file
     // GCS FIX: m_bytes_ripped is incorrect when there is padding
     if ((ret = rip_manager_put_data(buf, pos1)) != SR_SUCCESS)
 	goto BAIL;
 
+    /* This is id3v1 */
     if (m_addID3tag) {
 	ID3Tag id3;
 	memset(&id3, '\000',sizeof(id3));
@@ -614,8 +575,10 @@ end_track(u_long pos1, u_long pos2, TRACK_INFO* ti)
 	strncpy(id3.songtitle, ti->title, sizeof(id3.songtitle));
 	strncpy(id3.album, ti->album, sizeof(id3.album));
 	id3.genre = (char) 0xFF; // see http://www.id3.org/id3v2.3.0.html#secA
-	if ((ret = rip_manager_put_data((char *)&id3, sizeof(id3))) != SR_SUCCESS)
+	ret = rip_manager_put_data((char *)&id3, sizeof(id3));
+	if (ret != SR_SUCCESS) {
 	    goto BAIL;
+	}
     }
 
     // Only save this track if we've skipped over enough cruft 

@@ -1,4 +1,4 @@
-/* findsep.c - jonclegg@yahoo.com
+/* findsep.c
  * library routines for find silent points in mp3 data
  *
  * This program is free software; you can redistribute it and/or modify
@@ -38,7 +38,8 @@
 #define MIN_RMS_SILENCE		100
 #define MAX_RMS_SILENCE		32767 //max short
 #define NUM_SILTRACKERS		30
-#define READSIZE	2000
+// #define READSIZE	2000
+#define READSIZE	1000
 
 /* Uncomment to dump an mp3 of the search window. */
 //   #define MAKE_DUMP_MP3 1
@@ -46,8 +47,9 @@
 typedef struct FRAME_LIST_struct FRAME_LIST;
 struct FRAME_LIST_struct
 {
-    long m_bufpos;
+    const unsigned char* m_framepos;
     long m_samples;
+    long m_pcmpos;
     LIST m_list;
 };
 
@@ -55,7 +57,8 @@ typedef struct SILENCETRACKERst
 {
     long insilencecount;
     double silencevol;
-    long silencestart;
+    //    long silencestart;
+    unsigned long silstart_samp;
     BOOL foundsil;
 } SILENCETRACKER;
 
@@ -64,10 +67,9 @@ typedef struct DECODE_STRUCTst
     unsigned char* mpgbuf;
     long  mpgsize;
     long  mpgpos;
-    long  psilence;
     long  silence_ms;
     long  silence_samples;
-    long  pcmpos;
+    unsigned long  pcmpos;
     long  samplerate;
     SILENCETRACKER siltrackers[NUM_SILTRACKERS];
     LIST frame_list;
@@ -88,17 +90,23 @@ typedef struct GET_BITRATE_STRUCTst
  * Private functions
  *****************************************************************************/
 static void init_siltrackers(SILENCETRACKER* siltrackers);
+static void apply_padding (DECODE_STRUCT* ds, unsigned long silstart,
+			   long padding1, long padding2,
+			   u_long* pos1, u_long* pos2);
+static void free_frame_list (DECODE_STRUCT* ds);
 static enum mad_flow input(void *data, struct mad_stream *ms);
 static void search_for_silence(DECODE_STRUCT *ds, double vol);
 static signed int scale(mad_fixed_t sample);
 static enum mad_flow output(void *data, struct mad_header const *header,
-				     struct mad_pcm *pcm);
-static enum mad_flow output(void *data, struct mad_header const *header,
-				     struct mad_pcm *pcm);
-static enum mad_flow error(void *data, struct mad_stream *ms, struct mad_frame *frame);
+			    struct mad_pcm *pcm);
+static enum mad_flow filter (void *data, struct mad_stream const *ms,
+			     struct mad_frame *frame);
+static enum mad_flow error(void *data, struct mad_stream *ms, 
+			   struct mad_frame *frame);
 static enum mad_flow header(void *data, struct mad_header const *pheader);
 static enum mad_flow input_get_bitrate (void *data, struct mad_stream *stream);
-static enum mad_flow header_get_bitrate (void *data, struct mad_header const *pheader);
+static enum mad_flow header_get_bitrate (void *data, 
+					 struct mad_header const *pheader);
 
 /*****************************************************************************
  * Private Vars
@@ -108,23 +116,30 @@ static enum mad_flow header_get_bitrate (void *data, struct mad_header const *ph
  * Functions
  *****************************************************************************/
 error_code
-findsep_silence(const u_char* mpgbuf, long mpgsize, 
-		long silence_length, u_long* psilence)
+findsep_silence (const u_char* mpgbuf, 
+		 long mpgsize, 
+		 long silence_length, 
+		 long padding1,
+		 long padding2,
+		 u_long* pos1, 
+		 u_long* pos2
+		 )
 {
     DECODE_STRUCT ds;
     struct mad_decoder decoder;
     int result;
-    long silstart;
+    unsigned long silstart;
     int i;
     
     ds.mpgbuf = (unsigned char*)mpgbuf;
     ds.mpgsize = mpgsize;
-    ds.psilence = 0;
     ds.pcmpos = 0;
     ds.mpgpos= 0;
     ds.samplerate = 0;
     ds.silence_ms = silence_length;
     INIT_LIST_HEAD (&ds.frame_list);
+
+    debug_printf ("FINDSEP: %p -> %p (%d)\n", mpgbuf, mpgbuf+mpgsize, mpgsize);
 
     init_siltrackers(ds.siltrackers);
 
@@ -140,7 +155,7 @@ findsep_silence(const u_char* mpgbuf, long mpgsize,
     mad_decoder_init(&decoder, &ds,
 		     input /* input */,
 		     header/* header */,
-		     NULL /* filter */,
+		     filter /* filter */,
 		     output /* output */,
 		     error /* error */,
 		     NULL /* message */);
@@ -152,41 +167,28 @@ findsep_silence(const u_char* mpgbuf, long mpgsize,
     debug_printf ("silence_samples: %d\n", ds.silence_samples);
 
     /* Search through siltrackers to find minimum volume point */
+    /* GCS FIX: Need to return middle of silence instead of beginning */
     assert(ds.mpgsize != 0);
-    silstart = ds.mpgsize/2;
-    for(i = 0; i < NUM_SILTRACKERS; i++)
-    {
-	debug_printf("i=%d, start=%d\n", i, ds.siltrackers[i].silencestart);
-	if (ds.siltrackers[i].foundsil)
-	{
+    silstart = ds.pcmpos/2;
+    for(i = 0; i < NUM_SILTRACKERS; i++) {
+	debug_printf("i=%d, start=%d\n", i, ds.siltrackers[i].silstart_samp);
+	if (ds.siltrackers[i].foundsil) {
 	    debug_printf("found!\n");
-	    silstart = ds.siltrackers[i].silencestart;
+	    silstart = ds.siltrackers[i].silstart_samp;
 	    break;
 	}
     }
 
-    /* GCS FIX: Need to return middle of silence instead of beginning */
-
-    // GCS -- crapped out here
-    // why assert this??
-#if defined (commentout)
-    assert(i != NUM_SILTRACKERS);
-#endif
-
     if (i == NUM_SILTRACKERS) {
 	debug_printf("warning: no silence found between tracks\n");
     }
-    *psilence = silstart;
+
+    /* Now that we have the start of the silence, let's add the padding */
+    apply_padding (&ds, silstart, padding1, padding2, pos1, pos2);
 
     /* Free the list of frame info */
-    {
-	FRAME_LIST *pos, *n;
-	/* GCS: This seems to be the best way to go through a list */
-	list_for_each_entry_safe (pos, n, &(ds.frame_list), m_list) {
-	    list_del (&(pos->m_list));
-	    free (pos);
-	}
-    }
+    free_frame_list (&ds);
+
     return SR_SUCCESS;
 }
 
@@ -195,12 +197,66 @@ void init_siltrackers(SILENCETRACKER* siltrackers)
     int i;
     long stepsize = (MAX_RMS_SILENCE - MIN_RMS_SILENCE) / (NUM_SILTRACKERS-1);
     long rms = MIN_RMS_SILENCE;
-    for(i = 0; i < NUM_SILTRACKERS; i++, rms += stepsize)
-    {
+    for (i = 0; i < NUM_SILTRACKERS; i++, rms += stepsize) {
 	siltrackers[i].foundsil = 0;
-	siltrackers[i].silencestart = 0;
+	siltrackers[i].silstart_samp = 0;
 	siltrackers[i].insilencecount = 0;
 	siltrackers[i].silencevol = rms;
+    }
+}
+
+static void
+apply_padding (DECODE_STRUCT* ds,
+	       unsigned long silstart,
+	       long padding1,
+	       long padding2,
+	       u_long* pos1, 
+	       u_long* pos2
+	       )
+{
+    /* Compute positions in samples */
+    FRAME_LIST *pos;
+    long pos1s, pos2s;
+
+    pos1s = silstart 
+	    + (ds->silence_samples/2) 
+	    + padding1 * (ds->samplerate/1000);
+    pos2s = silstart 
+	    + (ds->silence_samples/2) 
+	    - padding2 * (ds->samplerate/1000);
+
+    debug_printf ("Applying padding\n");
+
+    /* GCS FIX: Need to check for pos == null */
+    /* GCS FIX: Watch out for -1, might have mem error! */
+    pos = list_entry (ds->frame_list.next, FRAME_LIST, m_list);
+    if (pos1s < pos->m_pcmpos) {
+	debug_printf ("pos1 = %p\n", pos->m_framepos);
+	*pos1 = pos->m_framepos - ds->mpgbuf - 1;
+    }
+    if (pos2s < pos->m_pcmpos) {
+	*pos2 = pos->m_framepos - ds->mpgbuf;
+    }
+    list_for_each_entry (pos, &(ds->frame_list), m_list) {
+	if (pos1s >= pos->m_pcmpos) {
+	    debug_printf ("pos1 = %p\n", pos->m_framepos);
+	    *pos1 = pos->m_framepos - ds->mpgbuf - 1;
+	}
+	if (pos2s >= pos->m_pcmpos) {
+	    *pos2 = pos->m_framepos - ds->mpgbuf;
+	}
+    }
+}
+
+static void 
+free_frame_list (DECODE_STRUCT* ds)
+{
+    FRAME_LIST *pos, *n;
+    /* GCS: This seems to be the best way to go through a list.
+       Note no compiler warnings. */
+    list_for_each_entry_safe (pos, n, &(ds->frame_list), m_list) {
+	list_del (&(pos->m_list));
+	free (pos);
     }
 }
 
@@ -208,10 +264,10 @@ enum mad_flow
 input(void *data, struct mad_stream *ms)
 {
     DECODE_STRUCT *ds = (DECODE_STRUCT *)data;
-    FRAME_LIST* fl;
     long frameoffset = 0;
     long espnextpos = ds->mpgpos+READSIZE;
 
+    /* GCS FIX: This trims the last READSIZE from consideration */
     if (espnextpos > ds->mpgsize) {
 	return MAD_FLOW_STOP;
     }
@@ -242,14 +298,13 @@ input(void *data, struct mad_stream *ms)
 	    }
 	}
     }
-    debug_printf ("%p | %p | %p | %p | %d\n",
-	ds->mpgbuf, ds->mpgpos, &(ds->mpgbuf[ds->mpgpos]), 
-	ms->next_frame, frameoffset);
-
-    fl = (FRAME_LIST*) malloc (sizeof(FRAME_LIST));
-    fl->m_bufpos = ds->mpgpos;
-    fl->m_samples = 0;
-    list_add_tail (&(fl->m_list), &(ds->frame_list));
+    debug_printf ("%p | %p | %p |< %p | %p >| %d\n",
+		  ds->mpgbuf, 
+		  ds->mpgpos, 
+		  &(ds->mpgbuf[ds->mpgpos]), 
+		  ms->this_frame, 
+		  ms->next_frame, 
+		  frameoffset);
 
     mad_stream_buffer (ms, (const unsigned char*)
 		       (ds->mpgbuf+ds->mpgpos)-frameoffset, 
@@ -270,14 +325,14 @@ search_for_silence (DECODE_STRUCT *ds, double vol)
 	    continue;
 
 	if (vol < pstracker->silencevol) {
-	    if (pstracker->insilencecount == 0)
-		pstracker->silencestart = ds->mpgpos;
+	    if (pstracker->insilencecount == 0) {
+		pstracker->silstart_samp = ds->pcmpos;
+	    }
 	    pstracker->insilencecount++;
 	} else {
 	    pstracker->insilencecount = 0;
 	}
 
-	//if (pstracker->insilencecount > ds->samplerate)
 	if (pstracker->insilencecount > ds->silence_samples) {
 	    pstracker->foundsil = TRUE;
 	}
@@ -300,22 +355,46 @@ scale(mad_fixed_t sample)
     return sample >> (MAD_F_FRACBITS + 1 - 16);
 }
 
+static enum mad_flow 
+filter (void *data, struct mad_stream const *ms, struct mad_frame *frame)
+{
+    DECODE_STRUCT *ds = (DECODE_STRUCT *)data;
+    FRAME_LIST* fl;
+
+    fl = (FRAME_LIST*) malloc (sizeof(FRAME_LIST));
+    fl->m_framepos = ms->this_frame;
+    fl->m_samples = 0;
+    fl->m_pcmpos = 0;
+    list_add_tail (&(fl->m_list), &(ds->frame_list));
+
+    debug_printf ("FILTER: %p | %p\n", ms->this_frame, ms->next_frame);
+#if defined (commentout)
+#endif
+
+    return MAD_FLOW_CONTINUE;
+}
+
 enum mad_flow
 output (void *data, struct mad_header const *header,
 	struct mad_pcm *pcm)
 {
+    DECODE_STRUCT *ds = (DECODE_STRUCT *)data;
+    FRAME_LIST *fl;
     unsigned int nchannels, nsamples;
     mad_fixed_t const *left_ch, *right_ch;
     static short lastSample = 0;
     static signed int sample;
     double v;
-    DECODE_STRUCT *ds = (DECODE_STRUCT *)data;
-    int output_count = 0;
 
     nchannels = pcm->channels;
     nsamples  = pcm->length;
     left_ch   = pcm->samples[0];
     right_ch  = pcm->samples[1];
+
+    /* Get frame entry */
+    fl = list_entry (ds->frame_list.prev, FRAME_LIST, m_list);
+    fl->m_samples = nsamples;
+    fl->m_pcmpos = ds->pcmpos;
 
     while(nsamples--) {
 	/* output sample(s) in 16-bit signed little-endian PCM */
@@ -334,9 +413,8 @@ output (void *data, struct mad_header const *header,
 	v = sqrt(v / 2);
 	search_for_silence(ds, v);
 	ds->pcmpos++;
-	output_count ++;
     }
-    debug_printf ("Output_count = %d\n", output_count);
+    
     return MAD_FLOW_CONTINUE;
 }
 

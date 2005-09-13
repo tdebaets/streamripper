@@ -1,4 +1,4 @@
-/* streamripper.c -
+/* streamripper.c
  * This little app should be seen as a demo for how to use the stremripper lib. 
  * The only file you need from the /lib dir is rip_mananger.h, and perhapes 
  * util.h (for stuff like formating the number of bytes).
@@ -402,7 +402,7 @@ void parse_arguments(int argc, char **argv)
 	    strncpy(m_opt.useragent, argv[i], MAX_USERAGENT_STR);
 	    break;
 	case 'v':
-	    printf("Streamripper %s by Jon Clegg <jonclegg@yahoo.com>\n", SRVERSION);
+	    printf("Streamripper %s\n", SRVERSION);
 	    exit(0);
 	case 'w':
 	    i++;
