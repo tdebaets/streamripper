@@ -465,8 +465,8 @@ find_sep (u_long *pos1, u_long *pos2)
 			       m_sp_opt->xs_padding_1,
 			       m_sp_opt->xs_padding_2,
 			       pos1, pos2);
-	pos1 += sw_start;
-	pos2 += sw_start;
+	*pos1 += sw_start;
+	*pos2 += sw_start;
     }
     return SR_SUCCESS;
 }

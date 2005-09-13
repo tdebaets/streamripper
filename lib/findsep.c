@@ -231,7 +231,6 @@ apply_padding (DECODE_STRUCT* ds,
     /* GCS FIX: Watch out for -1, might have mem error! */
     pos = list_entry (ds->frame_list.next, FRAME_LIST, m_list);
     if (pos1s < pos->m_pcmpos) {
-	debug_printf ("pos1 = %p\n", pos->m_framepos);
 	*pos1 = pos->m_framepos - ds->mpgbuf - 1;
     }
     if (pos2s < pos->m_pcmpos) {
@@ -239,13 +238,16 @@ apply_padding (DECODE_STRUCT* ds,
     }
     list_for_each_entry (pos, &(ds->frame_list), m_list) {
 	if (pos1s >= pos->m_pcmpos) {
-	    debug_printf ("pos1 = %p\n", pos->m_framepos);
 	    *pos1 = pos->m_framepos - ds->mpgbuf - 1;
 	}
 	if (pos2s >= pos->m_pcmpos) {
 	    *pos2 = pos->m_framepos - ds->mpgbuf;
 	}
     }
+    debug_printf ("pos1, pos2 = %d,%d (%02x%02x)\n",
+		  *pos1, *pos2, 
+		  ds->mpgbuf[*pos2], 
+		  ds->mpgbuf[*pos2+1]);
 }
 
 static void 
@@ -367,7 +369,11 @@ filter (void *data, struct mad_stream const *ms, struct mad_frame *frame)
     fl->m_pcmpos = 0;
     list_add_tail (&(fl->m_list), &(ds->frame_list));
 
-    debug_printf ("FILTER: %p | %p\n", ms->this_frame, ms->next_frame);
+    debug_printf ("FILTER: %p (%02x%02x) | %p\n", 
+		  ms->this_frame, 
+		  ms->this_frame[0], 
+		  ms->this_frame[1], 
+		  ms->next_frame);
 #if defined (commentout)
 #endif
 
