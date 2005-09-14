@@ -405,7 +405,7 @@ void saveload_file_opts(HWND hWnd, BOOL saveload)
 	set_to_checkbox(hWnd, IDC_KEEP_INCOMPLETE, &m_opt->flags, OPT_KEEP_INCOMPLETE);
 	set_to_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, &m_opt->flags, OPT_INDIVIDUAL_TRACKS);
 	set_to_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, &m_opt->flags, OPT_SINGLE_FILE_OUTPUT);
-	GetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->output_file, SR_MAX_PATH);
+	GetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->showfile_pattern, SR_MAX_PATH);
     }
     else
     {
@@ -416,7 +416,7 @@ void saveload_file_opts(HWND hWnd, BOOL saveload)
 	set_checkbox(hWnd, IDC_KEEP_INCOMPLETE, OPT_FLAG_ISSET(m_opt->flags, OPT_KEEP_INCOMPLETE));
 	set_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, OPT_FLAG_ISSET(m_opt->flags, OPT_INDIVIDUAL_TRACKS));
 	set_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, OPT_FLAG_ISSET(m_opt->flags, OPT_SINGLE_FILE_OUTPUT));
-	SetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->output_file);
+	SetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->showfile_pattern);
     }
 }
 
@@ -666,8 +666,8 @@ options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 		char temp_fn[SR_MAX_PATH];
 		if (browse_for_file(hWnd, "Select a file", 0, temp_fn, SR_MAX_PATH))
 		{
-		    strncpy(m_opt->output_file, temp_fn, SR_MAX_PATH);
-		    SetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->output_file);
+		    strncpy(m_opt->showfile_pattern, temp_fn, SR_MAX_PATH);
+		    SetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->showfile_pattern);
 		}
 		return TRUE;
 	    }
@@ -780,7 +780,7 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     GetPrivateProfileString(APPNAME, "localhost", "localhost", guiOpt->localhost, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "useragent", DEFAULT_USERAGENT, opt->useragent, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "default_skin", DEFAULT_SKINFILE, guiOpt->default_skin, MAX_INI_LINE_LEN, filename);
-    GetPrivateProfileString(APPNAME, "rip_single_path", "", opt->output_file, MAX_INI_LINE_LEN, filename);
+    GetPrivateProfileString(APPNAME, "rip_single_path", "", opt->showfile_pattern, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "output_pattern", "%S/%A - %T", opt->output_pattern, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "over_write_complete", "larger", overwrite_string, MAX_INI_LINE_LEN, filename);
     debug_printf ("Got PPS: %s\n", overwrite_string);
@@ -878,7 +878,7 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     fprintf(fp, "keep_incomplete=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_KEEP_INCOMPLETE));
     fprintf(fp, "rip_individual_tracks=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_INDIVIDUAL_TRACKS));
     fprintf(fp, "rip_single_file=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_SINGLE_FILE_OUTPUT));
-    fprintf(fp, "rip_single_path=%s\n", opt->output_file);
+    fprintf(fp, "rip_single_path=%s\n", opt->showfile_pattern);
 
     fprintf(fp, "output_pattern=%s\n", opt->output_pattern);
 

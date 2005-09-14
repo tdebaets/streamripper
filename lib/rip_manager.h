@@ -98,7 +98,7 @@ typedef struct RIP_MANAGER_OPTIONSst
     char proxyurl[MAX_URL_LEN];		// url of a http proxy server, '\0' otherwise
     char output_directory[SR_MAX_PATH];	// base directory to output files too
     char output_pattern[SR_MAX_PATH];	// filename pattern when ripping with splitting
-    char output_file[SR_MAX_PATH];	// filename base when ripping without splitting
+    char showfile_pattern[SR_MAX_PATH];	// filename base when ripping without splitting
     char if_name[SR_MAX_PATH];		// local interface to use
     char rules_file[SR_MAX_PATH];       // file that holds rules for parsing metadata
     char pls_file[SR_MAX_PATH];		// optional, where to create a .pls file

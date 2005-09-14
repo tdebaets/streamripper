@@ -560,9 +560,9 @@ start_ripping()
 	     GET_KEEP_INCOMPLETE(m_options.flags),
 	     GET_SINGLE_FILE_OUTPUT(m_options.flags),
 	     m_info.content_type, 
-	     m_options.output_file,
 	     m_options.output_directory,
 	     m_options.output_pattern,
+	     m_options.showfile_pattern,
 	     GET_SEPERATE_DIRS(m_options.flags),
 	     GET_DATE_STAMP(m_options.flags),
 	     m_info.icy_name);
@@ -720,7 +720,7 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
     m_opt->pls_file[0] = 0;
     m_opt->proxyurl[0] = 0;
     m_opt->url[0] = 0;
-    m_opt->output_file[0] = 0;
+    m_opt->showfile_pattern[0] = 0;
     m_opt->rules_file[0] = 0;
     strcpy(m_opt->useragent, "sr-POSIX/" SRVERSION);
     m_opt->overwrite = OVERWRITE_LARGER;

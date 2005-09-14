@@ -70,6 +70,7 @@ static error_code sr_getcwd (char* dirbuf);
 static error_code add_trailing_slash (char *str);
 static int get_next_sequence_number (char* fn_base);
 static void fill_date_buf (char* datebuf, int datebuf_len);
+static error_code filelib_open_showfiles ();
 
 /*****************************************************************************
  * Private Vars
@@ -85,6 +86,8 @@ static char 	m_output_directory[SR_MAX_PATH];
 static char 	m_output_pattern[SR_MAX_PATH];
 static char 	m_incomplete_directory[SR_MAX_PATH];
 static char     m_incomplete_filename[SR_MAX_PATH];
+static char 	m_showfile_directory[SR_MAX_PATH];
+static char     m_showfile_pattern[SR_MAX_PATH];
 static BOOL	m_keep_incomplete = TRUE;
 static int      m_max_filename_length;
 static char 	m_show_name[SR_MAX_PATH];
@@ -138,9 +141,9 @@ filelib_init (BOOL do_individual_tracks,
 	      BOOL keep_incomplete,
 	      BOOL do_show_file,
 	      int content_type,
-	      char* show_file_name,
 	      char* output_directory,
 	      char* output_pattern,
+	      char* showfile_pattern,
 	      int get_separate_dirs,
 	      int get_date_stamp,
 	      char* icy_name)
@@ -182,8 +185,8 @@ filelib_init (BOOL do_individual_tracks,
     }
 
     if (do_show_file) {
-	if (show_file_name && *show_file_name) {
-	    trim_mp3_suffix (show_file_name, m_show_name);
+	if (showfile_pattern && *showfile_pattern) {
+	    trim_mp3_suffix (showfile_pattern, m_show_name);
 	    if (strlen(m_show_name) > SR_MAX_PATH - 5) {
 		return SR_ERROR_DIR_PATH_TOO_LONG;
 	    }
@@ -193,15 +196,7 @@ filelib_init (BOOL do_individual_tracks,
 	    strftime (datebuf, 50, "%Y_%m_%d_%H_%M_%S", localtime(&now));
 	    sprintf (m_show_name,"sr_program_%s",datebuf);
 	}
-#if defined (commenout)
-	strcpy (m_cue_name, m_show_name);
-	strcat (m_cue_name, ".cue");
-	strcat (m_show_name, ".mp3");
-#endif
-	/* Normally I would open the show & cue files here, but
-	   I don't yet know the output directory.  So do nothing until
-	   first write (until above problem is fixed).  */
-	/* GCS FIX: Now it is fixed. */
+	filelib_open_showfiles ();
     }
 
     /* Set up the proper pattern if we're using -q and -s flags */
@@ -1035,55 +1030,50 @@ filelib_write_track(char *buf, u_long size)
     return filelib_write (m_file, buf, size);
 }
 
+static error_code
+filelib_open_showfiles ()
+{
+    int rc;
+    char cue_buf[1024];
+    set_show_filenames ();
+    rc = filelib_open_for_write (&m_cue_file, m_cue_name);
+    if (rc != SR_SUCCESS) {
+	m_do_show = 0;
+	return rc;
+    }
+    /* Write cue header here */
+    rc = snprintf(cue_buf,1024,"FILE \"%s\" MP3\n",m_show_name);
+    rc = filelib_write(m_cue_file,cue_buf,rc);
+    if (rc != SR_SUCCESS) {
+	m_do_show = 0;
+	return rc;
+    }
+    rc = filelib_open_for_write (&m_show_file, m_show_name);
+    if (rc != SR_SUCCESS) {
+	m_do_show = 0;
+	return rc;
+    }
+    return rc;
+}
+
 error_code
 filelib_write_show(char *buf, u_long size)
 {
-    if (!m_do_show) return SR_SUCCESS;
-    if (m_show_file != INVALID_FHANDLE) {
-        return filelib_write (m_show_file, buf, size);
+    error_code rc;
+    if (!m_do_show) {
+	return SR_SUCCESS;
     }
-    if (*m_show_name) {
-	int rc;
-        char cue_buf[1024];
-	set_show_filenames ();
-	rc = filelib_open_for_write (&m_cue_file, m_cue_name);
-	if (rc != SR_SUCCESS) {
-	    *m_show_name = 0;
-	    return rc;
-	}
-	/* Write cue header here */
-	rc = snprintf(cue_buf,1024,"FILE \"%s\" MP3\n",m_show_name);
-	rc = filelib_write(m_cue_file,cue_buf,rc);
-	if (rc != SR_SUCCESS) {
-	    *m_show_name = 0;
-	    return rc;
-	}
-	rc = filelib_open_for_write (&m_show_file, m_show_name);
-	if (rc != SR_SUCCESS) {
-	    *m_show_name = 0;
-	    return rc;
-	}
-        rc = filelib_write (m_show_file, buf, size);
-	if (rc != SR_SUCCESS) {
-	    *m_show_name = 0;
-	}
-	return rc;
+    rc = filelib_write (m_show_file, buf, size);
+    if (rc != SR_SUCCESS) {
+	m_do_show = 0;
     }
-    return SR_SUCCESS;
+    return rc;
 }
 
 void
 filelib_shutdown()
 {
     close_files();
-
-    /* 
-     * We're just calling this to zero out 
-     * the vars, it's not really nessasary.
-     */
-#if defined (commentout)
-    filelib_init(TRUE, FALSE, TRUE, FALSE, CONTENT_TYPE_MP3, 0);
-#endif
 }
 
 #if defined (commentout)

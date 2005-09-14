@@ -303,11 +303,11 @@ void parse_arguments(int argc, char **argv)
 	case 'a':
 	    /* Create single file output + cue sheet */
 	    m_opt.flags |= OPT_SINGLE_FILE_OUTPUT;
-	    m_opt.output_file[0] = 0;
+	    m_opt.showfile_pattern[0] = 0;
 	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
 	    i++;
-	    strncpy (m_opt.output_file, argv[i], SR_MAX_PATH);
+	    strncpy (m_opt.showfile_pattern, argv[i], SR_MAX_PATH);
 	    break;
 	case 'c':
 	    m_opt.flags ^= OPT_AUTO_RECONNECT;

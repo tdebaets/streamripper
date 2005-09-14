@@ -428,9 +428,7 @@ clip_to_cbuffer (int pos)
 error_code
 find_sep (u_long *pos1, u_long *pos2)
 {
-    int pos1i, pos2i;
     int sw_start, sw_end, sw_sil;
-    u_long psilence;
     int ret;
 
     debug_printf ("*** Finding separation point\n");
