@@ -38,8 +38,8 @@
 #define MIN_RMS_SILENCE		100
 #define MAX_RMS_SILENCE		32767 //max short
 #define NUM_SILTRACKERS		30
-// #define READSIZE	2000
-#define READSIZE	1000
+#define READSIZE	2000
+// #define READSIZE	1000
 
 /* Uncomment to dump an mp3 of the search window. */
 //   #define MAKE_DUMP_MP3 1
