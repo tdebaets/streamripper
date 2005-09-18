@@ -250,7 +250,7 @@ void print_usage()
     fprintf(stderr, "      -l seconds     - Number of seconds to run, otherwise runs forever\n");
     fprintf(stderr, "      -M megabytes   - Stop ripping after this many megabytes\n");
     fprintf(stderr, "      -q [start]     - Add sequence number to output file\n");
-    fprintf(stderr, "      -i             - Don't add ID3V1 Tags to output file\n");
+    fprintf(stderr, "      -i             - Don't add ID3 tags to output file\n");
     fprintf(stderr, "      -u useragent   - Use a different UserAgent than \"Streamripper\"\n");
     fprintf(stderr, "      -w rulefile    - Parse metadata using rules in file.\n");
     fprintf(stderr, "      -m timeout     - Number of seconds before force-closing stalled conn\n");

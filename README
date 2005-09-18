@@ -61,60 +61,69 @@ OPTIONS
 	   %Nq	     Sequence number (starting from number N)
 	   %%	     Percent sign
 
+	      Note:  On	 windows you may be required to supply an
+	      extra % because  the  symbol  is	consumed  by  the
+	      shell.   Therefore,  you	would  put  "%%S/%%A/%%T"
+	      instead of "%S/%A/%T".
+
        The extension (such as .mp3) is appended automatically.
 
-       The  tokens  %D	and  %d	 differ because %D gives a unique
-       timestamp for each song, whereas %d gives a unique  times­
+       The tokens %D and %d differ  because  %D	 gives	a  unique
+       timestamp  for each song, whereas %d gives a unique times­
        tamp each time streamripper is run.
 
        The tokens %Q and %q differ because %Q tries to figure out
-       the correct  sequence  number  from  the	 existing  files,
-       wherease	 %q  does  not.	  The  %q token takes an optional
-       starting number.	 For example %32q means	 start	numbering
+       the  correct  sequence  number  from  the  existing files,
+       wherease %q does not.  The  %q  token  takes  an	 optional
+       starting	 number.   For example %32q means start numbering
        at 32.
 
        -r [base port]
-	      Create  a	 relay	server	on base port, defaults to
+	      Create a relay server on	base  port,  defaults  to
 	      port 8000
 
-       Creates a relay server on base port. if base port  is  not
-       specified  it  defaults	to  8000,  otherwise whatever you
-       entered for base port. Note that if the -z option  is  not
-       used,  it  will	keep  trying  higher ports if the port is
+       Creates	a  relay server on base port. if base port is not
+       specified it defaults  to  8000,	 otherwise  whatever  you
+       entered	for  base port. Note that if the -z option is not
+       used, it will keep trying higher	 ports	if  the	 port  is
        unavailable.
 
        -R num_conn
 	      Maximum connections to relay stream
 
-       In addition to creating a relay server, you can also  con­
-       trol  how  many clients are allowed to simultaneously con­
-       nect.  The default is 1 client, but if you specify the  -R
+       In  addition to creating a relay server, you can also con­
+       trol how many clients are allowed to  simultaneously  con­
+       nect.   The default is 1 client, but if you specify the -R
        option you can increase this number to <num_conn> clients.
-       If <num_conn> is set to 0, the number  of  connections  is
-       limited	only by your processor and network speed.  The -R
-       option has no effect if -r was not used to create a  relay
+       If  <num_conn>  is  set to 0, the number of connections is
+       limited only by your processor and network speed.  The  -R
+       option  has no effect if -r was not used to create a relay
        stream.
 
        -z     Don't scan for free ports if base port is not avail
 
-       Disables the "scan for free port" feature. use it if  your
-       paranoid. or don't like ports being open.
+       Disables	 the "scan for free port" feature. Use it if your
+       paranoid, or don't like ports being open.
 
        -p url Use HTTP proxy server at <url>
 
-       If  your behind a proxy server, enter it here. This hasn't
-       been tested in over 6 months. but it  should  still  work.
-       Please till me if it doesn't.
+       If your behind a proxy server, enter it here. This  hasn't
+       been  tested  in	 over 6 months, but it should still work.
+       Please tell me if it doesn't.
 
-       -a [file]
+       -a [pattern]
 	      Rip to single file
 
-       The  default  mode  of  operation  is to separate the each
-       track into a separate file.  But	 sometimes  this  is  not
-       what  you want.	Sometimes you want the stream recorded to
+       The default mode of operation  is  to  separate	the  each
+       track  into  a  separate	 file.	But sometimes this is not
+       what you want.  Sometimes you want the stream recorded  to
        a single (big) file without splitting into tracks.  The -a
-       option  does  this.   If	 you use -a without including the
-       [file], a timestamped filename will automatically be used.
+       option does this.  If you use  -a  without  including  the
+       [pattern],  a  timestamped  filename will automatically be
+       used.
+
+       The pattern can be used in a  manner  similar  to  the  -D
+       flag, but generally only %S, %q and %d are useful.
 
        -A     Don't create individual tracks
 
@@ -126,47 +135,57 @@ OPTIONS
        -A option, the individual files for  each  track	 are  not
        created.
 
-       -o     Overwrite tracks in complete directory
+       -o (always | never | larger)
+	      Overwrite tracks in complete directory
 
-       When streamripper rips tracks they are first in the incom­
-       plete directory. if the tracks finishes properly it  moves
-       over  to	 the main directory, but if they track is already
-       there it doesn't. this make streamripper copy over  tracks
-       that  already  exist  in the main directory. I didn't make
-       this default because if your ripping a stream for  a  long
-       time  (trying  to get the whole thing) it helps to see the
-       incomplete directory fill up with tracks you already have.
-       One  the incomplete directory is as large (or larger) then
-       your main directory you can be pretty sure you've got  the
-       whole stream.
+       When streamripper rips tracks they are put into the incom­
+       plete directory until they are finished.	  Normally,  they
+       are then moved into the complete directory.  However, when
+       the track is already there, can use this	 option	 to  tell
+       streamripper  what  you	want  to  do.	There  are  three
+       choices: always, never, and larger.  If you don't  include
+       any of the -o options on the command line, the "-o larger"
+       strategy is used.
+
+       If you use the "-o never" option, this tells  streamripper
+       to  never  overwrite  any  existing  file  in the complete
+       directory.
+
+       If you use the "-o always" option, this tells streamripper
+       to  always  overwrite  any  existing  file in the complete
+       directory.
+
+       If you use the "-o larger" option, this tells streamripper
+       to overwrite an existing file in the complete directory if
+       the newer file is larger.
 
        -t     Don't overwrite tracks in incomplete directory
 
-       Normally	 streamripper  writes the files in the incomplete
-       directory, and then moves it to the  base  directory  (the
+       Normally streamripper writes the files in  the  incomplete
+       directory,  and	then  moves it to the base directory (the
        complete directory) when it is done.  If the file with the
-       name of the track already exists in  incomplete,	 it  will
-       overwrite  the  old track.  When you use the -t flag, how­
-       ever, this will tell streamripper to backup  the	 existing
-       file  in incomplete (appending a version number), and then
+       name  of	 the  track already exists in incomplete, it will
+       overwrite the old track.	 When you use the -t  flag,  how­
+       ever,  this  will tell streamripper to backup the existing
+       file in incomplete (appending a version number), and  then
        create the new file.
 
-       This is useful for  streams  that  don't	 have  meta-data.
-       Because	these streams only have a single file, reconnects
-       will cause overwriting the existing  file,  which  is  not
+       This  is	 useful	 for  streams  that don't have meta-data.
+       Because these streams only have a single file,  reconnects
+       will  cause  overwriting	 the  existing file, which is not
        desired.
 
        -T     Truncate completed tracks in incomplete directory
 
        When you are not overwriting files in the complete folder,
-       the duplicate files will normally stay in  the  incomplete
-       folder.	 This  option  tells streamripper to truncate the
+       the  duplicate  files will normally stay in the incomplete
+       folder.	This option tells streamripper	to  truncate  the
        files to zero bytes in the incomplete folder if they are a
        duplicate.
 
        -c     Don't auto-reconnect
 
-       Normally	 streamripper  will be very aggressive and try to
+       Normally streamripper will be very aggressive and  try  to
        re-connect to a dropped stream.	This option disables this
        behavior.
 
@@ -175,8 +194,8 @@ OPTIONS
 
        Usually, streamripper runs until it crashes.  Or rather, I
        meant to say that it runs until you kill it, yes, I'm sure
-       that's  what I meant.  But you can instead tell streamrip­
-       per to run for a certain length of  time,  and  then  exit
+       that's what I meant.  But you can instead tell  streamrip­
+       per  to	run  for  a certain length of time, and then exit
        using this flag.
 
        -M megabytes
@@ -189,25 +208,19 @@ OPTIONS
 	      Add sequence number to output filenames
 
        When the files are copied from incomplete to complete, the
-       filename	 can  be prepended with a sequence number (begin­
-       ning with 0000).	 This can be used to, for  example,  show
-       the  order  that	 the  files  were created.  If desired, a
-       starting count can be used with -q to begin  the	 sequence
+       filename can be prepended with a sequence  number  (begin­
+       ning  with  0000).  This can be used to, for example, show
+       the order that the files	 were  created.	  If  desired,	a
+       starting	 count	can be used with -q to begin the sequence
        at any number you like.
 
-       -P prefix
-	      Add prefix to each ripped file
-
-       This  prepends  the  prefix string to the filename of each
-       individual track file created by streamripper.
-
-       -i     Don't add ID3V1 Tags to output file
+       -i     Don't add ID3 tags to output file
 
        Mp3 files have two different kinds of  header  information
        which  describe the contents of the file: ID3V1 and ID3V2.
        By default, both are included in the mp3	 files	generated
-       by  streamripper,  but  you  can choose not to include the
-       ID3V1 header if you like.
+       by  streamripper.  If you use the option, then neither are
+       included.
 
        -u useragent
 	      Use a different UserAgent than "Streamripper"
@@ -472,4 +485,4 @@ COPYING
 
 
 
-			   31 July 2005		  STREAMRIPPER(1)
+			18 September 2005	  STREAMRIPPER(1)

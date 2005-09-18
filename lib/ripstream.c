@@ -413,6 +413,7 @@ ripstream_rip()
     return real_ret;
 }
 
+#if defined (commentout)
 static u_long
 clip_to_cbuffer (int pos)
 {
@@ -424,6 +425,7 @@ clip_to_cbuffer (int pos)
 	return (u_long) pos;
     }
 }
+#endif
 
 error_code
 find_sep (u_long *pos1, u_long *pos2)
