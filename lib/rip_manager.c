@@ -614,7 +614,8 @@ start_ripping()
 	ret = relaylib_init(GET_SEARCH_PORTS(m_options.flags), 
 			    m_options.relay_port, m_options.max_port, 
 			    &new_port, m_options.if_name, 
-			    m_options.max_connections, m_options.relay_ip);
+			    m_options.max_connections, m_options.relay_ip,
+			    m_info.meta_interval != NO_META_INTERVAL);
 	if (ret != SR_SUCCESS) {
 		goto RETURN_ERR;
 	}

@@ -336,17 +336,12 @@ ripstream_rip()
 	debug_printf ("VERIFIED TRACK CHANGE (m_find_silence = %d)\n",
 		      m_find_silence);
 	copy_track_info (&m_new_track, &m_current_track);
-	//	relaylib_send_meta_data (m_current_track.raw_metadata);
 	if (m_find_silence < 0) {
 	    if (m_mi_to_cbuf2_end > 0) {
 		m_find_silence = m_mi_to_cbuf2_end;
 	    } else {
 		m_find_silence = 0;
 	    }
-	}
-    } else {
-	if (m_meta_interval != NO_META_INTERVAL) {
-	    //	    relaylib_send_meta_data (0);
 	}
     }
 

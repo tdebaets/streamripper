@@ -77,7 +77,8 @@ static BOOL m_initdone = FALSE;
 static THREAD_HANDLE m_hthread;
 static THREAD_HANDLE m_hthread2;
 
-int m_max_connections;
+static int m_max_connections;
+static int m_have_metadata;
 
 /*****************************************************************************
  * Private functions
@@ -281,7 +282,7 @@ void catch_pipe(int code)
 error_code
 relaylib_init (BOOL search_ports, int relay_port, int max_port, 
 	       int *port_used, char *if_name, int max_connections, 
-	       char *relay_ip)
+	       char *relay_ip, int have_metadata)
 {
     int ret;
 #ifdef WIN32
@@ -310,7 +311,7 @@ relaylib_init (BOOL search_ports, int relay_port, int max_port,
         m_initdone = TRUE;
     }
     m_max_connections = max_connections;
-
+    m_have_metadata = have_metadata;
     *port_used = 0;
     if (!search_ports)
         max_port = relay_port;
@@ -504,7 +505,11 @@ void thread_accept(void *notused)
 
                                 newhostsock->m_sock = newsock;
                                 newhostsock->m_next = g_relay_list;
-                                newhostsock->m_icy_metadata = icy_metadata;
+				if (m_have_metadata) {
+                                    newhostsock->m_icy_metadata = icy_metadata;
+				} else {
+                                    newhostsock->m_icy_metadata = 0;
+				}
 
                                 g_relay_list = newhostsock;
                                 g_relay_list_len++;
