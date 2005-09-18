@@ -544,7 +544,9 @@ send_to_relay (RELAY_LIST* ptr)
 
     /* For new clients, initialize cbuf pointers */
     if (ptr->m_is_new) {
-	int burst_amount = 32*1024;
+	//	int burst_amount = 32*1024;
+	int burst_amount = 64*1024;
+	//	int burst_amount = 128*1024;
 	ptr->m_offset = 0;
 	ptr->m_left_to_send = 0;
 

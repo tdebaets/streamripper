@@ -31,7 +31,6 @@
 #include "findsep.h"
 #include "util.h"
 #include "srtypes.h"
-#include "cbuffer.h"
 #include "debug.h"
 #include "list.h"
 

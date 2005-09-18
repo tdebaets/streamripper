@@ -157,7 +157,10 @@ cbuf2_advance_relay_list (CBUF2* cbuf2, u_long count)
     while (ptr != NULL) {
 	next = ptr->m_next;
 	if (ptr->m_cbuf_pos >= count) {
+	    u_long old_pos = ptr->m_cbuf_pos;
 	    ptr->m_cbuf_pos -= count;
+	    debug_printf ("Updated relay pointer: %d -> %d\n",
+			  old_pos, ptr->m_cbuf_pos);
 	    prev = ptr;
 	} else {
 	    debug_printf ("Relay: Client %d couldn't keep up with cbuf\n", 
@@ -313,15 +316,16 @@ cbuf2_extract_relay (CBUF2 *cbuf2, char *data, u_long *pos, u_long *len,
     }
 
     /* Otherwise, there is enough data */
-    relay_idx = cbuf2_add (cbuf2, cbuf2->base_idx, *pos);
-    relay_chunk_no = cbuf2_idx_to_chunk (cbuf2, relay_idx);
-    memcpy (data, &cbuf2->buf[relay_idx], cbuf2->chunk_size);
+    /* The *pos is the offset from the filled part of the buffer */
     old_pos = *pos;
+    relay_idx = cbuf2_add (cbuf2, cbuf2->base_idx, *pos);
+    relay_chunk_no = cbuf2_idx_to_chunk (cbuf2, *pos);
+    memcpy (data, &cbuf2->buf[relay_idx], cbuf2->chunk_size);
     *pos += cbuf2->chunk_size;
     *len = cbuf2->chunk_size;
-    debug_printf ("Updated relay pointer: %d -> %d\n",
-		  old_pos, *pos);
-
+    debug_printf ("Updated relay pointer: %d -> %d (%d %d %d)\n",
+		  old_pos, *pos, cbuf2->base_idx,
+		  relay_idx, cbuf2_write_index(cbuf2));
     debug_printf ("Partial request fulfilled: %d bytes (%d)\n", *len, 
 		  icy_metadata);
     if (icy_metadata) {
