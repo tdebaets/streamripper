@@ -193,7 +193,7 @@ The filename within the incomplete directory is ??
 For showfile, the idea is similar, but some patterns don't apply. Thus, 
 the default pattern is:
 
-%S/sr_program_%D
+%S/sr_program_%d
 
 
 HERE IS HOW THE -d and -D FLAGS INTERACT:

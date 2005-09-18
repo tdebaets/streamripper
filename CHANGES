@@ -1,9 +1,10 @@
-New for 1.61.12-b1
-------------------
+New for 1.61.12
+---------------
+Sun Sep 18 17:32:45 EDT 2005
 * Major rewrite internal buffering code
-* Burst on connect for relay streams
+* Burst on connect for relay streams (128k burst)
 * Now can use patterns with -a flag
-* Fix problem using absolute paths with -a flag
+* Fix problem using absolute paths with -a flag (#1254632)
 * Fix broken mp3 frames in split files (#525936)
   Note, however, we still have broken initial frame with -a flag
 * Partial fix for overflow using -M flag (see bug #1261305)

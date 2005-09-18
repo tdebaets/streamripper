@@ -21,8 +21,6 @@ ictest_SOURCES = \
 	lib/debug.c \
 	lib/ictest.c
 
-##	lib/cbuffer.c \
-
 streamripper_SOURCES = \
 	console/streamripper.c \
 	lib/cbuf2.c \
@@ -41,7 +39,6 @@ streamripper_SOURCES = \
 	lib/socklib.c \
 	lib/threadlib.c \
 	lib/util.c \
-	lib/cbuffer.h \
 	lib/compat.h \
 	lib/debug.h \
 	lib/filelib.h \
