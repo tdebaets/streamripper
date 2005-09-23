@@ -40,18 +40,21 @@ CBUF2 g_cbuf2;
  *****************************************************************************/
 static u_long cbuf2_idx_to_chunk (CBUF2 *cbuf2, u_long idx);
 static u_long cbuf2_add (CBUF2 *cbuf2, u_long pos, u_long len);
-static void cbuf2_get_used_fragments (CBUF2 *cbuf2, u_long* frag1, u_long* frag2);
+static void cbuf2_get_used_fragments (CBUF2 *cbuf2, u_long* frag1, 
+				      u_long* frag2);
 static void cbuf2_advance_metadata_list (CBUF2* cbuf2);
 
 /*****************************************************************************
  * Function definitions
  *****************************************************************************/
 error_code
-cbuf2_init (CBUF2 *cbuf2, unsigned long chunk_size, unsigned long num_chunks)
+cbuf2_init (CBUF2 *cbuf2, int have_relay, unsigned long chunk_size, 
+	    unsigned long num_chunks)
 {
     if (chunk_size == 0 || num_chunks == 0) {
         return SR_ERROR_INVALID_PARAM;
     }
+    cbuf2->have_relay = have_relay;
     cbuf2->chunk_size = chunk_size;
     cbuf2->num_chunks = num_chunks;
     cbuf2->size = chunk_size * num_chunks;
@@ -189,7 +192,11 @@ cbuf2_extract (CBUF2 *cbuf2, char *data, u_long count, u_long* curr_song)
 	return SR_ERROR_BUFFER_EMPTY;
     }
 
-    threadlib_waitfor_sem (&g_relay_list_sem);
+    if (cbuf2->have_relay) {
+	debug_printf ("Waiting for g_relay_list_sem\n");
+	threadlib_waitfor_sem (&g_relay_list_sem);
+    }
+    debug_printf ("Waiting for cbuf2->cbuf_sem\n");
     threadlib_waitfor_sem (&cbuf2->cbuf_sem);
     cbuf2_get_used_fragments (cbuf2, &frag1, &frag2);
     if (frag1 >= count) {
@@ -212,10 +219,13 @@ cbuf2_extract (CBUF2 *cbuf2, char *data, u_long count, u_long* curr_song)
 
     cbuf2_advance_metadata_list (cbuf2);
 
-    cbuf2_advance_relay_list (cbuf2, count);
-
+    if (cbuf2->have_relay) {
+	cbuf2_advance_relay_list (cbuf2, count);
+    }
     threadlib_signal_sem (&cbuf2->cbuf_sem);
-    threadlib_signal_sem (&g_relay_list_sem);
+    if (cbuf2->have_relay) {
+	threadlib_signal_sem (&g_relay_list_sem);
+    }
     return SR_SUCCESS;
 }
 

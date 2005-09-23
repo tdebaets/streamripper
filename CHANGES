@@ -1,3 +1,8 @@
+New for 1.61.14
+---------------
+Thu Sep 22 23:06:55 EDT 2005
+* Fix deadlock when not using relay server
+
 New for 1.61.13
 ---------------
 Sun Sep 18 18:50:51 EDT 2005

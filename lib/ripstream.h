@@ -6,6 +6,7 @@
 
 error_code
 ripstream_init (HSOCKET sock, 
+		int have_relay,
 		int timeout, 
 		char *no_meta_name, 
 		int drop_count,

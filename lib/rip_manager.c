@@ -589,6 +589,7 @@ start_ripping()
      */
     ripstream_destroy();
     ret = ripstream_init(m_sock, 
+			 GET_MAKE_RELAY(m_options.flags),
 			 m_options.timeout, 
 			 m_info.icy_name,
 			 m_options.dropcount,

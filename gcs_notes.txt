@@ -696,6 +696,12 @@ ogg123
 bmp (http://www.sosdg.org/~larne/w/BMP_Homepage)
 lamip (http://fondriest.frederic.free.fr/realisations/lamip/index.html)
 RhythmBox (gnome), Amarok (KDE), or Juk(KDE)
+wget -O - http://stream:8000 | madplay -
+
+Mostly things work, except mpg321 which seems to glitch even
+if I am connecting directly to the stream (i.e. without
+using streamripper).
+
 
 -----------------------------------------------------------------------
 Other OS's

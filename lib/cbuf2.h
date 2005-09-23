@@ -20,6 +20,7 @@ struct METADATA_LIST_struct
 typedef struct CBUF2_struct
 {
     char*	buf;
+    int         have_relay;
     u_long	num_chunks;
     u_long	chunk_size;
     u_long	size;        /* size is chunk_size * num_chunks */
@@ -46,8 +47,9 @@ extern CBUF2 g_cbuf2;
 /*****************************************************************************
  * Function prototypes
  *****************************************************************************/
-error_code cbuf2_init (CBUF2 *cbuf2, unsigned long chunk_size,
-		       unsigned long num_chunks);
+error_code
+cbuf2_init (CBUF2 *cbuf2, int have_relay, unsigned long chunk_size, 
+	    unsigned long num_chunks);
 void cbuf2_destroy(CBUF2 *buffer);
 error_code cbuf2_extract (CBUF2 *cbuf2, char *data, 
 			  u_long count, u_long* curr_song);

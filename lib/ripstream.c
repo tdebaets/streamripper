@@ -82,6 +82,7 @@ static int			m_drop_count;
 static int			m_track_count = 0;
 static int m_content_type;
 static HSOCKET m_sock;
+static int m_have_relay;
 static int m_timeout;
 
 /* From ripshout... */
@@ -125,6 +126,7 @@ typedef struct ID3V2framest {
 
 error_code
 ripstream_init (HSOCKET sock, 
+		int have_relay,
 		int timeout, 
 		char *no_meta_name, 
 		int drop_count,
@@ -140,6 +142,7 @@ ripstream_init (HSOCKET sock,
     }
 
     m_sock = sock;
+    m_have_relay = have_relay;
     m_timeout = timeout;
     m_sp_opt = sp_opt;
     m_track_count = 0;
@@ -288,7 +291,7 @@ ripstream_rip()
 		m_bitrate = 24;
 	}
         compute_cbuf2_size (m_sp_opt, m_bitrate, m_buffersize);
-	ret = cbuf2_init(&g_cbuf2, m_buffersize, m_cbuf2_size);
+	ret = cbuf2_init(&g_cbuf2, m_have_relay, m_buffersize, m_cbuf2_size);
 	if (ret != SR_SUCCESS) return ret;
     }
 
@@ -345,7 +348,6 @@ ripstream_rip()
 	}
     }
 
-    debug_printf ("Checking for silence\n");
     format_track_info (&m_old_track, "old");
     format_track_info (&m_new_track, "new");
     format_track_info (&m_current_track, "current");
@@ -353,6 +355,7 @@ ripstream_rip()
     if (m_find_silence == 0) {
 	/* Find separation point */
 	u_long pos1, pos2;
+	debug_printf ("m_find_silence == 0\n");
 	ret = find_sep (&pos1, &pos2);
 	if (ret != SR_SUCCESS) {
 	    debug_printf("find_sep had bad return code %d\n", ret);
@@ -378,6 +381,7 @@ ripstream_rip()
     /* If buffer almost full, dump extra to current song. */
     if (cbuf2_get_free(&g_cbuf2) < m_buffersize) {
 	u_long curr_song;
+	debug_printf ("cbuf2_get_free < m_buffersize\n");
 	extract_size = m_buffersize - cbuf2_get_free(&g_cbuf2);
         ret = cbuf2_extract(&g_cbuf2, m_getbuffer, extract_size, &curr_song);
         if (ret != SR_SUCCESS) {
