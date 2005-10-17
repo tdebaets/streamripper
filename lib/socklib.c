@@ -145,8 +145,10 @@ read_interface(char *if_name, uint32_t *addr)
  * socket_handle gets assigned to the handle for the connection
  */
 
-error_code socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_name)
+error_code 
+socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_name)
 {
+    int rc;
     struct sockaddr_in address, local;
     struct hostent *hp;
     int len;
@@ -161,20 +163,20 @@ error_code socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_n
 	    local.sin_addr.s_addr = htonl(INADDR_ANY);
 	local.sin_family = AF_INET;
 	local.sin_port = htons(0);
-	if (bind(socket_handle->s, (struct sockaddr *)&local, sizeof(local)) == SOCKET_ERROR) {
+	if (bind(socket_handle->s, (struct sockaddr *)&local, 
+		 sizeof(local)) == SOCKET_ERROR) {
+	    debug_printf ("Bind failed\n");
 	    WSACleanup();
 	    closesocket(socket_handle->s);
 	    return SR_ERROR_CANT_BIND_ON_INTERFACE;
 	}
     }
 
-    if ((address.sin_addr.s_addr = inet_addr(host)) == INADDR_NONE)
-    {
+    if ((address.sin_addr.s_addr = inet_addr(host)) == INADDR_NONE) {
 	hp = gethostbyname(host);
-	if (hp)
+	if (hp) {
 	    memcpy(&address.sin_addr, hp->h_addr_list[0], hp->h_length);
-	else
-	{
+	} else {
 	    debug_printf("resolving hostname: %s failed\n", host);
 	    WSACleanup();
 	    return SR_ERROR_CANT_RESOLVE_HOSTNAME;
@@ -184,16 +186,21 @@ error_code socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_n
     address.sin_port = htons((unsigned short)port);
     len = sizeof(address);
 
-    if (connect(socket_handle->s, (struct sockaddr *)&address, len) == SOCKET_ERROR)
-    {
+    rc = connect (socket_handle->s, (struct sockaddr *)&address, len);
+    if (rc == SOCKET_ERROR) {
+	debug_printf("connect failed\n");
 	return SR_ERROR_CONNECT_FAILED;
     }
 
 #ifdef WIN32
     {
 	struct timeval timeout = {DEFAULT_TIMEOUT*1000, 0};
-	if (setsockopt(socket_handle->s, SOL_SOCKET,  SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) == SOCKET_ERROR)
+	rc = setsockopt (socket_handle->s, SOL_SOCKET,  SO_RCVTIMEO, 
+			 (char *)&timeout, sizeof(timeout));
+	if (rc == SOCKET_ERROR) {
+	    debug_printf("setsockopt failed\n");
 	    return SR_ERROR_CANT_SET_SOCKET_OPTIONS;
+	}
     }
 #endif
 
@@ -320,11 +327,14 @@ int socklib_recvall(HSOCKET *socket_handle, char* buffer, int size, int timeout)
 	//		DEBUG2(("recv: %d", ret));
 	debug_printf ("RECV req %5d bytes, got %5d bytes\n", size, ret);
 
-        if (ret == SOCKET_ERROR)
+        if (ret == SOCKET_ERROR) {
+	    debug_printf ("RECV failed, errno = %d\n", errno);
+	    debug_printf ("Err = %s\n",strerror(errno));
 	    return SR_ERROR_RECV_FAILED;
+	}
 
-	/* GCS: Jun 5, 2004.  If we don't get any bytes, what does that 
-	   mean?  This is supposed to be a blocking read. */
+	/* Got zero bytes on blocking read.  For unix this is an 
+	   orderly shutdown. */
 	if (ret == 0) {
 	    debug_printf ("recv recieved zero bytes!\n");
 	    break;

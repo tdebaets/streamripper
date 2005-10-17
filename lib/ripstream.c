@@ -73,11 +73,8 @@ static int			m_meta_interval;
 static unsigned int		m_cue_sheet_bytes = 0;
 
 static int			m_cbuf2_size;
-static int			m_mi_to_cbuf2_start;
-static int			m_mi_to_cbuf2_end;
 static int			m_sw_start_to_cbuf2_end;
 static int			m_sw_end_to_cbuf2_end;
-static int			m_min_search_win;
 static int			m_drop_count;
 static int			m_track_count = 0;
 static int m_content_type;
@@ -89,15 +86,11 @@ static int m_timeout;
 #define DEFAULT_BUFFER_SIZE	1024
 static int		m_meta_interval;
 static int		m_buffersize;
-//static IO_DATA_INPUT	*m_in;
-static int		m_chunkcount;	// for when we need to know what the first
-					// empty metadata came for streams that
-					// stream empty metadatas
+static int		m_chunkcount;	// for when we need to know what 
+					// the first empty metadata came 
+					// for streams that stream 
+                                        // empty metadatas
 
-
-/*
- * oddsock's id3 tags
- */
 typedef struct ID3V1st
 {
         char    tag[3];
@@ -121,7 +114,6 @@ typedef struct ID3V2framest {
 	int	size;
 	char	pad[3];
 } ID3V2frame;
-
 
 
 error_code
@@ -158,7 +150,8 @@ ripstream_init (HSOCKET sock,
     m_cue_sheet_bytes = 0;
 
     /* From ripshout */
-    m_buffersize = (m_meta_interval == NO_META_INTERVAL) ? DEFAULT_BUFFER_SIZE : m_meta_interval;
+    m_buffersize = (m_meta_interval == NO_META_INTERVAL) 
+	    ? DEFAULT_BUFFER_SIZE : m_meta_interval;
 
     m_chunkcount = 0;
 
@@ -357,6 +350,18 @@ ripstream_rip()
 	u_long pos1, pos2;
 	debug_printf ("m_find_silence == 0\n");
 	ret = find_sep (&pos1, &pos2);
+#if defined (HALF_BAKED)
+	switch (ret) {
+	case SR_ERROR_BUFFER_EMPTY:
+	    /* Do nothing. This just means that the cbuf wasn't 
+	       full enough */
+	    break;
+	case SR_SUCCESS:
+	default:
+	    debug_printf("find_sep had bad return code %d\n", ret);
+	    return ret;
+	}
+#endif
 	if (ret != SR_SUCCESS) {
 	    debug_printf("find_sep had bad return code %d\n", ret);
 	    return ret;
@@ -412,20 +417,6 @@ ripstream_rip()
     return real_ret;
 }
 
-#if defined (commentout)
-static u_long
-clip_to_cbuffer (int pos)
-{
-    if (pos < 0) {
-	return 0;
-    } else if ((u_long)pos > g_cbuf2.item_count) {
-	return g_cbuf2.item_count;
-    } else {
-	return (u_long) pos;
-    }
-}
-#endif
-
 error_code
 find_sep (u_long *pos1, u_long *pos2)
 {
@@ -469,74 +460,6 @@ find_sep (u_long *pos1, u_long *pos2)
     }
     return SR_SUCCESS;
 }
-
-#if defined (commentout)
-error_code
-find_sep_old (u_long *pos1, u_long *pos2)
-{
-    int pos1i, pos2i;
-    int sw_start, sw_end, sw_sil;
-    u_long psilence;
-    int ret;
-
-    debug_printf ("*** Finding separation point\n");
-
-    /* First, find the search region w/in cbuffer. */
-    sw_start = g_cbuf2.item_count - m_sw_start_to_cbuf2_end;
-    if (sw_start < 0) sw_start = 0;
-    sw_end = g_cbuf2.item_count - m_sw_end_to_cbuf2_end;
-    if (sw_end < 0) sw_end = 0;
-    debug_printf ("search window (bytes): %d,%d,%d\n", sw_start, sw_end,
-		  g_cbuf2.item_count);
-
-    if (m_content_type != CONTENT_TYPE_MP3) {
-        /* If the search region is too small, take the middle. */
-	sw_sil = (sw_end + sw_start) / 2;
-	debug_printf ("(not mp3) taking middle: sw_sil=%d\n", sw_sil);
-    }
-    else if (sw_end - sw_start < m_min_search_win) {
-        /* If the search region is too small, take the middle. */
-	sw_sil = (sw_end + sw_start) / 2;
-	debug_printf ("taking middle: sw_sil=%d\n", sw_sil);
-    } else {
-	/* Otherwise, copy from search window into private buffer */
-	int bufsize = sw_end - sw_start;
-	char* buf = (u_char *)malloc(bufsize);
-	ret = cbuf2_peek_rgn (&g_cbuf2, buf, sw_start, bufsize);
-	if (ret != SR_SUCCESS) {
-	    debug_printf ("PEEK FAILED: %d\n", ret);
-	    free(buf);
-	    return ret;
-	}
-	debug_printf ("PEEK OK\n");
-
-	/* Find silence point */
-	ret = findsep_silence (buf, bufsize, m_sp_opt->xs_silence_length,
-			       &psilence);
-	free(buf);
-	if (ret != SR_SUCCESS && ret != SR_ERROR_CANT_DECODE_MP3) {
-	    return ret;
-	}
-	sw_sil = sw_start + psilence;
-
-	/* Add 1/2 of the silence window to get middle */
-	sw_sil = sw_sil + ms_to_bytes(m_sp_opt->xs_silence_length/2,m_bitrate);
-    }
-
-    /* Compute padding.  We need pos1 == end of 1st song and 
-       pos2 == beginning of 2nd song. */
-    pos1i = sw_sil + ms_to_bytes(m_sp_opt->xs_padding_2,m_bitrate);
-    pos2i = sw_sil - ms_to_bytes(m_sp_opt->xs_padding_1,m_bitrate);
-
-    /* Clip padding to amount available in cbuffer (there could be 
-       less than the full cbuffer in a few cases, such as track 
-       changes close to each other). */
-    *pos1 = clip_to_cbuffer (pos1i);
-    *pos2 = clip_to_cbuffer (pos2i);
-
-    return SR_SUCCESS;
-}
-#endif
 
 error_code
 end_track(u_long pos1, u_long pos2, TRACK_INFO* ti)
@@ -753,6 +676,7 @@ bytes_to_secs (unsigned int bytes)
     return secs;
 }
 
+#if defined (commentout)
 static void
 compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate, 
 		      int meta_interval)
@@ -767,8 +691,10 @@ compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate,
 		  sp_opt->xs_padding_2);
     debug_printf ("xs_offset: %d\n", sp_opt->xs_offset);
     debug_printf ("---------------------------------------------------\n");
+    debug_printf ("bitrate = %d, meta_inf = %d\n", bitrate, meta_interval);
+    debug_printf ("---------------------------------------------------\n");
     
-    /* compute the search window size */
+    /* compute the search window size (sws) */
     sws = sp_opt->xs_search_window_1 + sp_opt->xs_search_window_2;
 
     /* compute interval from mi to beginning of buffer */
@@ -780,14 +706,9 @@ compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate,
     m_mi_to_cbuf2_end = sp_opt->xs_offset + sp_opt->xs_search_window_2
 	- sp_opt->xs_silence_length/2 + sp_opt->xs_padding_2;
     debug_printf ("m_mi_to_cbuf2_end (ms): %d\n", m_mi_to_cbuf2_end);
-    debug_printf ("bitrate = %d, meta_inf = %d\n", bitrate, meta_interval);
 
     debug_printf ("CBUF2 (ms): %d:%d\n",m_mi_to_cbuf2_start,
 	m_mi_to_cbuf2_end);
-
-    /* convert from ms to meta-inf blocks */
-    m_mi_to_cbuf2_start = ms_to_blocks (m_mi_to_cbuf2_start, bitrate, 0);
-    m_mi_to_cbuf2_end = ms_to_blocks (m_mi_to_cbuf2_end, bitrate, 1);
 
     /* Case 1 -- see readme (GCS) */
     if (m_mi_to_cbuf2_start > 0) {
@@ -832,16 +753,24 @@ compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate,
 	m_sw_end_to_cbuf2_end = m_sw_start_to_cbuf2_end + sws;
     }
 
-    /* Convert these from ms to bytes */
+    debug_printf ("CBUF SIZE: %d\n", m_cbuf2_size);
     debug_printf ("SEARCH WIN (ms): %d | %d | %d\n",
 		  m_sw_start_to_cbuf2_end,
 		  sws, m_sw_end_to_cbuf2_end);
+
+    /* convert from ms to meta-inf blocks */
+    m_mi_to_cbuf2_start = ms_to_blocks (m_mi_to_cbuf2_start, bitrate, 0);
+    m_mi_to_cbuf2_end = ms_to_blocks (m_mi_to_cbuf2_end, bitrate, 1);
+    m_cbuf2_size = ms_to_blocks (m_cbuf2_size, bitrate, 1);
+
+    /* Convert variables from ms to bytes */
     m_sw_start_to_cbuf2_end = ms_to_bytes (m_sw_start_to_cbuf2_end, 
 	bitrate);
     m_sw_end_to_cbuf2_end = ms_to_bytes (m_sw_end_to_cbuf2_end, bitrate);
 
     /* Get minimum search window (in bytes) */
-    m_min_search_win = sp_opt->xs_silence_length + (sws - sp_opt->xs_silence_length) / 2 ;
+    m_min_search_win = sp_opt->xs_silence_length 
+	    + (sws - sp_opt->xs_silence_length) / 2 ;
     m_min_search_win = ms_to_bytes (m_min_search_win, bitrate);
 
     debug_printf ("CBUF2 (BLOCKS): %d:%d -> %d\n",m_mi_to_cbuf2_start,
@@ -851,36 +780,96 @@ compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate,
 		  ms_to_bytes(sws,bitrate),
 		  m_sw_end_to_cbuf2_end);
 }
-
-/* These are from ripshout... */
-#if defined (commentout)
-error_code
-ripshout_init(IO_DATA_INPUT *in, IO_GET_STREAM *getstream, int meta_interval)
-{
-    if (!in || meta_interval < NO_META_INTERVAL)
-	return SR_ERROR_INVALID_PARAM;
-
-    m_meta_interval = meta_interval;
-    m_in = in;
-
-    m_buffersize = (m_meta_interval == NO_META_INTERVAL) ? DEFAULT_BUFFER_SIZE : m_meta_interval;
-
-    getstream->get_stream_data = ripshout_get_stream_data;
-    getstream->getsize = m_buffersize;
-
-    m_chunkcount = 0;
-    return SR_SUCCESS;
-}
-
-void
-ripshout_destroy()
-{
-    m_buffersize = 0;
-    m_meta_interval = 0;
-    m_chunkcount = 0;
-    m_in = NULL;
-}
 #endif
+
+static void
+compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate, 
+		      int meta_interval)
+{
+    long sws, sl;
+    long mic_to_mi;
+    long prepad, postpad;
+    long mic_to_sw_start, mic_to_sw_end;
+    long mic_to_rw_start, mic_to_rw_end;
+    long mic_to_cb_start, mic_to_cb_end;
+
+    debug_printf ("---------------------------------------------------\n");
+    debug_printf ("xs_search_window: %d,%d\n",
+		  sp_opt->xs_search_window_1,sp_opt->xs_search_window_2);
+    debug_printf ("xs_silence_length: %d\n", sp_opt->xs_silence_length);
+    debug_printf ("xs_padding: %d,%d\n", sp_opt->xs_padding_1,
+		  sp_opt->xs_padding_2);
+    debug_printf ("xs_offset: %d\n", sp_opt->xs_offset);
+    debug_printf ("---------------------------------------------------\n");
+    debug_printf ("bitrate = %d, meta_inf = %d\n", bitrate, meta_interval);
+    debug_printf ("---------------------------------------------------\n");
+    
+    /* mic_to_mi is the "half of a meta-inf" from the meta inf 
+       change to the previous (non-changed) meta inf */
+    mic_to_mi = meta_interval / 2;
+    debug_printf ("mic_to_mi: %d\n", mic_to_mi);
+
+    /* compute the search window size (sws) */
+    sws = ms_to_bytes (sp_opt->xs_search_window_1, bitrate) 
+	    + ms_to_bytes (sp_opt->xs_search_window_2, bitrate);
+    debug_printf ("sws: %d\n", sws);
+
+    /* compute the silence length (sl) */
+    sl = ms_to_bytes (sp_opt->xs_silence_length, bitrate);
+    debug_printf ("sl: %d\n", sl);
+
+    /* compute padding */
+    prepad = ms_to_bytes (sp_opt->xs_padding_1, bitrate);
+    postpad = ms_to_bytes (sp_opt->xs_padding_2, bitrate);
+
+    /* compute interval from mi to search window */
+    mic_to_sw_start = mic_to_mi +
+	    ms_to_bytes(sp_opt->xs_offset,bitrate) 
+	    - ms_to_bytes(sp_opt->xs_search_window_1,bitrate);
+    mic_to_sw_end = mic_to_mi +
+	    ms_to_bytes(sp_opt->xs_offset,bitrate) 
+	    + ms_to_bytes(sp_opt->xs_search_window_2,bitrate);
+    debug_printf ("mic_to_sw_start: %d\n", mic_to_sw_start);
+    debug_printf ("mic_to_sw_end: %d\n", mic_to_sw_end);
+
+    /* compute interval from mi to required window */
+    mic_to_rw_start = mic_to_sw_start + sl / 2 - prepad;
+    if (mic_to_rw_start > mic_to_sw_start) {
+	mic_to_rw_start = mic_to_sw_start;
+    }
+    mic_to_rw_end = mic_to_sw_end - sl / 2 + postpad;
+    if (mic_to_rw_end < mic_to_sw_end) {
+	mic_to_rw_end = mic_to_sw_end;
+    }
+    debug_printf ("mic_to_rw_start: %d\n", mic_to_rw_start);
+    debug_printf ("mic_to_rw_end: %d\n", mic_to_rw_end);
+
+    /* This code replaces the 3 cases (see OBSOLETE in gcs_notes.txt) */
+    mic_to_cb_start = mic_to_rw_start;
+    mic_to_cb_end = mic_to_rw_end;
+    if (mic_to_cb_start > -meta_interval) {
+	mic_to_cb_start = -meta_interval;
+    }
+    if (mic_to_cb_end < 0) {
+	mic_to_cb_end = 0;
+    }
+    debug_printf ("mic_to_cb_start: %d\n", mic_to_cb_start);
+    debug_printf ("mic_to_cb_end: %d\n", mic_to_cb_end);
+
+    /* Convert to chunks & compute cbuf size */
+    mic_to_cb_end = (mic_to_cb_end + (meta_interval-1)) / meta_interval;
+    mic_to_cb_start = -((-mic_to_cb_start + (meta_interval-1)) 
+			/ meta_interval);
+    m_cbuf_size = -mic_to_cb_start + mic_to_cb_end;
+    if (m_cbuf_size < 3) {
+	m_cbuf_size = 3;
+    }
+    debug_printf ("CBUF2 (BLOCKS): %d:%d -> %d\n", mic_to_cb_start,
+		  mic_to_cb_end, m_cbuf_size);
+
+    /* GCS FIX */
+    Still need to set up appropriate variables for track separation.
+}
 
 /* GCS: This used to be myrecv in rip_manager.c */
 static int

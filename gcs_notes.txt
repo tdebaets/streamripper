@@ -465,28 +465,37 @@ like this for the silence splitting case.
 
 
     |-----------------------------------|
-        this window will be cbuffered
+  this window must be cbuffered ("required_window")
+
+In fact, the entire required window need to be decoded, 
+because we don't want to chop any frames.
 
 The circular buffer is actually extended a bit so that 
 it contains an integer number of blocks which fall 
 along meta-inf boundaries.
 
+The below obsolete section is mostly right, but we want 
+to include the entire core chunk.
+
+
+BEGIN OBSOLETE
+---------------
 Now, depending on the value of xs_offset, we have 3 cases.
 The mi point can be before, during or after the 
-buffer window.  
+required window
 
 
  (1)            (2)                       (3)
   x              x                         x
 
     |-----------------------------------|
-    above this window will be cbuffered
+             required window
 
 
   |-------------------------------------|         (case 1)
     |-----------------------------------|         (case 2)
     |--------------------------------------|      (case 3)
-    but now one of these windows will be cbuffered
+           CBUF, depending on case
 
 
 Case 1:
@@ -503,34 +512,8 @@ Thus, we need 3 variables:
   m_cbuffer_size
   m_mi_to_cbuffer_start
   m_mi_to_cbuffer_end
-
-
--------- OBSOLETE STUFF
-Default case, the preceding portion needs to be:
-	prepad + -xd_offset
-Default case, the subsequent portion needs to be:
-	postpad + -xd_offset
-Silence case, the preceding portion needs to be:
-	prepad + -sp + -xs_offset
-	prepad + (pre_sw-sil_win/2) + -xs_offset
-Silence case, the subsequent portion needs to be:
-	postpad + -sp + -xs_offset
-	postpad + (post_sw-sil_win/2) + -xs_offset
-
-Therefore, the buffersize is the sum of the above 2 
-portions.
-
-    /*  Compute the buffer size needed:
-	    pre_padding + (splitpoint+xs_silence_offset) + post_padding
-	Where splitpoint is within:
-	    search_win
-	Or exactly at:
-	    xd_offset
-	Question: where is getsize set?
-	Question: how to know the bitrate?
-     */
--------- END OBSOLETE STUFF
-
+---------------
+BEGIN OBSOLETE
 
 
 ---------------------------------------
@@ -730,6 +713,9 @@ http://royal-orleans.com/ (Led Zeppelin)
 
 Links to BT sites:
 Smiler's links (http://smiler.no-ip.org/BT/BTlinks.php
+
+WMA downloads:
+http://tela.sugarmegs.org/
 
 -----------------------------------------------------------------------
 Shoutcast lists
