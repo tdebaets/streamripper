@@ -6,6 +6,8 @@
 error_code
 findsep_silence (const u_char* mpgbuf, 
 		 long mpgsize, 
+		 long len_to_sw,
+		 long searchwindow,
 		 long silence_length, 
 		 long padding1,
 		 long padding2,

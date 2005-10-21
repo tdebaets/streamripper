@@ -1,4 +1,4 @@
-/* ripstream.c - jonclegg@yahoo.com
+/* ripstream.c
  * buffer stream data, when a track changes decodes the audio and 
  * finds a silent point to split the track
  *
@@ -457,6 +457,9 @@ find_sep (u_long *pos1, u_long *pos2)
 	/* Find silence point */
 	/* GCS FIX: This doesn't yet consider sw vs rw */
 	ret = findsep_silence (buf, bufsize,
+			       m_rw_start_to_sw_start,
+			       m_sp_opt->xs_search_window_1 
+			       + m_sp_opt->xs_search_window_2,
 			       m_sp_opt->xs_silence_length,
 			       m_sp_opt->xs_padding_1,
 			       m_sp_opt->xs_padding_2,

@@ -66,8 +66,12 @@ typedef struct DECODE_STRUCTst
     unsigned char* mpgbuf;
     long  mpgsize;
     long  mpgpos;
+    long len_to_sw_ms;
+    long searchwindow_ms;
     long  silence_ms;
     long  silence_samples;
+    unsigned long len_to_sw_start_samp;
+    unsigned long len_to_sw_end_samp;
     unsigned long  pcmpos;
     long  samplerate;
     SILENCETRACKER siltrackers[NUM_SILTRACKERS];
@@ -115,12 +119,14 @@ static enum mad_flow header_get_bitrate (void *data,
  * Functions
  *****************************************************************************/
 error_code
-findsep_silence (const u_char* mpgbuf, 
-		 long mpgsize, 
-		 long silence_length, 
+findsep_silence (const u_char* mpgbuf,
+		 long mpgsize,
+		 long len_to_sw,
+		 long searchwindow,
+		 long silence_length,
 		 long padding1,
 		 long padding2,
-		 u_long* pos1, 
+		 u_long* pos1,
 		 u_long* pos2
 		 )
 {
@@ -135,6 +141,8 @@ findsep_silence (const u_char* mpgbuf,
     ds.pcmpos = 0;
     ds.mpgpos= 0;
     ds.samplerate = 0;
+    ds.len_to_sw_ms = len_to_sw;
+    ds.searchwindow_ms = searchwindow;
     ds.silence_ms = silence_length;
     INIT_LIST_HEAD (&ds.frame_list);
 
@@ -368,12 +376,12 @@ filter (void *data, struct mad_stream const *ms, struct mad_frame *frame)
     fl->m_pcmpos = 0;
     list_add_tail (&(fl->m_list), &(ds->frame_list));
 
+#if defined (commentout)
     debug_printf ("FILTER: %p (%02x%02x) | %p\n", 
 		  ms->this_frame, 
 		  ms->this_frame[0], 
 		  ms->this_frame[1], 
 		  ms->next_frame);
-#if defined (commentout)
 #endif
 
     return MAD_FLOW_CONTINUE;
@@ -401,6 +409,15 @@ output (void *data, struct mad_header const *header,
     fl->m_samples = nsamples;
     fl->m_pcmpos = ds->pcmpos;
 
+#if defined (commentout)
+    if (ds->pcmpos > ds->len_to_sw_start_samp
+	&& ds->pcmpos < ds->len_to_sw_end_samp) {
+	debug_printf ("*\n");
+    } else {
+	debug_printf ("-\n");
+    }
+#endif
+
     while(nsamples--) {
 	/* output sample(s) in 16-bit signed little-endian PCM */
 	/* GCS FIX: Does this work on big endian machines??? */
@@ -416,7 +433,11 @@ output (void *data, struct mad_header const *header,
 	// get the instantanous volume
 	v = (lastSample*lastSample)+(sample*sample);
 	v = sqrt(v / 2);
-	search_for_silence(ds, v);
+	if (ds->pcmpos > ds->len_to_sw_start_samp
+	    && ds->pcmpos < ds->len_to_sw_end_samp)
+	{
+	    search_for_silence(ds, v);
+	}
 	ds->pcmpos++;
     }
     
@@ -430,6 +451,9 @@ mad_flow header(void *data, struct mad_header const *pheader)
     if (!ds->samplerate) {
 	ds->samplerate = pheader->samplerate;
 	ds->silence_samples = ds->silence_ms * (ds->samplerate/1000);
+	ds->len_to_sw_start_samp = ds->len_to_sw_ms * (ds->samplerate/1000);
+	ds->len_to_sw_end_samp = (ds->len_to_sw_ms + ds->searchwindow_ms) 
+		* (ds->samplerate/1000);
 	debug_printf ("Setting samplerate: %ld\n",ds->samplerate);
     }
     return MAD_FLOW_CONTINUE;
