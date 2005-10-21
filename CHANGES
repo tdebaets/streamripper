@@ -2,7 +2,6 @@ New for 1.61.15
 ---------------
 * Fix a problem where streamripper aborts with SR_ERROR_BUFFER_EMPTY
 * Improve splitting code to add correct amount of padding
-* Add debug statements for disconnect
 
 New for 1.61.14
 ---------------

@@ -174,7 +174,6 @@ findsep_silence (const u_char* mpgbuf,
     debug_printf ("silence_samples: %d\n", ds.silence_samples);
 
     /* Search through siltrackers to find minimum volume point */
-    /* GCS FIX: Need to return middle of silence instead of beginning */
     assert(ds.mpgsize != 0);
     silstart = ds.pcmpos/2;
     for(i = 0; i < NUM_SILTRACKERS; i++) {
