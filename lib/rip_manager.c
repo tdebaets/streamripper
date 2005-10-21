@@ -728,6 +728,7 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
     m_opt->rules_file[0] = 0;
     strcpy(m_opt->useragent, "sr-POSIX/" SRVERSION);
     m_opt->overwrite = OVERWRITE_LARGER;
+    m_opt->dropcount = 0;
 
     // Defaults for splitpoint
     // Times are in ms

@@ -406,6 +406,7 @@ void saveload_file_opts(HWND hWnd, BOOL saveload)
 	set_to_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, &m_opt->flags, OPT_INDIVIDUAL_TRACKS);
 	set_to_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, &m_opt->flags, OPT_SINGLE_FILE_OUTPUT);
 	GetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->showfile_pattern, SR_MAX_PATH);
+	m_opt->dropcount = GetDlgItemInt(hWnd, IDC_DROP_COUNT, FALSE, FALSE);
     }
     else
     {
@@ -417,6 +418,7 @@ void saveload_file_opts(HWND hWnd, BOOL saveload)
 	set_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, OPT_FLAG_ISSET(m_opt->flags, OPT_INDIVIDUAL_TRACKS));
 	set_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, OPT_FLAG_ISSET(m_opt->flags, OPT_SINGLE_FILE_OUTPUT));
 	SetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->showfile_pattern);
+	SetDlgItemInt(hWnd, IDC_DROP_COUNT, m_opt->dropcount, FALSE);
     }
 }
 
@@ -471,14 +473,6 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
 	set_checkbox(hWnd, IDC_RECONNECT, OPT_FLAG_ISSET(m_opt->flags, OPT_AUTO_RECONNECT));
 	set_checkbox(hWnd, IDC_MAKE_RELAY, OPT_FLAG_ISSET(m_opt->flags, OPT_MAKE_RELAY));
 	SetDlgItemInt(hWnd, IDC_RELAY_PORT_EDIT, m_opt->relay_port, FALSE);
-#if defined (commentout)
-	/* GCS -- why? */
-	if (OPT_FLAG_ISSET(m_opt->flags, OPT_CHECK_MAX_BYTES))
-	{
-	    set_checkbox(hWnd, IDC_CHECK_MAX_BYTES, OPT_FLAG_ISSET(m_opt->flags, OPT_CHECK_MAX_BYTES));
-	    SetDlgItemInt(hWnd, IDC_MAX_BYTES, m_opt->maxMB_rip_size, FALSE);
-	}
-#endif
 	set_checkbox(hWnd, IDC_CHECK_MAX_BYTES, OPT_FLAG_ISSET(m_opt->flags, OPT_CHECK_MAX_BYTES));
 	SetDlgItemInt(hWnd, IDC_MAX_BYTES, m_opt->maxMB_rip_size, FALSE);
 	SetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl);
@@ -795,6 +789,7 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     keep_incomplete = GetPrivateProfileInt(APPNAME, "keep_incomplete", TRUE, filename);
     rip_individual_tracks = GetPrivateProfileInt(APPNAME, "rip_individual_tracks", TRUE, filename);
     rip_single_file = GetPrivateProfileInt(APPNAME, "rip_single_file", FALSE, filename);
+    opt->dropcount = GetPrivateProfileInt(APPNAME, "dropcount", FALSE, filename);
 
     opt->sp_opt.xs_offset = GetPrivateProfileInt(APPNAME, "xs_offset", 
 	opt->sp_opt.xs_offset, filename);
@@ -879,6 +874,7 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     fprintf(fp, "rip_individual_tracks=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_INDIVIDUAL_TRACKS));
     fprintf(fp, "rip_single_file=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_SINGLE_FILE_OUTPUT));
     fprintf(fp, "rip_single_path=%s\n", opt->showfile_pattern);
+    fprintf(fp, "dropcount=%d\n", opt->dropcount);
 
     fprintf(fp, "output_pattern=%s\n", opt->output_pattern);
 

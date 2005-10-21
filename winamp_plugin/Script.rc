@@ -112,7 +112,7 @@ BEGIN
     LTEXT           "Output file pattern:",IDC_STATIC,7,7,54,8
 END
 
-IDD_PROPPAGE_FILE DIALOG DISCARDABLE  0, 0, 210, 171
+IDD_PROPPAGE_FILE DIALOG DISCARDABLE  0, 0, 210, 181
 STYLE WS_CHILD | WS_DISABLED | WS_CAPTION
 CAPTION "File"
 FONT 8, "MS Sans Serif"
@@ -129,15 +129,18 @@ BEGIN
                     BS_AUTOCHECKBOX | WS_TABSTOP,7,38,196,14
     CONTROL         "&Never overwrite files in incomplete folder",
                     IDC_KEEP_INCOMPLETE,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,117,160,14
+                    WS_TABSTOP,7,114,160,14
     CONTROL         "&Add finished tracks to playlist",
                     IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,143,123,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,138,123,14
     CONTROL         "Add &ID3 info to the tracks",IDC_ADD_ID3,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,130,91,14
-    COMBOBOX        IDC_OVERWRITE_COMPLETE,14,99,87,46,CBS_DROPDOWNLIST | 
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,126,91,14
+    COMBOBOX        IDC_OVERWRITE_COMPLETE,14,98,87,46,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Overwrite Tracks in Complete:",IDC_STATIC,7,88,90,8
+    LTEXT           "Overwrite Tracks in Complete:",IDC_STATIC,7,87,90,8
+    EDITTEXT        IDC_DROP_COUNT,155,153,42,14,ES_AUTOHSCROLL
+    LTEXT           "Number of initial songs to leave in incomplete:",
+                    IDC_STATIC,17,155,137,11
 END
 
 
@@ -194,7 +197,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 203
         TOPMARGIN, 7
-        BOTTOMMARGIN, 157
+        BOTTOMMARGIN, 167
     END
 END
 #endif    // APSTUDIO_INVOKED

@@ -24,6 +24,7 @@
 #define IDC_XS_PADDING_PRE              1130
 #define IDC_OUTPUT_DIRECTORY            1160
 #define IDC_RIP_SINGLE_EDIT             1161
+#define IDC_DROP_COUNT                  1162
 #define IDC_BROWSE_OUTDIR               1170
 #define IDC_BROWSE_RIPSINGLE            1171
 #define IDC_RECONNECT                   1190
