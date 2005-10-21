@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl AC_INIT(lib/types.h)
 
-AC_INIT(streamripper,1.61.14)
+AC_INIT(streamripper,1.61.15)
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([lib/config.h])

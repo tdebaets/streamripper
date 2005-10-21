@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "STREAMRIPPER" "1" "22 September 2005" "" ""
+.TH "STREAMRIPPER" "1" "21 October 2005" "" ""
 
 .SH NAME
 streamripper \- rip shoutcast radio streams to mp3 files
@@ -296,7 +296,9 @@ nominal track change position.
 Set offset from center of silence window
 .TP
 \fB--xs_padding=num:num\fR
-Set amount to pad before and after splitpoint
+Set amount to pad before and after splitpoint.
+The 1st number is the number of msec to add to the end of each song.
+The 2nd number is the number of msec to add to the beginning of each song.
 .SH "GETTING STARTED"
 .PP
 The easiest way to get started is to find the URL of a stream you want
@@ -468,12 +470,6 @@ zone within both songs, and edit them later?
 .nf
   streamripper URL --xs_offset=7500 --xs_padding=2500:2500
 .fi
-.PP
-or
-
-.nf
-  streamripper URL --xs_offset=5000 --xs_padding=0:5000
-.fi
 .SH "RESOURCES"
 .PP
 Please check out the following web
@@ -493,6 +489,6 @@ http://www.shoutcast.com
 http://www.icecast.org
 .SH "COPYING"
 .PP
-Copyright (C) 2000-2002 Jon Clegg, (C) 2004-2005 Gregory C. Sharp.
+Copyright © 2000-2002 Jon Clegg, © 2004-2005 Gregory C. Sharp.
 Free use of this software is
 granted under the terms of the GNU General Public License (GPL).
