@@ -14,7 +14,8 @@ ripstream_init (HSOCKET sock,
 		int bitrate, 
 		int meta_interval, 
 		int content_type, 
-		BOOL addID3tag);
+		BOOL addID3tag,
+		External_Process* ep);
 error_code ripstream_rip();
 void ripstream_destroy();
 

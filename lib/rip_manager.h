@@ -1,6 +1,23 @@
+/* rip_manager.h
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
 #ifndef __RIP_MANANGER_H__
 #define __RIP_MANANGER_H__
 
+#include "external.h"
 #include "srtypes.h"
 
 #define SRVERSION	"1.61.15"
@@ -41,10 +58,11 @@ typedef struct RIP_MANAGER_INFOst
     char server_name[MAX_SERVER_LEN];
     int	bitrate;
     int	meta_interval;
-    char filename[SR_MAX_PATH];		// JCBUG -- it's not the filename, it's the trackname
+    char filename[SR_MAX_PATH];  // it's not the filename, it's the trackname
     u_long filesize;
     int	status;
     int  track_count;
+    External_Process* ep;
 } RIP_MANAGER_INFO;
 
 
@@ -95,27 +113,41 @@ typedef struct RIP_MANAGER_INFOst
 typedef struct RIP_MANAGER_OPTIONSst
 {
     char url[MAX_URL_LEN];		// url of the stream to connect to
-    char proxyurl[MAX_URL_LEN];		// url of a http proxy server, '\0' otherwise
+    char proxyurl[MAX_URL_LEN];		// url of a http proxy server, 
+                                        //  '\0' otherwise
     char output_directory[SR_MAX_PATH];	// base directory to output files too
-    char output_pattern[SR_MAX_PATH];	// filename pattern when ripping with splitting
-    char showfile_pattern[SR_MAX_PATH];	// filename base when ripping without splitting
+    char output_pattern[SR_MAX_PATH];	// filename pattern when ripping 
+                                        //  with splitting
+    char showfile_pattern[SR_MAX_PATH];	// filename base when ripping to
+                                        //  single file without splitting
     char if_name[SR_MAX_PATH];		// local interface to use
-    char rules_file[SR_MAX_PATH];       // file that holds rules for parsing metadata
-    char pls_file[SR_MAX_PATH];		// optional, where to create a .pls file
-    char relay_ip[SR_MAX_PATH];		// optional, ip to bind relaying socket to
+    char rules_file[SR_MAX_PATH];       // file that holds rules for 
+                                        //  parsing metadata
+    char pls_file[SR_MAX_PATH];		// optional, where to create a 
+                                        //  rely .pls file
+    char relay_ip[SR_MAX_PATH];		// optional, ip to bind relaying 
+                                        //  socket to
     int relay_port;			// port to use for the relay server
-    u_short max_port;			// highest port the relay server can look if it needs to search
-    int max_connections;                // max number of connections to relay stream
-    u_long maxMB_rip_size;		// max number of megabytes that can by writen out before we stop
-    u_short flags;			// all booleans logically OR'd together (see above)
+    u_short max_port;			// highest port the relay server 
+                                        //  can look if it needs to search
+    int max_connections;                // max number of connections 
+                                        //  to relay stream
+    u_long maxMB_rip_size;		// max number of megabytes that 
+                                        //  can by writen out before we stop
+    u_short flags;			// all booleans logically OR'd 
+                                        //  together (see above)
     char useragent[MAX_USERAGENT_STR];	// optional, use a different useragent
-    SPLITPOINT_OPTIONS sp_opt;		// More options concerning splitpoint rules
-    int timeout;			// timeout, in seconds, before a stalled connection is forcefully closed
-    int dropcount;			// number of tracks at beginning of connection to always ignore
+    SPLITPOINT_OPTIONS sp_opt;		// options for splitpoint rules
+    int timeout;			// timeout, in seconds, before a 
+                                        //  stalled connection is forcefully 
+                                        //  closed
+    int dropcount;			// number of tracks at beginning 
+                                        //  of connection to always ignore
     CODESET_OPTIONS cs_opt;             // which codeset should i use?
     int count_start;                    // which number to start counting?
     enum OverwriteOpt overwrite;	// overwrite file in complete?
-
+    char ext_cmd[SR_MAX_PATH];          // cmd to spawn for external metadata
+    
 } RIP_MANAGER_OPTIONS;
 
 typedef struct ERROR_INFOst

@@ -259,6 +259,7 @@ void print_usage()
     fprintf(stderr, "      -I interface   - Rip from specified interface (e.g. eth0)\n");
 #endif
     fprintf(stderr, "      -T             - Truncate duplicated tracks in incomplete\n");
+    fprintf(stderr, "      -E command     - Run external command to fetch metadata\n");
     fprintf(stderr, "      --quiet        - Don't print ripping status to console\n");
     fprintf(stderr, "      --debug        - Save debugging trace\n");
     fprintf(stderr, "      --xs_???       - Invoke splitpoint detection rules (see README/man page)\n");
@@ -291,7 +292,7 @@ void parse_arguments(int argc, char **argv)
 	if (argv[i][0] != '-')
 	    continue;
 
-	c = strchr("dDfIklLmMopRuw", argv[i][1]);
+	c = strchr("dDEfIklLmMopRuw", argv[i][1]);
         if (c != NULL) {
             if ((i == (argc-1)) || (argv[i+1][0] == '-')) {
 		fprintf(stderr, "option %s requires an argument\n", argv[i]);
@@ -309,6 +310,9 @@ void parse_arguments(int argc, char **argv)
 	    i++;
 	    strncpy (m_opt.showfile_pattern, argv[i], SR_MAX_PATH);
 	    break;
+	case 'A':
+	    m_opt.flags ^= OPT_INDIVIDUAL_TRACKS;
+	    break;
 	case 'c':
 	    m_opt.flags ^= OPT_AUTO_RECONNECT;
 	    break;
@@ -319,6 +323,10 @@ void parse_arguments(int argc, char **argv)
 	case 'D':
 	    i++;
 	    strncpy(m_opt.output_pattern, argv[i], SR_MAX_PATH);
+	    break;
+	case 'E':
+	    i++;
+	    strncpy(m_opt.ext_cmd, argv[i], SR_MAX_PATH);
 	    break;
 	case 'f':
 	    i++;
@@ -332,6 +340,10 @@ void parse_arguments(int argc, char **argv)
 	case 'i':
 	    m_opt.flags ^= OPT_ADD_ID3;
 	    break;
+	case 'I':
+	    i++;
+	    strncpy(m_opt.if_name, argv[i], SR_MAX_PATH);
+	    break;
 	case 'k':
 	    i++;
 	    m_opt.dropcount = atoi(argv[i]);
@@ -341,10 +353,19 @@ void parse_arguments(int argc, char **argv)
 	    time(&m_stop_time);
 	    m_stop_time += atoi(argv[i]);
 	    break;
+	case 'L':
+	    i++;
+	    strncpy(m_opt.pls_file, argv[i], SR_MAX_PATH);
+	    break;
 	case 'm':
 	    i++;
 	    m_opt.timeout = atoi(argv[i]);
 	    break;
+ 	case 'M':
+ 	    i++;
+ 	    m_opt.maxMB_rip_size = atoi(argv[i]);
+ 	    m_opt.flags |= OPT_CHECK_MAX_BYTES;
+ 	    break;
 	case 'o':
 	    i++;
 	    m_opt.overwrite = string_to_overwrite_opt (argv[i]);
@@ -376,9 +397,7 @@ void parse_arguments(int argc, char **argv)
 	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
 	    i++;
-
 	    c = strstr(argv[i], ":");
-
 	    if (NULL == c) {
 	    	m_opt.relay_port = atoi(argv[i]);
 	    } else {
@@ -386,7 +405,10 @@ void parse_arguments(int argc, char **argv)
 		strncpy(m_opt.relay_ip, argv[i], SR_MAX_PATH);
 		m_opt.relay_port = atoi(++c);
  	    }
-
+	    break;
+	case 'R':
+	    i++;
+	    m_opt.max_connections = atoi(argv[i]);
 	    break;
 	case 's':
 	    m_opt.flags ^= OPT_SEPERATE_DIRS;
@@ -411,26 +433,6 @@ void parse_arguments(int argc, char **argv)
 	case 'z':
 	    m_opt.flags ^= OPT_SEARCH_PORTS;
 	    m_opt.max_port = m_opt.relay_port+1000;
-	    break;
-	case 'A':
-	    m_opt.flags ^= OPT_INDIVIDUAL_TRACKS;
-	    break;
-	case 'I':
-	    i++;
-	    strncpy(m_opt.if_name, argv[i], SR_MAX_PATH);
-	    break;
-	case 'L':
-	    i++;
-	    strncpy(m_opt.pls_file, argv[i], SR_MAX_PATH);
-	    break;
- 	case 'M':
- 	    i++;
- 	    m_opt.maxMB_rip_size = atoi(argv[i]);
- 	    m_opt.flags |= OPT_CHECK_MAX_BYTES;
- 	    break;
-	case 'R':
-	    i++;
-	    m_opt.max_connections = atoi(argv[i]);
 	    break;
 	case '-':
 	    parse_extended_options(&argv[i][2]);

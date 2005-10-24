@@ -35,6 +35,7 @@
 #include "filelib.h"
 #include "relaylib.h"
 #include "socklib.h"
+#include "external.h"
 
 /*****************************************************************************
  * Private functions
@@ -72,6 +73,7 @@ static int			m_bitrate;
 static int			m_http_bitrate;
 static int			m_meta_interval;
 static unsigned int		m_cue_sheet_bytes = 0;
+static External_Process*        m_external_process = 0;
 
 static int m_cbuf2_size;             /* blocks */
 static int m_rw_start_to_cb_end;     /* bytes */
@@ -125,7 +127,8 @@ ripstream_init (HSOCKET sock,
 		int bitrate, 
 		int meta_interval, 
 		int content_type, 
-		BOOL addID3tag)
+		BOOL addID3tag,
+		External_Process* ep)
 {
     if (!sp_opt || !no_meta_name) {
 	printf ("Error: invalid ripstream parameters\n");
@@ -147,6 +150,7 @@ ripstream_init (HSOCKET sock,
        if stream doesn't have meta data */
     m_meta_interval = meta_interval;
     m_cue_sheet_bytes = 0;
+    m_external_process = ep;
 
     /* From ripshout */
     m_buffersize = (m_meta_interval == NO_META_INTERVAL) 
@@ -287,11 +291,17 @@ ripstream_rip()
 	if (ret != SR_SUCCESS) return ret;
     }
 
-    /* Parse the metadata (RMK: ogg might have multiple metadata/chunk) */
-    if (m_current_track.raw_metadata[0]) {
-        parse_metadata (&m_current_track);
+    if (m_external_process) {
+	/* If using external metadata, check for that */
+	clear_track_info (&m_current_track);
+	read_external (m_external_process, &m_current_track);
     } else {
-        clear_track_info (&m_current_track);
+	/* Parse the metadata (RMK: ogg might have multiple metadata/chunk) */
+	if (m_current_track.raw_metadata[0]) {
+	    parse_metadata (&m_current_track);
+	} else {
+	    clear_track_info (&m_current_track);
+	}
     }
 
     /* Copy the data into cbuffer */
@@ -302,7 +312,6 @@ ripstream_rip()
 	return ret;
     }
 
-    //    relaylib_send (m_getbuffer, m_buffersize, 1, 0);
     filelib_write_show (m_getbuffer, m_buffersize);
 
     /* First time through, so start a track. */
@@ -325,6 +334,7 @@ ripstream_rip()
     }
 
     /* Check for track change. */
+    debug_printf ("m_current_track.have_track_info = %d\n", m_current_track.have_track_info);
     if (m_current_track.have_track_info && is_track_changed()) {
 	/* Set m_find_silence equal to the number of additional blocks 
 	   needed until we can do silence separation. */

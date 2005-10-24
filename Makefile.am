@@ -27,6 +27,8 @@ streamripper_SOURCES = \
 	lib/cbuf2.h \
 	lib/list.h \
 	lib/debug.c \
+	lib/external.c \
+	lib/external.h \
 	lib/filelib.c \
 	lib/findsep.c \
 	lib/http.c \

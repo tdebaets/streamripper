@@ -1,5 +1,4 @@
-/* rip_manager.c - jonclegg@yahoo.com
- * ties together lots of shit, main entry point for clients to call
+/* rip_manager.c
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,7 +77,7 @@ static void			destroy_subsystems();
 /******************************************************************************
  * Private Vars
  ******************************************************************************/
-static SR_HTTP_HEADER		m_info;
+static SR_HTTP_HEADER		m_http_info;
 static HSOCKET			m_sock;
 #if defined (commentout)
 static void			(*m_destroy_func)();
@@ -86,15 +85,12 @@ static void			(*m_destroy_func)();
 static RIP_MANAGER_INFO		m_ripinfo;		// used for UPDATE callback messages
 static RIP_MANAGER_OPTIONS	m_options;		// local copy of the options passed to rip_manager_start()
 static THREAD_HANDLE		m_hthread;		// rip thread handle
-//static IO_DATA_INPUT		m_in;			// Gets raw stream data
-//static IO_GET_STREAM		m_ripin;		// Raw stream data + song information
-//static IO_PUT_STREAM		m_ripout;		// Generic output interface
 static void			(*m_status_callback)(int message, void *data);
 static BOOL			m_ripping = FALSE;
 static u_long			m_bytes_ripped;
 static BOOL			m_write_data = TRUE;	// Should we actually write to a file or not
-static HSEM			m_started_sem;	// to prevent deadlocks when ripping is stopped before its
-													// started.
+static HSEM			m_started_sem;	// to prevent deadlocks when ripping is stopped before its started.
+
 static char* overwrite_opt_strings[] = {
     "",		// UNKNOWN
     "always",
@@ -314,7 +310,7 @@ start_relay(int content_type)
 char *
 client_relay_header_generate (int icy_meta_support)
 {
-    SR_HTTP_HEADER info = m_info;
+    SR_HTTP_HEADER info = m_http_info;
     char temp_icyname[MAX_SERVER_LEN];
     int ret;
     
@@ -323,7 +319,7 @@ client_relay_header_generate (int icy_meta_support)
     strcpy(info.icy_name, temp_icyname);
     
     headbuf = (char *) malloc(MAX_HEADER_LEN);
-    ret = httplib_construct_sc_response(&m_info, headbuf, MAX_HEADER_LEN, icy_meta_support);
+    ret = httplib_construct_sc_response(&m_http_info, headbuf, MAX_HEADER_LEN, icy_meta_support);
     if (ret != SR_SUCCESS) {
 	headbuf[0] = 0;
     }
@@ -354,7 +350,7 @@ ripthread(void *notused)
     while(TRUE) {
         ret = ripstream_rip();
 
-	/* If the user told use to stop, well, then we bail */
+	/* If the user told us to stop, well, then we bail */
 	if (!m_ripping)
 	    break;
 
@@ -523,7 +519,7 @@ start_ripping()
     /*
      * Connect to the stream
      */
-    ret = inet_sc_connect(&m_sock, m_options.url, pproxy, &m_info, 
+    ret = inet_sc_connect(&m_sock, m_options.url, pproxy, &m_http_info, 
 			  m_options.useragent, m_options.if_name);
     if (ret != SR_SUCCESS) {
 	goto RETURN_ERR;
@@ -531,7 +527,7 @@ start_ripping()
 
 #if defined (COMMENTOUT_FOR_OGG)
     /* GCS 09/10/04 - I wonder if this is worth doing */
-    if (!m_info.have_icy_name) {
+    if (!m_http_info.have_icy_name) {
 	ret = SR_ERROR_NOT_SHOUTCAST_STREAM;
 	goto RETURN_ERR;
     }
@@ -539,8 +535,8 @@ start_ripping()
 
     /* If the icy_name exists, but is empty, set to a bogus name so 
        that we can create the directory correctly, etc. */
-    if (strlen(m_info.icy_name) == 0) {
-	strcpy (m_info.icy_name, "Streamripper_rips");
+    if (strlen(m_http_info.icy_name) == 0) {
+	strcpy (m_http_info.icy_name, "Streamripper_rips");
     }
 
     /*
@@ -549,10 +545,10 @@ start_ripping()
      * bitrate etc.. 
      */
     memset(&m_ripinfo, 0, sizeof(RIP_MANAGER_INFO));
-    m_ripinfo.meta_interval = m_info.meta_interval;
-    m_ripinfo.bitrate = m_info.icy_bitrate;
-    strcpy(m_ripinfo.streamname, m_info.icy_name);
-    strcpy(m_ripinfo.server_name, m_info.server);
+    m_ripinfo.meta_interval = m_http_info.meta_interval;
+    m_ripinfo.bitrate = m_http_info.icy_bitrate;
+    strcpy(m_ripinfo.streamname, m_http_info.icy_name);
+    strcpy(m_ripinfo.server_name, m_http_info.server);
 
     /* Initialize file writing code. */
     ret = filelib_init
@@ -561,13 +557,13 @@ start_ripping()
 	     m_options.count_start,
 	     GET_KEEP_INCOMPLETE(m_options.flags),
 	     GET_SINGLE_FILE_OUTPUT(m_options.flags),
-	     m_info.content_type, 
+	     m_http_info.content_type, 
 	     m_options.output_directory,
 	     m_options.output_pattern,
 	     m_options.showfile_pattern,
 	     GET_SEPERATE_DIRS(m_options.flags),
 	     GET_DATE_STAMP(m_options.flags),
-	     m_info.icy_name);
+	     m_http_info.icy_name);
     if (ret != SR_SUCCESS)
 	goto RETURN_ERR;
 
@@ -576,30 +572,27 @@ start_ripping()
     m_status_callback(RM_OUTPUT_DIR, (void*)filelib_get_output_directory);
 #endif
 
-    /* GCS moving this into ripstream_init() */
-#if defined (commentout)
-    /* prepares the ripshout lib for ripping */
-    ret = ripshout_init(&m_in, &m_ripin, m_info.meta_interval);
-    if (ret != SR_SUCCESS)
-	goto RETURN_ERR;
-    m_destroy_func = ripshout_destroy;
-#endif
+    /* Start up external program to get metadata. */
+    m_ripinfo.ep = 0;
+    if (m_options.ext_cmd[0]) {
+	m_ripinfo.ep = spawn_external (m_options.ext_cmd);
+    }
 
-    /*
-     * ripstream is good to go, it knows how to get data, and where
+    /* ripstream is good to go, it knows how to get data, and where
      * it's sending it to
      */
     ripstream_destroy();
     ret = ripstream_init(m_sock, 
 			 GET_MAKE_RELAY(m_options.flags),
 			 m_options.timeout, 
-			 m_info.icy_name,
+			 m_http_info.icy_name,
 			 m_options.dropcount,
 			 &m_options.sp_opt,
 			 m_ripinfo.bitrate, 
-			 m_info.meta_interval,
-			 m_info.content_type, 
-			 GET_ADD_ID3(m_options.flags));
+			 m_http_info.meta_interval,
+			 m_http_info.content_type, 
+			 GET_ADD_ID3(m_options.flags),
+			 m_ripinfo.ep);
     if (ret != SR_SUCCESS) {
 	ripstream_destroy();
 	goto RETURN_ERR;
@@ -618,13 +611,13 @@ start_ripping()
 			    m_options.relay_port, m_options.max_port, 
 			    &new_port, m_options.if_name, 
 			    m_options.max_connections, m_options.relay_ip,
-			    m_info.meta_interval != NO_META_INTERVAL);
+			    m_http_info.meta_interval != NO_META_INTERVAL);
 	if (ret != SR_SUCCESS) {
 		goto RETURN_ERR;
 	}
 
 	m_options.relay_port = new_port;
-	start_relay(m_info.content_type);
+	start_relay(m_http_info.content_type);
 
 	if (0 != m_options.pls_file[0]) {
 		create_pls_file(new_port);
@@ -729,6 +722,7 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
     strcpy(m_opt->useragent, "sr-POSIX/" SRVERSION);
     m_opt->overwrite = OVERWRITE_LARGER;
     m_opt->dropcount = 0;
+    m_opt->ext_cmd[0] = 0;
 
     // Defaults for splitpoint
     // Times are in ms
