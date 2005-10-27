@@ -16,12 +16,15 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#if defined (WIN32)
+#else
 #include <unistd.h>
+#include <sys/wait.h>
+#endif
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <errno.h>
-#include <sys/wait.h>
 #include <string.h>
 #include "external.h"
 
@@ -30,6 +33,27 @@ http://www.cs.uleth.ca/~holzmann/C/system/pipeforkexec.html
 http://www.ecst.csuchico.edu/~beej/guide/ipc/fork.html
 for nonblocking, on windows don't use fcntl(), use ioctlsocket() */
 
+/* ----------------------------- WIN32 VERSION --------------------------- */
+#if defined (WIN32)
+External_Process*
+spawn_external (char* cmd)
+{
+    return 0;
+}
+
+int
+read_external (External_Process* ep, TRACK_INFO* ti)
+{
+    return 0;
+}
+
+void
+close_external (External_Process* ep)
+{
+}
+
+/* ----------------------------- UNIX VERSION --------------------------- */
+#else
 External_Process*
 spawn_external (char* cmd)
 {
@@ -150,3 +174,4 @@ close_external (External_Process* ep)
     }
     wait(&rv);
 }
+#endif

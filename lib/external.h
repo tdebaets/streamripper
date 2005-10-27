@@ -25,7 +25,10 @@ typedef struct external_process External_Process;
 struct external_process
 {
     int mypipe[2];  /* 0 is for parent reading, 1 is for parent writing */
+#if defined (WIN32)
+#else
     pid_t pid;
+#endif
     int line_buf_idx;
     char line_buf[MAX_EXT_LINE_LEN];
     char album_buf[MAX_EXT_LINE_LEN];

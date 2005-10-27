@@ -161,11 +161,11 @@ SOURCE=.\winamp.h
 # PROP Default_Filter "ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 # Begin Source File
 
-SOURCE=..\..\..\sripper\winamp_plugin\bob.ico
+SOURCE=.\bob.ico
 # End Source File
 # Begin Source File
 
-SOURCE=.\bob.ico
+SOURCE=..\..\..\sripper\winamp_plugin\bob.ico
 # End Source File
 # Begin Source File
 
@@ -210,6 +210,14 @@ SOURCE=..\lib\debug.c
 # Begin Source File
 
 SOURCE=..\lib\debug.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\external.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\external.h
 # End Source File
 # Begin Source File
 
