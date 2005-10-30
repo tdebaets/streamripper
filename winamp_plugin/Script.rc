@@ -101,14 +101,14 @@ BEGIN
                     36,120,132,8
 END
 
-IDD_PROPPAGE_PATTERN DIALOG DISCARDABLE  0, 0, 210, 146
+IDD_PROPPAGE_PATTERN DIALOG DISCARDABLE  0, 0, 210, 153
 STYLE WS_CHILD | WS_DISABLED | WS_CAPTION
 CAPTION "Pattern"
 FONT 8, "MS Sans Serif"
 BEGIN
-    EDITTEXT        IDC_PATTERN_EDIT,14,23,167,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_PATTERN_EDIT,14,21,167,14,ES_AUTOHSCROLL
     LTEXT           "%S\tStream\n%A\tArtist\n%T\tTitle\n%a\tAlbum\n%D\tDate and time (per song)\n%d\tDate and time (per execution)\n%q\tSequence number (automatic detection)\n%Nq\tSequence number (starting from number N)\n%%\tPercent sign\n\nThe default pattern is ""%S/%A - %T""",
-                    IDC_STATIC,30,41,159,91
+                    IDC_STATIC,22,41,181,98
     LTEXT           "Output file pattern:",IDC_STATIC,7,7,54,8
 END
 
@@ -138,9 +138,20 @@ BEGIN
     COMBOBOX        IDC_OVERWRITE_COMPLETE,14,98,87,46,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "Overwrite Tracks in Complete:",IDC_STATIC,7,87,90,8
-    EDITTEXT        IDC_DROP_COUNT,155,153,42,14,ES_AUTOHSCROLL
-    LTEXT           "Number of initial songs to leave in incomplete:",
-                    IDC_STATIC,17,155,137,11
+    EDITTEXT        IDC_DROP_COUNT,7,153,42,14,ES_AUTOHSCROLL
+    LTEXT           "Number of initial songs to leave in incomplete",
+                    IDC_STATIC,52,156,151,11
+END
+
+IDD_PROPPAGE_EXTERNAL DIALOG DISCARDABLE  0, 0, 210, 154
+STYLE WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "External"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "Run &external helper program to get metadata:",
+                    IDC_EXTERNAL_COMMAND_CHECK,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,7,7,196,14
+    EDITTEXT        IDC_EXTERNAL_COMMAND,18,24,167,14,ES_AUTOHSCROLL
 END
 
 
@@ -189,7 +200,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 203
         TOPMARGIN, 7
-        BOTTOMMARGIN, 132
+        BOTTOMMARGIN, 139
     END
 
     IDD_PROPPAGE_FILE, DIALOG
@@ -198,6 +209,14 @@ BEGIN
         RIGHTMARGIN, 203
         TOPMARGIN, 7
         BOTTOMMARGIN, 167
+    END
+
+    IDD_PROPPAGE_EXTERNAL, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 203
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 147
     END
 END
 #endif    // APSTUDIO_INVOKED

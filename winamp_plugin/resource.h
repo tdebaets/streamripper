@@ -12,6 +12,7 @@
 #define IDR_POPUP_MENU                  110
 #define IDD_PROPPAGE_PATTERN            112
 #define IDD_PROPPAGE_FILE               113
+#define IDD_PROPPAGE_EXTERNAL           114
 #define _IDC_BASE                       1000
 #define IDC_ENABLE                      1090
 #define IDC_MAX_BYTES                   1120
@@ -43,6 +44,8 @@
 #define IDC_XS_OFFSET                   1373
 #define IDC_OVERWRITE_COMPLETE          1374
 #define IDC_PATTERN_EDIT                1376
+#define IDC_EXTERNAL_COMMAND_CHECK      1377
+#define IDC_EXTERNAL_COMMAND            1378
 #define ID_MENU_STARTRIPPING            40001
 #define ID_MENU_STOPRIPPING             40003
 #define ID_MENU_OPTIONS                 40004
@@ -54,7 +57,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        120
 #define _APS_NEXT_COMMAND_VALUE         40006
-#define _APS_NEXT_CONTROL_VALUE         1376
+#define _APS_NEXT_CONTROL_VALUE         1378
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

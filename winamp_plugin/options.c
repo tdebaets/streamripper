@@ -34,7 +34,7 @@
 #define DEFAULT_RELAY_PORT	8000
 #define APPNAME			"sripper"
 #define DEFAULT_USERAGENT	"FreeAmp/2.x"
-#define NUM_PROP_PAGES		5
+#define NUM_PROP_PAGES		6
 #define DEFAULT_SKINFILE	"srskin.bmp"
 //#define SKIN_PREV_LEFT	158
 //#define SKIN_PREV_TOP		79
@@ -65,9 +65,12 @@ static LRESULT CALLBACK pat_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 static LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK splitting_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, BOOL confile);
-static void saveload_conopts(HWND hWnd, BOOL saveload);
+static LRESULT CALLBACK external_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static void saveload_file_opts(HWND hWnd, BOOL saveload);
 static void saveload_pat_opts(HWND hWnd, BOOL saveload);
+static void saveload_conn_opts(HWND hWnd, BOOL saveload);
+static void saveload_splitting_opts(HWND hWnd, BOOL saveload);
+static void saveload_external_opts(HWND hWnd, BOOL saveload);
 static HPROPSHEETPAGE create_prop_sheet_page(HINSTANCE inst, DWORD iddres, DLGPROC dlgproc);
 static void add_useragent_strings();
 static BOOL get_skin_list();
@@ -282,6 +285,7 @@ void options_dialog_show(HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, 
     hPage[2] = create_prop_sheet_page(inst, IDD_PROPPAGE_PATTERN, pat_dlg);
     hPage[3] = create_prop_sheet_page(inst, IDD_PROPPAGE_SKIN, skin_dlg);
     hPage[4] = create_prop_sheet_page(inst, IDD_PROPPAGE_SPLITTING, splitting_dlg);
+    hPage[5] = create_prop_sheet_page(inst, IDD_PROPPAGE_EXTERNAL, external_dlg);
     memset(&psh, 0, sizeof(PROPSHEETHEADER));
     psh.dwSize = sizeof(PROPSHEETHEADER);
     psh.dwFlags = PSH_DEFAULT;
@@ -316,8 +320,8 @@ void options_dialog_show(HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, 
     free_skin_list();
 }
 
-
-void set_checkbox(HWND parent, int id, BOOL checked)
+void
+set_checkbox(HWND parent, int id, BOOL checked)
 {
     HWND hwndctl = GetDlgItem(parent, id);
     SendMessage(hwndctl, BM_SETCHECK, 
@@ -325,24 +329,26 @@ void set_checkbox(HWND parent, int id, BOOL checked)
 		(WPARAM)NULL);
 }
 
-BOOL get_checkbox(HWND parent, int id)
+BOOL
+get_checkbox(HWND parent, int id)
 {
     HWND hwndctl = GetDlgItem(parent, id);
     return SendMessage(hwndctl, BM_GETCHECK, (LPARAM)NULL, (WPARAM)NULL);
 }
 
-void set_to_checkbox(HWND parent, int id, u_short* popt, u_short flag)
+void
+set_to_checkbox(HWND parent, int id, u_short* popt, u_short flag)
 {
-    if (get_checkbox(parent, id))
+    if (get_checkbox(parent, id)) {
 	*popt |= flag;
-    else
-    {
+    } else {
 	if (OPT_FLAG_ISSET(flag, *popt))
 	    *popt ^= flag;
     }
 }
 
-void add_useragent_strings(HWND hdlg)
+void
+add_useragent_strings(HWND hdlg)
 {
     HWND hcombo = GetDlgItem(hdlg, IDC_USERAGENT);
 
@@ -382,71 +388,7 @@ add_overwrite_complete_strings(HWND hdlg)
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"When larger");
 }
 
-void saveload_file_opts(HWND hWnd, BOOL saveload)
-{
-    /*
-      - seperate dir
-      - overwrite
-      - add finished to winamp
-      - add seq numbers/count files
-      - append date
-      - add id3
-      - output dir
-      - keep incomplete
-      - rip single file check
-      - rip single file filename
-    */
-    if (saveload)
-    {
-	get_overwrite_combo(hWnd);
-	m_guiOpt->m_add_finshed_tracks_to_playlist = get_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST);
-	set_to_checkbox(hWnd, IDC_ADD_ID3, &m_opt->flags, OPT_ADD_ID3);
-	GetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory, SR_MAX_PATH);
-	set_to_checkbox(hWnd, IDC_KEEP_INCOMPLETE, &m_opt->flags, OPT_KEEP_INCOMPLETE);
-	set_to_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, &m_opt->flags, OPT_INDIVIDUAL_TRACKS);
-	set_to_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, &m_opt->flags, OPT_SINGLE_FILE_OUTPUT);
-	GetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->showfile_pattern, SR_MAX_PATH);
-	m_opt->dropcount = GetDlgItemInt(hWnd, IDC_DROP_COUNT, FALSE, FALSE);
-    }
-    else
-    {
-	set_overwrite_combo(hWnd);
-	set_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST, m_guiOpt->m_add_finshed_tracks_to_playlist);
-	set_checkbox(hWnd, IDC_ADD_ID3, OPT_FLAG_ISSET(m_opt->flags, OPT_ADD_ID3));
-	SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory);
-	set_checkbox(hWnd, IDC_KEEP_INCOMPLETE, OPT_FLAG_ISSET(m_opt->flags, OPT_KEEP_INCOMPLETE));
-	set_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, OPT_FLAG_ISSET(m_opt->flags, OPT_INDIVIDUAL_TRACKS));
-	set_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, OPT_FLAG_ISSET(m_opt->flags, OPT_SINGLE_FILE_OUTPUT));
-	SetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->showfile_pattern);
-	SetDlgItemInt(hWnd, IDC_DROP_COUNT, m_opt->dropcount, FALSE);
-    }
-}
-
-void saveload_pat_opts(HWND hWnd, BOOL saveload)
-{
-    /*
-      - seperate dir
-      - overwrite
-      - add finished to winamp
-      - add seq numbers/count files
-      - append date
-      - add id3
-      - output dir
-      - keep incomplete
-      - rip single file check
-      - rip single file filename
-    */
-    if (saveload)
-    {
-	GetDlgItemText(hWnd, IDC_PATTERN_EDIT, m_opt->output_pattern, SR_MAX_PATH);
-    }
-    else
-    {
-	SetDlgItemText(hWnd, IDC_PATTERN_EDIT, m_opt->output_pattern);
-    }
-}
-
-void saveload_conopts(HWND hWnd, BOOL saveload)
+void saveload_conn_opts(HWND hWnd, BOOL saveload)
 {
     /*
       - reconnect
@@ -484,8 +426,66 @@ void saveload_conopts(HWND hWnd, BOOL saveload)
     }
 }
 
+void saveload_file_opts(HWND hWnd, BOOL saveload)
+{
+    /*
+      - seperate dir
+      - overwrite
+      - add finished to winamp
+      - add seq numbers/count files
+      - append date
+      - add id3
+      - output dir
+      - keep incomplete
+      - rip single file check
+      - rip single file filename
+    */
+    if (saveload) {
+	get_overwrite_combo(hWnd);
+	m_guiOpt->m_add_finshed_tracks_to_playlist = get_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST);
+	set_to_checkbox(hWnd, IDC_ADD_ID3, &m_opt->flags, OPT_ADD_ID3);
+	GetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory, SR_MAX_PATH);
+	set_to_checkbox(hWnd, IDC_KEEP_INCOMPLETE, &m_opt->flags, OPT_KEEP_INCOMPLETE);
+	set_to_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, &m_opt->flags, OPT_INDIVIDUAL_TRACKS);
+	set_to_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, &m_opt->flags, OPT_SINGLE_FILE_OUTPUT);
+	GetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->showfile_pattern, SR_MAX_PATH);
+	m_opt->dropcount = GetDlgItemInt(hWnd, IDC_DROP_COUNT, FALSE, FALSE);
+    } else {
+	set_overwrite_combo(hWnd);
+	set_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST, m_guiOpt->m_add_finshed_tracks_to_playlist);
+	set_checkbox(hWnd, IDC_ADD_ID3, OPT_FLAG_ISSET(m_opt->flags, OPT_ADD_ID3));
+	SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory);
+	set_checkbox(hWnd, IDC_KEEP_INCOMPLETE, OPT_FLAG_ISSET(m_opt->flags, OPT_KEEP_INCOMPLETE));
+	set_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, OPT_FLAG_ISSET(m_opt->flags, OPT_INDIVIDUAL_TRACKS));
+	set_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, OPT_FLAG_ISSET(m_opt->flags, OPT_SINGLE_FILE_OUTPUT));
+	SetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->showfile_pattern);
+	SetDlgItemInt(hWnd, IDC_DROP_COUNT, m_opt->dropcount, FALSE);
+    }
+}
+
+void saveload_pat_opts(HWND hWnd, BOOL saveload)
+{
+    /*
+      - seperate dir
+      - overwrite
+      - add finished to winamp
+      - add seq numbers/count files
+      - append date
+      - add id3
+      - output dir
+      - keep incomplete
+      - rip single file check
+      - rip single file filename
+    */
+    if (saveload) {
+	GetDlgItemText(hWnd, IDC_PATTERN_EDIT, m_opt->output_pattern, SR_MAX_PATH);
+    } else {
+	SetDlgItemText(hWnd, IDC_PATTERN_EDIT, m_opt->output_pattern);
+    }
+}
+
 void
-saveload_splittingopts(HWND hWnd, BOOL saveload)
+saveload_splitting_opts(HWND hWnd, BOOL saveload)
 {
     /*
       - skew
@@ -512,6 +512,23 @@ saveload_splittingopts(HWND hWnd, BOOL saveload)
     }
 }
 
+void
+saveload_external_opts (HWND hWnd, BOOL saveload)
+{
+    /*
+      - external check
+      - external cmd
+    */
+    if (saveload) {
+	set_to_checkbox(hWnd, IDC_EXTERNAL_COMMAND_CHECK, &m_opt->flags, OPT_EXTERNAL_CMD);
+	GetDlgItemText(hWnd, IDC_EXTERNAL_COMMAND, m_opt->ext_cmd, SR_MAX_PATH);
+    } else {
+	set_checkbox(hWnd, IDC_EXTERNAL_COMMAND_CHECK, OPT_FLAG_ISSET(m_opt->flags, OPT_EXTERNAL_CMD));
+	SetDlgItemText(hWnd, IDC_EXTERNAL_COMMAND, m_opt->ext_cmd);
+    }
+}
+
+
 // These are wrappers for property page callbacks
 // bassicly i didn't want to copy past the entire dialog proc 
 // it'll dispatch the calls forward with a confile boolean which tells if
@@ -533,8 +550,13 @@ LRESULT CALLBACK splitting_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 {
     return options_dlg(hWnd, message, wParam, lParam, 4);
 }
+LRESULT CALLBACK external_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    return options_dlg(hWnd, message, wParam, lParam, 5);
+}
 
-BOOL populate_skin_list(HWND dlg)
+BOOL
+populate_skin_list (HWND dlg)
 {
     int i;
     HWND hlist = GetDlgItem(dlg, IDC_SKIN_LIST);
@@ -556,7 +578,8 @@ BOOL populate_skin_list(HWND dlg)
     return TRUE;
 }
 
-LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK
+skin_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch(message)
     {
@@ -612,8 +635,9 @@ LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 /* confile == 2  -> file_dlg */
 /* confile == 3  -> pat_dlg */
 /* confile == 4  -> splitting_dlg */
+/* confile == 5  -> external_dlg */
 LRESULT CALLBACK
-options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
+options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 {
     int wmId, wmEvent;
 
@@ -625,7 +649,7 @@ options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 
 	switch (confile) {
 	case 1:
-	    saveload_conopts(hWnd, FALSE);
+	    saveload_conn_opts(hWnd, FALSE);
 	    break;
 	case 2:
 	    saveload_file_opts(hWnd, FALSE);
@@ -634,7 +658,10 @@ options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 	    saveload_pat_opts(hWnd, FALSE);
 	    break;
 	case 4:
-	    saveload_splittingopts(hWnd, FALSE);
+	    saveload_splitting_opts(hWnd, FALSE);
+	    break;
+	case 5:
+	    saveload_external_opts(hWnd, FALSE);
 	    break;
 	}
 	PropSheet_UnChanged(GetParent(hWnd), hWnd);
@@ -704,6 +731,8 @@ options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 	case IDC_OVERWRITE_COMPLETE:
 	case IDC_RIP_INDIVIDUAL_CHECK:
 	case IDC_PATTERN_EDIT:
+	case IDC_EXTERNAL_COMMAND:
+	case IDC_EXTERNAL_COMMAND_CHECK:
 	    PropSheet_Changed(GetParent(hWnd), hWnd);
 	    break;
 	}
@@ -711,21 +740,24 @@ options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
     case WM_NOTIFY:
 	{
 	    NMHDR* phdr = (NMHDR*) lParam;
-	    switch ( phdr->code )
+	    switch (phdr->code)
 	    {
 	    case PSN_APPLY:
 		switch (confile) {
 		case 1:
-		    saveload_conopts(hWnd, TRUE);
+		    saveload_conn_opts (hWnd, TRUE);
 		    break;
 		case 2:
-		    saveload_file_opts(hWnd, TRUE);
+		    saveload_file_opts (hWnd, TRUE);
 		    break;
 		case 3:
-		    saveload_pat_opts(hWnd, TRUE);
+		    saveload_pat_opts (hWnd, TRUE);
 		    break;
 		case 4:
-		    saveload_splittingopts(hWnd, TRUE);
+		    saveload_splitting_opts (hWnd, TRUE);
+		    break;
+		case 5:
+		    saveload_external_opts (hWnd, TRUE);
 		    break;
 		}
 	    }
@@ -734,7 +766,8 @@ options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
     return FALSE;
 }
 
-BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
+BOOL
+options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 {
     char desktop_path[MAX_INI_LINE_LEN];
     char filename[MAX_INI_LINE_LEN];
@@ -744,7 +777,8 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	    check_max_btyes,
 	    keep_incomplete,
 	    rip_individual_tracks,
-	    rip_single_file;
+	    rip_single_file,
+	    use_ext_cmd;
     char overwrite_string[MAX_INI_LINE_LEN];
 
     // GCS uncomment these to get debugging log
@@ -762,11 +796,6 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	return FALSE;
 
     strcat(filename, "Plugins\\sripper.ini");
-
-#if defined (commentout)
-    opt->flags = 0;
-    opt->flags |= OPT_SEARCH_PORTS;			// not having this caused a bad bug, must remember this.
-#endif
 
     GetPrivateProfileString(APPNAME, "url", "", opt->url, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "proxy", "", opt->proxyurl, MAX_INI_LINE_LEN, filename);
@@ -804,6 +833,9 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     opt->sp_opt.xs_padding_2 = GetPrivateProfileInt(APPNAME, "xs_padding_2", 
 	opt->sp_opt.xs_padding_2, filename);
 
+    use_ext_cmd = GetPrivateProfileInt(APPNAME, "use_ext_cmd", FALSE, filename);
+    GetPrivateProfileString(APPNAME, "ext_cmd", "", opt->ext_cmd, MAX_INI_LINE_LEN, filename);
+
     guiOpt->m_add_finshed_tracks_to_playlist = GetPrivateProfileInt(APPNAME, "add_tracks_to_playlist", FALSE, filename);
     guiOpt->m_start_minimized = GetPrivateProfileInt(APPNAME, "start_minimized", FALSE, filename);
     guiOpt->oldpos.x = GetPrivateProfileInt(APPNAME, "window_x", 0, filename);
@@ -821,7 +853,7 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 #if defined (commentout)
     opt->flags = 0;
 #endif
-    opt->flags |= OPT_SEARCH_PORTS;			// not having this caused a bad bug, must remember this.
+    opt->flags |= OPT_SEARCH_PORTS;	// not having this caused a bad bug, must remember this.
     if (auto_reconnect) opt->flags |= OPT_AUTO_RECONNECT;
     if (make_relay) opt->flags |= OPT_MAKE_RELAY;
     if (add_id3) opt->flags |= OPT_ADD_ID3;
@@ -829,6 +861,8 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     if (keep_incomplete) opt->flags |= OPT_KEEP_INCOMPLETE;
     if (rip_individual_tracks) opt->flags |= OPT_INDIVIDUAL_TRACKS;
     if (rip_single_file) opt->flags |= OPT_SINGLE_FILE_OUTPUT;
+    if (use_ext_cmd) opt->flags |= OPT_EXTERNAL_CMD;
+
 
     /* Note, there is no way to change the rules file location (for now) */
     if (!winamp_get_path(opt->rules_file))
@@ -840,7 +874,8 @@ BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 }
 
 
-BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
+BOOL
+options_save (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 {
     char filename[MAX_INI_LINE_LEN];
     FILE *fp;
@@ -884,6 +919,9 @@ BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     fprintf(fp, "xs_search_window_2=%d\n", opt->sp_opt.xs_search_window_2);
     fprintf(fp, "xs_padding_1=%d\n", opt->sp_opt.xs_padding_1);
     fprintf(fp, "xs_padding_2=%d\n", opt->sp_opt.xs_padding_2);
+
+    fprintf(fp, "use_ext_cmd=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_EXTERNAL_CMD));
+    fprintf(fp, "ext_cmd=%s\n", opt->ext_cmd);
 
     fprintf(fp, "add_tracks_to_playlist=%d\n", guiOpt->m_add_finshed_tracks_to_playlist);
     fprintf(fp, "start_minimized=%d\n", guiOpt->m_start_minimized);

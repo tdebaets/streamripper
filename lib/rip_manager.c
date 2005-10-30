@@ -574,7 +574,7 @@ start_ripping()
 
     /* Start up external program to get metadata. */
     m_ripinfo.ep = 0;
-    if (m_options.ext_cmd[0]) {
+    if (GET_EXTERNAL_CMD(m_options.flags)) {
 	m_ripinfo.ep = spawn_external (m_options.ext_cmd);
     }
 

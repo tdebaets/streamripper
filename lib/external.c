@@ -110,7 +110,7 @@ spawn_external (char* cmd)
 
     SECURITY_ATTRIBUTES saAttr; 
     PROCESS_INFORMATION piProcInfo; 
-    STARTUPINFO siStartInfo;
+    STARTUPINFO startup_info;
     BOOL rc;
 
     ep = alloc_ep ();
@@ -146,12 +146,13 @@ spawn_external (char* cmd)
 
     /* create the child process */
     ZeroMemory (&piProcInfo, sizeof(PROCESS_INFORMATION));
-    ZeroMemory (&siStartInfo, sizeof(STARTUPINFO));
-    siStartInfo.cb = sizeof(STARTUPINFO); 
-    siStartInfo.hStdError = hChildStdoutWr;
-    siStartInfo.hStdOutput = hChildStdoutWr;
-    siStartInfo.hStdInput = hChildStdinRd;
-    siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+    ZeroMemory (&startup_info, sizeof(STARTUPINFO));
+    startup_info.cb = sizeof(STARTUPINFO); 
+    startup_info.hStdError = hChildStdoutWr;
+    startup_info.hStdOutput = hChildStdoutWr;
+    startup_info.hStdInput = hChildStdinRd;
+    startup_info.dwFlags |= STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+    startup_info.wShowWindow = SW_HIDE;
 
     rc = CreateProcess (
 		NULL,          // executable name
@@ -162,7 +163,7 @@ spawn_external (char* cmd)
 		0,             // creation flags 
 		NULL,          // use parent's environment 
 		NULL,          // use parent's current directory 
-		&siStartInfo,  // STARTUPINFO pointer 
+		&startup_info, // STARTUPINFO pointer
 		&piProcInfo);  // receives PROCESS_INFORMATION 
     if (rc == 0) {
         debug_printf ("CreateProcess() failed\n");

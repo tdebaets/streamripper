@@ -325,6 +325,7 @@ void parse_arguments(int argc, char **argv)
 	    strncpy(m_opt.output_pattern, argv[i], SR_MAX_PATH);
 	    break;
 	case 'E':
+	    m_opt.flags |= OPT_EXTERNAL_CMD;
 	    i++;
 	    strncpy(m_opt.ext_cmd, argv[i], SR_MAX_PATH);
 	    break;
