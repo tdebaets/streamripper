@@ -24,9 +24,11 @@
 typedef struct external_process External_Process;
 struct external_process
 {
-    int mypipe[2];  /* 0 is for parent reading, 1 is for parent writing */
 #if defined (WIN32)
+    int mypipe[2];  /* 0 is for parent reading, 1 is for parent writing */
+    HANDLE pid;
 #else
+    int mypipe[2];  /* 0 is for parent reading, 1 is for parent writing */
     pid_t pid;
 #endif
     int line_buf_idx;

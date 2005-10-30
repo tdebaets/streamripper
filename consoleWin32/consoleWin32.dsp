@@ -128,6 +128,14 @@ SOURCE=..\lib\debug.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\lib\external.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\external.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\lib\filelib.c
 # End Source File
 # Begin Source File
@@ -212,6 +220,10 @@ SOURCE=..\lib\socklib.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\lib\srconfig.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\lib\srtypes.h
 # End Source File
 # Begin Source File
@@ -225,6 +237,10 @@ SOURCE=..\lib\threadlib.h
 # Begin Source File
 
 SOURCE=..\lib\types.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\uce_dirent.h
 # End Source File
 # Begin Source File
 

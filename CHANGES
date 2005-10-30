@@ -1,5 +1,6 @@
 New for 1.61.15
 ---------------
+Fri 10-21-2005
 * Fix a problem where streamripper aborts with SR_ERROR_BUFFER_EMPTY
 * Improve splitting code to add correct amount of padding
 * Add winamp plugin GUI for -k flag
