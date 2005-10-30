@@ -19,5 +19,5 @@ while (1) {
     $end_of_record = ".\n";
     $meta_data = $title . $artist . $end_of_record;
     syswrite (STDOUT, $meta_data, length($meta_data));
-    sleep (1);
+    sleep (10);
 }

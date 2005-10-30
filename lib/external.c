@@ -32,37 +32,21 @@
 #include "external.h"
 #include "compat.h"
 
-/* REFERENCES:
+/* Unix:
 http://www.cs.uleth.ca/~holzmann/C/system/pipeforkexec.html
 http://www.ecst.csuchico.edu/~beej/guide/ipc/fork.html
-for nonblocking, on windows don't use fcntl(), use ioctlsocket() */
-/* Win32
+for nonblocking, on windows don't use fcntl(), use ioctlsocket()
+*/
+/* Win32:
 Non-blocking pipe using PeekNamedPipe():
 http://list-archive.xemacs.org/xemacs-beta/199910/msg00263.html
 */
 
-/* ----------------------------- WIN32 VERSION --------------------------- */
-#if defined (WIN32)
-
-HANDLE hChildStdinRd, hChildStdinWr,  
-   hChildStdoutRd, hChildStdoutWr, 
-   hStdout;
- 
-BOOL CreateChildProcess(char* cmd); 
-VOID WriteToPipe(VOID); 
-VOID ReadFromPipe(VOID); 
-VOID ErrorExit(LPTSTR); 
-VOID ErrMsg(LPTSTR, BOOL); 
-
+/* ----------------------------- SHARED FUNCTIONS ------------------------ */
 External_Process*
-spawn_external (char* cmd)
+alloc_ep (void)
 {
     External_Process* ep;
-    SECURITY_ATTRIBUTES saAttr; 
-    PROCESS_INFORMATION piProcInfo; 
-    STARTUPINFO siStartInfo;
-    BOOL rc;
-
     ep = (External_Process*) malloc (sizeof (External_Process));
     if (!ep) return 0;
     ep->line_buf[0] = 0;
@@ -70,6 +54,67 @@ spawn_external (char* cmd)
     ep->album_buf[0] = 0;
     ep->artist_buf[0] = 0;
     ep->title_buf[0] = 0;
+    return ep;
+}
+
+int
+parse_external_byte (External_Process* ep, TRACK_INFO* ti, char c)
+{
+    int got_metadata = 0;
+
+    if (c != '\r' && c != '\n') {
+	if (ep->line_buf_idx < MAX_EXT_LINE_LEN-1) {
+	    ep->line_buf[ep->line_buf_idx++] = c;
+	    ep->line_buf[ep->line_buf_idx] = 0;
+	}
+    } else {
+	if (!strcmp (".",ep->line_buf)) {
+	    /* End of record */
+	    strcpy (ti->artist,ep->artist_buf);
+	    strcpy (ti->album,ep->album_buf);
+	    strcpy (ti->title,ep->title_buf);
+	    snprintf (ti->raw_metadata, MAX_EXT_LINE_LEN, "%s - %s",
+		      ti->artist, ti->title);
+	    ti->have_track_info = 1;
+	    ti->save_track = TRUE;
+
+	    ep->artist_buf[0] = 0;
+	    ep->album_buf[0] = 0;
+	    ep->title_buf[0] = 0;
+	    got_metadata = 1;
+	} else if (!strncmp("ARTIST=",ep->line_buf,strlen("ARTIST="))) {
+	    strcpy (ep->artist_buf, &ep->line_buf[strlen("ARTIST=")]);
+	} else if (!strncmp("ALBUM=",ep->line_buf,strlen("ALBUM="))) {
+	    strcpy (ep->album_buf, &ep->line_buf[strlen("ALBUM=")]);
+	} else if (!strncmp("TITLE=",ep->line_buf,strlen("TITLE="))) {
+	    strcpy (ep->title_buf, &ep->line_buf[strlen("TITLE=")]);
+	}
+	ep->line_buf[0] = 0;
+	ep->line_buf_idx = 0;
+    }
+
+    return got_metadata;
+}
+
+
+/* ----------------------------- WIN32 FUNCTIONS ------------------------- */
+#if defined (WIN32)
+ 
+External_Process*
+spawn_external (char* cmd)
+{
+    External_Process* ep;
+    HANDLE hChildStdinRd, hChildStdinWr,  
+	    hChildStdoutWr, 
+	    hStdout;
+
+    SECURITY_ATTRIBUTES saAttr; 
+    PROCESS_INFORMATION piProcInfo; 
+    STARTUPINFO siStartInfo;
+    BOOL rc;
+
+    ep = alloc_ep ();
+    if (!ep) return 0;
 
     /* Set the bInheritHandle flag so pipe handles are inherited. */
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES); 
@@ -77,31 +122,31 @@ spawn_external (char* cmd)
     saAttr.lpSecurityDescriptor = NULL; 
 
     /* Get the handle to the current STDOUT.  */
-    hStdout = GetStdHandle(STD_OUTPUT_HANDLE); 
+    hStdout = GetStdHandle (STD_OUTPUT_HANDLE); 
  
     /* Create a pipe for the child process's STDOUT. */
-    if (! CreatePipe(&hChildStdoutRd, &hChildStdoutWr, &saAttr, 0)) {
+    if (!CreatePipe (&ep->mypipe, &hChildStdoutWr, &saAttr, 0)) {
         debug_printf ("Stdout pipe creation failed\n");
 	free (ep);
 	return 0;
     }
 
     /* Ensure the read handle to the pipe for STDOUT is not inherited.*/
-    SetHandleInformation( hChildStdoutRd, HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation (ep->mypipe, HANDLE_FLAG_INHERIT, 0);
 
     /* Create a pipe for the child process's STDIN. */
-    if (! CreatePipe(&hChildStdinRd, &hChildStdinWr, &saAttr, 0)) {
+    if (!CreatePipe (&hChildStdinRd, &hChildStdinWr, &saAttr, 0)) {
         debug_printf ("Stdin pipe creation failed\n");
 	free (ep);
 	return 0;
     }
 
     /* Ensure the write handle to the pipe for STDIN is not inherited. */
-    SetHandleInformation( hChildStdinWr, HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation (hChildStdinWr, HANDLE_FLAG_INHERIT, 0);
 
     /* create the child process */
-    ZeroMemory( &piProcInfo, sizeof(PROCESS_INFORMATION) );
-    ZeroMemory( &siStartInfo, sizeof(STARTUPINFO) );
+    ZeroMemory (&piProcInfo, sizeof(PROCESS_INFORMATION));
+    ZeroMemory (&siStartInfo, sizeof(STARTUPINFO));
     siStartInfo.cb = sizeof(STARTUPINFO); 
     siStartInfo.hStdError = hChildStdoutWr;
     siStartInfo.hStdOutput = hChildStdoutWr;
@@ -120,11 +165,12 @@ spawn_external (char* cmd)
 		&siStartInfo,  // STARTUPINFO pointer 
 		&piProcInfo);  // receives PROCESS_INFORMATION 
     if (rc == 0) {
+        debug_printf ("CreateProcess() failed\n");
 	free (ep);
 	return 0;
     }
-    CloseHandle(piProcInfo.hProcess);
-    CloseHandle(piProcInfo.hThread);
+    CloseHandle (piProcInfo.hProcess);
+    CloseHandle (piProcInfo.hThread);
 
     return ep;
 }
@@ -141,7 +187,7 @@ read_external (External_Process* ep, TRACK_INFO* ti)
 
     while (1) {
 	DWORD bytes_avail = 0;
-	rc = PeekNamedPipe(hChildStdoutRd, NULL, 0, NULL, &bytes_avail, NULL);
+	rc = PeekNamedPipe (ep->mypipe, NULL, 0, NULL, &bytes_avail, NULL);
 	if (!rc) {
 	    DWORD error_code;
 	    /* Pipe closed? */
@@ -155,43 +201,28 @@ read_external (External_Process* ep, TRACK_INFO* ti)
 	    /* Pipe blocked */
 	    return got_metadata;
 	}
-	rc = ReadFile (hChildStdoutRd, &c, 1, &num_read, NULL);
+	rc = ReadFile (ep->mypipe, &c, 1, &num_read, NULL);
 	if (rc > 0 && num_read > 0) {
-	    if (c != '\r' && c != '\n') {
-		if (ep->line_buf_idx < MAX_EXT_LINE_LEN-1) {
-		    ep->line_buf[ep->line_buf_idx++] = c;
-		    ep->line_buf[ep->line_buf_idx] = 0;
-		}
-	    } else {
-		if (!strcmp (".",ep->line_buf)) {
-		    /* End of record */
-		    strcpy (ti->artist,ep->artist_buf);
-		    strcpy (ti->album,ep->album_buf);
-		    strcpy (ti->title,ep->title_buf);
-		    snprintf (ti->raw_metadata, MAX_EXT_LINE_LEN, "%s - %s",
-			      ti->artist, ti->title);
-		    ti->have_track_info = 1;
-		    ti->save_track = TRUE;
-
-		    ep->artist_buf[0] = 0;
-		    ep->album_buf[0] = 0;
-		    ep->title_buf[0] = 0;
-		    got_metadata = 1;
-		} else if (!strncmp("ARTIST=",ep->line_buf,strlen("ARTIST="))) {
-		    strcpy (ep->artist_buf, &ep->line_buf[strlen("ARTIST=")]);
-		} else if (!strncmp("ALBUM=",ep->line_buf,strlen("ALBUM="))) {
-		    strcpy (ep->album_buf, &ep->line_buf[strlen("ALBUM=")]);
-		} else if (!strncmp("TITLE=",ep->line_buf,strlen("TITLE="))) {
-		    strcpy (ep->title_buf, &ep->line_buf[strlen("TITLE=")]);
-		}
-		ep->line_buf[0] = 0;
-		ep->line_buf_idx = 0;
+	    int got_meta_byte;
+	    got_meta_byte = parse_external_byte (ep, ti, c);
+	    if (got_meta_byte) {
+		got_metadata = 1;
 	    }
 	}
     }
 }
 
-/* ----------------------------- UNIX VERSION --------------------------- */
+/* GCS FIX: This is never actually called. */
+void
+close_external (External_Process* ep)
+{
+    /* My best guess is that I need to keep the handle to the process
+       open so that I can close it here using TerminateProcess() */
+
+    free (ep);
+}
+
+/* ----------------------------- UNIX FUNCTIONS -------------------------- */
 #else
 External_Process*
 spawn_external (char* cmd)
@@ -199,13 +230,8 @@ spawn_external (char* cmd)
     External_Process* ep;
     int rc;
 
-    ep = (External_Process*) malloc (sizeof (External_Process));
+    ep = alloc_ep ();
     if (!ep) return 0;
-    ep->line_buf[0] = 0;
-    ep->line_buf_idx = 0;
-    ep->album_buf[0] = 0;
-    ep->artist_buf[0] = 0;
-    ep->title_buf[0] = 0;
 
     /* Create the pipes */
     rc = pipe (ep->mypipe);
@@ -252,37 +278,11 @@ read_external (External_Process* ep, TRACK_INFO* ti)
     while (1) {
 	rc = read (ep->mypipe[0],&c,1);
 	if (rc > 0) {
-	    if (c != '\r' && c != '\n') {
-		if (ep->line_buf_idx < MAX_EXT_LINE_LEN-1) {
-		    ep->line_buf[ep->line_buf_idx++] = c;
-		    ep->line_buf[ep->line_buf_idx] = 0;
-		}
-		continue;
-	    }
-	    if (!strcmp (".",ep->line_buf)) {
-		/* End of record */
-		strcpy (ti->artist,ep->artist_buf);
-		strcpy (ti->album,ep->album_buf);
-		strcpy (ti->title,ep->title_buf);
-		snprintf (ti->raw_metadata, MAX_EXT_LINE_LEN, "%s - %s",
-			  ti->artist, ti->title);
-		ti->have_track_info = 1;
-		ti->save_track = TRUE;
-
-		ep->artist_buf[0] = 0;
-		ep->album_buf[0] = 0;
-		ep->title_buf[0] = 0;
+	    int got_meta_byte;
+	    got_meta_byte = parse_external_byte (ep, ti, c);
+	    if (got_meta_byte) {
 		got_metadata = 1;
-	    } else if (!strncmp("ARTIST=",ep->line_buf,strlen("ARTIST="))) {
-		strcpy (ep->artist_buf, &ep->line_buf[strlen("ARTIST=")]);
-	    } else if (!strncmp("ALBUM=",ep->line_buf,strlen("ALBUM="))) {
-		strcpy (ep->album_buf, &ep->line_buf[strlen("ALBUM=")]);
-	    } else if (!strncmp("TITLE=",ep->line_buf,strlen("TITLE="))) {
-		strcpy (ep->title_buf, &ep->line_buf[strlen("TITLE=")]);
 	    }
-	    ep->line_buf[0] = 0;
-	    ep->line_buf_idx = 0;
-	    continue;
 	} else if (rc == 0) {
 	    /* Pipe closed */
 	    /* GCS FIX: Restart external program if pipe closed */
@@ -312,5 +312,6 @@ close_external (External_Process* ep)
 	kill (ep->pid,SIGKILL);
     }
     wait(&rv);
+    free (ep);
 }
 #endif
