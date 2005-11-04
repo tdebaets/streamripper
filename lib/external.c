@@ -35,11 +35,12 @@
 /* Unix:
 http://www.cs.uleth.ca/~holzmann/C/system/pipeforkexec.html
 http://www.ecst.csuchico.edu/~beej/guide/ipc/fork.html
-for nonblocking, on windows don't use fcntl(), use ioctlsocket()
 */
 /* Win32:
 Non-blocking pipe using PeekNamedPipe():
 http://list-archive.xemacs.org/xemacs-beta/199910/msg00263.html
+Using GenerateConsoleCtrlEvent():
+http://www.byte.com/art/9410/sec14/art3.htm
 */
 
 /* ----------------------------- SHARED FUNCTIONS ------------------------ */
@@ -99,6 +100,9 @@ parse_external_byte (External_Process* ep, TRACK_INFO* ti, char c)
 
 /* ----------------------------- WIN32 FUNCTIONS ------------------------- */
 #if defined (WIN32)
+
+HANDLE hproc = 0;
+DWORD pid = 0;
  
 External_Process*
 spawn_external (char* cmd)
@@ -112,6 +116,7 @@ spawn_external (char* cmd)
     PROCESS_INFORMATION piProcInfo; 
     STARTUPINFO startup_info;
     BOOL rc;
+    DWORD creation_flags;
 
     ep = alloc_ep ();
     if (!ep) return 0;
@@ -154,22 +159,27 @@ spawn_external (char* cmd)
     startup_info.dwFlags |= STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
     startup_info.wShowWindow = SW_HIDE;
 
+    creation_flags = 0;
+    creation_flags |= CREATE_NEW_PROCESS_GROUP;
+
     rc = CreateProcess (
-		NULL,          // executable name
-		cmd,	       // command line 
-		NULL,          // process security attributes 
-		NULL,          // primary thread security attributes 
-		TRUE,          // handles are inherited 
-		0,             // creation flags 
-		NULL,          // use parent's environment 
-		NULL,          // use parent's current directory 
-		&startup_info, // STARTUPINFO pointer
-		&piProcInfo);  // receives PROCESS_INFORMATION 
+		NULL,           // executable name
+		cmd,	        // command line 
+		NULL,           // process security attributes 
+		NULL,           // primary thread security attributes 
+		TRUE,           // handles are inherited 
+		creation_flags, // creation flags 
+		NULL,           // use parent's environment 
+		NULL,           // use parent's current directory 
+		&startup_info,  // STARTUPINFO pointer
+		&piProcInfo);   // receives PROCESS_INFORMATION 
     if (rc == 0) {
         debug_printf ("CreateProcess() failed\n");
 	free (ep);
 	return 0;
     }
+    //hproc = piProcInfo.hProcess;
+    pid = piProcInfo.dwProcessId;
     CloseHandle (piProcInfo.hProcess);
     CloseHandle (piProcInfo.hThread);
 
@@ -202,6 +212,7 @@ read_external (External_Process* ep, TRACK_INFO* ti)
 	    /* Pipe blocked */
 	    return got_metadata;
 	}
+	/* Pipe has data available, so read it */
 	rc = ReadFile (ep->mypipe, &c, 1, &num_read, NULL);
 	if (rc > 0 && num_read > 0) {
 	    int got_meta_byte;
@@ -213,14 +224,20 @@ read_external (External_Process* ep, TRACK_INFO* ti)
     }
 }
 
-/* GCS FIX: This is never actually called. */
 void
-close_external (External_Process* ep)
+close_external (External_Process** epp)
 {
-    /* My best guess is that I need to keep the handle to the process
-       open so that I can close it here using TerminateProcess() */
+    External_Process* ep = *epp;
+    BOOL rc;
+
+    rc = GenerateConsoleCtrlEvent (CTRL_C_EVENT, pid);
+    debug_printf ("GenerateConsoleCtrlEvent returned %d\n", rc);
+
+    /* GCS FIX: If console control event fails, we should kill 
+       the process using TerminateProcess() */
 
     free (ep);
+    *epp = 0;
 }
 
 /* ----------------------------- UNIX FUNCTIONS -------------------------- */
@@ -299,11 +316,12 @@ read_external (External_Process* ep, TRACK_INFO* ti)
     }
 }
 
-/* GCS FIX: This is never actually called. */
 void
-close_external (External_Process* ep)
+close_external (External_Process** epp)
 {
     int rv;
+    External_Process* ep = *epp;
+
     printf ("I should be exiting soon...\n");
     kill (ep->pid,SIGTERM);
     usleep (0);
@@ -314,5 +332,6 @@ close_external (External_Process* ep)
     }
     wait(&rv);
     free (ep);
+    *epp = 0;
 }
 #endif

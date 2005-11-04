@@ -41,6 +41,6 @@ struct external_process
 
 External_Process* spawn_external (char* cmd);
 int read_external (External_Process* ep, TRACK_INFO* ti);
-void close_external (External_Process* ep);
+void close_external (External_Process** epp);
 
 #endif

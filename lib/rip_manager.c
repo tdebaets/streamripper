@@ -454,12 +454,14 @@ rip_manager_stop()
     threadlib_waitfor_sem(&m_started_sem);
     m_ripping = FALSE;
 
-    /* Destroy the parsing rules */
-    /* destroy_metadata_parser (); */
-
     // Causes the code running in the thread to bail
     debug_printf ("Closing m_sock...\n");
     socklib_close(&m_sock);
+
+    // Kill external process
+    if (m_ripinfo.ep) {
+	close_external (&m_ripinfo.ep);
+    }
 
     // blocks until everything is ok and closed
     debug_printf ("Waiting for m_hthread to close...\n");
