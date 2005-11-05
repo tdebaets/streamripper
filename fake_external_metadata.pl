@@ -1,6 +1,17 @@
 #! /usr/bin/perl
-
-use LWP::Simple;
+###########################################################################
+# This is an external script that I use for testing streamripper's 
+# external program interface.  It implements the following:
+#
+#   1) Generates (random) title and artist information
+#   2) Sends the information to streamripper
+# 
+# To invoke the script, do this:
+#    streamripper URL -E "perl fake_external_metadata.pl META_URL"
+#
+# This script is in the public domain. You are free to use, modify and 
+# redistribute without restrictions.
+###########################################################################
 
 $repno = 1 + rand * 5;
 

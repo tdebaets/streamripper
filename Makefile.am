@@ -59,8 +59,9 @@ streamripper_SOURCES = \
 	lib/uce_dirent.h \
 	lib/util.h
 
-##	lib/ripshout.c \
-##	lib/ripshout.h \
+if USE_INCLUDED_ARGV
+streamripper_SOURCES += lib/argv.c
+endif
 
 libmad_manifest = \
 	libmad-0.15.1b/README \
@@ -240,6 +241,7 @@ DIST_SUBDIRS =
 
 streamripper_LDADD = @LIBMAD@ @LIBREGEX@ @THREADLIBS@ \
 	@LTLIBICONV@ @LIBCHARSET@ \
+	@LIBIBERTY_LIBS@ \
 	@OGG_LIBS@ @VORBIS_LIBS@
 
 ACLOCAL_AMFLAGS = -I m4

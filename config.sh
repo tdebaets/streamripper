@@ -19,4 +19,4 @@ cd ..
 
 rm -f config.cache
 ## ./configure
-./configure --with-included-libmad --with-included-tre
+./configure --with-included-libmad --with-included-tre --with-included-argv

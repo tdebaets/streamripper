@@ -33,34 +33,31 @@ AC_ARG_WITH(included-tre,
   force_use_included_tre=no)
 dnl AC_MSG_RESULT($force_use_included_tre)
 
-dnl AC_ARG_ENABLE(static,
-dnl     [  --enable-static       	link static against libmad shipped with streamripper],
-dnl     enable_static=$enableval, enable_static=no)
-dnl AM_CONDITIONAL(STATIC, test $enable_static = yes)
+AC_ARG_WITH(included-argv,
+  [  --with-included-argv use argv.c included with streamripper],
+  force_use_included_argv=$withval,
+  force_use_included_argv=no)
+dnl AC_MSG_RESULT($force_use_included_argv)
 
-THREADLIBS=no
 CPPFLAGS="-Ilib -D__UNIX__"
 AC_SUBST(CPPFLAGS)
 
+dnl -------- Tests for threading library ----------
+THREADLIBS=no
 AC_CHECK_LIB(pthread,pthread_create,THREADLIBS="-lpthread",)
-
 if test "$THREADLIBS" = no; then
         AC_CHECK_LIB(c_r,pthread_create,THREADLIBS="-pthread",)
 fi
-
 if test "$THREADLIBS" = no; then
         AC_CHECK_LIB(dce,pthread_create,THREADLIBS="-ldce",)
 fi
-
 if test "$THREADLIBS" = no; then
         AC_CHECK_LIB(pthreads,pthread_create,THREADLIBS="-lpthreads",)
 fi
-
 if test "$THREADLIBS" = no; then
         AC_MSG_ERROR(Your system doesn't seem to support posix threads)
         exit
 fi
-
 AC_SUBST(THREADLIBS)
 
 dnl -------- Tests for using included libmad ------
@@ -108,6 +105,23 @@ if test "$use_included_tre" = yes; then
 else
   LIBREGEX=""
   AC_SUBST(LIBREGEX)
+fi
+
+
+dnl -------- Tests for using libiberty or argv.c ------
+use_included_argv=yes
+if test "$force_use_included_argv" = no; then
+  AC_CHECK_LIB(iberty, buildargv,
+    use_included_argv=no,
+    use_included_argv=yes)
+fi
+AM_CONDITIONAL(USE_INCLUDED_ARGV, test "$use_included_argv" = yes)
+if test "$use_included_argv" = yes; then
+  LIBIBERTY_LIBS=""
+  AC_SUBST(LIBIBERTY_LIBS)
+else
+  LIBIBERTY_LIBS="-liberty"
+  AC_SUBST(LIBIBERTY_LIBS)
 fi
 
 

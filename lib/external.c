@@ -242,6 +242,10 @@ close_external (External_Process** epp)
 
 /* ----------------------------- UNIX FUNCTIONS -------------------------- */
 #else
+
+/* These functions are in either libiberty, or included in argv.c */
+char** buildargv (char *sp);
+
 External_Process*
 spawn_external (char* cmd)
 {
@@ -262,10 +266,20 @@ spawn_external (char* cmd)
     ep->pid = fork ();
     if (ep->pid == (pid_t) 0) {
 	/* This is the child process. */
+	int i = 0;
+	char** argv;
+
 	close (ep->mypipe[0]);
 	dup2 (ep->mypipe[1],1);
 	close (ep->mypipe[1]);
-	execlp (cmd,cmd,NULL);
+
+	argv = buildargv (cmd);
+	while (argv[i]) {
+	    debug_printf ("argv[%d] = %s\n", i, argv[i]);
+	    i++;
+	}
+
+	execvp (argv[0],&argv[0]);
 	/* Doesn't return */
 	fprintf (stderr, "Error, returned from execlp\n");
 	exit (-1);
