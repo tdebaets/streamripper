@@ -9,10 +9,10 @@
 ;
 
 ; The name of the installer
-Name "Streamripper for Winamp 2.x/5.x v1.61.15"
+Name "Streamripper for Winamp 2.x/5.x v1.61.16"
 
 ; The file to write
-OutFile "srwa5-1.61.15.exe"
+OutFile "srwa5-1.61.16.exe"
 
 ; License page
 ; LicenseText "This installer will install the Nullsoft Tiny Visualization 2000 Plug-in for Winamp. Please read the license below."
@@ -135,6 +135,8 @@ Section "ThisNameIsIgnoredSoWhyBother?"
   File "C:\program files\winamp\plugins\gen_sripper.dll"
   File "sripper_howto.txt"
   File "..\parse_rules.txt"
+  File "..\fake_external_metadata.pl"
+  File "..\fetch_external_metadata.pl"
 
   SetOutPath $INSTDIR\Skins\SrSkins
   File srskin.bmp

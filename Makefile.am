@@ -229,6 +229,8 @@ EXTRA_DIST = \
 	CHANGES \
 	readme_xfade.txt \
 	parse_rules.txt \
+	fake_external_metadata.pl \
+	fetch_external_metadata.pl \
 	lib/live365info.c \
 	lib/live365info.h \
 	lib/riplive365.c \
