@@ -38,54 +38,48 @@ char* b64enc(const char *buf, int size);
  * Parse's a url as in http://host:port/path or host/path, etc..
  * and now http://username:password@server:4480
  */
-error_code httplib_parse_url(const char *url, URLINFO *urlinfo)
+error_code
+httplib_parse_url(const char *url, URLINFO *urlinfo)
 { 
-	//
-	// see if we have a proto 
-	// 
-	char *s = strstr(url, "://");
-	int ret;
+    /* see if we have a proto */
+    char *s = strstr(url, "://");
+    int ret;
 
-	//
-	// if we have a proto, just skip it
-	// JCBUG -- should we care about the proto? like fail if it's not http?
-	//
-	if (s) url = s + strlen("://");
-	memcpy(urlinfo->path, (void *)"/\0", 2);
+    /* if we have a proto, just skip it. should we care about 
+       the proto? like fail if it's not http? */
+    if (s) url = s + strlen("://");
+    memcpy(urlinfo->path, (void *)"/\0", 2);
 
-	//
-	// search for a login '@' token
-	//
-	if (strchr(url, '@') != NULL)
-	{
-		ret = sscanf(url, "%[^:]:%[^@]", urlinfo->username, urlinfo->password);
-		if (ret < 2) return SR_ERROR_PARSE_FAILURE;
-		url = strchr(url, '@') + 1;
+    /* search for a login '@' token */
+    if (strchr(url, '@') != NULL) {
+	ret = sscanf(url, "%[^:]:%[^@]", urlinfo->username, urlinfo->password);
+#if defined (commentout)
+	if (ret < 2) return SR_ERROR_PARSE_FAILURE;
+#endif
+	if (ret < 1) {
+	    return SR_ERROR_PARSE_FAILURE;
+	} else if (ret == 1) {
+	    urlinfo->password[0] = '\0';
 	}
-	else
-	{
-		urlinfo->username[0] = '\0';
-		urlinfo->password[0] = '\0';
-	}
+	url = strchr(url, '@') + 1;
+    } else {
+	urlinfo->username[0] = '\0';
+	urlinfo->password[0] = '\0';
+    }
 
-	//
-	// search for a port seperator
-	//
-	if (strchr(url, ':') != NULL)
-	{
-		ret = sscanf(url, "%[^:]:%hu/%s", urlinfo->host, 
-			(short unsigned int*)&urlinfo->port, urlinfo->path+1);
-		if (urlinfo->port < 1) return SR_ERROR_PARSE_FAILURE;
-		ret -= 1;
-	}
-	else
-	{
-		urlinfo->port = 80;
-		ret = sscanf(url, "%[^/]/%s", urlinfo->host, urlinfo->path+1);
-	}
-	if (ret < 1) return SR_ERROR_INVALID_URL;
+    /* search for a port seperator */
+    if (strchr(url, ':') != NULL) {
+	ret = sscanf(url, "%[^:]:%hu/%s", urlinfo->host, 
+		     (short unsigned int*)&urlinfo->port, urlinfo->path+1);
+	if (urlinfo->port < 1) return SR_ERROR_PARSE_FAILURE;
+	ret -= 1;
+    } else {
+	urlinfo->port = 80;
+	ret = sscanf(url, "%[^/]/%s", urlinfo->host, urlinfo->path+1);
+    }
+    if (ret < 1) return SR_ERROR_INVALID_URL;
 
-	return SR_SUCCESS;
+    return SR_SUCCESS;
 }
 
 error_code httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, char *useragent)

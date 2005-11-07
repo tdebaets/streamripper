@@ -1,5 +1,6 @@
 New for 1.61.16
 ---------------
+* Possible fix for proxy authentication without password (#1338203)
 * Use external program for reading metadata
 * Resize winamp plugin gui to make it more visible
 
