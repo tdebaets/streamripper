@@ -8,5 +8,6 @@ void debug_set_filename (char* filename);
 void debug_close (void);
 void debug_printf (char* fmt, ...);
 void debug_enable (void);
+void debug_print_error (void);
 
-#endif//__DEBUG_H__
+#endif

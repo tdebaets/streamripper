@@ -196,6 +196,7 @@ read_external (External_Process* ep, TRACK_INFO* ti)
 
     ti->have_track_info = 0;
 
+    Sleep (0);
     while (1) {
 	DWORD bytes_avail = 0;
 	rc = PeekNamedPipe (ep->mypipe, NULL, 0, NULL, &bytes_avail, NULL);
@@ -231,10 +232,15 @@ close_external (External_Process** epp)
     BOOL rc;
 
     rc = GenerateConsoleCtrlEvent (CTRL_C_EVENT, pid);
+    debug_print_error ();
+    rc = GenerateConsoleCtrlEvent (CTRL_BREAK_EVENT, pid);
+    debug_print_error ();
     debug_printf ("GenerateConsoleCtrlEvent returned %d\n", rc);
-
-    /* GCS FIX: If console control event fails, we should kill 
-       the process using TerminateProcess() */
+    if (!rc) {
+	/* If console control event fails, we should kill 
+	   the process using TerminateProcess() */
+	debug_printf ("Error: %d\n", GetLastError());
+    }
 
     free (ep);
     *epp = 0;

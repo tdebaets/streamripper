@@ -395,7 +395,7 @@ void RipCallback(int message, void *data)
 void start_button_pressed()
 {
     int ret;
-    debug_printf("start");
+    debug_printf("start\n");
 
     assert(!m_bRipping);
     render_clear_all_data();
@@ -416,7 +416,7 @@ void start_button_pressed()
 
 void stop_button_pressed()
 {
-    debug_printf("stop");
+    debug_printf("stop\n");
 
     stop_button_disable();
     assert(m_bRipping);

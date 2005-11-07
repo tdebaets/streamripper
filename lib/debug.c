@@ -109,3 +109,24 @@ debug_printf (char* fmt, ...)
 #endif
     threadlib_signal_sem (&m_debug_lock);
 }
+
+void
+debug_print_error (void)
+{
+#if defined (WIN32)
+    LPVOID lpMsgBuf;
+    FormatMessage (
+	FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+	FORMAT_MESSAGE_FROM_SYSTEM | 
+	FORMAT_MESSAGE_IGNORE_INSERTS,
+	NULL,
+	GetLastError(),
+	MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+	(LPTSTR) &lpMsgBuf,
+	0,
+	NULL 
+    );
+    debug_printf ("%s", lpMsgBuf);
+    LocalFree (lpMsgBuf);
+#endif
+}
