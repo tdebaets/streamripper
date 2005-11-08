@@ -26,7 +26,8 @@ struct external_process
 {
 #if defined (WIN32)
     HANDLE mypipe;   /* read from child stdout */
-    HANDLE pid;
+    HANDLE hproc;
+    DWORD pid;
 #else
     int mypipe[2];   /* 0 is for parent reading, 1 is for parent writing */
     pid_t pid;

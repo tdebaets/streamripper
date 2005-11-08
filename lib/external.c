@@ -101,16 +101,14 @@ parse_external_byte (External_Process* ep, TRACK_INFO* ti, char c)
 /* ----------------------------- WIN32 FUNCTIONS ------------------------- */
 #if defined (WIN32)
 
-HANDLE hproc = 0;
-DWORD pid = 0;
  
 External_Process*
 spawn_external (char* cmd)
 {
     External_Process* ep;
-    HANDLE hChildStdinRd, hChildStdinWr,  
-	    hChildStdoutWr, 
-	    hStdout;
+    HANDLE hChildStdinRd;
+    HANDLE hChildStdinWr;
+    HANDLE hChildStdoutWr;
 
     SECURITY_ATTRIBUTES saAttr; 
     PROCESS_INFORMATION piProcInfo; 
@@ -126,9 +124,6 @@ spawn_external (char* cmd)
     saAttr.bInheritHandle = TRUE; 
     saAttr.lpSecurityDescriptor = NULL; 
 
-    /* Get the handle to the current STDOUT.  */
-    hStdout = GetStdHandle (STD_OUTPUT_HANDLE); 
- 
     /* Create a pipe for the child process's STDOUT. */
     if (!CreatePipe (&ep->mypipe, &hChildStdoutWr, &saAttr, 0)) {
         debug_printf ("Stdout pipe creation failed\n");
@@ -157,10 +152,12 @@ spawn_external (char* cmd)
     startup_info.hStdOutput = hChildStdoutWr;
     startup_info.hStdInput = hChildStdinRd;
     startup_info.dwFlags |= STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+    //startup_info.wShowWindow = SW_SHOW;
     startup_info.wShowWindow = SW_HIDE;
 
     creation_flags = 0;
     creation_flags |= CREATE_NEW_PROCESS_GROUP;
+    //creation_flags |= CREATE_NEW_CONSOLE;
 
     rc = CreateProcess (
 		NULL,           // executable name
@@ -178,11 +175,12 @@ spawn_external (char* cmd)
 	free (ep);
 	return 0;
     }
-    //hproc = piProcInfo.hProcess;
-    pid = piProcInfo.dwProcessId;
-    CloseHandle (piProcInfo.hProcess);
+    ep->hproc = piProcInfo.hProcess;
+    ep->pid = piProcInfo.dwProcessId;
+    //CloseHandle (piProcInfo.hProcess);
     CloseHandle (piProcInfo.hThread);
 
+    Sleep (0);
     return ep;
 }
  
@@ -231,16 +229,17 @@ close_external (External_Process** epp)
     External_Process* ep = *epp;
     BOOL rc;
 
-    rc = GenerateConsoleCtrlEvent (CTRL_C_EVENT, pid);
-    debug_print_error ();
-    rc = GenerateConsoleCtrlEvent (CTRL_BREAK_EVENT, pid);
-    debug_print_error ();
-    debug_printf ("GenerateConsoleCtrlEvent returned %d\n", rc);
+    rc = GenerateConsoleCtrlEvent (CTRL_C_EVENT, ep->pid);
     if (!rc) {
-	/* If console control event fails, we should kill 
-	   the process using TerminateProcess() */
-	debug_printf ("Error: %d\n", GetLastError());
+	/* The console control event will fail for the winamp 
+	   plugin.  Therefore, no choice but to kill 
+	   the process using TerminateProcess()... */
+	debug_print_error ();
+	debug_printf ("rc = %d, gle = %d\n", rc, GetLastError());
+	rc = TerminateProcess (ep->hproc, 0);
+	debug_printf ("Terminated process: %d\n", rc);
     }
+    CloseHandle (ep->hproc);
 
     free (ep);
     *epp = 0;
