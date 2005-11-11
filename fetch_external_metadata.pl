@@ -12,9 +12,9 @@
 # This assumes that META_URL is the URL with the artist/title information
 # 
 # You will need perl and LWP::Simple installed to run this script. 
-# I assume you can figure out how to install perl.  To install 
-# LWP::Simple (on unix), do the following (as root):
+# On unix, you install LWP::Simple as root, like this:
 #    perl -MCPAN -e 'install LWP::Simple';
+# On windows, LWP::Simple is included in the ActiveState perl distribution.
 #
 # This script is in the public domain. You are free to use, modify and 
 # redistribute without restrictions.

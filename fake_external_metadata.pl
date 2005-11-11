@@ -7,7 +7,7 @@
 #   2) Sends the information to streamripper
 # 
 # To invoke the script, do this:
-#    streamripper URL -E "perl fake_external_metadata.pl META_URL"
+#    streamripper URL -E "perl fake_external_metadata.pl"
 #
 # This script is in the public domain. You are free to use, modify and 
 # redistribute without restrictions.
