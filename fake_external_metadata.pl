@@ -13,7 +13,7 @@
 # redistribute without restrictions.
 ###########################################################################
 
-$repno = 1 + rand * 5;
+$repno = 4;
 
 $ts = "AAA";
 $as = "001";
@@ -21,7 +21,7 @@ $title = "TITLE=$ts\n";
 $artist = "ARTIST=$as\n";
 while (1) {
     if ($repno-- < 0) {
-	$repno = 5 + rand * 5;
+	$repno = 4;
 	$as++;
 	$ts++;
 	$title = "TITLE=$ts\n";

@@ -577,7 +577,13 @@ start_ripping()
     /* Start up external program to get metadata. */
     m_ripinfo.ep = 0;
     if (GET_EXTERNAL_CMD(m_options.flags)) {
+	debug_printf ("Spawn external: %s\n", m_options.ext_cmd);
 	m_ripinfo.ep = spawn_external (m_options.ext_cmd);
+	if (m_ripinfo.ep) {
+	    debug_printf ("Spawn external succeeded\n");
+	} else {
+	    debug_printf ("Spawn external failed\n");
+	}
     }
 
     /* ripstream is good to go, it knows how to get data, and where

@@ -360,29 +360,29 @@ ripstream_rip()
 	debug_printf ("m_find_silence == 0\n");
 	ret = find_sep (&pos1, &pos2);
 	if (ret == SR_ERROR_REQUIRED_WINDOW_EMPTY) {
-	    /* GCS NOTE: A metadata will be completely skipped. */
-	    debug_printf("Couldn't find silence because buffer isn't full\n");
-	    m_find_silence = -1;
+	    /* If this happens, the previous song should be truncated to 
+	       zero bytes. */
+	    pos1 = 0;
+	    pos2 = 0;
 	}
 	else if (ret != SR_SUCCESS) {
 	    debug_printf("find_sep had bad return code %d\n", ret);
 	    return ret;
 	}
-	else {
-	    /* Write out previous track */
-	    ret = end_track(pos1, pos2, &m_old_track);
-	    if (ret != SR_SUCCESS)
-		real_ret = ret;
-	    m_cue_sheet_bytes += pos2;
 
-	    /* Start next track */
-	    ret = start_track (&m_new_track);
-	    if (ret != SR_SUCCESS)
-		real_ret = ret;
-	    m_find_silence = -1;
+	/* Write out previous track */
+	ret = end_track(pos1, pos2, &m_old_track);
+	if (ret != SR_SUCCESS)
+	    real_ret = ret;
+	m_cue_sheet_bytes += pos2;
 
-	    copy_track_info (&m_old_track, &m_new_track);
-	}
+	/* Start next track */
+	ret = start_track (&m_new_track);
+	if (ret != SR_SUCCESS)
+	    real_ret = ret;
+	m_find_silence = -1;
+
+	copy_track_info (&m_old_track, &m_new_track);
     }
     if (m_find_silence >= 0) m_find_silence --;
 
@@ -403,18 +403,6 @@ ripstream_rip()
 	    m_cue_sheet_bytes += curr_song_bytes;
 	    rip_manager_put_data (&m_getbuffer[curr_song], curr_song_bytes);
 	}
-	//	
-	//	rip_manager_put_data (m_getbuffer, extract_size);
-	//	m_cue_sheet_bytes += extract_size;
-	//	rip_manager_put_data (m_getbuffer, extract_size);
-#if defined (commentout)
-	// RMK: This is the contents of rip_manager_put_data()
-	if (m_write_data)
-	    filelib_write_track(buf, size);
-
-	m_ripinfo.filesize += size;
-	m_bytes_ripped += size;
-#endif
     }
 
     return real_ret;
@@ -429,13 +417,6 @@ find_sep (u_long *pos1, u_long *pos2)
     debug_printf ("*** Finding separation point\n");
 
     /* First, find the search region w/in cbuffer. */
-#if defined (commentout)
-    sw_start = g_cbuf2.item_count - m_rw_start_to_cb_end;
-    if (sw_start < 0) sw_start = 0;
-    sw_end = g_cbuf2.item_count - m_rw_end_to_cb_end;
-    if (sw_end < 0) sw_end = 0;
-#endif
-
     rw_start = g_cbuf2.item_count - m_rw_start_to_cb_end;
     if (rw_start < 0) {
 	return SR_ERROR_REQUIRED_WINDOW_EMPTY;

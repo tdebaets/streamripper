@@ -1,7 +1,9 @@
 New for 1.61.16
 ---------------
-* Possible fix for proxy authentication without password (#1338203)
+Fri 11-11-2005
 * Use external program for reading metadata
+* Possible fix for proxy authentication without password (#1338203)
+* Change splitting behavior when song is too short to do silence detection
 * Resize winamp plugin gui to make it more visible
 
 New for 1.61.15
