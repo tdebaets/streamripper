@@ -1,6 +1,6 @@
 New for 1.61.16
 ---------------
-Fri 11-11-2005
+Sat Nov 12 01:18:06 EST 2005
 * Use external program for reading metadata
 * Possible fix for proxy authentication without password (#1338203)
 * Change splitting behavior when song is too short to do silence detection
