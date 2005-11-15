@@ -15,16 +15,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
 #include "compat.h"
 #include "http.h"
 #include "util.h"
 #include "debug.h"
-
 
 /*********************************************************************************
  * Private functions
@@ -82,7 +79,8 @@ httplib_parse_url(const char *url, URLINFO *urlinfo)
     return SR_SUCCESS;
 }
 
-error_code httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, char *useragent)
+error_code
+httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, char *useragent)
 {
     int ret;
     URLINFO ui;
@@ -91,14 +89,13 @@ error_code httplib_construct_sc_request(const char *url, const char* proxyurl, c
     if ((ret = httplib_parse_url(url, &ui)) != SR_SUCCESS)
 	return ret;
 
-    if (proxyurl)
-    {
+    if (proxyurl) {
 	sprintf(myurl, "http://%s:%d%s", ui.host, ui.port, ui.path);
 	if ((ret = httplib_parse_url(proxyurl, &proxyui)) != SR_SUCCESS)
 	    return ret;
-    }
-    else
+    } else {
 	strcpy(myurl, ui.path);
+    }
 
     snprintf(buffer, MAX_HEADER_LEN + MAX_HOST_LEN + SR_MAX_PATH,
 	     "GET %s HTTP/1.0\r\n"
@@ -110,11 +107,8 @@ error_code httplib_construct_sc_request(const char *url, const char* proxyurl, c
 	     ui.port, 
 	     useragent[0] ? useragent : "Streamripper/1.x");
 
-    //
     // http authentication (not proxy, see below for that)
-    // 
-    if (ui.username[0] && ui.password[0])
-    {
+    if (ui.username[0] && ui.password[0]) {
 	char *authbuf = make_auth_header("Authorization", 
 					 ui.username,
 					 ui.password);
@@ -122,11 +116,8 @@ error_code httplib_construct_sc_request(const char *url, const char* proxyurl, c
 	free(authbuf);
     }
 
-    //
     // proxy auth stuff
-    //
-    if (proxyurl && proxyui.username[0] && proxyui.password[0])
-    {
+    if (proxyurl && proxyui.username[0] && proxyui.password[0]) {
 	char *authbuf = make_auth_header("Proxy-Authorization",
 					 proxyui.username,
 					 proxyui.password);
@@ -141,55 +132,56 @@ error_code httplib_construct_sc_request(const char *url, const char* proxyurl, c
 
 // Make the 'Authorization: Basic xxxxxx\r\n' or 'Proxy-Authorization...' 
 // headers for the HTTP request.
-static char* make_auth_header(const char *header_name, 
-			      const char *username, const char *password) 
+static char*
+make_auth_header (const char *header_name, const char *username, 
+		  const char *password) 
 {
-	char *authbuf = malloc(strlen(header_name) 
-			       + strlen(username)
-			       + strlen(password)
-			       + MAX_URI_STRING);
-	char *auth64;
-	sprintf(authbuf, "%s:%s", username, password);
-	auth64 = b64enc(authbuf, strlen(authbuf));
-	sprintf(authbuf, "%s: Basic %s\r\n", header_name, auth64);
-	free(auth64);
-	return authbuf;
+    char *authbuf = malloc(strlen(header_name) 
+			   + strlen(username)
+			   + strlen(password)
+			   + MAX_URI_STRING);
+    char *auth64;
+    sprintf(authbuf, "%s:%s", username, password);
+    auth64 = b64enc(authbuf, strlen(authbuf));
+    sprintf(authbuf, "%s: Basic %s\r\n", header_name, auth64);
+    free(auth64);
+    return authbuf;
 }
 
 // Here we pretend we're IE 5, hehe
-error_code httplib_construct_page_request(const char *url, BOOL proxyformat, char *buffer)
+error_code
+httplib_construct_page_request (const char *url, BOOL proxyformat, char *buffer)
 {
-	int ret;
-	URLINFO ui;
-	char myurl[MAX_URL_LEN];
-	if ((ret = httplib_parse_url(url, &ui)) != SR_SUCCESS)
-		return ret;
+    int ret;
+    URLINFO ui;
+    char myurl[MAX_URL_LEN];
+    if ((ret = httplib_parse_url(url, &ui)) != SR_SUCCESS)
+	return ret;
 
-	if (proxyformat)
-		sprintf(myurl, "http://%s:%d%s", ui.host, ui.port, ui.path);
-	else
-		strcpy(myurl, ui.path);
+    if (proxyformat)
+	sprintf(myurl, "http://%s:%d%s", ui.host, ui.port, ui.path);
+    else
+	strcpy(myurl, ui.path);
 
-	snprintf(buffer, MAX_HEADER_LEN + MAX_HOST_LEN + SR_MAX_PATH,
-			"GET %s HTTP/1.0\r\n"
-			"Host: %s:%d\r\n"
-			"Accept: */*\r\n"
-			"Accept-Language: en-us\r\n"
-			"Accept-Encoding: gzip, deflate\r\n"
-			"User-Agent: Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)\r\n"
-			"Connection: Keep-Alive\r\n\r\n", 
-			myurl, 
-			ui.host, 
-			ui.port);
+    snprintf(buffer, MAX_HEADER_LEN + MAX_HOST_LEN + SR_MAX_PATH,
+		"GET %s HTTP/1.0\r\n"
+		"Host: %s:%d\r\n"
+		"Accept: */*\r\n"
+		"Accept-Language: en-us\r\n"
+		"Accept-Encoding: gzip, deflate\r\n"
+		"User-Agent: Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)\r\n"
+		"Connection: Keep-Alive\r\n\r\n", 
+		myurl, 
+		ui.host, 
+		ui.port);
 
 
-	return SR_SUCCESS;
-
+    return SR_SUCCESS;
 }
 
 /* Return 1 if a match was found, 0 if not found */
 int
-extract_header_value(char *header, char *dest, char *match)
+extract_header_value (char *header, char *dest, char *match)
 {
     char* start = (char *)strstr(header, match);
     if (start) {
@@ -201,7 +193,7 @@ extract_header_value(char *header, char *dest, char *match)
 }
 
 error_code
-httplib_parse_sc_header(const char *url, char *header, SR_HTTP_HEADER *info)
+httplib_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
 {
     int rc;
     char *start;
@@ -513,77 +505,66 @@ httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size, int 
     return SR_SUCCESS;
 }
 
-
-//
 // taken from:
 // Copyright (c) 2000 Virtual Unlimited B.V.
 // Author: Bob Deblier <bob@virtualunlimited.com>
 // thanks bob ;)
-//
 #define CHARS_PER_LINE  72
 char* b64enc(const char *inbuf, int size)
 {
+    /* encode 72 characters per line */
+    static const char* to_b64 =
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-		static const char* to_b64 =
-				 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-		  /* encode 72 characters per line */
+    int div = size / 3;
+    int rem = size % 3;
+    int chars = div*4 + rem + 1;
+    int newlines = (chars + CHARS_PER_LINE - 1) / CHARS_PER_LINE;
 
-        int div = size / 3;
-        int rem = size % 3;
-        int chars = div*4 + rem + 1;
-        int newlines = (chars + CHARS_PER_LINE - 1) / CHARS_PER_LINE;
+    const char* data = inbuf;
+    char* string = (char*) malloc(chars + newlines + 1 + 100);
 
-        const char* data = inbuf;
-        char* string = (char*) malloc(chars + newlines + 1 + 100);
+    if (string) {
+	register char* buf = string;
 
-        if (string)
-        {
-                register char* buf = string;
+	chars = 0;
 
-                chars = 0;
-
-                /*@+charindex@*/
-                while (div > 0)
-                {
-                        buf[0] = to_b64[ (data[0] >> 2) & 0x3f];
-                        buf[1] = to_b64[((data[0] << 4) & 0x30) + ((data[1] >> 4) & 0xf)];
-                        buf[2] = to_b64[((data[1] << 2) & 0x3c) + ((data[2] >> 6) & 0x3)];
-                        buf[3] = to_b64[  data[2] & 0x3f];
-                        data += 3;
-                        buf += 4;
-                        div--;
-                        chars += 4;
-                        if (chars == CHARS_PER_LINE)
-                        {
-                                chars = 0;
-                                *(buf++) = '\n';
-                        }
-                }
-
-                switch (rem)
-                {
-                case 2:
-                        buf[0] = to_b64[ (data[0] >> 2) & 0x3f];
-                        buf[1] = to_b64[((data[0] << 4) & 0x30) + ((data[1] >> 4) & 0xf)];
-                        buf[2] = to_b64[ (data[1] << 2) & 0x3c];
-                        buf[3] = '=';
-                        buf += 4;
-                        chars += 4;
-                        break;
-                case 1:
-                        buf[0] = to_b64[ (data[0] >> 2) & 0x3f];
-                        buf[1] = to_b64[ (data[0] << 4) & 0x30];
-                        buf[2] = '=';
-                        buf[3] = '=';
-                        buf += 4;
-                        chars += 4;
-                        break;
-                }
-
-        /*      *(buf++) = '\n'; This would result in a buffer overrun */
-                *buf = '\0';
-        }
-
-        return string;
+	/*@+charindex@*/
+	while (div > 0) {
+	    buf[0] = to_b64[ (data[0] >> 2) & 0x3f];
+	    buf[1] = to_b64[((data[0] << 4) & 0x30) + ((data[1] >> 4) & 0xf)];
+	    buf[2] = to_b64[((data[1] << 2) & 0x3c) + ((data[2] >> 6) & 0x3)];
+	    buf[3] = to_b64[  data[2] & 0x3f];
+	    data += 3;
+	    buf += 4;
+	    div--;
+	    chars += 4;
+	    if (chars == CHARS_PER_LINE) {
+		chars = 0;
+		*(buf++) = '\n';
+	    }
+	}
+        switch (rem) {
+        case 2:
+	    buf[0] = to_b64[ (data[0] >> 2) & 0x3f];
+	    buf[1] = to_b64[((data[0] << 4) & 0x30) + ((data[1] >> 4) & 0xf)];
+	    buf[2] = to_b64[ (data[1] << 2) & 0x3c];
+	    buf[3] = '=';
+	    buf += 4;
+	    chars += 4;
+	    break;
+        case 1:
+	    buf[0] = to_b64[ (data[0] >> 2) & 0x3f];
+	    buf[1] = to_b64[ (data[0] << 4) & 0x30];
+	    buf[2] = '=';
+	    buf[3] = '=';
+	    buf += 4;
+	    chars += 4;
+	    break;
+	}
+	/* *(buf++) = '\n'; This would result in a buffer overrun */
+	*buf = '\0';
+    }
+    return string;
 }
 
