@@ -116,6 +116,7 @@ httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer
 	free(authbuf);
     }
 
+#if defined (commentout)
     // proxy auth stuff
     if (proxyurl && proxyui.username[0] && proxyui.password[0]) {
 	char *authbuf = make_auth_header("Proxy-Authorization",
@@ -124,7 +125,17 @@ httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer
 	strcat(buffer, authbuf);
 	free(authbuf);
     }
-	
+#endif
+    /* GCS Testing... Proxy authentication w/o password bug */
+    if (proxyurl && proxyui.username[0]) {
+	char *authbuf = make_auth_header("Proxy-Authorization",
+					 proxyui.username,
+					 proxyui.password);
+	strcat(buffer, authbuf);
+	free(authbuf);
+    }
+
+    
     strcat(buffer, "\r\n");
 
     return SR_SUCCESS;

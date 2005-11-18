@@ -20,7 +20,7 @@
 #include "external.h"
 #include "srtypes.h"
 
-#define SRVERSION	"1.61.16"
+#define SRVERSION	"1.61.16.1"
 
 #if defined (WIN32)
 #define SRPLATFORM      "windows"
