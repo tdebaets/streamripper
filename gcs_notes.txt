@@ -730,6 +730,7 @@ Shoutcast lists
 shoutcast.com (mp3)
 icecast.org (mp3/ogg)
 oddsock.org
+http://www.steamcast.com/
 jetcast/jetaudio (mp3)
 peercast (relay-to-shoutcast)
 www.tuner2.com (aac)
