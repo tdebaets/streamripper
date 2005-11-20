@@ -457,6 +457,7 @@ find_sep (u_long *pos1, u_long *pos2)
 			       pos1, pos2);
 	*pos1 += rw_start;
 	*pos2 += rw_start;
+	free(buf);
     }
     return SR_SUCCESS;
 }

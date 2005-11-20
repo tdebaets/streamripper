@@ -1,3 +1,8 @@
+New for 1.61.17
+---------------
+* Fix for proxy authentication without password (#1338203)
+* Fix memory leak
+
 New for 1.61.16
 ---------------
 Sat Nov 12 01:18:06 EST 2005
