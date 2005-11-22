@@ -518,9 +518,16 @@ start_ripping()
     error_code ret;
     char *pproxy = m_options.proxyurl[0] ? m_options.proxyurl : NULL;
 
-    /*
-     * Connect to the stream
-     */
+    /* If proxy URL not spec'd on command line (or plugin field), 
+       check the environment variable */
+    if (!pproxy) {
+	char const *env_http_proxy = getenv ("http_proxy");
+	if (env_http_proxy) {
+	    strncpy(m_options.proxyurl, env_http_proxy, MAX_URL_LEN);
+	}
+    }
+
+    /* Connect to the stream */
     ret = inet_sc_connect(&m_sock, m_options.url, pproxy, &m_http_info, 
 			  m_options.useragent, m_options.if_name);
     if (ret != SR_SUCCESS) {

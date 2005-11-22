@@ -1,7 +1,8 @@
 New for 1.61.17
 ---------------
-* Fix for proxy authentication without password (#1338203)
 * Fix memory leak
+* Fix for proxy authentication without password (#1338203)
+* Check http_proxy environment variable for proxy url
 
 New for 1.61.16
 ---------------
