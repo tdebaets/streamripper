@@ -96,9 +96,9 @@ OPTIONS
 
        -p url Use HTTP proxy server at <url>
 
-       If your behind a proxy server, enter it here. This hasn't  been	tested
-       in  over	 6  months,  but  it  should  still work. Please tell me if it
-       doesn't.
+       If you are behind a proxy server, use the -p flag to specify  its  url.
+       You  can	 also  use the http_proxy environment variable to specify your
+       proxy server.
 
        -a [pattern]
 	      Rip to single file
@@ -456,4 +456,4 @@ COPYING
 
 
 
-			       06 November 2005		       STREAMRIPPER(1)
+			       22 November 2005		       STREAMRIPPER(1)
