@@ -231,10 +231,6 @@ EXTRA_DIST = \
 	parse_rules.txt \
 	fake_external_metadata.pl \
 	fetch_external_metadata.pl \
-	lib/live365info.c \
-	lib/live365info.h \
-	lib/riplive365.c \
-	lib/riplive365.h \
 	$(libmad_manifest) \
 	$(tre_manifest) \
 	$(man_MANS)
