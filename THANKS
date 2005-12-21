@@ -5,7 +5,7 @@ THANKS (v.1.61.X)
 "John Spray" <jcs116@york.ac.uk> for $http_proxy patch.
 "Les Smithson" <lsmithso a@t hare.demon.co.uk> for -M flag.
 "Obiguan" <obiguan a@t gmail.com> for -T flag.
-"Martin Bockwinkel" <Bockwinkel a@t OzySoft.com> for -P flag.
+"Martin Bockwinkel" <Bockwinkel a@t Softwarebrigade.com> for -P flag.
 "Michael Ablassmeier" <abi a@t grinser.de> help with identifying 
 memory crashes.
 "Daniel Potts" <danielp a@t cse.unsw.edu.au> a nice patch to support relay 
