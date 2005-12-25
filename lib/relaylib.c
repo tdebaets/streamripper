@@ -104,16 +104,13 @@ destroy_all_hostsocks(void)
         ptr = g_relay_list;
         closesocket(ptr->m_sock);
         g_relay_list = ptr->m_next;
-#if defined (commentout)
-        if( ptr->m_Buffer != NULL )
-            free( ptr->m_Buffer );
-#endif
+        if (ptr->m_buffer != NULL)
+            free (ptr->m_buffer);
         free(ptr);
     }
     g_relay_list_len = 0;
-    threadlib_signal_sem(&g_relay_list_sem);
+    threadlib_signal_sem (&g_relay_list_sem);
 }
-
 
 static int tag_compare (char *str, char *tag)
 {
@@ -489,20 +486,11 @@ void thread_accept(void *notused)
 			    ret, header_len);
 			client_relay_header_release(client_http_header);
 			if (ret == header_len) {
-			    debug_printf ("Relay: strlen(client_http_header) is now %d\n", strlen(client_http_header));
                             newhostsock = malloc(sizeof(RELAY_LIST));
                             if (newhostsock != NULL) {
                                 // Add new client to list (headfirst)
                                 threadlib_waitfor_sem(&g_relay_list_sem);
                                 newhostsock->m_is_new = 1;
-#if defined (commentout)
-                                newhostsock->m_Offset = 0;
-                                newhostsock->m_LeftToSend = 0;
-                                newhostsock->m_BufferSize = 0;
-                                newhostsock->m_Buffer=NULL;
-                                newhostsock->m_icy_metadata = icy_metadata;
-#endif
-
                                 newhostsock->m_sock = newsock;
                                 newhostsock->m_next = g_relay_list;
 				if (m_have_metadata) {
@@ -549,15 +537,14 @@ send_to_relay (RELAY_LIST* ptr)
 
     /* For new clients, initialize cbuf pointers */
     if (ptr->m_is_new) {
-	//	int burst_amount = 32*1024;
-	//      int burst_amount = 64*1024;
-	int burst_amount = 128*1024;
+	int burst_amount = 32*1024;
+	//	int burst_amount = 64*1024;
+	//	int burst_amount = 128*1024;
 	ptr->m_offset = 0;
 	ptr->m_left_to_send = 0;
 
 	cbuf2_init_relay_entry (&g_cbuf2, ptr, burst_amount);
 	
-	/* GCS FIX: Need to alloc memory for the buffer */
 	ptr->m_is_new = 0;
     }
 
@@ -566,9 +553,8 @@ send_to_relay (RELAY_LIST* ptr)
 	if (!ptr->m_left_to_send) {
 	    error_code rc;
 	    ptr->m_offset = 0;
-	    rc = cbuf2_extract_relay (&g_cbuf2, ptr->m_buffer, 
-				      &ptr->m_cbuf_pos, &ptr->m_left_to_send,
-				      ptr->m_icy_metadata);
+	    rc = cbuf2_extract_relay (&g_cbuf2, ptr);
+	    
 	    if (rc == SR_ERROR_BUFFER_EMPTY) {
 		break;
 	    }
@@ -628,7 +614,8 @@ relaylib_disconnect (RELAY_LIST* prev, RELAY_LIST* ptr)
     } else {
 	g_relay_list = next;
     }
-
+    if (ptr->m_buffer != NULL)
+	free (ptr->m_buffer);
     free (ptr);
     g_relay_list_len --;
 }

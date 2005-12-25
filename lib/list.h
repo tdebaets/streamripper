@@ -7,7 +7,8 @@
 #define inline __inline
 #endif
 
-#define prefetch(a) (a)
+/* #define prefetch(a) (a) */
+#define prefetch(a) 0
 
 /*
  * Simple doubly linked list implementation.

@@ -9,17 +9,22 @@ typedef struct RELAY_LIST_struct RELAY_LIST;
 struct RELAY_LIST_struct
 {
     SOCKET m_sock;
-    int    m_is_new;
+    int m_is_new;
     
-    char* m_buffer;         // large enough for 1 block & 1 metadata
-    u_long m_cbuf_pos;      // must lie along block boundary
+    char* m_buffer;           // large enough for 1 block & 1 metadata
+    u_long m_buffer_size;
+    u_long m_cbuf_pos;        // must lie along chunck boundary for mp3
     u_long m_offset;
     u_long m_left_to_send;
+    int m_icy_metadata;        // true if client requested metadata
 
-    int m_icy_metadata;     // true if client requested metadata
+    char* m_header_buf_ptr;    // for ogg header pages
+    u_long m_header_buf_len;   // for ogg header pages
+    u_long m_header_buf_off;   // for ogg header pages
 
     RELAY_LIST* m_next;
 };
+
 
 /*****************************************************************************
  * Global variables

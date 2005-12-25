@@ -16,7 +16,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,12 +35,13 @@
 #include "relaylib.h"
 #include "socklib.h"
 #include "external.h"
+#include "ripogg.h"
 
 /*****************************************************************************
  * Private functions
  *****************************************************************************/
 static error_code find_sep (u_long *pos1, u_long *pos2);
-static error_code end_track(u_long pos1, u_long pos2, TRACK_INFO* ti);
+static error_code end_track (u_long pos1, u_long pos2, TRACK_INFO* ti);
 static error_code start_track (TRACK_INFO* ti);
 
 static void compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt,
@@ -51,9 +51,10 @@ static int bytes_to_secs (unsigned int bytes);
 static void clear_track_info (TRACK_INFO* ti);
 static int ripstream_recvall (char* buffer, int size);
 
-/* From ripshout */
 static error_code get_track_from_metadata (int size, char *newtrack);
-static error_code get_stream_data(char *data_buf, char *track_buf);
+static error_code get_stream_data (char *data_buf, char *track_buf);
+static error_code ripstream_rip_ogg (void);
+static error_code ripstream_rip_mp3 (void);
 
 /*****************************************************************************
  * Private Vars
@@ -249,7 +250,123 @@ copy_track_info (TRACK_INFO* dest, TRACK_INFO* src)
 
 /**** The main loop for ripping ****/
 error_code
-ripstream_rip()
+ripstream_rip (void)
+{
+    if (m_content_type == CONTENT_TYPE_OGG) {
+	return ripstream_rip_ogg ();
+    } else {
+	return ripstream_rip_mp3 ();
+    }
+}
+
+static error_code
+ripstream_rip_ogg (void)
+{
+    int ret;
+    int real_ret = SR_SUCCESS;
+    u_long extract_size;
+
+    /* get the data from the stream */
+    debug_printf ("RIPSTREAM_RIP_OGG: top of loop\n");
+    ret = get_stream_data(m_getbuffer, m_current_track.raw_metadata);
+    if (ret != SR_SUCCESS) {
+	debug_printf("get_stream_data bad return code: %d\n", ret);
+	return ret;
+    }
+
+    if (m_first_time_through) {
+	/* Allocate circular buffer */
+	m_bitrate = -1;
+	m_buffersize = 1024;
+	m_cbuf2_size = 128;
+	ret = cbuf2_init (&g_cbuf2, m_content_type, m_have_relay, 
+			  m_buffersize, m_cbuf2_size);
+	if (ret != SR_SUCCESS) return ret;
+
+	/* Warm up the ogg decoding routines */
+	rip_ogg_init ();
+    }
+
+    /* Need to check for vorbis headers sometime... */
+
+    /* Copy the data into cbuffer */
+    ret = cbuf2_insert_chunk (&g_cbuf2, m_getbuffer, m_buffersize,
+			      m_content_type, &m_current_track);
+    if (ret != SR_SUCCESS) {
+	debug_printf("start_track had bad return code %d\n", ret);
+	return ret;
+    }
+
+    filelib_write_show (m_getbuffer, m_buffersize);
+
+    /* First time through, so start a track. */
+    if (m_first_time_through) {
+	int ret;
+	debug_printf ("First time through...\n");
+	m_first_time_through = 0;
+	if (!m_current_track.have_track_info) {
+	    strcpy (m_current_track.raw_metadata, m_no_meta_name);
+	}
+	debug_printf ("rip_manager_start_track: ti=%s\n", 
+		      m_current_track.title);
+	ret = rip_manager_start_track (&m_current_track, m_track_count);
+	if (ret != SR_SUCCESS) {
+	    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
+	    return ret;
+	}
+	filelib_write_cue (&m_current_track, 0);
+	copy_track_info (&m_old_track, &m_current_track);
+    }
+
+    /* Check for track change. */
+    debug_printf ("m_current_track.have_track_info = %d\n", 
+		  m_current_track.have_track_info);
+    if (m_current_track.have_track_info && is_track_changed()) {
+	/* Set m_find_silence equal to the number of additional blocks 
+	   needed until we can do silence separation. */
+	debug_printf ("VERIFIED TRACK CHANGE (m_find_silence = %d)\n",
+		      m_find_silence);
+	copy_track_info (&m_new_track, &m_current_track);
+	if (m_find_silence < 0) {
+	    if (m_mic_to_cb_end > 0) {
+		m_find_silence = m_mic_to_cb_end;
+	    } else {
+		m_find_silence = 0;
+	    }
+	}
+    }
+
+    format_track_info (&m_old_track, "old");
+    format_track_info (&m_new_track, "new");
+    format_track_info (&m_current_track, "current");
+
+    /* If buffer almost full, dump extra to current song. */
+    if (cbuf2_get_free(&g_cbuf2) < m_buffersize) {
+	u_long curr_song;
+	debug_printf ("cbuf2_get_free < m_buffersize\n");
+	extract_size = m_buffersize - cbuf2_get_free(&g_cbuf2);
+
+        ret = cbuf2_advance_ogg (&g_cbuf2, m_buffersize);
+
+        if (ret != SR_SUCCESS) {
+	    debug_printf("cbuf2_extract had bad return code %d\n", ret);
+	    return ret;
+	}
+#if defined (commentout)
+	/* Post to caller */
+	if (curr_song < extract_size) {
+	    u_long curr_song_bytes = extract_size - curr_song;
+	    m_cue_sheet_bytes += curr_song_bytes;
+	    rip_manager_put_data (&m_getbuffer[curr_song], curr_song_bytes);
+	}
+#endif
+    }
+
+    return real_ret;
+}
+
+static error_code
+ripstream_rip_mp3 (void)
 {
     int ret;
     int real_ret = SR_SUCCESS;
@@ -267,7 +384,7 @@ ripstream_rip()
        The bitrate is needed to do the track splitting parameters 
        properly in seconds.  See the readme file for details.  */
     /* GCS FIX: For VBR streams, the header value may be more reliable. */
-    if (m_bitrate == -1) {
+    if (m_first_time_through) {
         unsigned long test_bitrate;
 	debug_printf("Querying stream for bitrate - first time.\n");
 	if (m_content_type == CONTENT_TYPE_MP3) {
@@ -287,7 +404,8 @@ ripstream_rip()
 		m_bitrate = 24;
 	}
         compute_cbuf2_size (m_sp_opt, m_bitrate, m_buffersize);
-	ret = cbuf2_init(&g_cbuf2, m_have_relay, m_buffersize, m_cbuf2_size);
+	ret = cbuf2_init (&g_cbuf2, m_content_type, m_have_relay, 
+			  m_buffersize, m_cbuf2_size);
 	if (ret != SR_SUCCESS) return ret;
     }
 
@@ -296,7 +414,6 @@ ripstream_rip()
 	clear_track_info (&m_current_track);
 	read_external (m_external_process, &m_current_track);
     } else {
-	/* Parse the metadata (RMK: ogg might have multiple metadata/chunk) */
 	if (m_current_track.raw_metadata[0]) {
 	    parse_metadata (&m_current_track);
 	} else {
@@ -305,8 +422,8 @@ ripstream_rip()
     }
 
     /* Copy the data into cbuffer */
-    ret = cbuf2_insert_chunk(&g_cbuf2, m_getbuffer, m_buffersize,
-			     &m_current_track);
+    ret = cbuf2_insert_chunk (&g_cbuf2, m_getbuffer, m_buffersize,
+			      m_content_type, &m_current_track);
     if (ret != SR_SUCCESS) {
 	debug_printf("start_track had bad return code %d\n", ret);
 	return ret;

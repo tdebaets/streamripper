@@ -15,13 +15,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "relaylib.h"
 #include "cbuf2.h"
 #include "debug.h"
+#include "ripogg.h"
 
 /*****************************************************************************
  * Global variables
@@ -43,18 +43,24 @@ static u_long cbuf2_add (CBUF2 *cbuf2, u_long pos, u_long len);
 static void cbuf2_get_used_fragments (CBUF2 *cbuf2, u_long* frag1, 
 				      u_long* frag2);
 static void cbuf2_advance_metadata_list (CBUF2* cbuf2);
+static error_code cbuf2_extract_relay_mp3 (CBUF2 *cbuf2, char *data, 
+					   u_long *pos, u_long *len, 
+					   int icy_metadata);
+static error_code cbuf2_extract_relay_ogg (CBUF2 *cbuf2, RELAY_LIST* ptr);
+static u_long cbuf2_offset (CBUF2 *cbuf2, u_long pos);
 
 /*****************************************************************************
  * Function definitions
  *****************************************************************************/
 error_code
-cbuf2_init (CBUF2 *cbuf2, int have_relay, unsigned long chunk_size, 
-	    unsigned long num_chunks)
+cbuf2_init (CBUF2 *cbuf2, int content_type, int have_relay, 
+	    unsigned long chunk_size, unsigned long num_chunks)
 {
     if (chunk_size == 0 || num_chunks == 0) {
         return SR_ERROR_INVALID_PARAM;
     }
     cbuf2->have_relay = have_relay;
+    cbuf2->content_type = content_type;
     cbuf2->chunk_size = chunk_size;
     cbuf2->num_chunks = num_chunks;
     cbuf2->size = chunk_size * num_chunks;
@@ -64,6 +70,7 @@ cbuf2_init (CBUF2 *cbuf2, int have_relay, unsigned long chunk_size,
     cbuf2->next_song = 0;
 
     INIT_LIST_HEAD (&cbuf2->metadata_list);
+    INIT_LIST_HEAD (&cbuf2->ogg_page_list);
 
     cbuf2->cbuf_sem = threadlib_create_sem();
     threadlib_signal_sem (&cbuf2->cbuf_sem);
@@ -159,16 +166,18 @@ cbuf2_advance_relay_list (CBUF2* cbuf2, u_long count)
     prev = NULL;
     while (ptr != NULL) {
 	next = ptr->m_next;
-	if (ptr->m_cbuf_pos >= count) {
-	    u_long old_pos = ptr->m_cbuf_pos;
-	    ptr->m_cbuf_pos -= count;
-	    debug_printf ("Updated relay pointer: %d -> %d\n",
-			  old_pos, ptr->m_cbuf_pos);
-	    prev = ptr;
-	} else {
-	    debug_printf ("Relay: Client %d couldn't keep up with cbuf\n", 
-			  ptr->m_sock);
-	    relaylib_disconnect (prev, ptr);
+	if (!ptr->m_is_new) {
+	    if (ptr->m_cbuf_pos >= count) {
+		u_long old_pos = ptr->m_cbuf_pos;
+		ptr->m_cbuf_pos -= count;
+		debug_printf ("Updated relay pointer: %d -> %d\n",
+			      old_pos, ptr->m_cbuf_pos);
+		prev = ptr;
+	    } else {
+		debug_printf ("Relay: Client %d couldn't keep up with cbuf\n", 
+			      ptr->m_sock);
+		relaylib_disconnect (prev, ptr);
+	    }
 	}
 	ptr = next;
     }
@@ -178,6 +187,65 @@ void
 cbuf2_set_next_song (CBUF2 *cbuf2, u_long pos)
 {
     cbuf2->next_song = pos;
+}
+
+/* Advance the cbuffer while respecting ogg page boundaries */
+error_code
+cbuf2_advance_ogg (CBUF2 *cbuf2, int requested_free_size)
+{
+    u_long count;
+    LIST *p, *n;
+    OGG_PAGE_LIST *tmp;
+
+    if (cbuf2->item_count + requested_free_size <= cbuf2->size) {
+	return SR_SUCCESS;
+    }
+
+    if (cbuf2->have_relay) {
+	debug_printf ("Waiting for g_relay_list_sem\n");
+	threadlib_waitfor_sem (&g_relay_list_sem);
+    }
+    debug_printf ("Waiting for cbuf2->cbuf_sem\n");
+    threadlib_waitfor_sem (&cbuf2->cbuf_sem);
+
+    /* count is the amount we're going to free up */
+    count = requested_free_size - (cbuf2->size - cbuf2->item_count);
+
+    /* Loop through ogg pages, from head to tail. Eject pages that 
+       that map into the portion of the buffer that we are freeing. */
+    p = cbuf2->ogg_page_list.next;
+    list_for_each_safe (p, n, &(cbuf2->ogg_page_list)) {
+	u_long pos;
+	tmp = list_entry(p, OGG_PAGE_LIST, m_list);
+	pos = cbuf2_offset (cbuf2, tmp->m_page_start);
+	if (pos > count) {
+	    break;
+	}
+	list_del (p);
+	if (tmp->m_page_flags & OGG_PAGE_EOS) {
+	    free (tmp->m_header_buf_ptr);
+	}
+	free (tmp);
+	if (cbuf2->item_count + requested_free_size <= cbuf2->size) {
+	    break;
+	}
+    }
+    cbuf2->base_idx = cbuf2_add (cbuf2, cbuf2->base_idx, count);
+    cbuf2->item_count -= count;
+
+    if (cbuf2->have_relay) {
+	cbuf2_advance_relay_list (cbuf2, count);
+    }
+    threadlib_signal_sem (&cbuf2->cbuf_sem);
+    if (cbuf2->have_relay) {
+	threadlib_signal_sem (&g_relay_list_sem);
+    }
+
+    if (cbuf2->item_count + requested_free_size <= cbuf2->size) {
+	return SR_SUCCESS;
+    } else {
+	return SR_ERROR_BUFFER_EMPTY;
+    }
 }
 
 /* On extract, we need to update all the relay pointers. */
@@ -267,10 +335,36 @@ cbuf2_peek (CBUF2 *cbuf2, char *data, u_long count)
 
 error_code
 cbuf2_insert_chunk (CBUF2 *cbuf2, const char *data, u_long count,
-		    TRACK_INFO* ti)
+		    int content_type, TRACK_INFO* ti)
 {
+    LIST this_page_list;
     int chunk_no;
     error_code rc;
+
+    /* Identify OGG track changes. We can do this before locking 
+       the CBUF to improve concurrency with relay threads. */
+    if (content_type == CONTENT_TYPE_OGG) {
+	OGG_PAGE_LIST* tmp;
+	LIST *p;
+	unsigned long page_loc;
+
+	rip_ogg_process_chunk (&this_page_list, data, count);
+
+	if (list_empty(&cbuf2->ogg_page_list)) {
+	    page_loc = 0;
+	} else {
+	    p = cbuf2->ogg_page_list.prev;
+	    tmp = list_entry(p, OGG_PAGE_LIST, m_list);
+	    page_loc = cbuf2_add (cbuf2, tmp->m_page_start, tmp->m_page_len);
+	}
+	
+	p = &this_page_list.next;
+	list_for_each (p, &this_page_list) {
+	    tmp = list_entry(p, OGG_PAGE_LIST, m_list);
+	    tmp->m_page_start = page_loc;
+	    page_loc = cbuf2_add (cbuf2, page_loc, tmp->m_page_len);
+	}
+    }
 
     /* Insert data */
     threadlib_waitfor_sem (&cbuf2->cbuf_sem);
@@ -281,8 +375,10 @@ cbuf2_insert_chunk (CBUF2 *cbuf2, const char *data, u_long count,
 	return rc;
     }
 
-    /* Insert metadata data */
-    if (ti && ti->have_track_info) {
+    if (content_type == CONTENT_TYPE_OGG) {
+	list_splice (&this_page_list, cbuf2->ogg_page_list.prev);
+    } else if (ti && ti->have_track_info) {
+	/* Insert metadata data */
 	int num_bytes;
 	unsigned char num_16_bytes;
 	METADATA_LIST* ml;
@@ -308,8 +404,75 @@ cbuf2_insert_chunk (CBUF2 *cbuf2, const char *data, u_long count,
    return 0 if the buffer is empty. 
 */
 error_code 
-cbuf2_extract_relay (CBUF2 *cbuf2, char *data, u_long *pos, u_long *len,
-		     int icy_metadata)
+cbuf2_extract_relay (CBUF2 *cbuf2, RELAY_LIST* ptr)
+{
+    if (cbuf2->content_type == CONTENT_TYPE_OGG) {
+	return cbuf2_extract_relay_ogg (cbuf2, ptr);
+    } else {
+	return cbuf2_extract_relay_mp3 (cbuf2, ptr->m_buffer, 
+					&ptr->m_cbuf_pos, &ptr->m_left_to_send,
+					ptr->m_icy_metadata);
+    }
+}
+
+static error_code 
+cbuf2_extract_relay_ogg (CBUF2 *cbuf2, RELAY_LIST* ptr)
+{
+    if (ptr->m_header_buf_ptr) {
+	u_long remaining = ptr->m_header_buf_len - ptr->m_header_buf_off;
+	if (remaining > ptr->m_buffer_size) {
+	    memcpy (ptr->m_buffer, 
+		    &ptr->m_header_buf_ptr[ptr->m_header_buf_off], 
+		    ptr->m_buffer_size);
+	    ptr->m_header_buf_off += ptr->m_buffer_size;
+	    ptr->m_left_to_send = ptr->m_buffer_size;
+	} else {
+	    memcpy (ptr->m_buffer, 
+		    &ptr->m_header_buf_ptr[ptr->m_header_buf_off], 
+		    remaining);
+	    ptr->m_header_buf_ptr = 0;
+	    ptr->m_header_buf_off = 0;
+	    ptr->m_header_buf_len = 0;
+	    ptr->m_left_to_send = remaining;
+	}
+    } else {
+	u_long frag1, frag2;
+	u_long relay_idx, remaining;
+
+	threadlib_waitfor_sem (&cbuf2->cbuf_sem);
+	relay_idx = cbuf2_add (cbuf2, cbuf2->base_idx, ptr->m_cbuf_pos);
+	cbuf2_get_used_fragments (cbuf2, &frag1, &frag2);
+	if (ptr->m_cbuf_pos < frag1) {
+	    remaining = frag1 - ptr->m_cbuf_pos;
+	} else {
+	    remaining = cbuf2->item_count - ptr->m_cbuf_pos;
+	}
+	debug_printf ("%p p=%d/t=%d (f1=%d,f2=%d) [r=%d/bs=%d]\n", 
+		      ptr,
+		      ptr->m_cbuf_pos, cbuf2->item_count,
+		      frag1, frag2,
+		      remaining, ptr->m_buffer_size);
+	if (remaining == 0) {
+	    threadlib_signal_sem (&cbuf2->cbuf_sem);
+	    return SR_ERROR_BUFFER_EMPTY;
+	}
+	if (remaining > ptr->m_buffer_size) {
+	    memcpy (ptr->m_buffer, &cbuf2->buf[relay_idx], ptr->m_buffer_size);
+	    ptr->m_left_to_send = ptr->m_buffer_size;
+	    ptr->m_cbuf_pos += ptr->m_buffer_size;
+	} else {
+	    memcpy (ptr->m_buffer, &cbuf2->buf[relay_idx], remaining);
+	    ptr->m_left_to_send = remaining;
+	    ptr->m_cbuf_pos += remaining;
+	}
+	threadlib_signal_sem (&cbuf2->cbuf_sem);
+    }
+    return SR_SUCCESS;
+}
+
+static error_code 
+cbuf2_extract_relay_mp3 (CBUF2 *cbuf2, char *data, u_long *pos, u_long *len,
+			 int icy_metadata)
 {
     u_long frag1, frag2;
     int relay_chunk_no;
@@ -371,19 +534,33 @@ void
 cbuf2_debug_lists (CBUF2 *cbuf2)
 {
     LIST *p;
-    METADATA_LIST *tmp;
-    debug_printf ("---CBUF_DEBUG_LISTS---\n");
+
+    debug_printf ("---CBUF_DEBUG_META_LIST---\n");
     debug_printf("%ld: <size>\n", cbuf2->size);
     debug_printf("%ld: Start\n", cbuf2->base_idx);
     list_for_each (p, &(cbuf2->metadata_list)) {
+	METADATA_LIST *meta_tmp;
 	int metadata_pos;
-	tmp = list_entry(p, METADATA_LIST, m_list);
-	metadata_pos = (tmp->m_chunk + 1) * cbuf2->chunk_size - 1;
+	meta_tmp = list_entry (p, METADATA_LIST, m_list);
+	metadata_pos = (meta_tmp->m_chunk + 1) * cbuf2->chunk_size - 1;
 	debug_printf("%ld: %d [%d]%s\n", 
 		     metadata_pos,
-		     tmp->m_chunk, 
-		     (int) tmp->m_composed_metadata[0],
-		     &tmp->m_composed_metadata[1]);
+		     meta_tmp->m_chunk, 
+		     (int) meta_tmp->m_composed_metadata[0],
+		     &meta_tmp->m_composed_metadata[1]);
+    }
+    debug_printf("%ld: End\n", cbuf2_write_index(cbuf2));
+
+    debug_printf ("---CBUF_DEBUG_OGG_LIST---\n");
+    debug_printf("%ld: <size>\n", cbuf2->size);
+    debug_printf("%ld: Start\n", cbuf2->base_idx);
+    list_for_each (p, &(cbuf2->ogg_page_list)) {
+	OGG_PAGE_LIST *ogg_tmp;
+	ogg_tmp = list_entry (p, OGG_PAGE_LIST, m_list);
+	debug_printf("ogg page = %02x [%ld, %ld]\n", 
+		     ogg_tmp->m_page_flags,
+		     ogg_tmp->m_page_start,
+		     ogg_tmp->m_page_len);
     }
     debug_printf("%ld: End\n", cbuf2_write_index(cbuf2));
     debug_printf ("---\n");
@@ -441,6 +618,30 @@ cbuf2_add (CBUF2 *cbuf2, u_long pos, u_long len)
 }
 
 static u_long
+cbuf2_offset (CBUF2 *cbuf2, u_long pos)
+{
+    long diff = pos - cbuf2->base_idx;
+    if (diff >= 0) {
+	return diff;
+    } else {
+	return diff + cbuf2->size;
+    }
+}
+
+#if defined (commentout) /* returns pos1 - pos2 (not used) */
+static u_long
+cbuf2_subtract (CBUF2 *cbuf2, u_long pos1, u_long pos2)
+{
+    long diff = pos1 - pos2;
+    if (diff > 0) {
+	return diff;
+    } else {
+	return diff + cbuf2->item_count;
+    }
+}
+#endif
+
+static u_long
 cbuf2_idx_to_chunk (CBUF2 *cbuf2, u_long idx)
 {
     return idx / cbuf2->chunk_size;
@@ -470,12 +671,54 @@ error_code
 cbuf2_init_relay_entry (CBUF2 *cbuf2, RELAY_LIST* ptr, u_long burst_request)
 {
     int buffer_size;
+    LIST *p;
+    OGG_PAGE_LIST *tmp;
 
     threadlib_waitfor_sem (&cbuf2->cbuf_sem);
     if (burst_request >= cbuf2->item_count) {
 	ptr->m_cbuf_pos = 0;
     } else {
 	ptr->m_cbuf_pos = cbuf2->item_count - burst_request;
+    }
+    if (cbuf2->content_type == CONTENT_TYPE_OGG) {
+	/* Move to ogg page boundary */
+	int no_boundary_yet = 1;
+	u_long req_pos = ptr->m_cbuf_pos;
+	p = cbuf2->ogg_page_list.next;
+	list_for_each (p, &(cbuf2->ogg_page_list)) {
+	    u_long page_offset;
+	    tmp = list_entry(p, OGG_PAGE_LIST, m_list);
+	    page_offset = cbuf2_offset (cbuf2, tmp->m_page_start);
+	    if (page_offset < req_pos || no_boundary_yet) {
+		if (tmp->m_page_flags & OGG_PAGE_BOS) {
+		    ptr->m_cbuf_pos = page_offset;
+		    ptr->m_header_buf_ptr = 0;
+		    ptr->m_header_buf_len = 0;
+		    ptr->m_header_buf_off = 0;
+		    no_boundary_yet = 0;
+		} else if (!(tmp->m_page_flags & OGG_PAGE_2)) {
+		    ptr->m_cbuf_pos = page_offset;
+		    ptr->m_header_buf_ptr = tmp->m_header_buf_ptr;
+		    ptr->m_header_buf_len = tmp->m_header_buf_len;
+		    ptr->m_header_buf_off = 0;
+		    no_boundary_yet = 0;
+		}
+	    }
+	    debug_printf ("Computing cbuf2_offset: "
+			  "req=%d pos=%d bas=%d pag=%d off=%d hbuf=%d\n",
+			  req_pos, ptr->m_cbuf_pos, 
+			  cbuf2->base_idx, tmp->m_page_start,
+			  page_offset, ptr->m_header_buf_ptr);
+	    if (!no_boundary_yet && page_offset > req_pos) {
+		debug_printf ("Done computing cbuf2_offset\n");
+		break;
+	    }
+	}
+	if (no_boundary_yet) {
+	    return SR_ERROR_NO_OGG_PAGES_FOR_RELAY;
+	}
+    } else {
+	/* Move to metadata boundary */
 	ptr->m_cbuf_pos = (ptr->m_cbuf_pos / cbuf2->chunk_size) 
 		* cbuf2->chunk_size;
     }
@@ -489,9 +732,11 @@ cbuf2_init_relay_entry (CBUF2 *cbuf2, RELAY_LIST* ptr, u_long burst_request)
     if (ptr->m_icy_metadata) {
 	buffer_size = cbuf2->chunk_size + 16*256;
 	ptr->m_buffer = (char*) malloc (sizeof(char)*buffer_size);
+	ptr->m_buffer_size = buffer_size;
     } else {
 	buffer_size = cbuf2->chunk_size;
 	ptr->m_buffer = (char*) malloc (sizeof(char)*buffer_size);
+	ptr->m_buffer_size = buffer_size;
     }
     /* GCS FIX: check for memory error */
     threadlib_signal_sem (&cbuf2->cbuf_sem);
