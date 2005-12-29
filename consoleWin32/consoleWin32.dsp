@@ -204,6 +204,14 @@ SOURCE=..\lib\rip_manager.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\lib\ripogg.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\ripogg.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\lib\ripstream.c
 # End Source File
 # Begin Source File

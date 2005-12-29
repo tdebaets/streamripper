@@ -23,7 +23,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdarg.h>
-#include <getopt.h>
+//#include <getopt.h>
 
 #include <ogg/ogg.h>
 #include <vorbis/codec.h>
