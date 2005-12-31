@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GX /O2 /I "..\libmad-0.15.1b\msvc++" /I "..\lib" /I "..\iconv-win32\static" /I "..\tre-0.7.0\lib" /I "..\tre-0.7.0\win32" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /FR /YX /FD /c
+# ADD CPP /nologo /MD /W3 /GX /O2 /I "..\libogg-1.1.3" /I "..\libvorbis-1.1.2" /I "..\libmad-0.15.1b\msvc++" /I "..\lib" /I "..\iconv-win32\static" /I "..\tre-0.7.0\lib" /I "..\tre-0.7.0\win32" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /FR /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -50,7 +50,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 MSVCRT.LIB kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Ws2_32.lib libmad.lib charset.lib iconv.lib tre.lib /nologo /subsystem:console /machine:I386 /out:"Release/sripper.exe" /libpath:"..\libmad-0.15.1b\msvc++\Release" /libpath:"..\iconv-win32\static" /libpath:"..\tre-0.7.0\win32\Release"
+# ADD LINK32 MSVCRT.LIB kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Ws2_32.lib libmad.lib charset.lib iconv.lib tre.lib ogg.lib vorbis.lib /nologo /subsystem:console /machine:I386 /out:"Release/sripper.exe" /libpath:"..\libogg-1.1.3" /libpath:"..\libvorbis-1.1.2" /libpath:"..\libmad-0.15.1b\msvc++\Release" /libpath:"..\iconv-win32\static" /libpath:"..\tre-0.7.0\win32\Release"
 # SUBTRACT LINK32 /nodefaultlib
 
 !ELSEIF  "$(CFG)" == "consoleWin32 - Win32 Debug"
@@ -249,6 +249,14 @@ SOURCE=..\lib\types.h
 # Begin Source File
 
 SOURCE=..\lib\uce_dirent.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\utf8.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\utf8.h
 # End Source File
 # Begin Source File
 

@@ -23,16 +23,13 @@
 #include <errno.h>
 #include <string.h>
 #include <stdarg.h>
-//#include <getopt.h>
-
 #include <ogg/ogg.h>
 #include <vorbis/codec.h>
-
 #include <locale.h>
+
 #include "cbuf2.h"
 #include "ripogg.h"
 #include "utf8.h"
-//#include "i18n.h"
 #include "list.h"
 #include "debug.h"
 
