@@ -169,7 +169,8 @@ static void error(char *format, ...)
     va_end(ap);
 }
 
-static void
+/* Return 1 if the page is a header page */
+static int
 vorbis_process (stream_processor *stream, ogg_page *page)
 {
     ogg_packet packet;
@@ -407,6 +408,7 @@ vorbis_process (stream_processor *stream, ogg_page *page)
         }
         inf->bytes += page->header_len + page->body_len;
     }
+    return header;
 }
 
 static void
@@ -623,11 +625,12 @@ void
 rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size)
 {
     OGG_PAGE_LIST* ol;
+    int header;
     int ret;
     char *buffer;
     //    static ogg_int64_t written = 0;
     //    static unsigned int written = 0;
-    static int ogg_page2 = 0;
+    //    static int ogg_page2 = 0;
 
     INIT_LIST_HEAD (page_list);
 
@@ -667,7 +670,7 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size)
 		    vorbis_start (&stream);
 		}
 	    }
-	    vorbis_process (&stream, &page);
+	    header = vorbis_process (&stream, &page);
 	    if (ogg_page_eos (&page)) {
 		vorbis_end (&stream);
 	    }
@@ -680,16 +683,6 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size)
 	    }
 	    ol->m_page_len = page.header_len + page.body_len;
 	    ol->m_page_flags = 0;
-
-	    /* GCS FIX: Assume that these three pages are unique, i.e. 
-	       we don't have a page2 which is also eos page */
-	    if ((ogg_page2 && ogg_page_bos (&page)) ||
-		(ogg_page2 && ogg_page_eos (&page)) ||
-		(ogg_page_eos (&page) && ogg_page_bos (&page))) {
-		debug_printf ("Oops. Unexpected page configuration.\n");
-		printf ("Oops. Unexpected page configuration.\n");
-		exit (1);
-	    }
 
 	    /* *****************************************************
                Create header buffer for relay stream. A pointer to the 
@@ -704,7 +697,6 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size)
 		ol->m_page_flags |= OGG_PAGE_BOS;
 		ol->m_header_buf_ptr = 0;
 		ol->m_header_buf_len = 0;
-		ogg_page2 = 1;
 		ogg_curr_header = (unsigned char*) malloc (ol->m_page_len);
 		ogg_curr_header_len = ol->m_page_len;
 		memcpy (ogg_curr_header, 
@@ -712,12 +704,11 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size)
 		memcpy (ogg_curr_header+page.header_len, 
 			page.body, page.body_len);
 	    }
-	    else if (ogg_page2) {
-		/* Second page in song */
+	    else if (header) {
+		/* Second or third page in song */
 		ol->m_page_flags |= OGG_PAGE_2;
 		ol->m_header_buf_ptr = 0;
 		ol->m_header_buf_len = 0;
-		ogg_page2 = 0;
 		ogg_curr_header = (unsigned char*) 
 			realloc (ogg_curr_header,
 				 ogg_curr_header_len + ol->m_page_len);
@@ -735,7 +726,6 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size)
 		ol->m_page_flags |= OGG_PAGE_EOS;
 		ol->m_header_buf_ptr = ogg_curr_header;
 		ol->m_header_buf_len = ogg_curr_header_len;
-		ogg_page2 = 0;
 		ogg_curr_header = 0;
 		ogg_curr_header_len = 0;
 	    }

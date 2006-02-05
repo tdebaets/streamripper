@@ -701,9 +701,9 @@ Torrent/web sites:
 www.archive.org
 bt.etree.org
 purelivegigs.com
-http://www.thetradersden.org/index.php?
+http://www.thetradersden.org/
 www.filesoup.com
-http://www.dimeadozen.org/ (can't seem to register)
+http://www.dimeadozen.org/
 http://www.bootcity.org
 
 Band specific sites:
@@ -715,6 +715,8 @@ http://digitalpanic.org (Widespred Panic)
 http://redcorvertte.free.fr/livemusic.htm (Prince)
 http://pj.sidewalkcrusaders.com/ (Perl Jam)
 http://tracker.hipfans.com/ (Tragically Hip)
+http://www.gdlive.com/ (Grateful Dead, others)
+http://www.pinkrobert.net (CSNY - can't connect)
 
 Links to BT sites:
 Smiler's links (http://smiler.no-ip.org/BT/BTlinks.php
