@@ -802,6 +802,9 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     GetPrivateProfileString(APPNAME, "localhost", "localhost", guiOpt->localhost, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "useragent", DEFAULT_USERAGENT, opt->useragent, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "default_skin", DEFAULT_SKINFILE, guiOpt->default_skin, MAX_INI_LINE_LEN, filename);
+    if (guiOpt->default_skin[0] == 0) {
+        strcpy(guiOpt->default_skin, DEFAULT_SKINFILE);
+    }
     GetPrivateProfileString(APPNAME, "rip_single_path", "", opt->showfile_pattern, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "output_pattern", "%S/%A - %T", opt->output_pattern, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "over_write_complete", "larger", overwrite_string, MAX_INI_LINE_LEN, filename);
