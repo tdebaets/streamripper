@@ -1,6 +1,7 @@
 New for 1.61.18
 ---------------
 * First try at getting ogg relay to work
+* Add izverg's patch for when default skin is blank in sripper.ini.
 
 New for 1.61.17
 ---------------

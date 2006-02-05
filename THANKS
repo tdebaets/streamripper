@@ -16,6 +16,7 @@ connections from clients that don't want metadata.
 which let you choose which files to save or delete.
 "Daniel Lord" patch for overwriting complete files when bigger.
 "Chris Pearson" partial fix for overflows using the -M flag.
+"isverg" a patch for when the default skin is blank in sripper.ini.
 
 THANKS (v.1.60.X)
 ---------------------
