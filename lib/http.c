@@ -432,8 +432,9 @@ httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size, int 
     return SR_SUCCESS;
 #endif
 
-    /* sprintf(buf, "HTTP/1.0 %d\r\n", info->icy_code); */
-    sprintf(buf, "HTTP/1.0 200 OK\r\n");
+    /* GCS: The code used to give HTTP instead of ICY for the response header, 
+	like this: sprintf(buf, "HTTP/1.0 200 OK\r\n"); */
+    sprintf (buf, "ICY 200 OK\r\n");
     strcat(header, buf);
 
     if (info->http_location[0])

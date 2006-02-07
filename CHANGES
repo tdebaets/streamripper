@@ -1,6 +1,8 @@
 New for 1.61.18
 ---------------
 * First try at getting ogg relay to work
+* Return an ICY response header instead of HTTP response header.
+  This fixes problems with Windows media player classic (#1189504).
 * Add izverg's patch for when default skin is blank in sripper.ini.
 
 New for 1.61.17
