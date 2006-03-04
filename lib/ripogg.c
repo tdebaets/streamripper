@@ -102,13 +102,12 @@ typedef struct {
 } misc_vorbis_info;
 
 
-
 /*****************************************************************************
  * Private Vars
  *****************************************************************************/
 static int printinfo = 1;
 static int printwarn = 1;
-static int verbose = 1;
+//static int verbose = 1;
 static int flawed;
 
 static ogg_sync_state ogg_sync;
@@ -119,6 +118,7 @@ static int ogg_curr_header_len;
 
 #define CONSTRAINT_PAGE_AFTER_EOS   1
 #define CONSTRAINT_MUXING_VIOLATED  2
+
 
 /*****************************************************************************
  * Functions
@@ -158,20 +158,9 @@ static void warn(char *format, ...)
     va_end(ap);
 }
 
-static void error(char *format, ...) 
-{
-    va_list ap;
-
-    flawed = 1;
-
-    va_start(ap, format);
-    vfprintf(stdout, format, ap);
-    va_end(ap);
-}
-
 /* Return 1 if the page is a header page */
 static int
-vorbis_process (stream_processor *stream, ogg_page *page)
+vorbis_process (stream_processor *stream, ogg_page *page, TRACK_INFO* ti)
 {
     ogg_packet packet;
     misc_vorbis_info *inf = stream->data;
@@ -179,61 +168,61 @@ vorbis_process (stream_processor *stream, ogg_page *page)
     int k;
 
     ogg_stream_pagein(&stream->os, page);
-    if(inf->doneheaders < 3)
+    if (inf->doneheaders < 3)
         header = 1;
 
-    while(ogg_stream_packetout(&stream->os, &packet) > 0) {
-        if(inf->doneheaders < 3) {
-            if(vorbis_synthesis_headerin(&inf->vi, &inf->vc, &packet) < 0) {
+    while (ogg_stream_packetout(&stream->os, &packet) > 0) {
+        if (inf->doneheaders < 3) {
+            if (vorbis_synthesis_headerin(&inf->vi, &inf->vc, &packet) < 0) {
                 warn(_("Warning: Could not decode vorbis header "
                        "packet - invalid vorbis stream (%d)\n"), stream->num);
                 continue;
             }
             inf->doneheaders++;
-            if(inf->doneheaders == 3) {
+            if (inf->doneheaders == 3) {
                 if(ogg_page_granulepos(page) != 0 || ogg_stream_packetpeek(&stream->os, NULL) == 1)
                     warn(_("Warning: Vorbis stream %d does not have headers "
                            "correctly framed. Terminal header page contains "
                            "additional packets or has non-zero granulepos\n"),
 			 stream->num);
-                info(_("Vorbis headers parsed for stream %d, "
-                       "information follows...\n"), stream->num);
+                debug_printf("Vorbis headers parsed for stream %d, "
+			     "information follows...\n", stream->num);
 
-                info(_("Version: %d\n"), inf->vi.version);
+                debug_printf("Version: %d\n", inf->vi.version);
                 k = 0;
                 while(releases[k].vendor_string) {
                     if(!strcmp(inf->vc.vendor, releases[k].vendor_string)) {
-                        info(_("Vendor: %s (%s)\n"), inf->vc.vendor, 
-			     releases[k].desc);
+                        debug_printf("Vendor: %s (%s)\n", inf->vc.vendor, 
+				     releases[k].desc);
                         break;
                     }
                     k++;
                 }
                 if(!releases[k].vendor_string)
-                    info(_("Vendor: %s\n"), inf->vc.vendor);
-                info(_("Channels: %d\n"), inf->vi.channels);
-                info(_("Rate: %ld\n\n"), inf->vi.rate);
+                    debug_printf("Vendor: %s\n", inf->vc.vendor);
+                debug_printf("Channels: %d\n", inf->vi.channels);
+                debug_printf("Rate: %ld\n\n", inf->vi.rate);
 
                 if(inf->vi.bitrate_nominal > 0)
-                    info(_("Nominal bitrate: %f kb/s\n"), 
-			 (double)inf->vi.bitrate_nominal / 1000.0);
+                    debug_printf("Nominal bitrate: %f kb/s\n", 
+				 (double)inf->vi.bitrate_nominal / 1000.0);
                 else
-                    info(_("Nominal bitrate not set\n"));
+                    debug_printf("Nominal bitrate not set\n");
 
                 if(inf->vi.bitrate_upper > 0)
-                    info(_("Upper bitrate: %f kb/s\n"), 
-			 (double)inf->vi.bitrate_upper / 1000.0);
+                    debug_printf("Upper bitrate: %f kb/s\n",
+				 (double)inf->vi.bitrate_upper / 1000.0);
                 else
-                    info(_("Upper bitrate not set\n"));
+                    debug_printf("Upper bitrate not set\n");
 
                 if(inf->vi.bitrate_lower > 0)
-                    info(_("Lower bitrate: %f kb/s\n"), 
-			 (double)inf->vi.bitrate_lower / 1000.0);
+                    debug_printf("Lower bitrate: %f kb/s\n", 
+				 (double)inf->vi.bitrate_lower / 1000.0);
                 else
-                    info(_("Lower bitrate not set\n"));
+                    debug_printf("Lower bitrate not set\n");
 
                 if(inf->vc.comments > 0)
-                    info(_("User comments section follows...\n"));
+                    debug_printf ("User comments section follows...\n");
 
                 for(i=0; i < inf->vc.comments; i++) {
                     char *sep = strchr(inf->vc.user_comments[i], '=');
@@ -380,7 +369,19 @@ vorbis_process (stream_processor *stream, ogg_page *page)
                             continue;
                         }
                         *sep = 0;
-                        info("\t%s=%s\n", inf->vc.user_comments[i], decoded);
+                        debug_printf ("\t%s=%s\n", 
+				      inf->vc.user_comments[i], decoded);
+			
+			/* GCS FIX: Need case insensitive compare */
+			if (!strcmp(inf->vc.user_comments[i],"artist")) {
+			    strcpy (ti->artist, decoded);
+			} else if (!strcmp(inf->vc.user_comments[i],"title")) {
+			    strcpy (ti->title, decoded);
+			    ti->have_track_info = 1;
+			} else if (!strcmp(inf->vc.user_comments[i],"album")) {
+			    strcpy (ti->album, decoded);
+			}
+
                         free(decoded);
                     }
                 }
@@ -425,17 +426,17 @@ vorbis_end(stream_processor *stream)
     bitrate = inf->bytes*8 / time / 1000.0;
 
 #ifdef _WIN32
-    info(_("Vorbis stream %d:\n"
-           "\tTotal data length: %I64d bytes\n"
-           "\tPlayback length: %ldm:%02lds\n"
-           "\tAverage bitrate: %f kbps\n"), 
-            stream->num,inf->bytes, minutes, seconds, bitrate);
+    debug_printf ("Vorbis stream %d:\n"
+		  "\tTotal data length: %I64d bytes\n"
+		  "\tPlayback length: %ldm:%02lds\n"
+		  "\tAverage bitrate: %f kbps\n", 
+		  stream->num,inf->bytes, minutes, seconds, bitrate);
 #else
-    info(_("Vorbis stream %d:\n"
-           "\tTotal data length: %lld bytes\n"
-           "\tPlayback length: %ldm:%02lds\n"
-           "\tAverage bitrate: %f kbps\n"), 
-            stream->num,inf->bytes, minutes, seconds, bitrate);
+    debug_printf ("Vorbis stream %d:\n"
+		  "\tTotal data length: %lld bytes\n"
+		  "\tPlayback length: %ldm:%02lds\n"
+		  "\tAverage bitrate: %f kbps\n", 
+		  stream->num,inf->bytes, minutes, seconds, bitrate);
 #endif
 
     vorbis_comment_clear(&inf->vc);
@@ -614,15 +615,16 @@ static stream_processor *find_stream_processor(stream_set *set, ogg_page *page)
    stream->serial = serial;
 
    if(stream->serial == 0 || stream->serial == -1) {
-       info(_("Note: Stream %d has serial number %d, which is legal but may "
-              "cause problems with some tools."), stream->num, stream->serial);
+       debug_printf ("Note: Stream %d has serial number %d, which is legal but may "
+              "cause problems with some tools.", stream->num, stream->serial);
    }
 
    return stream;
 }
 
 void
-rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size)
+rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size,
+		       TRACK_INFO* ti)
 {
     OGG_PAGE_LIST* ol;
     int header;
@@ -670,7 +672,7 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size)
 		    vorbis_start (&stream);
 		}
 	    }
-	    header = vorbis_process (&stream, &page);
+	    header = vorbis_process (&stream, &page, ti);
 	    if (ogg_page_eos (&page)) {
 		vorbis_end (&stream);
 	    }
@@ -703,8 +705,7 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size)
 			page.header, page.header_len);
 		memcpy (ogg_curr_header+page.header_len, 
 			page.body, page.body_len);
-	    }
-	    else if (header) {
+	    } else if (header) {
 		/* Second or third page in song */
 		ol->m_page_flags |= OGG_PAGE_2;
 		ol->m_header_buf_ptr = 0;
@@ -762,6 +763,13 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size)
 		  ogg_sync.headerbytes,
 		  ogg_sync.bodybytes);
     //    return 1;
+}
+
+void
+rip_ogg_get_current_header (unsigned char** ptr, int* len)
+{
+    *ptr = ogg_curr_header;
+    *len = ogg_curr_header_len;
 }
 
 void

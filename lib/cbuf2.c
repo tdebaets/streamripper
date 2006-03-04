@@ -31,6 +31,17 @@ CBUF2 g_cbuf2;
 
 /*****************************************************************************
  * Notes:
+ *
+ *   The terminology "count" should refer to a length, starting from 
+ *   the first filled byte.
+ *
+ *   The terminology "offset" == "count"
+ *
+ *   The terminology "pos" should refer to the absolute array index, 
+ *   starting from the beginning of the allocated buffer.
+ *
+ *   The terminology "idx" == "pos"
+ *
  *   The read & write indices always point to the next byte to be read 
  *   or written.  When the buffer is full or empty, they are equal.
  *   Use the item_count to distinguish these cases.
@@ -48,6 +59,8 @@ static error_code cbuf2_extract_relay_mp3 (CBUF2 *cbuf2, char *data,
 					   int icy_metadata);
 static error_code cbuf2_extract_relay_ogg (CBUF2 *cbuf2, RELAY_LIST* ptr);
 static u_long cbuf2_offset (CBUF2 *cbuf2, u_long pos);
+static u_long cbuf2_offset_2 (CBUF2 *cbuf2, u_long pos);
+static u_long cbuf2_subtract (CBUF2 *cbuf2, u_long pos1, u_long pos2);
 
 /*****************************************************************************
  * Function definitions
@@ -67,7 +80,9 @@ cbuf2_init (CBUF2 *cbuf2, int content_type, int have_relay,
     cbuf2->buf = (char*) malloc (cbuf2->size);
     cbuf2->base_idx = 0;
     cbuf2->item_count = 0;
-    cbuf2->next_song = 0;
+    cbuf2->next_song = 0;        /* MP3 only */
+    cbuf2->song_page = 0;        /* OGG only */
+    cbuf2->song_page_done = 0;   /* OGG only */
 
     INIT_LIST_HEAD (&cbuf2->metadata_list);
     INIT_LIST_HEAD (&cbuf2->ogg_page_list);
@@ -341,14 +356,15 @@ cbuf2_insert_chunk (CBUF2 *cbuf2, const char *data, u_long count,
     int chunk_no;
     error_code rc;
 
-    /* Identify OGG track changes. We can do this before locking 
-       the CBUF to improve concurrency with relay threads. */
+    /* Identify OGG pages using rip_ogg_process_chunk(). 
+       We can do this before locking the CBUF to improve 
+       concurrency with relay threads. */
     if (content_type == CONTENT_TYPE_OGG) {
 	OGG_PAGE_LIST* tmp;
 	LIST *p;
 	unsigned long page_loc;
 
-	rip_ogg_process_chunk (&this_page_list, data, count);
+	rip_ogg_process_chunk (&this_page_list, data, count, ti);
 
 	if (list_empty(&cbuf2->ogg_page_list)) {
 	    page_loc = 0;
@@ -557,13 +573,77 @@ cbuf2_debug_lists (CBUF2 *cbuf2)
     list_for_each (p, &(cbuf2->ogg_page_list)) {
 	OGG_PAGE_LIST *ogg_tmp;
 	ogg_tmp = list_entry (p, OGG_PAGE_LIST, m_list);
-	debug_printf("ogg page = %02x [%ld, %ld]\n", 
+	debug_printf("ogg page = %02x [%ld, %ld, %ld]\n", 
 		     ogg_tmp->m_page_flags,
 		     ogg_tmp->m_page_start,
-		     ogg_tmp->m_page_len);
+		     ogg_tmp->m_page_len,
+		     cbuf2_add(cbuf2,ogg_tmp->m_page_start,
+			       ogg_tmp->m_page_len));
     }
-    debug_printf("%ld: End\n", cbuf2_write_index(cbuf2));
+    if (cbuf2->song_page) {
+	debug_printf ("%ld(%ld): Song Page\n", 
+		      cbuf2->song_page->m_page_start,
+		      cbuf2->song_page_done);
+    } else {
+	debug_printf ("---: Song Page\n");
+    }
+    debug_printf ("%ld: End\n", cbuf2_write_index(cbuf2));
     debug_printf ("---\n");
+}
+
+error_code
+cbuf2_ogg_peek_song (CBUF2 *cbuf2, char* out_buf, 
+		     unsigned long buf_size,
+		     unsigned long* amt_filled,
+		     int* eos)
+{
+    error_code ret;
+    unsigned long song_offset;
+
+    *amt_filled = 0;
+    *eos = 0;
+
+    /* First time through, set the song_page */
+    if (!cbuf2->song_page) {
+	if (cbuf2->ogg_page_list.next) {
+	    cbuf2->song_page = list_entry (cbuf2->ogg_page_list.next,
+					   OGG_PAGE_LIST, m_list);
+	    cbuf2->song_page_done = 0;
+	} else {
+	    return SR_SUCCESS;
+	}
+    }
+
+    /* Advance song_page if old one is finished */
+    if (cbuf2->song_page_done == cbuf2->song_page->m_page_len) {
+	if (cbuf2->song_page->m_list.next == &cbuf2->ogg_page_list) {
+	    return SR_SUCCESS;
+	} else {
+	    cbuf2->song_page = list_entry (cbuf2->song_page->m_list.next,
+					   OGG_PAGE_LIST, m_list);
+	    cbuf2->song_page_done = 0;
+	}
+    }
+
+    /* Calculate the amount to return to the caller */
+    *amt_filled = cbuf2->song_page->m_page_len - cbuf2->song_page_done;
+    if (*amt_filled > buf_size) {
+	*amt_filled = buf_size;
+    } else {
+	if (cbuf2->song_page->m_page_flags & OGG_PAGE_EOS) {
+	    *eos = 1;
+	}
+    }
+
+    song_offset = cbuf2_offset_2 (cbuf2, cbuf2->song_page->m_page_start);
+    song_offset += cbuf2->song_page_done;
+    ret = cbuf2_peek_rgn (cbuf2, out_buf, song_offset, *amt_filled);
+    if (ret != SR_SUCCESS) {
+	return ret;
+    }
+
+    cbuf2->song_page_done += *amt_filled;
+    return SR_SUCCESS;
 }
 
 u_long
@@ -628,7 +708,19 @@ cbuf2_offset (CBUF2 *cbuf2, u_long pos)
     }
 }
 
-#if defined (commentout) /* returns pos1 - pos2 (not used) */
+/* This is like the above, but it never returns zero */
+static u_long
+cbuf2_offset_2 (CBUF2 *cbuf2, u_long pos)
+{
+    long diff = pos - cbuf2->base_idx;
+    if (diff > 0) {
+	return diff;
+    } else {
+	return diff + cbuf2->size;
+    }
+}
+
+/* returns pos1 - pos2 (not used) */
 static u_long
 cbuf2_subtract (CBUF2 *cbuf2, u_long pos1, u_long pos2)
 {
@@ -639,7 +731,6 @@ cbuf2_subtract (CBUF2 *cbuf2, u_long pos1, u_long pos2)
 	return diff + cbuf2->item_count;
     }
 }
-#endif
 
 static u_long
 cbuf2_idx_to_chunk (CBUF2 *cbuf2, u_long idx)
@@ -648,13 +739,14 @@ cbuf2_idx_to_chunk (CBUF2 *cbuf2, u_long idx)
 }
 
 error_code
-cbuf2_peek_rgn (CBUF2 *cbuf2, char *out_buf, u_long start, u_long length)
+cbuf2_peek_rgn (CBUF2 *cbuf2, char *out_buf, u_long start_offset, 
+		u_long length)
 {
     u_long sidx;
 
     if (length > cbuf2->item_count)
 	return SR_ERROR_BUFFER_EMPTY;
-    sidx = cbuf2_add (cbuf2, cbuf2->base_idx, start);
+    sidx = cbuf2_add (cbuf2, cbuf2->base_idx, start_offset);
     if (sidx + length > cbuf2->size) {
 	int first_hunk = cbuf2->size - sidx;
 	memcpy (out_buf, cbuf2->buf+sidx, first_hunk);

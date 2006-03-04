@@ -41,8 +41,9 @@
  * Private functions
  *****************************************************************************/
 static error_code find_sep (u_long *pos1, u_long *pos2);
-static error_code end_track (u_long pos1, u_long pos2, TRACK_INFO* ti);
-static error_code start_track (TRACK_INFO* ti);
+static error_code end_track_mp3 (u_long pos1, u_long pos2, TRACK_INFO* ti);
+static error_code start_track_mp3 (TRACK_INFO* ti);
+static error_code end_track_ogg (TRACK_INFO* ti);
 
 static void compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt,
 				  int bitrate, int meta_interval);
@@ -265,6 +266,7 @@ ripstream_rip_ogg (void)
     int ret;
     int real_ret = SR_SUCCESS;
     u_long extract_size;
+    static int have_track = 0;
 
     /* get the data from the stream */
     debug_printf ("RIPSTREAM_RIP_OGG: top of loop\n");
@@ -282,14 +284,15 @@ ripstream_rip_ogg (void)
 	ret = cbuf2_init (&g_cbuf2, m_content_type, m_have_relay, 
 			  m_buffersize, m_cbuf2_size);
 	if (ret != SR_SUCCESS) return ret;
-
+	have_track = 0;
 	/* Warm up the ogg decoding routines */
 	rip_ogg_init ();
+	/* Done! */
+	m_first_time_through = 0;
     }
 
-    /* Need to check for vorbis headers sometime... */
-
     /* Copy the data into cbuffer */
+    clear_track_info (&m_current_track);
     ret = cbuf2_insert_chunk (&g_cbuf2, m_getbuffer, m_buffersize,
 			      m_content_type, &m_current_track);
     if (ret != SR_SUCCESS) {
@@ -299,16 +302,39 @@ ripstream_rip_ogg (void)
 
     filelib_write_show (m_getbuffer, m_buffersize);
 
-    /* First time through, so start a track. */
-    if (m_first_time_through) {
-	int ret;
-	debug_printf ("First time through...\n");
-	m_first_time_through = 0;
-	if (!m_current_track.have_track_info) {
-	    strcpy (m_current_track.raw_metadata, m_no_meta_name);
-	}
-	debug_printf ("rip_manager_start_track: ti=%s\n", 
-		      m_current_track.title);
+    /* If we have unwritten pages for the current track, write them */
+    if (have_track) {
+	do {
+	    error_code ret;
+	    unsigned long amt_filled;
+	    int got_eos;
+	    ret = cbuf2_ogg_peek_song (&g_cbuf2, m_getbuffer, m_buffersize,
+				       &amt_filled, &got_eos);
+	    debug_printf ("^^^ogg_peek: %d %d\n", amt_filled, got_eos);
+	    if (ret != SR_SUCCESS) {
+		debug_printf ("cbuf2_ogg_peek_song: %d\n",ret);
+		return ret;
+	    }
+	    if (amt_filled == 0) {
+		break;
+	    }
+	    ret = rip_manager_put_data (m_getbuffer, amt_filled);
+	    if (ret != SR_SUCCESS) {
+		debug_printf ("rip_manager_put_data(#1): %d\n",ret);
+		return ret;
+	    }
+	    if (got_eos) {
+		end_track_ogg (&m_old_track);
+		have_track = 0;
+		break;
+	    }
+	} while (1);
+    }
+
+    format_track_info (&m_current_track, "current");
+
+    /* If we got a new track, then start a new file */
+    if (m_current_track.have_track_info) {
 	ret = rip_manager_start_track (&m_current_track, m_track_count);
 	if (ret != SR_SUCCESS) {
 	    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
@@ -316,33 +342,12 @@ ripstream_rip_ogg (void)
 	}
 	filelib_write_cue (&m_current_track, 0);
 	copy_track_info (&m_old_track, &m_current_track);
+
+	have_track = 1;
     }
 
-    /* Check for track change. */
-    debug_printf ("m_current_track.have_track_info = %d\n", 
-		  m_current_track.have_track_info);
-    if (m_current_track.have_track_info && is_track_changed()) {
-	/* Set m_find_silence equal to the number of additional blocks 
-	   needed until we can do silence separation. */
-	debug_printf ("VERIFIED TRACK CHANGE (m_find_silence = %d)\n",
-		      m_find_silence);
-	copy_track_info (&m_new_track, &m_current_track);
-	if (m_find_silence < 0) {
-	    if (m_mic_to_cb_end > 0) {
-		m_find_silence = m_mic_to_cb_end;
-	    } else {
-		m_find_silence = 0;
-	    }
-	}
-    }
-
-    format_track_info (&m_old_track, "old");
-    format_track_info (&m_new_track, "new");
-    format_track_info (&m_current_track, "current");
-
-    /* If buffer almost full, dump extra to current song. */
+    /* If buffer almost full, advance the buffer */
     if (cbuf2_get_free(&g_cbuf2) < m_buffersize) {
-	u_long curr_song;
 	debug_printf ("cbuf2_get_free < m_buffersize\n");
 	extract_size = m_buffersize - cbuf2_get_free(&g_cbuf2);
 
@@ -352,14 +357,6 @@ ripstream_rip_ogg (void)
 	    debug_printf("cbuf2_extract had bad return code %d\n", ret);
 	    return ret;
 	}
-#if defined (commentout)
-	/* Post to caller */
-	if (curr_song < extract_size) {
-	    u_long curr_song_bytes = extract_size - curr_song;
-	    m_cue_sheet_bytes += curr_song_bytes;
-	    rip_manager_put_data (&m_getbuffer[curr_song], curr_song_bytes);
-	}
-#endif
     }
 
     return real_ret;
@@ -425,7 +422,7 @@ ripstream_rip_mp3 (void)
     ret = cbuf2_insert_chunk (&g_cbuf2, m_getbuffer, m_buffersize,
 			      m_content_type, &m_current_track);
     if (ret != SR_SUCCESS) {
-	debug_printf("start_track had bad return code %d\n", ret);
+	debug_printf("cbuf2_insert_chunk had bad return code %d\n", ret);
 	return ret;
     }
 
@@ -488,13 +485,13 @@ ripstream_rip_mp3 (void)
 	}
 
 	/* Write out previous track */
-	ret = end_track(pos1, pos2, &m_old_track);
+	ret = end_track_mp3 (pos1, pos2, &m_old_track);
 	if (ret != SR_SUCCESS)
 	    real_ret = ret;
 	m_cue_sheet_bytes += pos2;
 
 	/* Start next track */
-	ret = start_track (&m_new_track);
+	ret = start_track_mp3 (&m_new_track);
 	if (ret != SR_SUCCESS)
 	    real_ret = ret;
 	m_find_silence = -1;
@@ -579,8 +576,8 @@ find_sep (u_long *pos1, u_long *pos2)
     return SR_SUCCESS;
 }
 
-error_code
-end_track(u_long pos1, u_long pos2, TRACK_INFO* ti)
+static error_code
+end_track_mp3 (u_long pos1, u_long pos2, TRACK_INFO* ti)
 {
     // pos1 is end of prev track
     // pos2 is beginning of next track
@@ -634,8 +631,8 @@ end_track(u_long pos1, u_long pos2, TRACK_INFO* ti)
     return ret;
 }
 
-error_code
-start_track (TRACK_INFO* ti)
+static error_code
+start_track_mp3 (TRACK_INFO* ti)
 {
 #define HEADER_SIZE 1600
     int ret;
@@ -751,6 +748,23 @@ start_track (TRACK_INFO* ti)
     debug_printf ("Changed track count to %d\n", m_track_count);
 
     return SR_SUCCESS;
+}
+
+// Only save this track if we've skipped over enough cruft 
+// at the beginning of the stream
+static error_code
+end_track_ogg (TRACK_INFO* ti)
+{
+    error_code ret;
+    debug_printf ("Current track number %d (skipping if %d or less)\n", 
+		  m_track_count, m_drop_count);
+    if (m_track_count > m_drop_count) {
+	ret = rip_manager_end_track (ti);
+    } else {
+	ret = SR_SUCCESS;
+    }
+    m_track_count ++;
+    return ret;
 }
 
 /* GCS: This converts either positive or negative ms to blocks,

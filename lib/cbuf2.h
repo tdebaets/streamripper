@@ -44,7 +44,9 @@ typedef struct CBUF2_struct
     u_long	size;        /* size is chunk_size * num_chunks */
     u_long	base_idx;
     u_long	item_count;  /* Amount filled */
-    u_long	next_song;   /* start of next song */
+    u_long	next_song;   /* start of next song (mp3 only) */
+    OGG_PAGE_LIST* song_page;    /* current page being written (ogg only) */
+    u_long      song_page_done;  /* amount finished in current page (ogg) */
 
     HSEM        cbuf_sem;
 
@@ -84,6 +86,13 @@ void cbuf2_set_next_song (CBUF2 *cbuf2, u_long pos);
 
 error_code cbuf2_init_relay_entry (CBUF2 *cbuf2, RELAY_LIST* ptr, 
 				   u_long burst_request);
+
+error_code
+cbuf2_ogg_peek_song (CBUF2 *cbuf2, char* out_buf, 
+		     unsigned long buf_size,
+		     unsigned long* amt_filled,
+		     int* eos);
+
 #if defined (commentout)
 error_code cbuf2_extract_relay (CBUF2 *cbuf2, char *data, u_long *pos, 
 				u_long *len, int icy_metadata);
