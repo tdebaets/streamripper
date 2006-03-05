@@ -4,6 +4,7 @@ New for 1.61.18
 * Add support for ogg relay
 * Return an ICY response header instead of HTTP response header.
   This fixes problems with Windows media player classic (#1189504).
+* Winamp relay now adds /;stream.nsv or /.ogg for NSV and OGG streams.
 * Add izverg's patch for when default skin is blank in sripper.ini.
 
 New for 1.61.17

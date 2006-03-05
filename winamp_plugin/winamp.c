@@ -27,7 +27,6 @@
  *********************************************************************************/
 BOOL winamp_init();			
 BOOL winamp_get_info(WINAMP_INFO *info, BOOL useoldway);
-BOOL winamp_add_relay_to_playlist(char *host, u_short port);
 BOOL winamp_add_track_to_playlist(char *track);
 BOOL winamp_get_path(char *path);
 
@@ -41,43 +40,39 @@ static char m_winamps_path[SR_MAX_PATH] = {'\0'};
 // HKEY_CLASSES_ROOT\Applications\winamp.exe\shell\Enqueue\command
 BOOL winamp_get_path(char *path)
 {
-	DWORD size = SR_MAX_PATH;
-	char strkey[SR_MAX_PATH];
-	char winampstr[] = "WINAMP.EXE";
-	int winampstrlen = strlen(winampstr);
-	int i;
-	HKEY hKey;
+    DWORD size = SR_MAX_PATH;
+    char strkey[SR_MAX_PATH];
+    char winampstr[] = "WINAMP.EXE";
+    int winampstrlen = strlen(winampstr);
+    int i;
+    HKEY hKey;
 
-	if(RegOpenKeyEx(HKEY_CLASSES_ROOT,
-        TEXT("Winamp.File\\shell\\Enqueue\\command"),
-                    0,
-                    KEY_QUERY_VALUE,
-                    &hKey) != ERROR_SUCCESS) 
-	{
-		return FALSE;
-	}
+    if (RegOpenKeyEx(HKEY_CLASSES_ROOT,
+	    TEXT("Winamp.File\\shell\\Enqueue\\command"),
+	    0,
+	    KEY_QUERY_VALUE,
+	    &hKey) != ERROR_SUCCESS) 
+    {
+	return FALSE;
+    }
 
-    if (RegQueryValue(hKey,
-					NULL,
-                    (LPBYTE)strkey,
-                    &size) != ERROR_SUCCESS)
-	{
-		return FALSE;
-	}
+    if (RegQueryValue(hKey, NULL, (LPBYTE)strkey, &size) != ERROR_SUCCESS)
+    {
+	return FALSE;
+    }
 
 
-	// get the path out
-	for(i = 0; strkey[i]; i++)	
-		strkey[i] = toupper(strkey[i]);
-	
-	for(i = 1; strncmp(strkey+i, winampstr, winampstrlen) != 0; i++)
-	{
-		path[i-1] = strkey[i];
-	}
-	path[i-1] = '\0';
+    // get the path out
+    for(i = 0; strkey[i]; i++)	
+	strkey[i] = toupper(strkey[i]);
+
+    for(i = 1; strncmp(strkey+i, winampstr, winampstrlen) != 0; i++) {
+	path[i-1] = strkey[i];
+    }
+    path[i-1] = '\0';
     RegCloseKey(hKey);
 
-	return TRUE;
+    return TRUE;
 }
 
 
@@ -159,18 +154,23 @@ BOOL winamp_get_info(WINAMP_INFO *info, BOOL useoldway)
 	return TRUE;
 }
 
-
-BOOL winamp_add_relay_to_playlist(char *host, u_short port)
+BOOL
+winamp_add_relay_to_playlist(char *host, u_short port, int content_type)
 {
-//	char host[] = "localhost";		// needs to use the machines name, for proxys
-	char relay_file[SR_MAX_PATH];
-	char winamp_path[SR_MAX_PATH];
+    char relay_file[SR_MAX_PATH];
+    char winamp_path[SR_MAX_PATH];
 
-	sprintf(winamp_path, "%s%s", m_winamps_path, "winamp.exe");
+    sprintf(winamp_path, "%s%s", m_winamps_path, "winamp.exe");
+    if (content_type == CONTENT_TYPE_OGG) {
+	sprintf(relay_file, "/add http://%s:%d/.ogg", host, port);
+    } else if (content_type == CONTENT_TYPE_NSV) {
+	sprintf(relay_file, "/add http://%s:%d/;stream.nsv", host, port);
+    } else {
 	sprintf(relay_file, "/add http://%s:%d", host, port);
-	ShellExecute(NULL, "open", winamp_path,	relay_file, NULL, SW_SHOWNORMAL);
+    }
+    ShellExecute(NULL, "open", winamp_path,	relay_file, NULL, SW_SHOWNORMAL);
 
-	return TRUE;
+    return TRUE;
 }
 
 

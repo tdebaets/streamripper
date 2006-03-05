@@ -373,13 +373,23 @@ vorbis_process (stream_processor *stream, ogg_page *page, TRACK_INFO* ti)
 				      inf->vc.user_comments[i], decoded);
 			
 			/* GCS FIX: Need case insensitive compare */
-			if (!strcmp(inf->vc.user_comments[i],"artist")) {
+			if (!strcmp(inf->vc.user_comments[i],"artist")
+			    || !strcmp(inf->vc.user_comments[i],"ARTIST")
+			    || !strcmp(inf->vc.user_comments[i],"Artist")) {
 			    strcpy (ti->artist, decoded);
-			} else if (!strcmp(inf->vc.user_comments[i],"title")) {
+			} else if (!strcmp(inf->vc.user_comments[i],"title")
+			    || !strcmp(inf->vc.user_comments[i],"TITLE")
+			    || !strcmp(inf->vc.user_comments[i],"Title")) {
 			    strcpy (ti->title, decoded);
 			    ti->have_track_info = 1;
-			} else if (!strcmp(inf->vc.user_comments[i],"album")) {
+			} else if (!strcmp(inf->vc.user_comments[i],"album")
+			    || !strcmp(inf->vc.user_comments[i],"ALBUM")
+			    || !strcmp(inf->vc.user_comments[i],"Album")) {
 			    strcpy (ti->album, decoded);
+			} else if (!strcmp(inf->vc.user_comments[i],"tracknumber")
+			    || !strcmp(inf->vc.user_comments[i],"TRACKNUMBER")
+			    || !strcmp(inf->vc.user_comments[i],"Tracknumber")) {
+			    strcpy (ti->track, decoded);
 			}
 
                         free(decoded);

@@ -224,6 +224,7 @@ filelib_init (BOOL do_individual_tracks,
 
     sprintf (m_incomplete_directory, "%s%s%c", m_output_directory,
 	     "incomplete", PATH_SLASH);
+    debug_printf ("Incomplete directory: %s\n", m_incomplete_directory);
 
     /* Recursively make the output directory & incomplete directory */
     if (m_do_individual_tracks) {

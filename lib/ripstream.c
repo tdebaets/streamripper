@@ -233,6 +233,7 @@ clear_track_info (TRACK_INFO* ti)
     ti->artist[0] = 0;
     ti->title[0] = 0;
     ti->album[0] = 0;
+    ti->track[0] = 0;
     ti->composed_metadata[0] = 0;
     ti->save_track = TRUE;
 }

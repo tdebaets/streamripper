@@ -535,25 +535,15 @@ start_ripping()
 	goto RETURN_ERR;
     }
 
-#if defined (COMMENTOUT_FOR_OGG)
-    /* GCS 09/10/04 - I wonder if this is worth doing */
-    if (!m_http_info.have_icy_name) {
-	ret = SR_ERROR_NOT_SHOUTCAST_STREAM;
-	goto RETURN_ERR;
-    }
-#endif
-
     /* If the icy_name exists, but is empty, set to a bogus name so 
        that we can create the directory correctly, etc. */
     if (strlen(m_http_info.icy_name) == 0) {
 	strcpy (m_http_info.icy_name, "Streamripper_rips");
     }
 
-    /*
-     * Set the ripinfo struct from the data we now know about the 
+    /* Set the ripinfo struct from the data we now know about the 
      * stream, this info are things like server name, type, 
-     * bitrate etc.. 
-     */
+     * bitrate etc.. */
     memset(&m_ripinfo, 0, sizeof(RIP_MANAGER_INFO));
     m_ripinfo.meta_interval = m_http_info.meta_interval;
     m_ripinfo.bitrate = m_http_info.icy_bitrate;
@@ -621,7 +611,7 @@ start_ripping()
      * the stream we are relaying.. this just sets the header to 
      * something very simulare to what we got from the stream.
      */
-    if (GET_MAKE_RELAY(m_options.flags)) {
+    if (GET_MAKE_RELAY (m_options.flags)) {
 	int new_port = 0;
 	ret = relaylib_init(GET_SEARCH_PORTS(m_options.flags), 
 			    m_options.relay_port, m_options.max_port, 
@@ -688,6 +678,13 @@ rip_manager_start(void (*status_callback)(int message, void *data),
     if ((ret = threadlib_beginthread(&m_hthread, ripthread)) != SR_SUCCESS)
 	return ret;
     return SR_SUCCESS;
+}
+
+/* Winamp plugin needs to get content type */
+int
+rip_manager_get_content_type (void)
+{
+    return m_http_info.content_type;
 }
 
 enum OverwriteOpt

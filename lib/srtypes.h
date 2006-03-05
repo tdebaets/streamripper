@@ -154,6 +154,7 @@ typedef struct TRACK_INFOst
     char artist[MAX_TRACK_LEN];
     char title[MAX_TRACK_LEN];
     char album[MAX_TRACK_LEN];
+    char track[MAX_TRACK_LEN];
     char composed_metadata[MAX_TRACK_LEN];
     BOOL save_track;
 } TRACK_INFO;

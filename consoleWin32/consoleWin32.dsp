@@ -265,6 +265,10 @@ SOURCE=..\lib\util.c
 # End Group
 # Begin Source File
 
+SOURCE=..\Changes
+# End Source File
+# Begin Source File
+
 SOURCE=..\configure.ac
 # End Source File
 # Begin Source File
