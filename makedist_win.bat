@@ -9,6 +9,8 @@ copy THANKS %bdir%
 copy parse_rules.txt %bdir%
 copy fake_external_metadata.pl %bdir%
 copy fetch_external_metadata.pl %bdir%
+copy libogg-1.1.3\*.dll %bdir%
+copy libvorbis-1.1.2\*.dll %bdir%
 @rem copy iconv-win32\dll\*.dll %bdir%
 copy tre-0.7.0\win32\Release\*.dll %bdir%
 copy consolewin32\release\sripper.exe %bdir%\streamripper.exe
