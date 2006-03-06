@@ -57,6 +57,7 @@ streamripper_SOURCES = \
 	lib/parse.h \
 	lib/relaylib.h \
 	lib/rip_manager.h \
+	lib/ripogg.h \
 	lib/ripstream.h \
 	lib/socklib.h \
 	lib/srconfig.h \
@@ -234,7 +235,6 @@ man_MANS = \
 EXTRA_DIST = \
 	config.rpath \
 	CHANGES \
-	readme_xfade.txt \
 	parse_rules.txt \
 	fake_external_metadata.pl \
 	fetch_external_metadata.pl \
