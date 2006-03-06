@@ -89,7 +89,7 @@ OPTIONS
        nections is limited only by your processor and network speed.   The  -R
        option has no effect if -r was not used to create a relay stream.
 
-       -z     Don't scan for free ports if base port is not avail
+       -z     Don't scan for free ports if base port is not available
 
        Disables	 the "scan for free port" feature. Use it if your paranoid, or
        don't like ports being open.
@@ -456,4 +456,4 @@ COPYING
 
 
 
-			       22 November 2005		       STREAMRIPPER(1)
+				 05 March 2006		       STREAMRIPPER(1)
