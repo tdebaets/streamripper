@@ -10,7 +10,7 @@ autoconf
 autoheader
 cd ..
 
-cd tre-0.7.0
+cd tre-0.7.2
 aclocal -I m4
 automake --add-missing --foreign Makefile
 autoconf

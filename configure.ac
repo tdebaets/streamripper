@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl AC_INIT(lib/types.h)
 
-AC_INIT(streamripper,1.61.18)
+AC_INIT(streamripper,1.61.18a)
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([lib/config.h])
@@ -97,11 +97,11 @@ if test "$force_use_included_tre" = no; then
 fi
 AM_CONDITIONAL(SUBDIR_TRE, test "$use_included_tre" = yes)
 if test "$use_included_tre" = yes; then
-  LIBREGEX="tre-0.7.0/lib/.libs/libtre.a"
+  LIBREGEX="tre-0.7.2/lib/.libs/libtre.a"
   AC_SUBST(LIBREGEX)
-  CPPFLAGS="-Itre-0.7.0/lib $CPPFLAGS"
+  CPPFLAGS="-Itre-0.7.2/lib $CPPFLAGS"
   AC_SUBST(CPPFLAGS)
-  AC_CONFIG_SUBDIRS(tre-0.7.0)
+  AC_CONFIG_SUBDIRS(tre-0.7.2)
 else
   LIBREGEX=""
   AC_SUBST(LIBREGEX)

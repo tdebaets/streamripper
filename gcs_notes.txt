@@ -369,6 +369,11 @@ dnl AM_DISABLE_STATIC
 
 Next rebuild the auto* files.  Test it all out and make sure it works.
 
+Edit these files in sripper_1x to change the directory location:
+    config.sh
+    Makefile.am
+    configure.ac
+
 To be finished:
 
 a) which files to remove from cvs?  (e.g. configure)
@@ -646,6 +651,13 @@ if test "$have_langinfo_h" = 'yes'; then
     AC_DEFINE(HAVE_LANGINFO_H,,Define if you have langinfo.h)
 fi
 ])
+
+-----------------------------------------------------------------------
+
+Other MP3 libraries
+
+mpglib
+xaudio_sdk
 
 -----------------------------------------------------------------------
 How to connect to cf servers:
