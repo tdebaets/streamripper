@@ -777,3 +777,11 @@ Goals of reorganization:
    Should cbuf be chunk oriented, or byte oriented?
 
 -----------------------------------------------------------------------
+Stuff to remove from sourceforge:
+   releases
+   xaudio_sdk
+   libmad
+   tracksplitter
+   tinytest
+   mpglib
+
