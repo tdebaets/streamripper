@@ -3,6 +3,10 @@ automake --add-missing --foreign Makefile
 autoconf
 autoheader
 
+./configure --without-ogg
+
+exit
+
 cd libmad-0.15.1b
 aclocal
 automake --add-missing --foreign Makefile

@@ -22,7 +22,7 @@ AC_CHECK_LIB(m, main)
 dnl Configure options
 
 AC_ARG_WITH(included-libmad,
-  [  --with-included-libmad use the libmad library included with streamripper],
+ [  --with-included-libmad use the libmad library included with streamripper],
   force_use_included_libmad=$withval,
   force_use_included_libmad=no)
 dnl AC_MSG_RESULT($force_use_included_libmad)
@@ -139,8 +139,10 @@ XIPH_PATH_OGG([
     AC_SUBST(VORBIS_CFLAGS)
     AC_SUBST(VORBIS_LIBS)
     AC_DEFINE(HAVE_OGG_VORBIS,1,[Define to 1 if you have both the ogg and vorbis libraries installed])
-    ])
-  ])
+    ],
+    AC_DEFINE(HAVE_OGG_VORBIS,0,[Define to 1 if you have both the ogg and vorbis libraries installed]))],
+  AC_DEFINE(HAVE_OGG_VORBIS,0,[Define to 1 if you have both the ogg and vorbis libraries installed])
+  )
 
 dnl Check for semaphore library
 AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(sem, sem_init,))
