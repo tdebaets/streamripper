@@ -97,7 +97,15 @@ SOURCE=..\lib\regexec.c
 # End Source File
 # Begin Source File
 
+SOURCE="..\lib\tre-ast.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\lib\tre-compile.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\lib\tre-filter.c"
 # End Source File
 # Begin Source File
 
@@ -114,6 +122,14 @@ SOURCE="..\lib\tre-match-parallel.c"
 # Begin Source File
 
 SOURCE="..\lib\tre-mem.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\lib\tre-parse.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\lib\tre-stack.c"
 # End Source File
 # End Group
 # Begin Group "Header Files"

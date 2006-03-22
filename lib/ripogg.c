@@ -18,7 +18,7 @@
  * Copyright 2002 Michael Smith <msmith@xiph.org>
  * Licensed under the GNU GPL, distributed with this program.
  */
-#include "config.h"
+#include "srconfig.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
