@@ -18,20 +18,23 @@
  * Copyright 2002 Michael Smith <msmith@xiph.org>
  * Licensed under the GNU GPL, distributed with this program.
  */
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
 #include <stdarg.h>
-#include <ogg/ogg.h>
-#include <vorbis/codec.h>
-#include <locale.h>
-
 #include "cbuf2.h"
 #include "ripogg.h"
 #include "utf8.h"
 #include "list.h"
 #include "debug.h"
+
+#if (HAVE_OGG_VORBIS)
+#include <ogg/ogg.h>
+#include <vorbis/codec.h>
+#include <locale.h>
+
 
 #define CHUNK 4500
 // #define CHUNK 1
@@ -790,3 +793,26 @@ rip_ogg_init (void)
     ogg_curr_header = 0;
     ogg_curr_header_len = 0;
 }
+
+#else /* HAVE_OGG_VORBIS == 0 */
+
+void
+rip_ogg_init (void)
+{
+}
+
+void
+rip_ogg_get_current_header (unsigned char** ptr, int* len)
+{
+    *ptr = 0;
+    *len = 0;
+}
+
+void
+rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size,
+		       TRACK_INFO* ti)
+{
+    INIT_LIST_HEAD (page_list);
+}
+
+#endif
