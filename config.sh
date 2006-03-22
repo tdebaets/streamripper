@@ -3,7 +3,7 @@ automake --add-missing --foreign Makefile
 autoconf
 autoheader
 
-./configure --without-ogg
+./configure --with-included-libmad --with-included-tre --with-included-argv
 
 exit
 
@@ -23,4 +23,4 @@ cd ..
 
 rm -f config.cache
 ## ./configure
-./configure --with-included-libmad --with-included-tre --with-included-argv
+./configure --without-ogg
