@@ -91,7 +91,7 @@ static int m_have_relay;
 static int m_timeout;
 
 static int m_meta_interval;
-static int m_buffersize;
+static unsigned long m_buffersize;
 static int m_chunkcount;
 
 typedef struct ID3V1st

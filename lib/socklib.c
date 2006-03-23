@@ -295,7 +295,8 @@ socklib_read_header(HSOCKET *socket_handle, char *buffer, int size,
 /*
  * Default recv
  */
-int socklib_recvall(HSOCKET *socket_handle, char* buffer, int size, int timeout)
+int
+socklib_recvall (HSOCKET *socket_handle, char* buffer, int size, int timeout)
 {
     int ret = 0, read = 0;
     int sock;
@@ -347,7 +348,8 @@ int socklib_recvall(HSOCKET *socket_handle, char* buffer, int size, int timeout)
     return read;
 }
 
-int socklib_sendall(HSOCKET *socket_handle, char* buffer, int size)
+int
+socklib_sendall (HSOCKET *socket_handle, char* buffer, int size)
 {
     int ret = 0, sent = 0;
 

@@ -44,7 +44,6 @@
 #include "http.h"
 #include "util.h"
 #include "findsep.h"
-#include "inet.h"
 #include "relaylib.h"
 #include "rip_manager.h"
 #include "ripstream.h"
@@ -335,7 +334,7 @@ client_relay_header_release (char *ch)
 }
 
 void
-ripthread(void *notused)
+ripthread (void *notused)
 {
     error_code ret;
 
@@ -348,7 +347,7 @@ ripthread(void *notused)
     post_status(RM_STATUS_BUFFERING);
     threadlib_signal_sem(&m_started_sem);
 
-    while(TRUE) {
+    while (TRUE) {
         ret = ripstream_rip();
 
 	/* If the user told us to stop, well, then we bail */
@@ -529,7 +528,7 @@ start_ripping()
     }
 
     /* Connect to the stream */
-    ret = inet_sc_connect(&m_sock, m_options.url, pproxy, &m_http_info, 
+    ret = httplib_sc_connect(&m_sock, m_options.url, pproxy, &m_http_info, 
 			  m_options.useragent, m_options.if_name);
     if (ret != SR_SUCCESS) {
 	goto RETURN_ERR;

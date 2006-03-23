@@ -491,7 +491,7 @@ cbuf2_extract_relay_mp3 (CBUF2 *cbuf2, char *data, u_long *pos, u_long *len,
 			 int icy_metadata)
 {
     u_long frag1, frag2;
-    int relay_chunk_no;
+    u_long relay_chunk_no;
     u_long relay_idx;
     u_long old_pos;
     *len = 0;

@@ -160,14 +160,6 @@ SOURCE=..\lib\http.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\lib\inet.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\lib\inet.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\lib\list.h
 # End Source File
 # Begin Source File

@@ -86,6 +86,7 @@ typedef unsigned short u_short;
 #define CONTENT_TYPE_OGG    		3
 #define CONTENT_TYPE_ULTRAVOX		4
 #define CONTENT_TYPE_AAC		5
+#define CONTENT_TYPE_PLS		6
 #define CONTENT_TYPE_UNKNOWN		99
 
 /* 
