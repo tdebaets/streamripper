@@ -46,6 +46,7 @@ httplib_sc_connect (HSOCKET *sock, const char *url, const char *proxyurl,
     int ret;
 
     do {
+	debug_printf ("***** URL = %s *****\n", url);
 	debug_printf("inet_sc_connect(): calling httplib_parse_url\n");
 	if (proxyurl) {
 	    if ((ret = httplib_parse_url(proxyurl, &url_info)) != SR_SUCCESS) {
@@ -81,6 +82,8 @@ httplib_sc_connect (HSOCKET *sock, const char *url, const char *proxyurl,
 	    debug_printf ("Redirecting: %s\n", info->http_location);
 	    url = info->http_location;
 	    //inet_sc_connect(sock, info->http_location, proxyurl, info, useragent, if_name);
+	} else {
+	    break;
 	}
     } while (1);
 
@@ -591,6 +594,7 @@ httplib_get_pls (HSOCKET *sock, SR_HTTP_HEADER *info)
     char location_buf[MAX_PLS_LEN];
     const int timeout = 30;
 
+    printf ("Reading pls\n");
     bytes = socklib_recvall (sock, buf, MAX_PLS_LEN, timeout);
     if (bytes < SR_SUCCESS) return bytes;
     if (bytes == 0 || bytes == MAX_PLS_LEN) {
@@ -599,12 +603,14 @@ httplib_get_pls (HSOCKET *sock, SR_HTTP_HEADER *info)
     }
     buf[bytes] = 0;
 
+    printf ("Parsing pls\n");
     rc = extract_header_value (buf, location_buf, "File1=");
     if (!rc) {
 	debug_printf ("Failed parsing PLS\n");
 	return SR_ERROR_NO_HTTP_HEADER;
     }
 
+    printf ("Got url: %s\n", location_buf);
     strcpy (info->http_location, location_buf);
 
     return SR_SUCCESS;
