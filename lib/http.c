@@ -606,7 +606,7 @@ httplib_get_pls (HSOCKET *sock, SR_HTTP_HEADER *info)
     char title_buf[MAX_PLS_LEN];
     const int timeout = 30;
 
-    printf ("Reading pls\n");
+    debug_printf ("Reading pls\n");
     bytes = socklib_recvall (sock, buf, MAX_PLS_LEN, timeout);
     if (bytes < SR_SUCCESS) return bytes;
     if (bytes == 0 || bytes == MAX_PLS_LEN) {
@@ -622,7 +622,8 @@ httplib_get_pls (HSOCKET *sock, SR_HTTP_HEADER *info)
     rc = SR_ERROR_CANT_PARSE_PLS;
     for (s = 1; s <= 99; s++) {
 	char buf1[20];
-	int num_scanned, used, total, open, best_open;
+	int num_scanned, used, total, open;
+	int best_open = 0;
 
 	sprintf (buf1, "File%d=", s);
 	if (!extract_header_value (buf, location_buf, buf1)) {
@@ -642,19 +643,12 @@ httplib_get_pls (HSOCKET *sock, SR_HTTP_HEADER *info)
 	    break;
 	}
 	open = total - used;
-	if (s == 1) {
-	    printf ("(%d) %s\n", open, location_buf);
+	if (open > best_open) {
+	    strcpy (info->http_location, location_buf);
 	    best_open = open;
-	} else {
-	    if (open > best_open) {
-		printf ("(%d) %s\n", open, location_buf);
-		strcpy (info->http_location, location_buf);
-		best_open = open;
-	    }
 	}
     }
 
-    printf ("Got url: %s\n", location_buf);
     strcpy (info->http_location, location_buf);
 
     return rc;
@@ -673,7 +667,7 @@ httplib_get_m3u (HSOCKET *sock, SR_HTTP_HEADER *info)
     const int timeout = 30;
     char* p;
 
-    printf ("Reading m3u\n");
+    debug_printf ("Reading m3u\n");
     bytes = socklib_recvall (sock, buf, MAX_M3U_LEN, timeout);
     if (bytes < SR_SUCCESS) return bytes;
     if (bytes == 0 || bytes == MAX_M3U_LEN) {
