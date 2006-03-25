@@ -599,9 +599,11 @@ Version=2
 error_code
 httplib_get_pls (HSOCKET *sock, SR_HTTP_HEADER *info)
 {
-    int rc, bytes;
+    int s, bytes;
+    error_code rc;
     char buf[MAX_PLS_LEN];
     char location_buf[MAX_PLS_LEN];
+    char title_buf[MAX_PLS_LEN];
     const int timeout = 30;
 
     printf ("Reading pls\n");
@@ -613,17 +615,49 @@ httplib_get_pls (HSOCKET *sock, SR_HTTP_HEADER *info)
     }
     buf[bytes] = 0;
 
-    printf ("Parsing pls\n");
-    rc = extract_header_value (buf, location_buf, "File1=");
-    if (!rc) {
-	debug_printf ("Failed parsing PLS\n");
-	return SR_ERROR_CANT_PARSE_PLS;
+    debug_printf ("Parsing pls\n");
+    debug_printf ("%s\n", buf);
+    debug_printf ("---\n");
+
+    rc = SR_ERROR_CANT_PARSE_PLS;
+    for (s = 1; s <= 99; s++) {
+	char buf1[20];
+	int num_scanned, used, total, open, best_open;
+
+	sprintf (buf1, "File%d=", s);
+	if (!extract_header_value (buf, location_buf, buf1)) {
+	    break;
+	}
+	if (s == 1) {
+	    strcpy (info->http_location, location_buf);
+	    rc = SR_SUCCESS;
+	}
+	
+	sprintf (buf1, "Title%d=", s);
+	if (!extract_header_value (buf, title_buf, buf1)) {
+	    break;
+	}
+	num_scanned = sscanf (title_buf, "(#%*[0-9] - %d/%d",&used,&total);
+	if (num_scanned != 2) {
+	    break;
+	}
+	open = total - used;
+	if (s == 1) {
+	    printf ("(%d) %s\n", open, location_buf);
+	    best_open = open;
+	} else {
+	    if (open > best_open) {
+		printf ("(%d) %s\n", open, location_buf);
+		strcpy (info->http_location, location_buf);
+		best_open = open;
+	    }
+	}
     }
 
     printf ("Got url: %s\n", location_buf);
     strcpy (info->http_location, location_buf);
 
-    return SR_SUCCESS;
+    return rc;
 }
 
 /*
