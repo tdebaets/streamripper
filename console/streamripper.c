@@ -456,6 +456,12 @@ parse_extended_options (char* rule)
 {
     int x,y;
 
+    /* Version */
+    if (!strcmp(rule,"version")) {
+	printf("Streamripper %s\n", SRVERSION);
+	exit(0);
+    }
+
     /* Logging options */
     if (!strcmp(rule,"debug")) {
 	debug_enable();
