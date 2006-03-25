@@ -31,7 +31,6 @@ streamripper_SOURCES = \
 	lib/findsep.c \
 	lib/http.c \
 	lib/iconvert.c \
-	lib/inet.c \
 	lib/mpeg.c \
 	lib/parse.c \
 	lib/relaylib.c \
@@ -51,7 +50,6 @@ streamripper_SOURCES = \
 	lib/filelib.h \
 	lib/findsep.h \
 	lib/http.h \
-	lib/inet.h \
 	lib/list.h \
 	lib/mpeg.h \
 	lib/parse.h \
