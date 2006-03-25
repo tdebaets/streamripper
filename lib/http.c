@@ -1,7 +1,4 @@
-/* http.c - jonclegg@yahoo.com
- * library routines for handling shoutcast centric http parsing
- *
- * This program is free software; you can redistribute it and/or modify
+/* This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
@@ -25,18 +22,28 @@
 #include "util.h"
 #include "debug.h"
 
-/*********************************************************************************
- * Private functions
- *********************************************************************************/
+/******************************************************************************
+ * Function prototypes
+ *****************************************************************************/
 static char* make_auth_header(const char *header_name, 
 			      const char *username, const char *password);
-static error_code httplib_get_sc_header(const char* url, HSOCKET *sock, SR_HTTP_HEADER *info);
+static error_code httplib_get_sc_header(const char* url, HSOCKET *sock, 
+					SR_HTTP_HEADER *info);
 static char* b64enc(const char *buf, int size);
 
+/******************************************************************************
+ * Private Vars
+ *****************************************************************************/
+#define MAX_PLS_LEN 8192
+#define MAX_M3U_LEN 8192
 
-/*
- * Connects to a shoutcast type stream, leaves when it's about to get the header info
- */
+
+/******************************************************************************
+ * Functions
+ *****************************************************************************/
+
+/* Connect to a shoutcast type stream, leaves when it's about to 
+   get the header info */
 error_code
 httplib_sc_connect (HSOCKET *sock, const char *url, const char *proxyurl, 
 		 SR_HTTP_HEADER *info, char *useragent, char *if_name)
@@ -45,7 +52,7 @@ httplib_sc_connect (HSOCKET *sock, const char *url, const char *proxyurl,
     URLINFO url_info;
     int ret;
 
-    do {
+    while (1) {
 	debug_printf ("***** URL = %s *****\n", url);
 	debug_printf("inet_sc_connect(): calling httplib_parse_url\n");
 	if (proxyurl) {
@@ -85,7 +92,7 @@ httplib_sc_connect (HSOCKET *sock, const char *url, const char *proxyurl,
 	} else {
 	    break;
 	}
-    } while (1);
+    }
 
     return SR_SUCCESS;
 }
@@ -372,6 +379,8 @@ httplib_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
 	    content_type_by_url = CONTENT_TYPE_NSV;
 	} else if (!strcmp (&url_info.path[url_path_len-4], ".pls")) {
 	    content_type_by_url = CONTENT_TYPE_PLS;
+	} else if (!strcmp (&url_info.path[url_path_len-4], ".m3u")) {
+	    content_type_by_url = CONTENT_TYPE_M3U;
 	}
     }
 
@@ -468,6 +477,7 @@ httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size, int 
 {
     char *buf = (char *)malloc(size);
 
+#if defined (commentout)
     char* test_header = 
 	"HTTP/1.0 200 OK\r\n"
 	"Content-Type: application/ogg\r\n"
@@ -480,6 +490,7 @@ httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size, int 
 	"ice-public: 1\r\n"
 	"ice-url: http://www.oddsock.org\r\n"
 	"Server: Icecast 2.0.1\r\n\r\n";
+#endif
 
     if (!info || !header || size < 1)
 	return SR_ERROR_INVALID_PARAM;
@@ -588,7 +599,6 @@ Version=2
 error_code
 httplib_get_pls (HSOCKET *sock, SR_HTTP_HEADER *info)
 {
-#define MAX_PLS_LEN 8192
     int rc, bytes;
     char buf[MAX_PLS_LEN];
     char location_buf[MAX_PLS_LEN];
@@ -599,7 +609,7 @@ httplib_get_pls (HSOCKET *sock, SR_HTTP_HEADER *info)
     if (bytes < SR_SUCCESS) return bytes;
     if (bytes == 0 || bytes == MAX_PLS_LEN) {
 	debug_printf("Failed in getting PLS (%d bytes)\n", bytes);
-	return SR_ERROR_NO_HTTP_HEADER;
+	return SR_ERROR_CANT_PARSE_PLS;
     }
     buf[bytes] = 0;
 
@@ -607,13 +617,57 @@ httplib_get_pls (HSOCKET *sock, SR_HTTP_HEADER *info)
     rc = extract_header_value (buf, location_buf, "File1=");
     if (!rc) {
 	debug_printf ("Failed parsing PLS\n");
-	return SR_ERROR_NO_HTTP_HEADER;
+	return SR_ERROR_CANT_PARSE_PLS;
     }
 
     printf ("Got url: %s\n", location_buf);
     strcpy (info->http_location, location_buf);
 
     return SR_SUCCESS;
+}
+
+/*
+#EXTM3U
+#EXTINF:111,3rd Bass - Al z A-B-Cee z
+mp3/3rd Bass/3rd bass - Al z A-B-Cee z.mp3
+*/
+error_code
+httplib_get_m3u (HSOCKET *sock, SR_HTTP_HEADER *info)
+{
+    int bytes;
+    char buf[MAX_M3U_LEN];
+    const int timeout = 30;
+    char* p;
+
+    printf ("Reading m3u\n");
+    bytes = socklib_recvall (sock, buf, MAX_M3U_LEN, timeout);
+    if (bytes < SR_SUCCESS) return bytes;
+    if (bytes == 0 || bytes == MAX_M3U_LEN) {
+	debug_printf("Failed in getting M3U (%d bytes)\n", bytes);
+	return SR_ERROR_CANT_PARSE_M3U;
+    }
+    buf[bytes] = 0;
+
+    debug_printf ("Parsing m3u\n");
+    debug_printf ("%s\n", buf);
+    debug_printf ("---\n");
+
+    for (p = strtok (buf,"\n"); p!= 0; p = strtok (0, "\n")) {
+	size_t len;
+	if (p[0] == '#') {
+	    continue;
+	}
+	len = strlen (p);
+	if (len > 4 && !strcmp (&p[len-4], ".mp3")) {
+	    continue;
+	}
+	strcpy (info->http_location, p);
+	debug_printf ("Redirecting from M3U to: %s\n", p);
+	return SR_SUCCESS;
+    }
+
+    debug_printf ("Failed parsing M3U\n");
+    return SR_ERROR_CANT_PARSE_M3U;
 }
 
 static error_code
@@ -630,6 +684,9 @@ httplib_get_sc_header(const char* url, HSOCKET *sock, SR_HTTP_HEADER *info)
 
     if (info->content_type == CONTENT_TYPE_PLS) {
 	ret = httplib_get_pls (sock, info);
+	if (ret != SR_SUCCESS) return ret;
+    } else if (info->content_type == CONTENT_TYPE_M3U) {
+	ret = httplib_get_m3u (sock, info);
 	if (ret != SR_SUCCESS) return ret;
     }
 

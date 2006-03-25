@@ -72,8 +72,8 @@ const char* codeset_relay;
 const char* codeset_id3;
 const char* codeset_filesys;
 
-
-char *subnstr_until(const char *str, char *until, char *newstr, int maxlen)
+char*
+subnstr_until(const char *str, char *until, char *newstr, int maxlen)
 {
     const char *p = str;
     int len = 0;

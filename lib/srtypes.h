@@ -87,6 +87,7 @@ typedef unsigned short u_short;
 #define CONTENT_TYPE_ULTRAVOX		4
 #define CONTENT_TYPE_AAC		5
 #define CONTENT_TYPE_PLS		6
+#define CONTENT_TYPE_M3U		7
 #define CONTENT_TYPE_UNKNOWN		99
 
 /* 
@@ -189,44 +190,44 @@ enum OverwriteOpt {
 // are not organized at all, should have space to insert in places.
 //
 /* ************** IMPORTANT IF YOU ADD ERROR CODES!!!! ***********************/
-#define NUM_ERROR_CODES					((0x3f)+1)
+#define NUM_ERROR_CODES					((0x41)+1)
 /* ************** IMPORTANT IF YOU ADD ERROR CODES!!!! ***********************/
-#define SR_SUCCESS					0x00
-#define SR_SUCCESS_BUFFERING				0x01
-#define SR_ERROR_CANT_FIND_TRACK_SEPERATION		-	0x01
-#define SR_ERROR_DECODE_FAILURE				-	0x02
-#define SR_ERROR_INVALID_URL				-	0x03
-#define	SR_ERROR_WIN32_INIT_FAILURE			-	0x04
-#define SR_ERROR_CONNECT_FAILED				- 	0x05
-#define SR_ERROR_CANT_RESOLVE_HOSTNAME			- 	0x06
-#define SR_ERROR_RECV_FAILED				-	0x07
-#define SR_ERROR_SEND_FAILED				-	0x08
-#define SR_ERROR_PARSE_FAILURE				-	0x09
-#define SR_ERROR_NO_RESPOSE_HEADER			-	0x0a
-#define SR_ERROR_NO_ICY_CODE				-	0x0b
-#define SR_ERROR_NO_META_INTERVAL			-	0x0c
-#define SR_ERROR_INVALID_PARAM				-	0x0d
-#define SR_ERROR_NO_HTTP_HEADER				-	0x0e
-#define SR_ERROR_CANT_GET_LIVE365_ID			-	0x0f
-#define SR_ERROR_CANT_ALLOC_MEMORY			-	0x10
-#define SR_ERROR_CANT_FIND_IP_PORT			-	0x11
-#define SR_ERROR_CANT_FIND_MEMBERNAME			-	0x12
-#define SR_ERROR_CANT_FIND_TRACK_NAME			-	0x13
-#define SR_ERROR_NULL_MEMBER_NAME			-	0x14
-#define SR_ERROR_CANT_FIND_TIME_TAG			-	0x15
-#define SR_ERROR_BUFFER_EMPTY				-	0x16
-#define	SR_ERROR_BUFFER_FULL				-	0x17
-#define	SR_ERROR_CANT_INIT_XAUDIO			-	0x18
-#define SR_ERROR_BUFFER_TOO_SMALL			-	0x19
-#define SR_ERROR_CANT_CREATE_THREAD			-	0x1A
-#define SR_ERROR_CANT_FIND_MPEG_HEADER			-	0x1B
-#define SR_ERROR_INVALID_METADATA			-	0x1C
-#define SR_ERROR_NO_TRACK_INFO				-	0x1D
-#define SR_EEROR_CANT_FIND_SUBSTR			-	0x1E
-#define SR_ERROR_CANT_BIND_ON_PORT			-	0x1F
-#define SR_ERROR_HOST_NOT_CONNECTED			-	0x20
-#define SR_ERROR_HTTP_404_ERROR				-	0x21
-#define SR_ERROR_HTTP_401_ERROR				-	0x22	
+#define SR_SUCCESS				  0x00
+#define SR_SUCCESS_BUFFERING			  0x01
+#define SR_ERROR_CANT_FIND_TRACK_SEPERATION	- 0x01
+#define SR_ERROR_DECODE_FAILURE			- 0x02
+#define SR_ERROR_INVALID_URL			- 0x03
+#define	SR_ERROR_WIN32_INIT_FAILURE		- 0x04
+#define SR_ERROR_CONNECT_FAILED			- 0x05
+#define SR_ERROR_CANT_RESOLVE_HOSTNAME		- 0x06
+#define SR_ERROR_RECV_FAILED			- 0x07
+#define SR_ERROR_SEND_FAILED			- 0x08
+#define SR_ERROR_PARSE_FAILURE			- 0x09
+#define SR_ERROR_NO_RESPOSE_HEADER		- 0x0a
+#define SR_ERROR_NO_ICY_CODE			- 0x0b
+#define SR_ERROR_NO_META_INTERVAL		- 0x0c
+#define SR_ERROR_INVALID_PARAM			- 0x0d
+#define SR_ERROR_NO_HTTP_HEADER			- 0x0e
+#define SR_ERROR_CANT_GET_LIVE365_ID		- 0x0f
+#define SR_ERROR_CANT_ALLOC_MEMORY		- 0x10
+#define SR_ERROR_CANT_FIND_IP_PORT		- 0x11
+#define SR_ERROR_CANT_FIND_MEMBERNAME		- 0x12
+#define SR_ERROR_CANT_FIND_TRACK_NAME		- 0x13
+#define SR_ERROR_NULL_MEMBER_NAME		- 0x14
+#define SR_ERROR_CANT_FIND_TIME_TAG		- 0x15
+#define SR_ERROR_BUFFER_EMPTY			- 0x16
+#define	SR_ERROR_BUFFER_FULL			- 0x17
+#define	SR_ERROR_CANT_INIT_XAUDIO		- 0x18
+#define SR_ERROR_BUFFER_TOO_SMALL		- 0x19
+#define SR_ERROR_CANT_CREATE_THREAD		- 0x1A
+#define SR_ERROR_CANT_FIND_MPEG_HEADER		- 0x1B
+#define SR_ERROR_INVALID_METADATA		- 0x1C
+#define SR_ERROR_NO_TRACK_INFO			- 0x1D
+#define SR_EEROR_CANT_FIND_SUBSTR		- 0x1E
+#define SR_ERROR_CANT_BIND_ON_PORT		- 0x1F
+#define SR_ERROR_HOST_NOT_CONNECTED		- 0x20
+#define SR_ERROR_HTTP_404_ERROR			- 0x21
+#define SR_ERROR_HTTP_401_ERROR			- 0x22	
 #define SR_ERROR_HTTP_502_ERROR			- 0x23  // Connection Refused
 #define SR_ERROR_CANT_CREATE_FILE		- 0x24
 #define SR_ERROR_CANT_WRITE_TO_FILE		- 0x25
@@ -256,5 +257,7 @@ enum OverwriteOpt {
 #define SR_ERROR_REQUIRED_WINDOW_EMPTY          - 0x3d  // Not an error
 #define SR_ERROR_CANT_BIND_ON_INTERFACE		- 0x3e
 #define SR_ERROR_NO_OGG_PAGES_FOR_RELAY		- 0x3f
+#define SR_ERROR_CANT_PARSE_PLS	                - 0x40
+#define SR_ERROR_CANT_PARSE_M3U	                - 0x41
 
 #endif //__SRIPPER_H__

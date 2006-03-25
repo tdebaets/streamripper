@@ -1,6 +1,4 @@
-/* rip_manager.c
- *
- * This program is free software; you can redistribute it and/or modify
+/* This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
@@ -53,16 +51,8 @@
 #include "parse.h"
 
 /******************************************************************************
- * Public functions
- *****************************************************************************/
-error_code		rip_manager_start(void (*status_callback)(int message, void *data), RIP_MANAGER_OPTIONS *options);
-void			rip_manager_stop();
-char *			rip_manager_get_error_str(error_code code);
-u_short			rip_mananger_get_relay_port();	
-
-/******************************************************************************
  * Private functions
- ******************************************************************************/
+ *****************************************************************************/
 static void			ripthread(void *bla);
 static error_code		start_relay(int content_type);
 static void			post_status(int status);
@@ -75,7 +65,7 @@ static void			destroy_subsystems();
 
 /******************************************************************************
  * Private Vars
- ******************************************************************************/
+ *****************************************************************************/
 static SR_HTTP_HEADER		m_http_info;
 static HSOCKET			m_sock;
 #if defined (commentout)
@@ -164,13 +154,15 @@ void init_error_strings()
     SET_ERR_STR("SR_ERROR_NOT_SHOUTCAST_STREAM",		0x36);
     SET_ERR_STR("HTTP:407 - Proxy Authentication Required",	0x37);
     SET_ERR_STR("HTTP:403 - Access Forbidden (try changing the UserAgent)", 0x38);
-    SET_ERR_STR("The output directory length is too long", 0x39);
-    SET_ERR_STR("SR_ERROR_PROGRAM_ERROR", 0x3a);
-    SET_ERR_STR("SR_ERROR_TIMEOUT", 0x3b);
-    SET_ERR_STR("SR_ERROR_SELECT_FAILED", 0x3c);
-    SET_ERR_STR("SR_ERROR_RESERVED_WINDOW_EMPTY", 0x3d);
-    SET_ERR_STR("SR_ERROR_CANT_BIND_ON_INTERFACE", 0x3e);
-    SET_ERR_STR("SR_ERROR_NO_OGG_PAGES_FOR_RELAY", 0x3f);
+    SET_ERR_STR("The output directory length is too long",      0x39);
+    SET_ERR_STR("SR_ERROR_PROGRAM_ERROR",                       0x3a);
+    SET_ERR_STR("SR_ERROR_TIMEOUT",                             0x3b);
+    SET_ERR_STR("SR_ERROR_SELECT_FAILED",                       0x3c);
+    SET_ERR_STR("SR_ERROR_RESERVED_WINDOW_EMPTY",               0x3d);
+    SET_ERR_STR("SR_ERROR_CANT_BIND_ON_INTERFACE",              0x3e);
+    SET_ERR_STR("SR_ERROR_NO_OGG_PAGES_FOR_RELAY",              0x3f);
+    SET_ERR_STR("SR_ERROR_CANT_PARSE_PLS",                      0x40);
+    SET_ERR_STR("SR_ERROR_CANT_PARSE_M3U",                      0x41);
 }
 
 char*

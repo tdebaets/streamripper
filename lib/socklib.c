@@ -305,14 +305,13 @@ socklib_recvall (HSOCKET *socket_handle, char* buffer, int size, int timeout)
     
     sock = socket_handle->s;
     FD_ZERO(&fds);
-    while(size)
-    {
+    while(size) {
 	if (socket_handle->closed)
 	    return SR_ERROR_SOCKET_CLOSED;
 	
-	if (timeout > 0)
-	{
-	    // Wait up to 'timeout' seconds for data on socket to be ready for read
+	if (timeout > 0) {
+	    /* Wait up to 'timeout' seconds for data on socket to be 
+	       ready for read */
 	    FD_SET(sock, &fds);
 	    tv.tv_sec = timeout;
 	    tv.tv_usec = 0;
@@ -323,9 +322,7 @@ socklib_recvall (HSOCKET *socket_handle, char* buffer, int size, int timeout)
 		return SR_ERROR_TIMEOUT;
 	}
 		
-	//		DEBUG2(("calling recv for %d bytes", size));
         ret = recv(socket_handle->s, &buffer[read], size, 0);
-	//		DEBUG2(("recv: %d", ret));
 	debug_printf ("RECV req %5d bytes, got %5d bytes\n", size, ret);
 
         if (ret == SOCKET_ERROR) {
@@ -337,7 +334,7 @@ socklib_recvall (HSOCKET *socket_handle, char* buffer, int size, int timeout)
 	/* Got zero bytes on blocking read.  For unix this is an 
 	   orderly shutdown. */
 	if (ret == 0) {
-	    debug_printf ("recv recieved zero bytes!\n");
+	    debug_printf ("recv received zero bytes!\n");
 	    break;
 	}
 
@@ -353,8 +350,7 @@ socklib_sendall (HSOCKET *socket_handle, char* buffer, int size)
 {
     int ret = 0, sent = 0;
 
-    while(size)
-    {
+    while(size) {
 	if (socket_handle->closed)
 	    return SR_ERROR_SOCKET_CLOSED;
 
@@ -370,7 +366,6 @@ socklib_sendall (HSOCKET *socket_handle, char* buffer, int size)
     }
 
     return sent;
-	
 }
 
 error_code
