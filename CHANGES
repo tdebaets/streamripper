@@ -1,5 +1,6 @@
 New for 1.61.19
 ---------------
+* Add support for pls and m3u parsing
 * Upgrade to TRE version 0.7.2
 * Add configuration switch: --without-ogg, for compiling 
   streamripper on systems that don't have ogg/vorbis libraries.
