@@ -3,10 +3,6 @@ automake --add-missing --foreign Makefile
 autoconf
 autoheader
 
-./configure --with-included-libmad --with-included-tre --with-included-argv
-
-exit
-
 cd libmad-0.15.1b
 aclocal
 automake --add-missing --foreign Makefile
@@ -22,5 +18,10 @@ autoheader
 cd ..
 
 rm -f config.cache
-## ./configure
+./configure --with-included-libmad --with-included-tre --with-included-argv
+
+exit
+
+./configure
 ./configure --without-ogg
+
