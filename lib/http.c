@@ -721,59 +721,6 @@ httplib_get_sc_header(const char* url, HSOCKET *sock, SR_HTTP_HEADER *info)
     return SR_SUCCESS;
 }
 
-
-error_code
-httplib_get_webpage_alloc(HSOCKET *sock, const char *url, const char *proxyurl, char **buffer, unsigned long *size)
-{
-    char headbuf[MAX_HEADER_LEN];
-    URLINFO url_info;
-    int ret;
-
-    if (proxyurl)
-    {
-	if ((ret = httplib_parse_url(proxyurl, &url_info)) != SR_SUCCESS)
-		return ret;
-    }
-    else if ((ret = httplib_parse_url(url, &url_info)) != SR_SUCCESS)
-    {
-	return ret;
-    }
-
-    if ((ret = socklib_init()) != SR_SUCCESS)
-	return ret;
-    
-    if ((ret = socklib_open(sock, url_info.host, url_info.port, NULL)) != SR_SUCCESS)
-	return ret;
-
-    if ((ret = httplib_construct_page_request(url, proxyurl != NULL, headbuf)) != SR_SUCCESS)
-    {
-	socklib_close(sock);
-	return ret;
-    }
-
-    if ((ret = socklib_sendall(sock, headbuf, strlen(headbuf))) < 0)
-    {
-	socklib_close(sock);
-	return ret;
-    }
-
-    memset(headbuf, 0, MAX_HEADER_LEN);
-    /*	if ((ret = socklib_read_header(sock, headbuf, MAX_HEADER_LEN, NULL)) != SR_SUCCESS)
-    {
-	socklib_close(*sock);
-	return ret;
-    }
-    */
-
-    if ((ret = socklib_recvall_alloc(sock, buffer, size, NULL)) != SR_SUCCESS)
-    {
-	socklib_close(sock);
-	return ret;
-    }
-    socklib_close(sock);
-    return SR_SUCCESS;
-}
-
 // taken from:
 // Copyright (c) 2000 Virtual Unlimited B.V.
 // Author: Bob Deblier <bob@virtualunlimited.com>

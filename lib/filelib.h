@@ -38,18 +38,6 @@
 # define IS_ABSOLUTE_PATH(P) ISSLASH ((P)[0])
 #endif
 
-
-#if defined (commentout)
-#ifndef WIN32
-#define MAX_PATH 256
-#endif
-#ifndef MAX_PATH
-#define MAX_PATH		512
-#endif
-#define MAX_PATH_LEN		255
-#define MAX_FILENAME_LEN	255
-#define MAX_FILENAME		255
-#endif
 #define SR_MIN_FILENAME		54     /* For files in incomplete */
 #define SR_MIN_COMPLETEDIR      10     /* For dir with radio station name */
 #define SR_DATE_LEN		11

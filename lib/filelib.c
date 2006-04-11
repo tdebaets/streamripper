@@ -53,9 +53,6 @@ static BOOL file_exists (char *filename);
 static void trim_filename (char *filename, char* out);
 static void trim_mp3_suffix (char *filename);
 static error_code filelib_open_for_write (FHANDLE* fp, char *filename);
-#if defined (commentout)
-static int is_absolute_path (char* fn);
-#endif
 static void
 parse_and_subst_dir (char* pattern_head, char* pattern_tail, char* opat_path,
 		     int is_for_showfile);

@@ -1,7 +1,4 @@
-/* socklib.c - jonclegg@yahoo.com
- * library routines for handling socket stuff
- *
- * This program is free software; you can redistribute it and/or modify
+/* This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
@@ -15,7 +12,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -58,37 +54,17 @@
 #endif
 
 
-/*********************************************************************************
- * Public functions
- *********************************************************************************/
-error_code socklib_init();
-error_code socklib_open(HSOCKET *socket_handle, char *host, int port,
-			char *if_name);
-void socklib_close(HSOCKET *socket_handle);
-void socklib_cleanup();
-error_code socklib_read_header(HSOCKET *socket_handle, char *buffer, int size, 
-			       int (*recvall)(HSOCKET *socket_handle, 
-					      char* buffer, int size, 
-					      int timeout));
-int socklib_recvall(HSOCKET *socket_handle, char* buffer, int size,
-		    int timeout);
-int socklib_sendall(HSOCKET *socket_handle, char* buffer, int size);
-error_code socklib_recvall_alloc(HSOCKET *socket_handle, char** buffer, 
-				 unsigned long *size, 
-				 int (*recvall)(HSOCKET *socket_handle, 
-						char* buffer, int size, 
-						int timeout));
-error_code read_interface(char *if_name, uint32_t *addr);
-
-/*********************************************************************************
+/****************************************************************************
  * Private Vars 
- *********************************************************************************/
+ ****************************************************************************/
 static BOOL m_done_init = FALSE; // so we don't init the mutex twice.. arg.
 
-/*
- * Init socket stuff
- */
-error_code socklib_init()
+
+/****************************************************************************
+ * Function definitions
+ ****************************************************************************/
+error_code
+socklib_init()
 {
 #if WIN32
     WORD wVersionRequested;
@@ -111,9 +87,7 @@ error_code socklib_init()
 }
 
 
-/*
- * try to find the local interface to bind to
- */
+/* Try to find the local interface to bind to */
 error_code
 read_interface(char *if_name, uint32_t *addr)
 {
@@ -144,7 +118,6 @@ read_interface(char *if_name, uint32_t *addr)
  * open's a tcp connection to host at port, host can be a dns name or IP,
  * socket_handle gets assigned to the handle for the connection
  */
-
 error_code 
 socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_name)
 {
@@ -291,10 +264,6 @@ socklib_read_header(HSOCKET *socket_handle, char *buffer, int size,
     return SR_SUCCESS;
 }
 
-
-/*
- * Default recv
- */
 int
 socklib_recvall (HSOCKET *socket_handle, char* buffer, int size, int timeout)
 {
@@ -321,7 +290,7 @@ socklib_recvall (HSOCKET *socket_handle, char* buffer, int size, int timeout)
 	    if (ret != 1)
 		return SR_ERROR_TIMEOUT;
 	}
-		
+
         ret = recv(socket_handle->s, &buffer[read], size, 0);
 	debug_printf ("RECV req %5d bytes, got %5d bytes\n", size, ret);
 
@@ -366,50 +335,4 @@ socklib_sendall (HSOCKET *socket_handle, char* buffer, int size)
     }
 
     return sent;
-}
-
-error_code
-socklib_recvall_alloc(HSOCKET *socket_handle, char** buffer, 
-		      unsigned long *size, 
-		      int (*recvall)(HSOCKET *socket_handle, char* buffer, 
-				     int size, int timeout))
-{
-    const int CHUNK_SIZE = 8192;
-    int (*myrecv)(HSOCKET *socket_handle, char* buffer, int size, int timeout);
-    int ret;
-    unsigned long mysize = 0;
-    int chunks = 1;
-    char *temp = (char *)malloc(CHUNK_SIZE);
-
-    if (socket_handle->closed)
-	return SR_ERROR_SOCKET_CLOSED;
-
-    if (!size)
-	return SR_ERROR_INVALID_PARAM;
-
-    if (recvall)
-	myrecv = recvall;
-    else
-	myrecv = socklib_recvall;
-
-    while((ret = myrecv(socket_handle, &temp[mysize], (CHUNK_SIZE*chunks)-mysize, 0)) >= 0)
-    {
-	mysize += ret;
-
-	if (ret == 0)
-	    break;
-
-	if ((mysize % CHUNK_SIZE) == 0)
-	{
-	    chunks++;
-	    temp = (char *)realloc(temp, CHUNK_SIZE*chunks);
-	}
-    }
-    if (mysize == 0)
-	return SR_ERROR_RECV_FAILED;
-
-    temp[mysize] = '\0';
-    *size = mysize;
-    *buffer = temp;
-    return SR_SUCCESS;
 }

@@ -1,7 +1,4 @@
-/* relaylib.c - jonclegg@yahoo.com
- * little relay server
- *
- * This program is free software; you can redistribute it and/or modify
+/* This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
@@ -15,7 +12,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #if WIN32
 #include <winsock2.h>
 #else
