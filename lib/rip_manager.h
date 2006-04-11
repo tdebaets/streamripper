@@ -18,7 +18,7 @@
 #include "external.h"
 #include "srtypes.h"
 
-#define SRVERSION	"1.61.19"
+#define SRVERSION	"1.61.19a"
 
 #if defined (WIN32)
 #define SRPLATFORM      "windows"

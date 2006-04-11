@@ -339,7 +339,8 @@ set_output_directory (char* global_output_directory,
     } else if (*odir_device) {
 	device = odir_device;
     } else {
-	device = cwd_device;
+	/* No device */
+	device = "";
     }
 
     /* Generate the output file pattern. */
