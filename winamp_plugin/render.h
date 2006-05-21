@@ -38,8 +38,8 @@ extern VOID		render_do_mousemove(HWND hWnd, LONG wParam, LONG lParam);
 extern VOID		render_do_lbuttonup(HWND hWnd, LONG wParam, LONG lParam);
 extern VOID		render_do_lbuttondown(HWND hWnd, LONG wParam, LONG lParam);
 extern BOOL		render_destroy();
-
-extern BOOL		render_create_preview(char* skinfile, HDC hdc, long left, long top);
+BOOL render_create_preview (char* skinfile, HDC hdc, long left, long top,
+			    long width, long height);
 extern BOOL		render_change_skin(LPCTSTR szBmpFile);
 
 #endif //__RENDER_H__

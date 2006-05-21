@@ -1,3 +1,8 @@
+New for 1.61.20
+---------------
+* Fix problem writing to \\net\paths on windows
+* Fix rendering problem with skin preview
+
 New for 1.61.19
 ---------------
 Sat 03-25-2006

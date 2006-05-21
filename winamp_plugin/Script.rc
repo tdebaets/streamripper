@@ -72,7 +72,7 @@ FONT 8, "MS Sans Serif"
 BEGIN
     LISTBOX         IDC_SKIN_LIST,7,19,85,128,LBS_SORT | 
                     LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    GROUPBOX        "Skin Preview",IDC_STATIC,99,39,104,59
+    GROUPBOX        "Skin Preview",IDC_SKIN_PREVIEW,99,39,104,67
     LTEXT           "Skins",IDC_STATIC,7,7,88,12
 END
 

@@ -58,7 +58,6 @@ VOID	render_clear_all_data();
 HBUTTON	render_add_button(RECT *normal, RECT *pressed, RECT *hot, RECT *grayed, RECT *dest, void (*clicked)());
 BOOL	render_add_bar(RECT *rt, POINT dest);
 BOOL	render_do_paint(HDC hdc);
-BOOL	render_create_preview(char* skinfile, HDC hdc, long left, long right);
 VOID	render_do_mousemove(HWND hWnd, LONG wParam, LONG lParam);
 VOID	render_do_lbuttonup(HWND hWnd, LONG wParam, LONG lParam);
 VOID	render_do_lbuttondown(HWND hWnd, LONG wParam, LONG lParam);
@@ -441,7 +440,9 @@ void bitmapdc_close(BITMAPDC b)
 	b.bm = NULL;
 }
 
-BOOL render_create_preview(char* skinfile, HDC hdc, long left, long top)
+BOOL
+render_create_preview (char* skinfile, HDC hdc, long left, long top,
+		       long width, long height)
 {
     BOOL b;
     long orig_width = WIDTH(m_rect_background);
@@ -458,7 +459,8 @@ BOOL render_create_preview(char* skinfile, HDC hdc, long left, long top)
 
     if (!internal_render_do_paint(skind, tempdc.hdc))
 	return FALSE;
-    b = StretchBlt(hdc, left, top, orig_width / 2, orig_hight / 2,
+    b = StretchBlt(hdc, left + width / 8, top + height / 4, 
+	3 * (width / 4), 5 * (height / 8),
 	tempdc.hdc, 0, 0, orig_width, orig_hight, 
 	SRCCOPY);
     bitmapdc_close(tempdc);

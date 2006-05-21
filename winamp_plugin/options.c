@@ -601,11 +601,37 @@ skin_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_PAINT:
 	{
 	    PAINTSTRUCT pt;
+	    RECT size_rect;
+	    RECT pos_rect;
+	    POINT pos_point;
+	    BOOL rc;
 
 	    HDC hdc = BeginPaint(hWnd, &pt);
 	    debug_printf ("skin:WM_PAINT\n");
+
+	    rc = GetClientRect (GetDlgItem (hWnd, IDC_SKIN_PREVIEW), &size_rect);
+	    debug_printf ("skin:Got client rect rc = %d, "
+			    "(b,l,r,t) = (%d %d %d %d)\n", 
+			    rc,
+			    size_rect.bottom, size_rect.left,
+			    size_rect.right, size_rect.top);
+	    rc = GetWindowRect (GetDlgItem (hWnd, IDC_SKIN_PREVIEW), &pos_rect);
+	    debug_printf ("skin:Got window rect rc = %d, "
+			    "(b,l,r,t) = (%d %d %d %d)\n", 
+			    rc,
+			    pos_rect.bottom, pos_rect.left,
+			    pos_rect.right, pos_rect.top);
+	    pos_point.x = pos_rect.left;
+	    pos_point.y = pos_rect.top;
+	    rc = ScreenToClient (hWnd, &pos_point);
+	    debug_printf ("skin:mapped screen to client rc = %d, "
+			    "(x,y) = (%d %d)\n", 
+			    rc, pos_point.x, pos_point.y);
+ 
 	    render_create_preview (m_pskin_list[m_curskin], hdc, 
-		SKIN_PREV_LEFT, SKIN_PREV_TOP);
+		pos_point.x, pos_point.y, 
+		size_rect.right, size_rect.bottom);
+
 	    EndPaint(hWnd, &pt);
 	}
 	return FALSE;

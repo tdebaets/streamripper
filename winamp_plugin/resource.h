@@ -46,6 +46,7 @@
 #define IDC_PATTERN_EDIT                1376
 #define IDC_EXTERNAL_COMMAND_CHECK      1377
 #define IDC_EXTERNAL_COMMAND            1378
+#define IDC_SKIN_PREVIEW                1378
 #define ID_MENU_STARTRIPPING            40001
 #define ID_MENU_STOPRIPPING             40003
 #define ID_MENU_OPTIONS                 40004
@@ -57,7 +58,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        120
 #define _APS_NEXT_COMMAND_VALUE         40006
-#define _APS_NEXT_CONTROL_VALUE         1378
+#define _APS_NEXT_CONTROL_VALUE         1379
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
