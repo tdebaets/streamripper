@@ -88,151 +88,142 @@ static struct PARENTS
 
 BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
 {
-	char classname[256];
-	HWND bigowner = (HWND)lParam;
-	HWND owner = GetWindow(hwnd, GW_OWNER);
+    char classname[256];
+    HWND bigowner = (HWND)lParam;
+    HWND owner = GetWindow(hwnd, GW_OWNER);
 
-	GetClassName(hwnd, classname, 256); 
+    GetClassName(hwnd, classname, 256); 
 
-	if (owner != bigowner )
-		return TRUE;
+    if (owner != bigowner )
+	    return TRUE;
 
-	if (strcmp(classname, "Winamp PE") == 0)
-		m_winamp_wins[1].hwnd = hwnd;
-	else if (strcmp(classname, "Winamp EQ") == 0)
-		m_winamp_wins[2].hwnd = hwnd;
-	else if (strcmp(classname, "Winamp MB") == 0)
-		m_winamp_wins[3].hwnd = hwnd;
+    if (strcmp(classname, "Winamp PE") == 0)
+	    m_winamp_wins[1].hwnd = hwnd;
+    else if (strcmp(classname, "Winamp EQ") == 0)
+	    m_winamp_wins[2].hwnd = hwnd;
+    else if (strcmp(classname, "Winamp MB") == 0)
+	    m_winamp_wins[3].hwnd = hwnd;
 
-	if (m_winamp_wins[1].hwnd != NULL &&
-		m_winamp_wins[2].hwnd != NULL &&
-		m_winamp_wins[3].hwnd != NULL)
-	{
-		return FALSE;
-	}
+    if (m_winamp_wins[1].hwnd != NULL &&
+	    m_winamp_wins[2].hwnd != NULL &&
+	    m_winamp_wins[3].hwnd != NULL)
+    {
+	    return FALSE;
+    }
 
-	return TRUE;
+    return TRUE;
 }
 
 BOOL find_winamp_windows(HWND hWnd)
 {
-	int i;
-	long style = 0;
+    int i;
+    long style = 0;
 
 
-	m_winamp_wins[1].hwnd = m_winamp_wins[2].hwnd = m_winamp_wins[3].hwnd = NULL;
-	m_winamp_wins[0].hwnd = GetParent(hWnd);
-	EnumWindows(EnumWindowsProc, (LPARAM)m_winamp_wins[0].hwnd);
+    m_winamp_wins[1].hwnd = m_winamp_wins[2].hwnd = m_winamp_wins[3].hwnd = NULL;
+    m_winamp_wins[0].hwnd = GetParent(hWnd);
+    EnumWindows(EnumWindowsProc, (LPARAM)m_winamp_wins[0].hwnd);
 
-	for(i = 0; i < WINAMP_WINDOWS; i++)
-	{
-		if (m_winamp_wins[i].hwnd == NULL)
-			return FALSE;
+    for (i = 0; i < WINAMP_WINDOWS; i++) {
+    	if (m_winamp_wins[i].hwnd == NULL)
+	    return FALSE;
 
-		style = GetWindowLong(m_winamp_wins[i].hwnd, GWL_STYLE);
-		m_winamp_wins[i].visible = style & WS_VISIBLE;
-	}
-	return TRUE;
+	style = GetWindowLong(m_winamp_wins[i].hwnd, GWL_STYLE);
+	m_winamp_wins[i].visible = style & WS_VISIBLE;
+    }
+    return TRUE;
 }
 
 BOOL dock_hook_winamp(HWND hwnd)
 {
+    int i;
 
-	int i;
+    if (!find_winamp_windows(hwnd))
+	return FALSE;
 
-	if (!find_winamp_windows(hwnd))
+    // hook em'
+    for (i = 0; i < WINAMP_WINDOWS; i++) {
+	m_winamp_wins[i].orig_proc = NULL;
+	if (!m_winamp_wins[i].visible)
+		continue;
+
+	m_winamp_wins[i].orig_proc = (WNDPROC)SetWindowLong(m_winamp_wins[i].hwnd, GWL_WNDPROC, (LONG)hook_winamp);
+	if (m_winamp_wins[i].orig_proc == NULL)
 		return FALSE;
-
-
-	// hook em'
-	for (i = 0; i < WINAMP_WINDOWS; i++)
-	{
-		m_winamp_wins[i].orig_proc = NULL;
-		if (!m_winamp_wins[i].visible)
-			continue;
-
-		m_winamp_wins[i].orig_proc = (WNDPROC)SetWindowLong(m_winamp_wins[i].hwnd, GWL_WNDPROC, (LONG)hook_winamp);
-		if (m_winamp_wins[i].orig_proc == NULL)
-			return FALSE;
-	}
-
-	m_hwnd = hwnd;
-
-	return TRUE;
+    }
+    m_hwnd = hwnd;
+    return TRUE;
 }
 
 
 LRESULT CALLBACK hook_winamp(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    int i;
 
-	int i;
+    if (uMsg == WM_MOVE) 
+	dock_window();
 
-	if (uMsg == WM_MOVE) 
-		dock_window();
+    for (i = 0; i < WINAMP_WINDOWS; i++) {
+	if (m_winamp_wins[i].hwnd == hwnd)
+	    return CallWindowProc(m_winamp_wins[i].orig_proc, hwnd, uMsg, wParam, lParam); 
+    }
 
-	
-	for (i = 0; i < WINAMP_WINDOWS; i++)
-	{
-		if (m_winamp_wins[i].hwnd == hwnd)
-			return CallWindowProc(m_winamp_wins[i].orig_proc, hwnd, uMsg, wParam, lParam); 
-	}
-
-//	MessageBox(hwnd, "Shit, this shouldn't happen", "doh", (UINT)0);
-	return FALSE;
+    //	MessageBox(hwnd, "Shit, this shouldn't happen", "doh", (UINT)0);
+    return FALSE;
 }
 
 
 VOID dock_show_window(HWND hWnd, int nCmdShow)
 {
-	RECT rt;
+    RECT rt;
 
-	// Make sure we know about all the windows
-	find_winamp_windows(hWnd);
+    // Make sure we know about all the windows
+    find_winamp_windows(hWnd);
 
-	// Have it set the docking point to where-ever the window is
-	GetWindowRect(hWnd, &rt);
-	set_dock_side(&rt);
+    // Have it set the docking point to where-ever the window is
+    GetWindowRect(hWnd, &rt);
+    set_dock_side(&rt);
 
-	ShowWindow(hWnd, nCmdShow);
+    ShowWindow(hWnd, nCmdShow);
 }
 
 
 BOOL dock_unhook_winamp()
 {
-	int i;
+    int i;
 
-	for(i = 0; i < WINAMP_WINDOWS; i++)
-		if (m_winamp_wins[i].orig_proc)
-			SetWindowLong(m_winamp_wins[i].hwnd, GWL_WNDPROC,(LONG)m_winamp_wins[i].orig_proc); 
+    for(i = 0; i < WINAMP_WINDOWS; i++)
+	if (m_winamp_wins[i].orig_proc)
+	    SetWindowLong(m_winamp_wins[i].hwnd, GWL_WNDPROC,(LONG)m_winamp_wins[i].orig_proc); 
 
-	m_dragging = FALSE;
-	m_docked = FALSE;
-	m_docked_side = 0;
-	m_hwnd = NULL;
+    m_dragging = FALSE;
+    m_docked = FALSE;
+    m_docked_side = 0;
+    m_hwnd = NULL;
 
-	return TRUE;
+    return TRUE;
 }
 
-// This taken from James Spibey's <spib@bigfoot.com> code example for how to do a winamp plugin
-// the goto's are mine :)
+// This taken from James Spibey's <spib@bigfoot.com> code example for 
+// how to do a winamp plugin the goto's are mine :)
 VOID dock_window()
 {
-	int i;
-	RECT rt;
-	int left, top;
-	RECT	rtparents[4];
+    int i;
+    RECT rt;
+    int left, top;
+    RECT	rtparents[4];
 
-	if(!m_docked)
-		return;
+    if(!m_docked)
+	return;
 
-	GetWindowRect(m_hwnd, &rt);
+    GetWindowRect(m_hwnd, &rt);
 
-	for(i = 0; i < WINAMP_WINDOWS; i++)
-		GetWindowRect(m_winamp_wins[i].hwnd, &rtparents[i]);
+    for(i = 0; i < WINAMP_WINDOWS; i++)
+	GetWindowRect(m_winamp_wins[i].hwnd, &rtparents[i]);
 
-	i = m_docked_index;
-	switch(m_docked_side)
-	{
+    i = m_docked_index;
+    switch(m_docked_side)
+    {
 	case DOCKED_TOP_LL:
 		top = rtparents[i].top - RTHEIGHT(rt);
 		left = rtparents[i].left;

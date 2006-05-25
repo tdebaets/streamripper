@@ -1,5 +1,6 @@
 New for 1.61.20
 ---------------
+* Fix problem in plugin where options were getting reset
 * Fix problem writing to \\net\paths on windows
 * Fix rendering problem with skin preview
 

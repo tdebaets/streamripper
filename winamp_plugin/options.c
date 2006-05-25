@@ -808,9 +808,9 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     char overwrite_string[MAX_INI_LINE_LEN];
 
     // GCS uncomment these to get debugging log
-    //debug_enable();
+    debug_enable();
     //debug_set_filename ("C:\\gcs.txt");
-    //debug_set_filename ("d:\\sripper_1x\\gcs.txt");
+    debug_set_filename ("d:\\sripper_1x\\gcs.txt");
 
     if (!get_desktop_folder(desktop_path)) {
 	// Maybe an error message? nahhh..
@@ -841,6 +841,7 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     auto_reconnect = GetPrivateProfileInt(APPNAME, "auto_reconnect", TRUE, filename);
     make_relay = GetPrivateProfileInt(APPNAME, "make_relay", FALSE, filename);
     add_id3 = GetPrivateProfileInt(APPNAME, "add_id3", TRUE, filename);
+    debug_printf ("add_id3 <- %d\n", add_id3);
     check_max_btyes = GetPrivateProfileInt(APPNAME, "check_max_bytes", FALSE, filename);
     opt->maxMB_rip_size = GetPrivateProfileInt(APPNAME, "maxMB_bytes", 0, filename);
     keep_incomplete = GetPrivateProfileInt(APPNAME, "keep_incomplete", TRUE, filename);
@@ -877,10 +878,7 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     opt->overwrite = string_to_overwrite_opt (overwrite_string);
     debug_printf ("Got overwrite enum: %d\n", opt->overwrite);
 
-    /* GCS: Why zero this out? I can just keep defaults */
-#if defined (commentout)
     opt->flags = 0;
-#endif
     opt->flags |= OPT_SEARCH_PORTS;	// not having this caused a bad bug, must remember this.
     if (auto_reconnect) opt->flags |= OPT_AUTO_RECONNECT;
     if (make_relay) opt->flags |= OPT_MAKE_RELAY;
@@ -891,6 +889,8 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     if (rip_single_file) opt->flags |= OPT_SINGLE_FILE_OUTPUT;
     if (use_ext_cmd) opt->flags |= OPT_EXTERNAL_CMD;
 
+    debug_printf ("flags = 0x%04x\n", opt->flags);
+    debug_printf ("id3 flag = 0x%04x\n", OPT_ADD_ID3);
 
     /* Note, there is no way to change the rules file location (for now) */
     if (!winamp_get_path(opt->rules_file))
