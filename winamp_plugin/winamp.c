@@ -1,4 +1,4 @@
-/* winamp.c - jonclegg@yahoo.com
+/* winamp.c
  * gets info from winamp in various hacky ass ways
  *
  * This program is free software; you can redistribute it and/or modify
@@ -38,7 +38,8 @@ static char m_winamps_path[SR_MAX_PATH] = {'\0'};
 
 // Get's winamp's path from the reg key ..
 // HKEY_CLASSES_ROOT\Applications\winamp.exe\shell\Enqueue\command
-BOOL winamp_get_path(char *path)
+BOOL
+winamp_get_path(char *path)
 {
     DWORD size = SR_MAX_PATH;
     char strkey[SR_MAX_PATH];
@@ -48,19 +49,16 @@ BOOL winamp_get_path(char *path)
     HKEY hKey;
 
     if (RegOpenKeyEx(HKEY_CLASSES_ROOT,
-	    TEXT("Winamp.File\\shell\\Enqueue\\command"),
-	    0,
-	    KEY_QUERY_VALUE,
-	    &hKey) != ERROR_SUCCESS) 
-    {
+		     TEXT("Winamp.File\\shell\\Enqueue\\command"),
+		     0,
+		     KEY_QUERY_VALUE,
+		     &hKey) != ERROR_SUCCESS) {
 	return FALSE;
     }
 
-    if (RegQueryValue(hKey, NULL, (LPBYTE)strkey, &size) != ERROR_SUCCESS)
-    {
+    if (RegQueryValue(hKey, NULL, (LPBYTE)strkey, &size) != ERROR_SUCCESS) {
 	return FALSE;
     }
-
 
     // get the path out
     for(i = 0; strkey[i]; i++)	
@@ -79,79 +77,73 @@ BOOL winamp_get_path(char *path)
 
 BOOL winamp_init()
 {
-	// Not implemented
-	return winamp_get_path(m_winamps_path);
+    // Not implemented
+    return winamp_get_path(m_winamps_path);
 }
 
 #define DbgBox(_x_)	MessageBox(NULL, _x_, "Debug", 0)
 
 BOOL winamp_get_info(WINAMP_INFO *info, BOOL useoldway)
 {
-	HWND hwndWinamp;
-	info->url[0] = '\0';
+    HWND hwndWinamp;
+    info->url[0] = '\0';
 
-	hwndWinamp = FindWindow("Winamp v1.x", NULL);
+    hwndWinamp = FindWindow("Winamp v1.x", NULL);
 
-	// Get winamps path
-	if (!m_winamps_path[0])
-		return FALSE;
+    /* Get winamp path */
+    if (!m_winamps_path[0])
+	return FALSE;
 
-	if (!hwndWinamp)
+    if (!hwndWinamp) {
+	info->is_running = FALSE;
+	return FALSE;
+    } else {
+	info->is_running = TRUE;
+    }
+
+    if (useoldway) {
+	// Send a message to winamp to save the current playlist
+	// to a file, 'n' is the index of the currently selected item
+	int n  = SendMessage(hwndWinamp, WM_USER, (WPARAM)NULL, 120); 
+	char m3u_path[SR_MAX_PATH];
+	char buf[4096] = {'\0'};
+	FILE *fp;
+
+	sprintf(m3u_path, "%s%s", m_winamps_path, "winamp.m3u");	
+	if ((fp = fopen(m3u_path, "r")) == NULL)
+	    return FALSE;
+
+	while(!feof(fp) && n >= 0)
 	{
-		info->is_running = FALSE;
-		return FALSE;
+	    fgets(buf, 4096, fp);
+	    if (*buf != '#')
+		n--;
 	}
-	else
-		info->is_running = TRUE;
+	fclose(fp);
+	buf[strlen(buf)-1] = '\0';
 
-	if (useoldway)
-	{
-		//
-		// Send a message to winamp to save the current playlist
-		// to a file, 'n' is the index of the currently selected item
-		// 
-		int n  = SendMessage(hwndWinamp, WM_USER, (WPARAM)NULL, 120); 
-		char m3u_path[SR_MAX_PATH];
-		char buf[4096] = {'\0'};
-		FILE *fp;
-
-		sprintf(m3u_path, "%s%s", m_winamps_path, "winamp.m3u");	
-		if ((fp = fopen(m3u_path, "r")) == NULL)
-			return FALSE;
-
-		while(!feof(fp) && n >= 0)
-		{
-			fgets(buf, 4096, fp);
-			if (*buf != '#')
-				n--;
-		}
-		fclose(fp);
-		buf[strlen(buf)-1] = '\0';
-
-		// Make sure it's a URL
-		if (strncmp(buf, "http://", strlen("http://")) == 0)
-			strcpy(info->url, buf);
-	}
-	else
-	{
+	// Make sure it's a URL
+	if (strncmp(buf, "http://", strlen("http://")) == 0)
+	    strcpy(info->url, buf);
+    } else {
 	// Much better way to get the filename
-		int get_filename = 211;
-		int get_position = 125;
-		int data = 0;
-		int pos;
-		char* fname;
-		char *purl;
+	int get_filename = 211;
+	int get_position = 125;
+	int data = 0;
+	int pos;
+	char* fname;
+	char *purl;
 
-		pos = (int)SendMessage(hwndWinamp, WM_USER, data, get_position);
-		fname = (char*)SendMessage(hwndWinamp, WM_USER, pos, get_filename);
-		if (fname == NULL)
-			return FALSE;
-		purl = strstr(fname, "http://");
-		if (purl)
-			strncpy(info->url, purl, MAX_URL_LEN);
-	}
+	pos = (int)SendMessage(hwndWinamp, WM_USER, data, get_position);
+	fname = (char*)SendMessage(hwndWinamp, WM_USER, pos, get_filename);
+	if (fname == NULL)
+	    return FALSE;
+	purl = strstr(fname, "http://");
+	if (purl)
+	    strncpy(info->url, purl, MAX_URL_LEN);
+    }
 
-	return TRUE;
+    return TRUE;
 }
 
 BOOL
@@ -168,7 +160,7 @@ winamp_add_relay_to_playlist(char *host, u_short port, int content_type)
     } else {
 	sprintf(relay_file, "/add http://%s:%d", host, port);
     }
-    ShellExecute(NULL, "open", winamp_path,	relay_file, NULL, SW_SHOWNORMAL);
+    ShellExecute(NULL, "open", winamp_path, relay_file, NULL, SW_SHOWNORMAL);
 
     return TRUE;
 }
@@ -176,11 +168,11 @@ winamp_add_relay_to_playlist(char *host, u_short port, int content_type)
 
 BOOL winamp_add_track_to_playlist(char *fullpath)
 {
-	char add_track[SR_MAX_PATH];
-	char winamp_path[SR_MAX_PATH];
+    char add_track[SR_MAX_PATH];
+    char winamp_path[SR_MAX_PATH];
 
-	sprintf(winamp_path, "%s%s", m_winamps_path, "winamp.exe");
-	sprintf(add_track, "/add \"%s\"", fullpath);
-	ShellExecute(NULL, "open", winamp_path,	add_track, NULL, SW_SHOWNORMAL);
-	return TRUE;
+    sprintf(winamp_path, "%s%s", m_winamps_path, "winamp.exe");
+    sprintf(add_track, "/add \"%s\"", fullpath);
+    ShellExecute(NULL, "open", winamp_path, add_track, NULL, SW_SHOWNORMAL);
+    return TRUE;
 }

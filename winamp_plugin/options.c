@@ -1,4 +1,4 @@
-/* options.c - jonclegg@yahoo.com
+/* options.c
  * handles the options popup dialog
  *
  * This program is free software; you can redistribute it and/or modify
@@ -90,7 +90,6 @@ static int m_skin_list_size = 0;
 static int m_curskin = 0;
 //JCBUG not yet implemented (need to figure out how to get this)
 static int m_last_sheet = 0;	
-
 
 BOOL get_skin_list()
 {
@@ -254,8 +253,8 @@ browse_for_file(HWND hwnd, const char *title, UINT flags,
     }
 }
 
-
-HPROPSHEETPAGE create_prop_sheet_page(HINSTANCE inst, DWORD iddres, DLGPROC dlgproc)
+HPROPSHEETPAGE
+create_prop_sheet_page (HINSTANCE inst, DWORD iddres, DLGPROC dlgproc)
 {
     PROPSHEETPAGE  psp;
     memset(&psp, 0, sizeof(PROPSHEETPAGE));
@@ -267,8 +266,8 @@ HPROPSHEETPAGE create_prop_sheet_page(HINSTANCE inst, DWORD iddres, DLGPROC dlgp
     return CreatePropertySheetPage(&psp);
 }
 
-
-void options_dialog_show(HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
+void
+options_dialog_show (HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 {
     HPROPSHEETPAGE hPage[NUM_PROP_PAGES];	
     int ret;
@@ -957,7 +956,7 @@ options_save (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     fprintf(fp, "window_y=%d\n", guiOpt->oldpos.y);
     fprintf(fp, "enabled=%d\n", guiOpt->m_enabled);
     fprintf(fp, "default_skin=%s\n", guiOpt->default_skin);
-    fprintf(fp, "use_old_playlist_ret=%d", guiOpt->use_old_playlist_ret);
+    fprintf(fp, "use_old_playlist_ret=%d\n", guiOpt->use_old_playlist_ret);
 
     fclose(fp);
 

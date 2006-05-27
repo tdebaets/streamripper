@@ -1,4 +1,4 @@
-/* dsp_sripper.c - jonclegg@yahoo.com
+/* dsp_sripper.c
  * should be called gen_sripper.c, main plugin file for streamripper for winamp
  *
  * This program is free software; you can redistribute it and/or modify
@@ -141,7 +141,8 @@ int init()
     return 0;
 }
 
-INT_PTR CALLBACK EnableDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK
+EnableDlgProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg)
     {
@@ -173,7 +174,7 @@ INT_PTR CALLBACK EnableDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
     return 0;
 }
 
-void config()
+void config ()
 {
     BOOL prev_enabled = m_guiOpt.m_enabled;
 
@@ -454,7 +455,8 @@ void relay_pressed()
 	rip_manager_get_content_type());
 }
 
-BOOL CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
+BOOL CALLBACK
+WndProc (HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 {
     static HBRUSH hBrush = NULL;
 
@@ -592,6 +594,7 @@ BOOL CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 	}
 			
 	SetTimer(hWnd, 1, 500, (TIMERPROC)UpdateDisplay);
+	debug_printf ("Trying to dock...\n");
 	dock_hook_winamp(hWnd);
 
 	return 0;

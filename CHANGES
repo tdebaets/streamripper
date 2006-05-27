@@ -1,8 +1,10 @@
 New for 1.61.20
 ---------------
-* Fix problem in plugin where options were getting reset
+Sat 05-27-2006
 * Fix problem writing to \\net\paths on windows
-* Fix rendering problem with skin preview
+* Fix problem with options getting reset in winamp plugin
+* Fix rendering problem with skin preview in winamp plugin
+* Fix docking problem in winamp plugin
 
 New for 1.61.19
 ---------------

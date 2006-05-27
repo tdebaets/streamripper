@@ -1,4 +1,4 @@
-/* dock.c - jonclegg@yahoo.com
+/* dock.c
  * handles hooking winamp, and making the streamripper window "dock"
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,9 +19,10 @@
 #include "windows.h"
 #include <stdio.h>
 #include "dock.h"
+#include "debug.h"
 
 #define SNAP_OFFSET		10	
-#define WINAMP_WINDOWS	4
+#define WINAMP_WINDOWS		4
 
 #define DOCKED_TOP_LL		1	// Top Left Left
 #define DOCKED_TOP_LR		2	// Top Left Right
@@ -37,8 +38,8 @@
 #define DOCKED_RIGHT_BT		12
 
 // My extensions
-#define DOCKED_LEFT			100
-#define DOCKED_TOP			101
+#define DOCKED_LEFT		100
+#define DOCKED_TOP		101
 #define DOCKED_RIGHT		102
 #define DOCKED_BOTTOM		103
 
@@ -48,9 +49,9 @@
 #define SETWINDOWPOS(left, top)	\
 		SetWindowPos(hWnd, NULL, left, top, RTWIDTH(rt), RTHEIGHT(rt), SWP_SHOWWINDOW);
 
-/*********************************************************************************
+/*****************************************************************************
  * Public functions
- *********************************************************************************/
+ *****************************************************************************/
 BOOL dock_hook_winamp(HWND hwnd);
 VOID dock_do_mousemove(HWND hWnd, LONG wParam, LONG lParam);
 VOID dock_do_lbuttondown(HWND hWnd, LONG wParam, LONG lParam);
@@ -58,26 +59,26 @@ VOID dock_do_lbuttonup(HWND hWnd, LONG wParam, LONG lParam);
 VOID dock_show_window(HWND hWnd, int nCmdShow);
 BOOL dock_unhook_winamp();
 
-/*********************************************************************************
+/*****************************************************************************
  * Private functions
- *********************************************************************************/
+ *****************************************************************************/
 static LRESULT CALLBACK	hook_winamp(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-static VOID				dock_window();
-static BOOL				set_dock_side(RECT *rtnew);
-static BOOL				find_winamp_windows(HWND hWnd);
-static VOID				get_new_rect(HWND hWnd, POINTS cur, POINTS last, RECT *rtnew);
+static VOID			dock_window();
+static BOOL			set_dock_side(RECT *rtnew);
+static BOOL			find_winamp_windows(HWND hWnd);
+static VOID			get_new_rect(HWND hWnd, POINTS cur, POINTS last, RECT *rtnew);
 
 
-/*********************************************************************************
+/*****************************************************************************
  * Private Vars
- *********************************************************************************/
+ *****************************************************************************/
 static POINTS		m_drag_from = {0, 0};
-static BOOL			m_dragging = FALSE;
-static BOOL			m_docked = FALSE;
-static int			m_docked_side;
-static HWND			m_hwnd = NULL;
+static BOOL		m_dragging = FALSE;
+static BOOL		m_docked = FALSE;
+static int		m_docked_side;
+static HWND		m_hwnd = NULL;
 static POINT		m_docked_diff = {0, 0};
-static int			m_docked_index;
+static int		m_docked_index;
 static struct PARENTS
 {		
 	HWND	hwnd;
@@ -97,20 +98,23 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
     if (owner != bigowner )
 	    return TRUE;
 
-    if (strcmp(classname, "Winamp PE") == 0)
-	    m_winamp_wins[1].hwnd = hwnd;
-    else if (strcmp(classname, "Winamp EQ") == 0)
-	    m_winamp_wins[2].hwnd = hwnd;
-    else if (strcmp(classname, "Winamp MB") == 0)
-	    m_winamp_wins[3].hwnd = hwnd;
+    debug_printf ("Enum found: %s\n", classname);
 
+    if (strcmp(classname, "Winamp PE") == 0) {
+	m_winamp_wins[1].hwnd = hwnd;
+    } else if (strcmp(classname, "Winamp EQ") == 0) {
+	m_winamp_wins[2].hwnd = hwnd;
+    } else if (strcmp(classname, "Winamp Video") == 0) {
+	m_winamp_wins[3].hwnd = hwnd;
+    }
+#if defined (commentout)
     if (m_winamp_wins[1].hwnd != NULL &&
 	    m_winamp_wins[2].hwnd != NULL &&
 	    m_winamp_wins[3].hwnd != NULL)
     {
 	    return FALSE;
     }
-
+#endif
     return TRUE;
 }
 
@@ -119,10 +123,10 @@ BOOL find_winamp_windows(HWND hWnd)
     int i;
     long style = 0;
 
-
     m_winamp_wins[1].hwnd = m_winamp_wins[2].hwnd = m_winamp_wins[3].hwnd = NULL;
     m_winamp_wins[0].hwnd = GetParent(hWnd);
-    EnumWindows(EnumWindowsProc, (LPARAM)m_winamp_wins[0].hwnd);
+    debug_printf ("Starting enumeration of windows\n");
+    EnumWindows (EnumWindowsProc, (LPARAM)m_winamp_wins[0].hwnd);
 
     for (i = 0; i < WINAMP_WINDOWS; i++) {
     	if (m_winamp_wins[i].hwnd == NULL)
@@ -130,11 +134,14 @@ BOOL find_winamp_windows(HWND hWnd)
 
 	style = GetWindowLong(m_winamp_wins[i].hwnd, GWL_STYLE);
 	m_winamp_wins[i].visible = style & WS_VISIBLE;
+	debug_printf ("Win %d, visibility %d\n", i, m_winamp_wins[i].visible);
     }
+    debug_printf ("Found all the windows\n");
     return TRUE;
 }
 
-BOOL dock_hook_winamp(HWND hwnd)
+BOOL
+dock_hook_winamp (HWND hwnd)
 {
     int i;
 
@@ -144,9 +151,13 @@ BOOL dock_hook_winamp(HWND hwnd)
     // hook em'
     for (i = 0; i < WINAMP_WINDOWS; i++) {
 	m_winamp_wins[i].orig_proc = NULL;
+#if defined (commentout)
+	/* GCS not sure why this visibility test is needed */
 	if (!m_winamp_wins[i].visible)
 		continue;
+#endif
 
+	debug_printf ("Hooking...\n");
 	m_winamp_wins[i].orig_proc = (WNDPROC)SetWindowLong(m_winamp_wins[i].hwnd, GWL_WNDPROC, (LONG)hook_winamp);
 	if (m_winamp_wins[i].orig_proc == NULL)
 		return FALSE;
@@ -155,8 +166,8 @@ BOOL dock_hook_winamp(HWND hwnd)
     return TRUE;
 }
 
-
-LRESULT CALLBACK hook_winamp(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK
+hook_winamp (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     int i;
 
@@ -173,7 +184,8 @@ LRESULT CALLBACK hook_winamp(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 }
 
 
-VOID dock_show_window(HWND hWnd, int nCmdShow)
+VOID
+dock_show_window(HWND hWnd, int nCmdShow)
 {
     RECT rt;
 
@@ -188,7 +200,8 @@ VOID dock_show_window(HWND hWnd, int nCmdShow)
 }
 
 
-BOOL dock_unhook_winamp()
+BOOL
+dock_unhook_winamp()
 {
     int i;
 
@@ -206,7 +219,8 @@ BOOL dock_unhook_winamp()
 
 // This taken from James Spibey's <spib@bigfoot.com> code example for 
 // how to do a winamp plugin the goto's are mine :)
-VOID dock_window()
+VOID
+dock_window()
 {
     int i;
     RECT rt;
@@ -299,13 +313,11 @@ SETWINDOW:
 
 }
 
-
-VOID get_new_rect(HWND hWnd, POINTS cur, POINTS last, RECT *rtnew)
+VOID
+get_new_rect (HWND hWnd, POINTS cur, POINTS last, RECT *rtnew)
 {
-
 	RECT rt;
-	POINT	diff	= {cur.x-last.x,
-					   cur.y-last.y};
+	POINT	diff	= {cur.x-last.x, cur.y-last.y};
 
 	GetWindowRect(hWnd, &rt);
 	rtnew->left = rt.left+diff.x;
@@ -314,33 +326,27 @@ VOID get_new_rect(HWND hWnd, POINTS cur, POINTS last, RECT *rtnew)
 	rtnew->bottom = rt.bottom+diff.y;
 }
 
-
-VOID dock_do_mousemove(HWND hWnd, LONG wParam, LONG lParam)
+VOID
+dock_do_mousemove (HWND hWnd, LONG wParam, LONG lParam)
 {
+    RECT rtnew;
 
-	RECT rtnew;
+    // Simulate the the caption bar
+    if (!(m_dragging && (wParam & MK_LBUTTON)))
+	return;
 
-	// Simulate the the caption bar
-	if (!(m_dragging && (wParam & MK_LBUTTON)))
-		return;
+    get_new_rect(hWnd, MAKEPOINTS(lParam), m_drag_from, &rtnew);
 
-	
-	get_new_rect(hWnd, MAKEPOINTS(lParam), m_drag_from, &rtnew);
-
-	if (!set_dock_side(&rtnew))
-	{
-		SetWindowPos(hWnd, NULL, rtnew.left, rtnew.top, RTWIDTH(rtnew), RTHEIGHT(rtnew), SWP_SHOWWINDOW);
-		m_docked = FALSE;
-	}
-	else
-	{
-		dock_window();
-	}
+    if (!set_dock_side(&rtnew)) {
+	SetWindowPos(hWnd, NULL, rtnew.left, rtnew.top, RTWIDTH(rtnew), RTHEIGHT(rtnew), SWP_SHOWWINDOW);
+	m_docked = FALSE;
+    } else {
+	dock_window();
+    }
 }
 
-
-
-BOOL set_dock_side(RECT *rtnew)
+BOOL
+set_dock_side(RECT *rtnew)
 {
 	int i;
 	RECT	rtparents[4];
@@ -485,32 +491,29 @@ DOCKED:
 	
 }
 
-
-
-VOID dock_do_lbuttondown(HWND hWnd, LONG wParam, LONG lParam)
+VOID
+dock_do_lbuttondown (HWND hWnd, LONG wParam, LONG lParam)
 {
-	RECT rt;
-	POINT cur = {LOWORD(lParam),
-				 HIWORD(lParam)};
+    RECT rt;
+    POINT cur = {LOWORD(lParam), HIWORD(lParam)};
 
-	find_winamp_windows(hWnd);
-	GetClientRect(hWnd, &rt);
-	rt.bottom = rt.top + 120;
-	if (PtInRect(&rt, cur))
-	{
-		SetCapture(hWnd);
-		m_dragging = TRUE;
-		m_drag_from.x = (short)cur.x;
-		m_drag_from.y = (short)cur.y;
-	}
+    find_winamp_windows(hWnd);
+    GetClientRect(hWnd, &rt);
+    rt.bottom = rt.top + 120;
+    if (PtInRect(&rt, cur)) {
+	SetCapture(hWnd);
+	m_dragging = TRUE;
+	m_drag_from.x = (short)cur.x;
+	m_drag_from.y = (short)cur.y;
+    }
 }
 
-VOID dock_do_lbuttonup(HWND hWnd, LONG wParam, LONG lParam)
+VOID
+dock_do_lbuttonup (HWND hWnd, LONG wParam, LONG lParam)
 {
-	if (m_dragging)
-	{
-		ReleaseCapture();
-		m_dragging = FALSE;
-	}
+    if (m_dragging) {
+	ReleaseCapture();
+	m_dragging = FALSE;
+    }
 }
 

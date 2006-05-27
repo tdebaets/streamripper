@@ -1,4 +1,4 @@
-/* render.c - jonclegg@yahoo.com
+/* render.c
  * renders the streamripper for winamp screen. skinning and stuff.
  *
  * This program is free software; you can redistribute it and/or modify
