@@ -108,7 +108,8 @@ destroy_all_hostsocks(void)
     threadlib_signal_sem (&g_relay_list_sem);
 }
 
-static int tag_compare (char *str, char *tag)
+static int
+tag_compare (char *str, char *tag)
 {
     int i, a,b;
     int len;
@@ -126,7 +127,8 @@ static int tag_compare (char *str, char *tag)
     return 0;
 }
 
-static int header_receive(int sock, int *icy_metadata)
+static int
+header_receive (int sock, int *icy_metadata)
 {
     fd_set fds;
     struct timeval tv;
@@ -188,7 +190,8 @@ static int header_receive(int sock, int *icy_metadata)
 // Quick function to "eat" incoming data from a socket
 // All data is discarded
 // Returns 0 if successful or SOCKET_ERROR if error
-static int swallow_receive(int sock)
+static int
+swallow_receive (int sock)
 {
     fd_set fds;
     struct timeval tv;
@@ -229,7 +232,8 @@ static int swallow_receive(int sock)
 
 
 // Makes a socket non-blocking
-void make_nonblocking(int sock)
+void
+make_nonblocking (int sock)
 {
     int opt;
 
@@ -264,7 +268,8 @@ relaylib_set_response_header(char *http_header)
 }
 
 #ifndef WIN32
-void catch_pipe(int code)
+void
+catch_pipe(int code)
 {
     //m_sock = 0;
     //m_connected = FALSE;
@@ -327,7 +332,7 @@ relaylib_init (BOOL search_ports, int relay_port, int max_port,
 }
 
 error_code
-try_port(u_short port, char *if_name, char *relay_ip)
+try_port (u_short port, char *if_name, char *relay_ip)
 {
     struct hostent *he;
     struct sockaddr_in local;
@@ -375,7 +380,8 @@ try_port(u_short port, char *if_name, char *relay_ip)
 }
 
 
-void relaylib_shutdown()
+void
+relaylib_shutdown ()
 {
     debug_printf("relaylib_shutdown:start\n");
     if (!relaylib_isrunning())
@@ -400,7 +406,8 @@ void relaylib_shutdown()
     debug_printf("relaylib_shutdown:done!\n");
 }
 
-error_code relaylib_start()
+error_code
+relaylib_start ()
 {
     int ret;
 
@@ -415,7 +422,8 @@ error_code relaylib_start()
     return SR_SUCCESS;
 }
 
-void thread_accept(void *notused)
+void
+thread_accept (void *notused)
 {
     int ret;
     int newsock;
@@ -437,55 +445,55 @@ void thread_accept(void *notused)
 	//   have a connection active
         // when a connection gets dropped, or when streamripper shuts down
         //   this event will get signaled
-        threadlib_waitfor_sem(&m_sem_not_connected);
+        threadlib_waitfor_sem (&m_sem_not_connected);
         if (!m_running)
             break;
 
         // Poll once per second, instead of blocking forever in 
 	// accept(), so that we can regain control if relaylib_shutdown() 
 	// called
-        FD_ZERO(&fds);
+        FD_ZERO (&fds);
         while (m_listensock != SOCKET_ERROR)
         {
-            FD_SET(m_listensock, &fds);
+            FD_SET (m_listensock, &fds);
             tv.tv_sec = 1;
             tv.tv_usec = 0;
-            ret = select(m_listensock + 1, &fds, NULL, NULL, &tv);
+            ret = select (m_listensock + 1, &fds, NULL, NULL, &tv);
             if (ret == 1) {
                 unsigned long num_connected;
                 /* If connections are full, do nothing.  Note that 
                     m_max_connections is 0 for infinite connections allowed. */
-                threadlib_waitfor_sem(&g_relay_list_sem);
+                threadlib_waitfor_sem (&g_relay_list_sem);
                 num_connected = g_relay_list_len;
-                threadlib_signal_sem(&g_relay_list_sem);
+                threadlib_signal_sem (&g_relay_list_sem);
                 if (m_max_connections > 0 && num_connected >= (unsigned long) m_max_connections) {
                     continue;
                 }
                 /* Check for connections */
-                newsock = accept(m_listensock, (struct sockaddr *)&client, &iAddrSize);
+                newsock = accept (m_listensock, (struct sockaddr *)&client, &iAddrSize);
                 if (newsock != SOCKET_ERROR) {
                     // Got successful accept
 
-                    debug_printf("Relay: Client %d new from %s:%hd\n", newsock,
-                                 inet_ntoa(client.sin_addr), ntohs(client.sin_port));
+                    debug_printf ("Relay: Client %d new from %s:%hd\n", newsock,
+                                  inet_ntoa(client.sin_addr), ntohs(client.sin_port));
 
                     // Socket is new and its buffer had better have 
 		    // room to hold the entire HTTP header!
                     good = FALSE;
-                    if (header_receive(newsock, &icy_metadata) == 0) {
+                    if (header_receive (newsock, &icy_metadata) == 0) {
 			int header_len;
-			make_nonblocking(newsock);
+			make_nonblocking (newsock);
 			client_http_header = client_relay_header_generate(icy_metadata);
-			header_len = strlen(client_http_header);
-			ret = send(newsock, client_http_header, strlen(client_http_header), 0);
+			header_len = strlen (client_http_header);
+			ret = send (newsock, client_http_header, strlen(client_http_header), 0);
 			debug_printf ("Relay: Sent response header to client %d (%d)\n", 
 			    ret, header_len);
-			client_relay_header_release(client_http_header);
+			client_relay_header_release (client_http_header);
 			if (ret == header_len) {
-                            newhostsock = malloc(sizeof(RELAY_LIST));
+                            newhostsock = malloc (sizeof(RELAY_LIST));
                             if (newhostsock != NULL) {
                                 // Add new client to list (headfirst)
-                                threadlib_waitfor_sem(&g_relay_list_sem);
+                                threadlib_waitfor_sem (&g_relay_list_sem);
                                 newhostsock->m_is_new = 1;
                                 newhostsock->m_sock = newsock;
                                 newhostsock->m_next = g_relay_list;
@@ -497,7 +505,7 @@ void thread_accept(void *notused)
 
                                 g_relay_list = newhostsock;
                                 g_relay_list_len++;
-                                threadlib_signal_sem(&g_relay_list_sem);
+                                threadlib_signal_sem (&g_relay_list_sem);
                                 good = TRUE;
                             }
                         }
@@ -505,8 +513,8 @@ void thread_accept(void *notused)
 
                     if (!good)
                     {
-                        closesocket(newsock);
-                        debug_printf("Relay: Client %d disconnected (Unable to receive HTTP header)\n", newsock);
+                        closesocket (newsock);
+                        debug_printf ("Relay: Client %d disconnected (Unable to receive HTTP header)\n", newsock);
                     }
                 }
             }
@@ -516,7 +524,7 @@ void thread_accept(void *notused)
                 break;
             }
         }
-        threadlib_signal_sem(&m_sem_not_connected);     // go back to accept
+        threadlib_signal_sem (&m_sem_not_connected);     // go back to accept
     }
 
     m_running = FALSE;
@@ -601,7 +609,7 @@ relaylib_disconnect (RELAY_LIST* prev, RELAY_LIST* ptr)
     RELAY_LIST* next = ptr->m_next;
     int sock = ptr->m_sock;
 
-    closesocket(sock);
+    closesocket (sock);
                                    
     // Carefully delete this client from list without 
     // affecting list order
@@ -626,12 +634,12 @@ thread_send (void *notused)
     BOOL good;
     error_code err = SR_SUCCESS;
 
-    while(m_running) {
+    while (m_running) {
 	threadlib_waitfor_sem (&g_relay_list_sem);
 	ptr = g_relay_list;
 	if (ptr != NULL) {
 	    prev = NULL;
-	    while(ptr != NULL) {
+	    while (ptr != NULL) {
 		sock = ptr->m_sock;
 		next = ptr->m_next;
 
@@ -653,7 +661,7 @@ thread_send (void *notused)
 	} else {
 	    err = SR_ERROR_HOST_NOT_CONNECTED;
 	}
-	threadlib_signal_sem(&g_relay_list_sem);
-	Sleep( 50 );
+	threadlib_signal_sem (&g_relay_list_sem);
+	Sleep (50);
     }
 }

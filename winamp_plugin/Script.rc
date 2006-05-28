@@ -26,14 +26,14 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // Dialog
 //
 
-IDD_ENABLE DIALOG DISCARDABLE  65286, 100, 95, 42
+IDD_ENABLE DIALOG DISCARDABLE  65286, 100, 126, 42
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Streamripper On/Off"
 FONT 8, "MS Sans Serif"
 BEGIN
     CONTROL         "&Enable Streamripper",IDC_ENABLE,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,7,81,11
-    DEFPUSHBUTTON   "&Ok",IDC_OK,51,24,37,12
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,7,112,11
+    DEFPUSHBUTTON   "&Ok",IDC_OK,82,24,37,12
 END
 
 IDD_PROPPAGE_CON DIALOG DISCARDABLE  0, 0, 210, 180
@@ -89,7 +89,7 @@ BEGIN
     EDITTEXT        IDC_XS_PADDING_POST,152,92,32,15,ES_AUTOHSCROLL
     LTEXT           "Offset:",IDC_STATIC,16,22,20,8
     LTEXT           "All times are in milliseconds (ms)",IDC_STATIC,54,131,
-                    98,8
+                    120,8
     LTEXT           "Pre:",IDC_STATIC,23,53,13,8
     GROUPBOX        "Padding",IDC_STATIC,7,81,196,35
     LTEXT           "Post:",IDC_STATIC,126,53,16,8
@@ -98,7 +98,7 @@ BEGIN
     LTEXT           "Pre:",IDC_STATIC,23,96,13,8
     LTEXT           "Post:",IDC_STATIC,126,96,16,8
     LTEXT           "Disconnect and reconnect to apply changes",IDC_STATIC,
-                    36,120,132,8
+                    36,120,154,8
 END
 
 IDD_PROPPAGE_PATTERN DIALOG DISCARDABLE  0, 0, 210, 153
@@ -109,7 +109,7 @@ BEGIN
     EDITTEXT        IDC_PATTERN_EDIT,14,21,167,14,ES_AUTOHSCROLL
     LTEXT           "%S\tStream\n%A\tArtist\n%T\tTitle\n%a\tAlbum\n%D\tDate and time (per song)\n%d\tDate and time (per execution)\n%q\tSequence number (automatic detection)\n%Nq\tSequence number (starting from number N)\n%%\tPercent sign\n\nThe default pattern is ""%S/%A - %T""",
                     IDC_STATIC,22,41,181,98
-    LTEXT           "Output file pattern:",IDC_STATIC,7,7,54,8
+    LTEXT           "Output file pattern:",IDC_STATIC,7,7,97,8
 END
 
 IDD_PROPPAGE_FILE DIALOG DISCARDABLE  0, 0, 210, 181
@@ -123,7 +123,7 @@ BEGIN
     PUSHBUTTON      "...",IDC_BROWSE_RIPSINGLE,186,68,17,14
     EDITTEXT        IDC_OUTPUT_DIRECTORY,14,19,167,15,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BROWSE_OUTDIR,186,19,17,14
-    LTEXT           "Output directory:",IDC_STATIC,7,7,49,8
+    LTEXT           "Output directory:",IDC_STATIC,7,7,95,8
     EDITTEXT        IDC_RIP_SINGLE_EDIT,14,67,167,14,ES_AUTOHSCROLL
     CONTROL         "&Rip to separate files",IDC_RIP_INDIVIDUAL_CHECK,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,7,38,196,14
@@ -137,7 +137,7 @@ BEGIN
                     BS_AUTOCHECKBOX | WS_TABSTOP,7,126,91,14
     COMBOBOX        IDC_OVERWRITE_COMPLETE,14,98,87,46,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Overwrite Tracks in Complete:",IDC_STATIC,7,87,90,8
+    LTEXT           "Overwrite tracks in complete:",IDC_STATIC,7,87,130,8
     EDITTEXT        IDC_DROP_COUNT,7,153,42,14,ES_AUTOHSCROLL
     LTEXT           "Number of initial songs to leave in incomplete",
                     IDC_STATIC,52,156,151,11
@@ -166,7 +166,7 @@ BEGIN
     IDD_ENABLE, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 88
+        RIGHTMARGIN, 119
         TOPMARGIN, 7
         BOTTOMMARGIN, 35
     END

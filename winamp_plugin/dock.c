@@ -87,7 +87,8 @@ static struct PARENTS
 } m_winamp_wins[WINAMP_WINDOWS];
 
 
-BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
+BOOL CALLBACK
+EnumWindowsProc (HWND hwnd, LPARAM lParam)
 {
     char classname[256];
     HWND bigowner = (HWND)lParam;
@@ -107,18 +108,19 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
     } else if (strcmp(classname, "Winamp Video") == 0) {
 	m_winamp_wins[3].hwnd = hwnd;
     }
-#if defined (commentout)
+//#if defined (commentout)
     if (m_winamp_wins[1].hwnd != NULL &&
 	m_winamp_wins[2].hwnd != NULL &&
 	m_winamp_wins[3].hwnd != NULL)
     {
 	return FALSE;
     }
-#endif
+//#endif
     return TRUE;
 }
 
-BOOL find_winamp_windows(HWND hWnd)
+BOOL
+find_winamp_windows (HWND hWnd)
 {
     int i;
     long style = 0;
@@ -151,14 +153,14 @@ dock_hook_winamp (HWND hwnd)
     // hook em'
     for (i = 0; i < WINAMP_WINDOWS; i++) {
 	m_winamp_wins[i].orig_proc = NULL;
-#if defined (commentout)
+//#if defined (commentout)
 	/* GCS not sure why this visibility test is needed */
 	if (!m_winamp_wins[i].visible)
 	    continue;
-#endif
+//#endif
 
 	debug_printf ("Hooking...\n");
-	m_winamp_wins[i].orig_proc = (WNDPROC)SetWindowLong(m_winamp_wins[i].hwnd, GWL_WNDPROC, (LONG)hook_winamp);
+	m_winamp_wins[i].orig_proc = (WNDPROC) SetWindowLong (m_winamp_wins[i].hwnd, GWL_WNDPROC, (LONG)hook_winamp);
 	if (m_winamp_wins[i].orig_proc == NULL)
 	    return FALSE;
     }
@@ -185,7 +187,7 @@ hook_winamp (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 
 VOID
-dock_show_window(HWND hWnd, int nCmdShow)
+dock_show_window (HWND hWnd, int nCmdShow)
 {
     RECT rt;
 
@@ -201,7 +203,7 @@ dock_show_window(HWND hWnd, int nCmdShow)
 
 
 BOOL
-dock_unhook_winamp()
+dock_unhook_winamp ()
 {
     int i;
 
@@ -220,7 +222,7 @@ dock_unhook_winamp()
 // This taken from James Spibey's <spib@bigfoot.com> code example for 
 // how to do a winamp plugin the goto's are mine :)
 VOID
-dock_window()
+dock_window ()
 {
     int i;
     RECT rt;
@@ -345,7 +347,7 @@ dock_do_mousemove (HWND hWnd, LONG wParam, LONG lParam)
 }
 
 BOOL
-set_dock_side(RECT *rtnew)
+set_dock_side (RECT *rtnew)
 {
     int i;
     RECT	rtparents[4];
@@ -515,4 +517,3 @@ dock_do_lbuttonup (HWND hWnd, LONG wParam, LONG lParam)
 	m_dragging = FALSE;
     }
 }
-

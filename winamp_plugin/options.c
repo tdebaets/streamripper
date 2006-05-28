@@ -805,11 +805,14 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	    rip_single_file,
 	    use_ext_cmd;
     char overwrite_string[MAX_INI_LINE_LEN];
+    char* sr_debug_env;
 
-    // GCS uncomment these to get debugging log
-    //debug_enable();
-    //debug_set_filename ("C:\\gcs.txt");
-    //debug_set_filename ("d:\\sripper_1x\\gcs.txt");
+    sr_debug_env = getenv ("STREAMRIPPER_DEBUG");
+    if (sr_debug_env) {
+	debug_enable();
+	debug_set_filename (sr_debug_env);
+	//debug_set_filename ("d:\\sripper_1x\\gcs.txt");
+    }
 
     if (!get_desktop_folder(desktop_path)) {
 	// Maybe an error message? nahhh..

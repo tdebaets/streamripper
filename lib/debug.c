@@ -5,6 +5,7 @@
 #include "srtypes.h"
 #include "threadlib.h"
 #include "rip_manager.h"
+#include "util.h"
 #include "debug.h"
 
 #if WIN32
@@ -27,7 +28,7 @@ static char* default_filename = "gcs.txt";
 void
 debug_set_filename (char* filename)
 {
-    strcpy (filename_buf, filename);
+    sr_strncpy (filename_buf, filename, SR_MAX_PATH);
     debug_filename = filename_buf;
 }
 
@@ -46,6 +47,9 @@ debug_open (void)
     if (!debug_on) return;
     if (!gcsfp) {
 	gcsfp = fopen(debug_filename, "a");
+	if (!gcsfp) {
+	    debug_on = 0;
+	}
     }
 }
 
@@ -69,6 +73,7 @@ debug_printf (char* fmt, ...)
     va_list argptr;
 
     if (!debug_on) return;
+    if (!gcsfp) return;
 
     if (!initialized) {
         m_debug_lock = threadlib_create_sem();
