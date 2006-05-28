@@ -73,7 +73,6 @@ debug_printf (char* fmt, ...)
     va_list argptr;
 
     if (!debug_on) return;
-    if (!gcsfp) return;
 
     if (!initialized) {
         m_debug_lock = threadlib_create_sem();
@@ -86,6 +85,7 @@ debug_printf (char* fmt, ...)
     if (!gcsfp) {
 	was_open = 0;
 	debug_open();
+	if (!gcsfp) return;
     }
     if (!initialized) {
 	initialized = 1;

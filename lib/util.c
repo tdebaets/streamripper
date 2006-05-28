@@ -654,7 +654,9 @@ sr_strncpy (char* dst, char* src, int n)
 {
     int i = 0;
     for (i = 0; i < n-1; i++) {
-	dst[i] = src[i];
+	if (!(dst[i] = src[i])) {
+	    return;
+	}
     }
     dst[i] = 0;
 }
