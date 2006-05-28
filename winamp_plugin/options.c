@@ -903,7 +903,6 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     return TRUE;
 }
 
-
 BOOL
 options_save (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 {

@@ -62,11 +62,11 @@ BOOL dock_unhook_winamp();
 /*****************************************************************************
  * Private functions
  *****************************************************************************/
-static LRESULT CALLBACK	hook_winamp(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-static VOID			dock_window();
-static BOOL			set_dock_side(RECT *rtnew);
-static BOOL			find_winamp_windows(HWND hWnd);
-static VOID			get_new_rect(HWND hWnd, POINTS cur, POINTS last, RECT *rtnew);
+static LRESULT CALLBACK	hook_winamp_callback(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+static VOID dock_window();
+static BOOL set_dock_side(RECT *rtnew);
+static BOOL find_winamp_windows(HWND hWnd);
+static VOID get_new_rect(HWND hWnd, POINTS cur, POINTS last, RECT *rtnew);
 
 
 /*****************************************************************************
@@ -91,42 +91,91 @@ BOOL CALLBACK
 EnumWindowsProc (HWND hwnd, LPARAM lParam)
 {
     char classname[256];
-    HWND bigowner = (HWND)lParam;
-    HWND owner = GetWindow(hwnd, GW_OWNER);
+    HWND bigowner = (HWND) lParam;
+    HWND owner = GetWindow (hwnd, GW_OWNER);
 
     GetClassName(hwnd, classname, 256); 
 
-    if (owner != bigowner )
+    if (owner != bigowner)
 	return TRUE;
 
-    debug_printf ("Enum found: %s\n", classname);
-
     if (strcmp(classname, "Winamp PE") == 0) {
-	m_winamp_wins[1].hwnd = hwnd;
+	if (!m_winamp_wins[1].hwnd) {
+	    m_winamp_wins[1].hwnd = hwnd;
+	    debug_printf ("%s [1] = %d\n", classname, hwnd);
+	} else {
+	    debug_printf ("%s (repeat[1]) = %d\n", classname, hwnd);
+	}
     } else if (strcmp(classname, "Winamp EQ") == 0) {
-	m_winamp_wins[2].hwnd = hwnd;
+	if (!m_winamp_wins[2].hwnd) {
+	    m_winamp_wins[2].hwnd = hwnd;
+	    debug_printf ("%s [2] = %d\n", classname, hwnd);
+	} else {
+	    debug_printf ("%s (repeat[2]) = %d\n", classname, hwnd);
+	}
     } else if (strcmp(classname, "Winamp Video") == 0) {
-	m_winamp_wins[3].hwnd = hwnd;
+	if (!m_winamp_wins[3].hwnd) {
+	    m_winamp_wins[3].hwnd = hwnd;
+	    debug_printf ("%s [3] = %d\n", classname, hwnd);
+	} else {
+	    debug_printf ("%s (repeat[3]) = %d\n", classname, hwnd);
+	}
+    } else {
+	debug_printf ("%s (other) = %d\n", classname, hwnd);
     }
-//#if defined (commentout)
+    /* Stop enumerating if we have all the windows */
+#if defined (commentout)
     if (m_winamp_wins[1].hwnd != NULL &&
 	m_winamp_wins[2].hwnd != NULL &&
-	m_winamp_wins[3].hwnd != NULL)
-    {
+	m_winamp_wins[3].hwnd != NULL) {
 	return FALSE;
     }
-//#endif
+#endif
     return TRUE;
 }
 
+void
+dock_init (HWND hwnd)
+{
+    int i;
+
+    m_winamp_wins[1].hwnd = m_winamp_wins[2].hwnd = m_winamp_wins[3].hwnd = NULL;
+    m_winamp_wins[0].hwnd = GetParent (hwnd);
+
+    debug_printf ("myself = %d\n", hwnd);
+    debug_printf ("parent = %d\n", m_winamp_wins[0].hwnd);
+
+    if (!find_winamp_windows(hwnd))
+	return FALSE;
+
+    /* hook the winamp windows */
+    for (i = 0; i < WINAMP_WINDOWS; i++) {
+	m_winamp_wins[i].orig_proc = NULL;
+	/* GCS When this is commented out, classic docking works, 
+	   but modern skins have a problem */
+#if defined (commentout)
+	if (!m_winamp_wins[i].visible)
+	    continue;
+#endif
+
+	debug_printf ("Hooking [%d] %d\n", i, m_winamp_wins[i].hwnd);
+	m_winamp_wins[i].orig_proc = (WNDPROC) SetWindowLong (m_winamp_wins[i].hwnd, GWL_WNDPROC, (LONG) hook_winamp_callback);
+	if (m_winamp_wins[i].orig_proc == NULL) {
+	    debug_printf ("Hooking failure?\n");
+	    return FALSE;
+	}
+    }
+    m_hwnd = hwnd;
+    return TRUE;
+}
+
+
 BOOL
-find_winamp_windows (HWND hWnd)
+find_winamp_windows (HWND hwnd)
 {
     int i;
     long style = 0;
 
-    m_winamp_wins[1].hwnd = m_winamp_wins[2].hwnd = m_winamp_wins[3].hwnd = NULL;
-    m_winamp_wins[0].hwnd = GetParent(hWnd);
     debug_printf ("Starting enumeration of windows\n");
     EnumWindows (EnumWindowsProc, (LPARAM)m_winamp_wins[0].hwnd);
 
@@ -134,57 +183,30 @@ find_winamp_windows (HWND hWnd)
     	if (m_winamp_wins[i].hwnd == NULL)
 	    return FALSE;
 
-	style = GetWindowLong(m_winamp_wins[i].hwnd, GWL_STYLE);
+	style = GetWindowLong (m_winamp_wins[i].hwnd, GWL_STYLE);
 	m_winamp_wins[i].visible = style & WS_VISIBLE;
-	debug_printf ("Win %d, visibility %d\n", i, m_winamp_wins[i].visible);
     }
     debug_printf ("Found all the windows\n");
     return TRUE;
 }
 
-BOOL
-dock_hook_winamp (HWND hwnd)
-{
-    int i;
-
-    if (!find_winamp_windows(hwnd))
-	return FALSE;
-
-    // hook em'
-    for (i = 0; i < WINAMP_WINDOWS; i++) {
-	m_winamp_wins[i].orig_proc = NULL;
-//#if defined (commentout)
-	/* GCS not sure why this visibility test is needed */
-	if (!m_winamp_wins[i].visible)
-	    continue;
-//#endif
-
-	debug_printf ("Hooking...\n");
-	m_winamp_wins[i].orig_proc = (WNDPROC) SetWindowLong (m_winamp_wins[i].hwnd, GWL_WNDPROC, (LONG)hook_winamp);
-	if (m_winamp_wins[i].orig_proc == NULL)
-	    return FALSE;
-    }
-    m_hwnd = hwnd;
-    return TRUE;
-}
-
 LRESULT CALLBACK
-hook_winamp (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+hook_winamp_callback (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     int i;
-
-    if (uMsg == WM_MOVE) 
+    if (uMsg == WM_MOVE || uMsg == WM_WINDOWPOSCHANGED) {
 	dock_window();
+    }
 
+    debug_printf ("callback: %d/0x%04x/0x%04x/0x%04x\n",hwnd,uMsg,wParam,lParam);
     for (i = 0; i < WINAMP_WINDOWS; i++) {
 	if (m_winamp_wins[i].hwnd == hwnd)
-	    return CallWindowProc(m_winamp_wins[i].orig_proc, hwnd, uMsg, wParam, lParam); 
+	    return CallWindowProc (m_winamp_wins[i].orig_proc, hwnd, uMsg, wParam, lParam); 
     }
 
-    //	MessageBox(hwnd, "Shit, this shouldn't happen", "doh", (UINT)0);
+    debug_printf ("hook_callback problem: %d/0x%04x/0x%04x/0x%04x\n",hwnd,uMsg,wParam,lParam);
     return FALSE;
 }
-
 
 VOID
 dock_show_window (HWND hWnd, int nCmdShow)
@@ -207,6 +229,7 @@ dock_unhook_winamp ()
 {
     int i;
 
+    debug_printf ("Unhooking...\n");
     for(i = 0; i < WINAMP_WINDOWS; i++)
 	if (m_winamp_wins[i].orig_proc)
 	    SetWindowLong(m_winamp_wins[i].hwnd, GWL_WNDPROC,(LONG)m_winamp_wins[i].orig_proc); 
@@ -227,7 +250,7 @@ dock_window ()
     int i;
     RECT rt;
     int left, top;
-    RECT	rtparents[4];
+    RECT rtparents[4];
 
     if(!m_docked)
 	return;

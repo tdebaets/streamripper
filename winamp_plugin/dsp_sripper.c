@@ -593,9 +593,8 @@ WndProc (HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 	    render_set_display_data(IDR_STREAMNAME, "Loading please wait...");
 	}
 			
-	SetTimer(hWnd, 1, 500, (TIMERPROC)UpdateDisplay);
-	debug_printf ("Trying to dock...\n");
-	dock_hook_winamp(hWnd);
+	SetTimer (hWnd, 1, 500, (TIMERPROC)UpdateDisplay);
+	dock_init (hWnd);
 
 	return 0;
 
