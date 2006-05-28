@@ -807,9 +807,9 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     char overwrite_string[MAX_INI_LINE_LEN];
 
     // GCS uncomment these to get debugging log
-    debug_enable();
+    //debug_enable();
     //debug_set_filename ("C:\\gcs.txt");
-    debug_set_filename ("d:\\sripper_1x\\gcs.txt");
+    //debug_set_filename ("d:\\sripper_1x\\gcs.txt");
 
     if (!get_desktop_folder(desktop_path)) {
 	// Maybe an error message? nahhh..

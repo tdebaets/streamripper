@@ -81,9 +81,9 @@ static POINT		m_docked_diff = {0, 0};
 static int		m_docked_index;
 static struct PARENTS
 {		
-	HWND	hwnd;
-	BOOL	visible;
-	WNDPROC orig_proc;
+    HWND hwnd;
+    BOOL visible;
+    WNDPROC orig_proc;
 } m_winamp_wins[WINAMP_WINDOWS];
 
 
@@ -96,7 +96,7 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
     GetClassName(hwnd, classname, 256); 
 
     if (owner != bigowner )
-	    return TRUE;
+	return TRUE;
 
     debug_printf ("Enum found: %s\n", classname);
 
@@ -109,10 +109,10 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
     }
 #if defined (commentout)
     if (m_winamp_wins[1].hwnd != NULL &&
-	    m_winamp_wins[2].hwnd != NULL &&
-	    m_winamp_wins[3].hwnd != NULL)
+	m_winamp_wins[2].hwnd != NULL &&
+	m_winamp_wins[3].hwnd != NULL)
     {
-	    return FALSE;
+	return FALSE;
     }
 #endif
     return TRUE;
@@ -154,13 +154,13 @@ dock_hook_winamp (HWND hwnd)
 #if defined (commentout)
 	/* GCS not sure why this visibility test is needed */
 	if (!m_winamp_wins[i].visible)
-		continue;
+	    continue;
 #endif
 
 	debug_printf ("Hooking...\n");
 	m_winamp_wins[i].orig_proc = (WNDPROC)SetWindowLong(m_winamp_wins[i].hwnd, GWL_WNDPROC, (LONG)hook_winamp);
 	if (m_winamp_wins[i].orig_proc == NULL)
-		return FALSE;
+	    return FALSE;
     }
     m_hwnd = hwnd;
     return TRUE;
@@ -238,92 +238,91 @@ dock_window()
     i = m_docked_index;
     switch(m_docked_side)
     {
-	case DOCKED_TOP_LL:
-		top = rtparents[i].top - RTHEIGHT(rt);
-		left = rtparents[i].left;
-		goto SETWINDOW;
-	case DOCKED_TOP_LR:
-		top = rtparents[i].top - RTHEIGHT(rt);
-		left = rtparents[i].right;
-		goto SETWINDOW;
-	case DOCKED_TOP_RL:
-		top = rtparents[i].top - RTHEIGHT(rt);
-		left = rtparents[i].left - RTWIDTH(rt);
-		goto SETWINDOW;
-	case DOCKED_LEFT_TT:
-		top = rtparents[i].top;
-		left = rtparents[i].left - RTWIDTH(rt);
-		goto SETWINDOW;
-	case DOCKED_LEFT_TB:
-		top = rtparents[i].bottom;
-		left = rtparents[i].left - RTWIDTH(rt);
-		goto SETWINDOW;
-	case DOCKED_LEFT_BT:
-		top = rtparents[i].top - RTHEIGHT(rt);
-		left = rtparents[i].left - RTWIDTH(rt);
-		goto SETWINDOW;
-	case DOCKED_BOTTOM_LL:
-		top = rtparents[i].bottom;
-		left = rtparents[i].left;
-		goto SETWINDOW;
-	case DOCKED_BOTTOM_RL:
-		top = rtparents[i].bottom;
-		left = rtparents[i].left - RTWIDTH(rt);
-		goto SETWINDOW;
-	case DOCKED_BOTTOM_LR:
-		top = rtparents[i].bottom;
-		left = rtparents[i].right;
-		goto SETWINDOW;
-	case DOCKED_RIGHT_TT:
-		top = rtparents[i].top;
-		left = rtparents[i].right;
-		goto SETWINDOW;
-	case DOCKED_RIGHT_TB:
-		top = rtparents[i].bottom;
-		left = rtparents[i].right;
-		goto SETWINDOW;
-	case DOCKED_RIGHT_BT:
-		top = rtparents[i].top - RTHEIGHT(rt);
-		left = rtparents[i].right;
-		goto SETWINDOW;
+    case DOCKED_TOP_LL:
+	top = rtparents[i].top - RTHEIGHT(rt);
+	left = rtparents[i].left;
+	goto SETWINDOW;
+    case DOCKED_TOP_LR:
+	top = rtparents[i].top - RTHEIGHT(rt);
+	left = rtparents[i].right;
+	goto SETWINDOW;
+    case DOCKED_TOP_RL:
+	top = rtparents[i].top - RTHEIGHT(rt);
+	left = rtparents[i].left - RTWIDTH(rt);
+	goto SETWINDOW;
+    case DOCKED_LEFT_TT:
+	top = rtparents[i].top;
+	left = rtparents[i].left - RTWIDTH(rt);
+	goto SETWINDOW;
+    case DOCKED_LEFT_TB:
+	top = rtparents[i].bottom;
+	left = rtparents[i].left - RTWIDTH(rt);
+	goto SETWINDOW;
+    case DOCKED_LEFT_BT:
+	top = rtparents[i].top - RTHEIGHT(rt);
+	left = rtparents[i].left - RTWIDTH(rt);
+	goto SETWINDOW;
+    case DOCKED_BOTTOM_LL:
+	top = rtparents[i].bottom;
+	left = rtparents[i].left;
+	goto SETWINDOW;
+    case DOCKED_BOTTOM_RL:
+	top = rtparents[i].bottom;
+	left = rtparents[i].left - RTWIDTH(rt);
+	goto SETWINDOW;
+    case DOCKED_BOTTOM_LR:
+	top = rtparents[i].bottom;
+	left = rtparents[i].right;
+	goto SETWINDOW;
+    case DOCKED_RIGHT_TT:
+	top = rtparents[i].top;
+	left = rtparents[i].right;
+	goto SETWINDOW;
+    case DOCKED_RIGHT_TB:
+	top = rtparents[i].bottom;
+	left = rtparents[i].right;
+	goto SETWINDOW;
+    case DOCKED_RIGHT_BT:
+	top = rtparents[i].top - RTHEIGHT(rt);
+	left = rtparents[i].right;
+	goto SETWINDOW;
 
 	// My extensions
-	case DOCKED_LEFT:
-		top = rtparents[i].top + m_docked_diff.y;
-		left = rtparents[i].left - RTWIDTH(rt);
-		goto SETWINDOW;
-	case DOCKED_RIGHT:
-		top = rtparents[i].top + m_docked_diff.y;
-		left = rtparents[i].right;
-		goto SETWINDOW;
-	case DOCKED_TOP:
-		top = rtparents[i].top - RTHEIGHT(rt);
-		left = rtparents[i].left + m_docked_diff.x;
-		goto SETWINDOW;
-	case DOCKED_BOTTOM:
-		top = rtparents[i].bottom;
-		left = rtparents[i].left + m_docked_diff.x;
-		goto SETWINDOW;
+    case DOCKED_LEFT:
+	top = rtparents[i].top + m_docked_diff.y;
+	left = rtparents[i].left - RTWIDTH(rt);
+	goto SETWINDOW;
+    case DOCKED_RIGHT:
+	top = rtparents[i].top + m_docked_diff.y;
+	left = rtparents[i].right;
+	goto SETWINDOW;
+    case DOCKED_TOP:
+	top = rtparents[i].top - RTHEIGHT(rt);
+	left = rtparents[i].left + m_docked_diff.x;
+	goto SETWINDOW;
+    case DOCKED_BOTTOM:
+	top = rtparents[i].bottom;
+	left = rtparents[i].left + m_docked_diff.x;
+	goto SETWINDOW;
 
-	default:
-		return;
-	}
-SETWINDOW:
-	SetWindowPos(m_hwnd, NULL, left, top, RTWIDTH(rt), RTHEIGHT(rt), SWP_NOACTIVATE);
-
+    default:
+	return;
+    }
+ SETWINDOW:
+    SetWindowPos(m_hwnd, NULL, left, top, RTWIDTH(rt), RTHEIGHT(rt), SWP_NOACTIVATE);
 }
 
 VOID
 get_new_rect (HWND hWnd, POINTS cur, POINTS last, RECT *rtnew)
 {
-	RECT rt;
-	POINT	diff	= {cur.x-last.x, cur.y-last.y};
+    RECT rt;
+    POINT diff = {cur.x-last.x, cur.y-last.y};
 
-	GetWindowRect(hWnd, &rt);
-	rtnew->left = rt.left+diff.x;
-	rtnew->top = rt.top+diff.y;
-	rtnew->right = rt.right+diff.x;
-	rtnew->bottom = rt.bottom+diff.y;
+    GetWindowRect(hWnd, &rt);
+    rtnew->left = rt.left+diff.x;
+    rtnew->top = rt.top+diff.y;
+    rtnew->right = rt.right+diff.x;
+    rtnew->bottom = rt.bottom+diff.y;
 }
 
 VOID
@@ -348,146 +347,146 @@ dock_do_mousemove (HWND hWnd, LONG wParam, LONG lParam)
 BOOL
 set_dock_side(RECT *rtnew)
 {
-	int i;
-	RECT	rtparents[4];
+    int i;
+    RECT	rtparents[4];
 
-	// This taken from James Spibey's <spib@bigfoot.com> code example for how to do a winamp plugin
-	// however, the goto's are mine :)
-	for(i = 0; i < WINAMP_WINDOWS; i++)
+    // This taken from James Spibey's <spib@bigfoot.com> code example for how to do a winamp plugin
+    // however, the goto's are mine :)
+    for(i = 0; i < WINAMP_WINDOWS; i++)
+    {
+
+	if (m_winamp_wins[i].visible == FALSE)
+	    continue;
+
+	GetWindowRect(m_winamp_wins[i].hwnd, &rtparents[i]);
+
+	/*********************************
+	 ** Dock to Right Side of Winamp **
+	 *********************************/
+	if((rtnew->left <= rtparents[i].right + SNAP_OFFSET) && (rtnew->left >= rtparents[i].right - SNAP_OFFSET) &&
+	   ((rtnew->top >= rtparents[i].bottom && rtnew->bottom <= rtparents[i].top) ||
+	    (rtnew->top <= rtparents[i].bottom && rtnew->bottom >= rtparents[i].top)))
 	{
-
-		if (m_winamp_wins[i].visible == FALSE)
-			continue;
-
-		GetWindowRect(m_winamp_wins[i].hwnd, &rtparents[i]);
-
-		/*********************************
-		** Dock to Right Side of Winamp **
-		*********************************/
-		if((rtnew->left <= rtparents[i].right + SNAP_OFFSET) && (rtnew->left >= rtparents[i].right - SNAP_OFFSET) &&
-		   ((rtnew->top >= rtparents[i].bottom && rtnew->bottom <= rtparents[i].top) ||
-		   (rtnew->top <= rtparents[i].bottom && rtnew->bottom >= rtparents[i].top)))
-		{
-			// Dock top to top
-			if((rtnew->top <= rtparents[i].top + SNAP_OFFSET) && (rtnew->top >= rtparents[i].top - SNAP_OFFSET))
-			{
-				m_docked_side = DOCKED_RIGHT_TT;
-			}
-			// Dock top to bottom
-			else if((rtnew->top <= rtparents[i].bottom + SNAP_OFFSET) && (rtnew->top >= rtparents[i].bottom - SNAP_OFFSET))
-			{
-				m_docked_side = DOCKED_RIGHT_TB;
-			}
-			// Dock bottom to top
-			else if((rtnew->bottom <= rtparents[i].top + SNAP_OFFSET) && (rtnew->bottom >= rtparents[i].top - SNAP_OFFSET))
-			{
-				m_docked_side = DOCKED_RIGHT_BT;
-			}
-			else
-			{
-				m_docked_diff.y = rtnew->top - rtparents[i].top;
-				m_docked_side = DOCKED_RIGHT;
-			}
-			goto DOCKED;
-		}
-		/********************************
-		** Dock to Left Side of Winamp **
-		********************************/
-		else if((rtnew->right <= rtparents[i].left + SNAP_OFFSET) && (rtnew->right >= rtparents[i].left - SNAP_OFFSET) &&
-			   ((rtnew->top >= rtparents[i].bottom && rtnew->bottom <= rtparents[i].top) ||
-			   (rtnew->top <= rtparents[i].bottom && rtnew->bottom >= rtparents[i].top)))
-
-		{
-			// Dock top to top
-			if((rtnew->top <= rtparents[i].top + SNAP_OFFSET) && (rtnew->top >= rtparents[i].top - SNAP_OFFSET))
-			{
-				m_docked_side = DOCKED_LEFT_TT;
-			}
-			// Dock top to bottom
-			else if((rtnew->top <= rtparents[i].bottom + SNAP_OFFSET) && (rtnew->top >= rtparents[i].bottom - SNAP_OFFSET))
-			{
-				m_docked_side = DOCKED_LEFT_TB;	
-			}
-			// Dock bottom to top
-			else if((rtnew->bottom <= rtparents[i].top + SNAP_OFFSET) && (rtnew->bottom >= rtparents[i].top - SNAP_OFFSET))
-			{
-				m_docked_side = DOCKED_LEFT_BT;
-			}
-			else
-			{
-				m_docked_diff.y = rtnew->top - rtparents[i].top;
-				m_docked_side = DOCKED_LEFT;
-
-			}
-			goto DOCKED;
-		}
-		/*******************************
-		** Dock to Top Side of Winamp **
-		*******************************/
-		else if((rtnew->bottom <= rtparents[i].top + SNAP_OFFSET) && (rtnew->bottom >= rtparents[i].top - SNAP_OFFSET) &&
-			   ((rtnew->left >= rtparents[i].right && rtnew->right <= rtparents[i].left) ||
-			   (rtnew->left <= rtparents[i].right && rtnew->right >= rtparents[i].left)))
-		{
-			// Dock left to left
-			if((rtnew->left <= rtparents[i].left + SNAP_OFFSET) && (rtnew->left >= rtparents[i].left - SNAP_OFFSET))
-			{
-				m_docked_side = DOCKED_TOP_LL;
-			}
-			// Dock left to right
-			else if((rtnew->left <= rtparents[i].right + SNAP_OFFSET) && (rtnew->left >= rtparents[i].right - SNAP_OFFSET))
-			{
-				m_docked_side = DOCKED_TOP_LR;
-			}
-			// Dock right to left
-			else if((rtnew->right <= rtparents[i].left + SNAP_OFFSET) && (rtnew->right >= rtparents[i].left - SNAP_OFFSET))
-			{
-				m_docked_side = DOCKED_TOP_RL;
-			}
-			else
-			{
-				m_docked_diff.x = rtnew->left - rtparents[i].left;
-				m_docked_side = DOCKED_TOP;
-
-			}
-			goto DOCKED;
-		}
-		/**********************************
-		** Dock to Bottom Side of Winamp **
-		**********************************/
-		else if((rtnew->top <= rtparents[i].bottom + SNAP_OFFSET) && (rtnew->top >= rtparents[i].bottom - SNAP_OFFSET) &&
-			   ((rtnew->left >= rtparents[i].right && rtnew->right <= rtparents[i].left) ||
-			   (rtnew->left <= rtparents[i].right && rtnew->right >= rtparents[i].left)))
-		{
-			// Dock left to left
-			if((rtnew->left <= rtparents[i].left + SNAP_OFFSET) && (rtnew->left >= rtparents[i].left - SNAP_OFFSET))
-			{
-				m_docked_side = DOCKED_BOTTOM_LL;
-			}
-			// Dock left to right
-			else if((rtnew->left <= rtparents[i].right + SNAP_OFFSET) && (rtnew->left >= rtparents[i].right - SNAP_OFFSET))
-			{
-				m_docked_side = DOCKED_BOTTOM_LR;
-			}
-			// Dock right to left
-			else if((rtnew->right <= rtparents[i].left + SNAP_OFFSET) && (rtnew->right >= rtparents[i].left - SNAP_OFFSET))
-			{
-				m_docked_side = DOCKED_BOTTOM_RL;
-			}
-			else
-			{
-				m_docked_diff.x = rtnew->left - rtparents[i].left;
-				m_docked_side = DOCKED_BOTTOM;
-			}
-			goto DOCKED;
-		}
+	    // Dock top to top
+	    if((rtnew->top <= rtparents[i].top + SNAP_OFFSET) && (rtnew->top >= rtparents[i].top - SNAP_OFFSET))
+	    {
+		m_docked_side = DOCKED_RIGHT_TT;
+	    }
+	    // Dock top to bottom
+	    else if((rtnew->top <= rtparents[i].bottom + SNAP_OFFSET) && (rtnew->top >= rtparents[i].bottom - SNAP_OFFSET))
+	    {
+		m_docked_side = DOCKED_RIGHT_TB;
+	    }
+	    // Dock bottom to top
+	    else if((rtnew->bottom <= rtparents[i].top + SNAP_OFFSET) && (rtnew->bottom >= rtparents[i].top - SNAP_OFFSET))
+	    {
+		m_docked_side = DOCKED_RIGHT_BT;
+	    }
+	    else
+	    {
+		m_docked_diff.y = rtnew->top - rtparents[i].top;
+		m_docked_side = DOCKED_RIGHT;
+	    }
+	    goto DOCKED;
 	}
+	/********************************
+	 ** Dock to Left Side of Winamp **
+	 ********************************/
+	else if((rtnew->right <= rtparents[i].left + SNAP_OFFSET) && (rtnew->right >= rtparents[i].left - SNAP_OFFSET) &&
+		((rtnew->top >= rtparents[i].bottom && rtnew->bottom <= rtparents[i].top) ||
+		 (rtnew->top <= rtparents[i].bottom && rtnew->bottom >= rtparents[i].top)))
 
-	return FALSE;
+	{
+	    // Dock top to top
+	    if((rtnew->top <= rtparents[i].top + SNAP_OFFSET) && (rtnew->top >= rtparents[i].top - SNAP_OFFSET))
+	    {
+		m_docked_side = DOCKED_LEFT_TT;
+	    }
+	    // Dock top to bottom
+	    else if((rtnew->top <= rtparents[i].bottom + SNAP_OFFSET) && (rtnew->top >= rtparents[i].bottom - SNAP_OFFSET))
+	    {
+		m_docked_side = DOCKED_LEFT_TB;	
+	    }
+	    // Dock bottom to top
+	    else if((rtnew->bottom <= rtparents[i].top + SNAP_OFFSET) && (rtnew->bottom >= rtparents[i].top - SNAP_OFFSET))
+	    {
+		m_docked_side = DOCKED_LEFT_BT;
+	    }
+	    else
+	    {
+		m_docked_diff.y = rtnew->top - rtparents[i].top;
+		m_docked_side = DOCKED_LEFT;
 
-DOCKED:
-	m_docked_index = i;
-	m_docked = TRUE;
-	return TRUE;
+	    }
+	    goto DOCKED;
+	}
+	/*******************************
+	 ** Dock to Top Side of Winamp **
+	 *******************************/
+	else if((rtnew->bottom <= rtparents[i].top + SNAP_OFFSET) && (rtnew->bottom >= rtparents[i].top - SNAP_OFFSET) &&
+		((rtnew->left >= rtparents[i].right && rtnew->right <= rtparents[i].left) ||
+		 (rtnew->left <= rtparents[i].right && rtnew->right >= rtparents[i].left)))
+	{
+	    // Dock left to left
+	    if((rtnew->left <= rtparents[i].left + SNAP_OFFSET) && (rtnew->left >= rtparents[i].left - SNAP_OFFSET))
+	    {
+		m_docked_side = DOCKED_TOP_LL;
+	    }
+	    // Dock left to right
+	    else if((rtnew->left <= rtparents[i].right + SNAP_OFFSET) && (rtnew->left >= rtparents[i].right - SNAP_OFFSET))
+	    {
+		m_docked_side = DOCKED_TOP_LR;
+	    }
+	    // Dock right to left
+	    else if((rtnew->right <= rtparents[i].left + SNAP_OFFSET) && (rtnew->right >= rtparents[i].left - SNAP_OFFSET))
+	    {
+		m_docked_side = DOCKED_TOP_RL;
+	    }
+	    else
+	    {
+		m_docked_diff.x = rtnew->left - rtparents[i].left;
+		m_docked_side = DOCKED_TOP;
+
+	    }
+	    goto DOCKED;
+	}
+	/**********************************
+	 ** Dock to Bottom Side of Winamp **
+	 **********************************/
+	else if((rtnew->top <= rtparents[i].bottom + SNAP_OFFSET) && (rtnew->top >= rtparents[i].bottom - SNAP_OFFSET) &&
+		((rtnew->left >= rtparents[i].right && rtnew->right <= rtparents[i].left) ||
+		 (rtnew->left <= rtparents[i].right && rtnew->right >= rtparents[i].left)))
+	{
+	    // Dock left to left
+	    if((rtnew->left <= rtparents[i].left + SNAP_OFFSET) && (rtnew->left >= rtparents[i].left - SNAP_OFFSET))
+	    {
+		m_docked_side = DOCKED_BOTTOM_LL;
+	    }
+	    // Dock left to right
+	    else if((rtnew->left <= rtparents[i].right + SNAP_OFFSET) && (rtnew->left >= rtparents[i].right - SNAP_OFFSET))
+	    {
+		m_docked_side = DOCKED_BOTTOM_LR;
+	    }
+	    // Dock right to left
+	    else if((rtnew->right <= rtparents[i].left + SNAP_OFFSET) && (rtnew->right >= rtparents[i].left - SNAP_OFFSET))
+	    {
+		m_docked_side = DOCKED_BOTTOM_RL;
+	    }
+	    else
+	    {
+		m_docked_diff.x = rtnew->left - rtparents[i].left;
+		m_docked_side = DOCKED_BOTTOM;
+	    }
+	    goto DOCKED;
+	}
+    }
+
+    return FALSE;
+
+ DOCKED:
+    m_docked_index = i;
+    m_docked = TRUE;
+    return TRUE;
 	
 }
 

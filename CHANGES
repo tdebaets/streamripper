@@ -1,3 +1,8 @@
+New for 1.61.21
+---------------
+Sun 05-28-2006
+* Fix winamp crash caused by reference to debug file
+
 New for 1.61.20
 ---------------
 Sat 05-27-2006
