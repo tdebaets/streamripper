@@ -257,14 +257,49 @@ dock_init (HWND hwnd)
     return;
 }
 
+void
+switch_docking_index (void)
+{
+    int i;
+    HWND hwnd = m_winamp_modern_wins[m_docked_index].hwnd;
+    char title_1[256], title_2[256];
+    LONG style;
+    
+    if (!GetWindowText (hwnd, title_1, 256)) return;
+
+    for (i = 0; i < m_num_modern_wins; i++) {
+	if (i == m_docked_index) continue;
+	hwnd = m_winamp_modern_wins[i].hwnd;
+	if (!GetWindowText (hwnd, title_2, 256)) continue;
+	if (strcmp (title_1, title_2) == 0) {
+	    style = GetWindowLong (hwnd, GWL_STYLE);
+	    if (style & WS_VISIBLE) {
+		debug_printf ("Switching %d -> %d\n", m_docked_index, i);
+		m_docked_index = i;
+		break;
+	    }
+	}
+    }
+}
+
 LRESULT CALLBACK
 hook_winamp_callback (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     int i;
+
+    if (uMsg == WM_SHOWWINDOW) {
+	debug_printf ("WM_SHOWWINDOW: %d/0x%04x/0x%04x/0x%04x\n",hwnd,uMsg,wParam,lParam);
+    }
+    if (uMsg == WM_SHOWWINDOW && wParam == FALSE) {
+	if (m_docked && m_skin_is_modern) {
+	    if (m_winamp_modern_wins[m_docked_index].hwnd == hwnd) {
+		switch_docking_index ();
+	    }
+	}
+    }
     if (uMsg == WM_MOVE || uMsg == WM_WINDOWPOSCHANGED) {
 	dock_window();
     }
-
     //debug_printf ("callback: %d/0x%04x/0x%04x/0x%04x\n",hwnd,uMsg,wParam,lParam);
     for (i = 0; i < WINAMP_CLASSIC_WINS; i++) {
 	if (m_winamp_classic_wins[i].hwnd == hwnd)
