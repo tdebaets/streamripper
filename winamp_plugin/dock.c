@@ -294,6 +294,7 @@ hook_winamp_callback (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	if (m_docked && m_skin_is_modern) {
 	    if (m_winamp_modern_wins[m_docked_index].hwnd == hwnd) {
 		switch_docking_index ();
+		dock_window();
 	    }
 	}
     }
@@ -377,7 +378,7 @@ dock_window ()
     }
 
     i = m_docked_index;
-    switch(m_docked_side)
+    switch (m_docked_side)
     {
     case DOCKED_TOP_LL:
 	top = rtparents[i].top - RTHEIGHT(rt);
@@ -450,6 +451,7 @@ dock_window ()
 	return;
     }
  SETWINDOW:
+    debug_printf ("SetWindowPos (%d %d %d %d)\n", left, top, RTWIDTH(rt), RTHEIGHT(rt));
     SetWindowPos (m_hwnd, NULL, left, top, RTWIDTH(rt), RTHEIGHT(rt), SWP_NOACTIVATE);
 }
 
@@ -496,7 +498,6 @@ set_dock_side (RECT *rtnew)
     // This taken from James Spibey's <spib@bigfoot.com> code example for how to do a winamp plugin
     // however, the goto's are mine :)
 
-    /* GCS FIX: Make variable # for rtparents */
     if (m_skin_is_modern) {
 	nwin = m_num_modern_wins;
 	wins = m_winamp_modern_wins;
