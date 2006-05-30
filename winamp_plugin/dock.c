@@ -23,7 +23,7 @@
 
 #define SNAP_OFFSET		10	
 #define WINAMP_CLASSIC_WINS	4
-#define WINAMP_MODERN_WINS	5
+#define WINAMP_MODERN_WINS	6
 
 #define DOCKED_TOP_LL		1	// Top Left Left
 #define DOCKED_TOP_LR		2	// Top Left Right
@@ -97,49 +97,66 @@ EnumWindowsProc (HWND hwnd, LPARAM lParam)
 {
     int i;
     char classname[256];
+    char title[256];
     HWND bigowner = (HWND) lParam;
     HWND owner = GetWindow (hwnd, GW_OWNER);
+    
+    LONG win_id, style;
+    HINSTANCE hinstance;
+    WNDCLASSEX wcx;
 
-    GetClassName(hwnd, classname, 256); 
-
-    if (owner != bigowner)
+    if (owner != bigowner) {
+#if defined (commentout)
+	debug_printf ("IGNORING: %s\n", classname);
+#endif
 	return TRUE;
+    }
 
-    m_skin_is_modern = 0;
-    if (strcmp(classname, "BaseWindow_RootWnd") == 0) {
+    GetClassName (hwnd, classname, 256); 
+    if (!GetWindowText (hwnd, title, 256)) title[0] = 0;
+    win_id = GetWindowLong (hwnd, GWL_ID);
+    hinstance = (HINSTANCE) GetWindowLong (hwnd, GWL_HINSTANCE);
+    style = GetWindowLong (hwnd, GWL_STYLE);
+    GetClassInfoEx (hinstance, classname, &wcx);
+    debug_printf ("%s/%s [%d]: %d %d %0x04x %0x04x\n", classname, title, hwnd, win_id, hinstance, style, wcx.style);
+
+    if (strcmp (classname, "BaseWindow_RootWnd") == 0) {
 	m_skin_is_modern = 1;
 	for (i = 0; i < WINAMP_MODERN_WINS; i++) {
 	    if (m_winamp_modern_wins[i].hwnd == hwnd) {
-		debug_printf ("%s (repeat[i]) = %d\n", classname, hwnd);
+		//debug_printf ("%s (repeat[%d]) = %d\n", classname, i, hwnd);
 		return TRUE;
 	    }
 	}
 	if (m_num_modern_wins < WINAMP_MODERN_WINS) {
+	    //debug_printf ("%s [%d] = %d\n", classname, m_num_modern_wins, hwnd);
 	    m_winamp_modern_wins[m_num_modern_wins++].hwnd = hwnd;
+	} else {
+	    //debug_printf ("%s [RAN OUT OF SLOTS]\n", classname);
 	}
     } else if (strcmp(classname, "Winamp PE") == 0) {
 	if (!m_winamp_classic_wins[1].hwnd) {
 	    m_winamp_classic_wins[1].hwnd = hwnd;
-	    debug_printf ("%s [1] = %d\n", classname, hwnd);
+	    //debug_printf ("%s [1] = %d\n", classname, hwnd);
 	} else {
-	    debug_printf ("%s (repeat[1]) = %d\n", classname, hwnd);
+	    //debug_printf ("%s (repeat[1]) = %d\n", classname, hwnd);
 	}
     } else if (strcmp(classname, "Winamp EQ") == 0) {
 	if (!m_winamp_classic_wins[2].hwnd) {
 	    m_winamp_classic_wins[2].hwnd = hwnd;
-	    debug_printf ("%s [2] = %d\n", classname, hwnd);
+	    //debug_printf ("%s [2] = %d\n", classname, hwnd);
 	} else {
-	    debug_printf ("%s (repeat[2]) = %d\n", classname, hwnd);
+	    //debug_printf ("%s (repeat[2]) = %d\n", classname, hwnd);
 	}
     } else if (strcmp(classname, "Winamp Video") == 0) {
 	if (!m_winamp_classic_wins[3].hwnd) {
 	    m_winamp_classic_wins[3].hwnd = hwnd;
-	    debug_printf ("%s [3] = %d\n", classname, hwnd);
+	    //debug_printf ("%s [3] = %d\n", classname, hwnd);
 	} else {
-	    debug_printf ("%s (repeat[3]) = %d\n", classname, hwnd);
+	    //debug_printf ("%s (repeat[3]) = %d\n", classname, hwnd);
 	}
     } else {
-	debug_printf ("%s (other) = %d\n", classname, hwnd);
+	//debug_printf ("%s (other) = %d\n", classname, hwnd);
     }
 
     /* Always enumerate until the end */
@@ -152,16 +169,65 @@ find_winamp_windows (HWND hwnd)
     int i;
     long style = 0;
 
-    debug_printf ("Starting enumeration of windows\n");
+    debug_printf ("-------------------------------\n");
+    m_skin_is_modern = 0;
     EnumWindows (EnumWindowsProc, (LPARAM)m_winamp_classic_wins[0].hwnd);
+    debug_printf ("-------------------------------\n");
 
-    for (i = 0; i < WINAMP_CLASSIC_WINS; i++) {
-    	if (m_winamp_classic_wins[i].hwnd == NULL)
-	    return FALSE;
+    debug_printf ("is_modern = %d\n", m_skin_is_modern);
+    debug_printf ("par o par = %d\n", GetParent(m_winamp_classic_wins[0].hwnd));
 
-	style = GetWindowLong (m_winamp_classic_wins[i].hwnd, GWL_STYLE);
-	m_winamp_classic_wins[i].visible = style & WS_VISIBLE;
+    if (m_skin_is_modern) {
+	for (i = 0; i < m_num_modern_wins; i++) {
+	    /* Set visible flag and hook if unhooked */
+	    style = GetWindowLong (m_winamp_modern_wins[i].hwnd, GWL_STYLE);
+	    m_winamp_modern_wins[i].visible = style & WS_VISIBLE;
+	    if (!m_winamp_modern_wins[i].orig_proc) {
+		m_winamp_modern_wins[i].orig_proc = (WNDPROC) SetWindowLong (m_winamp_modern_wins[i].hwnd, GWL_WNDPROC, (LONG) hook_winamp_callback);
+		if (m_winamp_modern_wins[i].orig_proc == NULL) {
+		    debug_printf ("Hooking failure?\n");
+		    return FALSE;
+		}
+	    }
+	}
+    } else {
+	/* Verify all windows present */
+	for (i = 0; i < WINAMP_CLASSIC_WINS; i++) {
+    	    if (m_winamp_classic_wins[i].hwnd == NULL)
+		return FALSE;
+	}
+	/* Set visible flag and hook if unhooked */
+	for (i = 0; i < WINAMP_CLASSIC_WINS; i++) {
+	    style = GetWindowLong (m_winamp_classic_wins[i].hwnd, GWL_STYLE);
+	    m_winamp_classic_wins[i].visible = style & WS_VISIBLE;
+	    if (!m_winamp_classic_wins[i].orig_proc) {
+		m_winamp_classic_wins[i].orig_proc = (WNDPROC) SetWindowLong (m_winamp_classic_wins[i].hwnd, GWL_WNDPROC, (LONG) hook_winamp_callback);
+		if (m_winamp_classic_wins[i].orig_proc == NULL) {
+		    debug_printf ("Hooking failure?\n");
+		    return FALSE;
+		}
+	    }
+	}
     }
+
+#define IPC_GETWND 260
+/* (requires Winamp 2.9+)
+** HWND h=SendMessage(hwnd_winamp,WM_WA_IPC,IPC_GETWND_xxx,IPC_GETWND);
+** returns the HWND of the window specified.
+*/
+#define IPC_GETWND_EQ 0 // use one of these for the param
+#define IPC_GETWND_PE 1
+#define IPC_GETWND_MB 2
+#define IPC_GETWND_VIDEO 3
+#define WM_WA_IPC WM_USER
+#define IPC_IS_WNDSHADE 638 
+
+    for (i = -1; i <= 10; i++) {
+	HWND h = (HWND) SendMessage (m_winamp_classic_wins[0].hwnd,WM_WA_IPC,i,IPC_GETWND);
+	int ws = (int) SendMessage (m_winamp_classic_wins[0].hwnd,WM_WA_IPC,i,IPC_IS_WNDSHADE);
+	debug_printf ("HWND(%d) = %d (%d)\n", i, h, ws);
+    }
+
     debug_printf ("Found all the windows\n");
     return TRUE;
 }
@@ -179,32 +245,15 @@ dock_init (HWND hwnd)
 	m_winamp_modern_wins[i].hwnd = NULL;
 	m_winamp_modern_wins[i].orig_proc = NULL;
     }
+    m_hwnd = hwnd;
     m_winamp_classic_wins[0].hwnd = GetParent (hwnd);
 
     debug_printf ("myself = %d\n", hwnd);
     debug_printf ("parent = %d\n", m_winamp_classic_wins[0].hwnd);
+    debug_printf ("par o par = %d\n", GetParent(m_winamp_classic_wins[0].hwnd));
 
-    if (!find_winamp_windows(hwnd))
-	return;
+    find_winamp_windows (hwnd);
 
-    /* hook the winamp windows */
-    for (i = 0; i < WINAMP_CLASSIC_WINS; i++) {
-	m_winamp_classic_wins[i].orig_proc = NULL;
-#if defined (commentout)
-	/* GCS: I'm not sure if visibility is useful, but it's 
-	   definitely wrong here! */
-	if (!m_winamp_classic_wins[i].visible)
-	    continue;
-#endif
-
-	debug_printf ("Hooking [%d] %d\n", i, m_winamp_classic_wins[i].hwnd);
-	m_winamp_classic_wins[i].orig_proc = (WNDPROC) SetWindowLong (m_winamp_classic_wins[i].hwnd, GWL_WNDPROC, (LONG) hook_winamp_callback);
-	if (m_winamp_classic_wins[i].orig_proc == NULL) {
-	    debug_printf ("Hooking failure?\n");
-	    return;
-	}
-    }
-    m_hwnd = hwnd;
     return;
 }
 
@@ -221,6 +270,10 @@ hook_winamp_callback (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	if (m_winamp_classic_wins[i].hwnd == hwnd)
 	    return CallWindowProc (m_winamp_classic_wins[i].orig_proc, hwnd, uMsg, wParam, lParam); 
     }
+    for (i = 0; i < m_num_modern_wins; i++) {
+	if (m_winamp_modern_wins[i].hwnd == hwnd)
+	    return CallWindowProc (m_winamp_modern_wins[i].orig_proc, hwnd, uMsg, wParam, lParam); 
+    }
 
     debug_printf ("hook_callback problem: %d/0x%04x/0x%04x/0x%04x\n",hwnd,uMsg,wParam,lParam);
     return FALSE;
@@ -232,13 +285,13 @@ dock_show_window (HWND hWnd, int nCmdShow)
     RECT rt;
 
     // Make sure we know about all the windows
-    find_winamp_windows(hWnd);
+    find_winamp_windows (hWnd);
 
     // Have it set the docking point to where-ever the window is
-    GetWindowRect(hWnd, &rt);
-    set_dock_side(&rt);
+    GetWindowRect (hWnd, &rt);
+    set_dock_side (&rt);
 
-    ShowWindow(hWnd, nCmdShow);
+    ShowWindow (hWnd, nCmdShow);
 }
 
 BOOL
@@ -249,7 +302,11 @@ dock_unhook_winamp ()
     debug_printf ("Unhooking...\n");
     for (i = 0; i < WINAMP_CLASSIC_WINS; i++)
 	if (m_winamp_classic_wins[i].orig_proc)
-	    SetWindowLong(m_winamp_classic_wins[i].hwnd, GWL_WNDPROC,(LONG)m_winamp_classic_wins[i].orig_proc); 
+	    SetWindowLong (m_winamp_classic_wins[i].hwnd, GWL_WNDPROC, (LONG) m_winamp_classic_wins[i].orig_proc);
+
+    for (i = 0; i < m_num_modern_wins; i++)
+	if (m_winamp_modern_wins[i].orig_proc)
+	    SetWindowLong (m_winamp_modern_wins[i].hwnd, GWL_WNDPROC, (LONG) m_winamp_modern_wins[i].orig_proc);
 
     m_dragging = FALSE;
     m_docked = FALSE;
@@ -267,15 +324,22 @@ dock_window ()
     int i;
     RECT rt;
     int left, top;
-    RECT rtparents[4];
+    RECT rtparents[WINAMP_MODERN_WINS];
 
-    if(!m_docked)
+    if (!m_docked)
 	return;
 
-    GetWindowRect(m_hwnd, &rt);
+    GetWindowRect (m_hwnd, &rt);
 
-    for(i = 0; i < WINAMP_CLASSIC_WINS; i++)
-	GetWindowRect(m_winamp_classic_wins[i].hwnd, &rtparents[i]);
+    if (m_skin_is_modern) {
+	for (i = 0; i < m_num_modern_wins; i++) {
+	    GetWindowRect (m_winamp_modern_wins[i].hwnd, &rtparents[i]);
+	}
+    } else {
+	for (i = 0; i < WINAMP_CLASSIC_WINS; i++) {
+	    GetWindowRect (m_winamp_classic_wins[i].hwnd, &rtparents[i]);
+	}
+    }
 
     i = m_docked_index;
     switch(m_docked_side)
@@ -351,7 +415,7 @@ dock_window ()
 	return;
     }
  SETWINDOW:
-    SetWindowPos(m_hwnd, NULL, left, top, RTWIDTH(rt), RTHEIGHT(rt), SWP_NOACTIVATE);
+    SetWindowPos (m_hwnd, NULL, left, top, RTWIDTH(rt), RTHEIGHT(rt), SWP_NOACTIVATE);
 }
 
 VOID
@@ -378,11 +442,11 @@ dock_do_mousemove (HWND hWnd, LONG wParam, LONG lParam)
 
     get_new_rect(hWnd, MAKEPOINTS(lParam), m_drag_from, &rtnew);
 
-    if (!set_dock_side(&rtnew)) {
-	SetWindowPos(hWnd, NULL, rtnew.left, rtnew.top, RTWIDTH(rtnew), RTHEIGHT(rtnew), SWP_SHOWWINDOW);
+    if (!set_dock_side (&rtnew)) {
+	SetWindowPos (hWnd, NULL, rtnew.left, rtnew.top, RTWIDTH(rtnew), RTHEIGHT(rtnew), SWP_SHOWWINDOW);
 	m_docked = FALSE;
     } else {
-	dock_window();
+	dock_window ();
     }
 }
 
@@ -390,17 +454,27 @@ BOOL
 set_dock_side (RECT *rtnew)
 {
     int i;
-    RECT	rtparents[4];
+    RECT rtparents[WINAMP_MODERN_WINS];
+    int nwin;
+    struct WINAMP_WINS* wins;
 
     // This taken from James Spibey's <spib@bigfoot.com> code example for how to do a winamp plugin
     // however, the goto's are mine :)
-    for(i = 0; i < WINAMP_CLASSIC_WINS; i++)
-    {
 
-	if (m_winamp_classic_wins[i].visible == FALSE)
+    /* GCS FIX: Make variable # for rtparents */
+    if (m_skin_is_modern) {
+	nwin = m_num_modern_wins;
+	wins = m_winamp_modern_wins;
+    } else {
+	nwin = WINAMP_CLASSIC_WINS;
+	wins = m_winamp_classic_wins;
+    }
+
+    for (i = 0; i < nwin; i++) {
+	if (wins[i].visible == FALSE)
 	    continue;
 
-	GetWindowRect(m_winamp_classic_wins[i].hwnd, &rtparents[i]);
+	GetWindowRect (wins[i].hwnd, &rtparents[i]);
 
 	/*********************************
 	 ** Dock to Right Side of Winamp **
@@ -529,7 +603,6 @@ set_dock_side (RECT *rtnew)
     m_docked_index = i;
     m_docked = TRUE;
     return TRUE;
-	
 }
 
 VOID
@@ -538,10 +611,10 @@ dock_do_lbuttondown (HWND hWnd, LONG wParam, LONG lParam)
     RECT rt;
     POINT cur = {LOWORD(lParam), HIWORD(lParam)};
 
-    find_winamp_windows(hWnd);
-    GetClientRect(hWnd, &rt);
+    find_winamp_windows (hWnd);
+    GetClientRect (hWnd, &rt);
     rt.bottom = rt.top + 120;
-    if (PtInRect(&rt, cur)) {
+    if (PtInRect (&rt, cur)) {
 	SetCapture(hWnd);
 	m_dragging = TRUE;
 	m_drag_from.x = (short)cur.x;
@@ -553,7 +626,7 @@ VOID
 dock_do_lbuttonup (HWND hWnd, LONG wParam, LONG lParam)
 {
     if (m_dragging) {
-	ReleaseCapture();
+	ReleaseCapture ();
 	m_dragging = FALSE;
     }
 }
