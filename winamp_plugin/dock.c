@@ -23,7 +23,7 @@
 
 #define SNAP_OFFSET		10	
 #define WINAMP_CLASSIC_WINS	4
-#define WINAMP_MODERN_WINS	6
+#define WINAMP_MODERN_WINS	8
 
 #define DOCKED_TOP_LL		1	// Top Left Left
 #define DOCKED_TOP_LR		2	// Top Left Right
@@ -47,8 +47,10 @@
 
 #define RTWIDTH(rect)	((rect).right-(rect).left)
 #define RTHEIGHT(rect)	((rect).bottom-(rect).top)
+#if defined (commentout)
 #define SETWINDOWPOS(left, top)	\
 		SetWindowPos(hWnd, NULL, left, top, RTWIDTH(rt), RTHEIGHT(rt), SWP_SHOWWINDOW);
+#endif
 
 /*****************************************************************************
  * Public functions
@@ -222,11 +224,13 @@ find_winamp_windows (HWND hwnd)
 #define WM_WA_IPC WM_USER
 #define IPC_IS_WNDSHADE 638 
 
+#if defined (commentout)
     for (i = -1; i <= 10; i++) {
 	HWND h = (HWND) SendMessage (m_winamp_classic_wins[0].hwnd,WM_WA_IPC,i,IPC_GETWND);
 	int ws = (int) SendMessage (m_winamp_classic_wins[0].hwnd,WM_WA_IPC,i,IPC_IS_WNDSHADE);
 	debug_printf ("HWND(%d) = %d (%d)\n", i, h, ws);
     }
+#endif
 
     debug_printf ("Found all the windows\n");
     return TRUE;
@@ -287,9 +291,6 @@ hook_winamp_callback (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     int i;
 
-    if (uMsg == WM_SHOWWINDOW) {
-	debug_printf ("WM_SHOWWINDOW: %d/0x%04x/0x%04x/0x%04x\n",hwnd,uMsg,wParam,lParam);
-    }
     if (uMsg == WM_SHOWWINDOW && wParam == FALSE) {
 	if (m_docked && m_skin_is_modern) {
 	    if (m_winamp_modern_wins[m_docked_index].hwnd == hwnd) {
@@ -298,9 +299,35 @@ hook_winamp_callback (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	    }
 	}
     }
-    if (uMsg == WM_MOVE || uMsg == WM_WINDOWPOSCHANGED) {
-	dock_window();
+
+    if (uMsg == WM_MOVE) {
+	/* Do nothing */
     }
+
+    if (uMsg == WM_WINDOWPOSCHANGED) {
+	if ((m_skin_is_modern && m_winamp_modern_wins[m_docked_index].hwnd == hwnd)
+	    || (!m_skin_is_modern && m_winamp_classic_wins[m_docked_index].hwnd == hwnd))
+	{
+	    UINT wpf = ((WINDOWPOS*)lParam)->flags;
+	    debug_printf ("WM_WINDOWPOSCHANGED: %d/0x%04x/0x%04x/0x%04x/0x%04x\n",hwnd,uMsg,wParam,lParam,((WINDOWPOS*)lParam)->flags);
+	    debug_printf ("%s %s %s %s %s %s %s %s %s %s %s %s %s\n",
+		(wpf & SWP_DRAWFRAME)     ? "DRAWF" : "-----",
+		(wpf & SWP_FRAMECHANGED)  ? "FRAME" : "-----",
+		(wpf & SWP_HIDEWINDOW)    ? "HIDEW" : "-----",
+		(wpf & SWP_NOACTIVATE)    ? "NOACT" : "-----",
+		(wpf & SWP_NOCOPYBITS)    ? "NOCOP" : "-----",
+		(wpf & SWP_NOMOVE)        ? "NOMOV" : "-----",
+		(wpf & SWP_NOOWNERZORDER) ? "NOOWN" : "-----",
+		(wpf & SWP_NOREDRAW)      ? "NORED" : "-----",
+		(wpf & SWP_NOREPOSITION)  ? "NOREP" : "-----",
+		(wpf & SWP_NOSENDCHANGING)? "NOSEN" : "-----",
+		(wpf & SWP_NOSIZE)        ? "NOSIZ" : "-----",
+		(wpf & SWP_NOZORDER)      ? "NOZOR" : "-----",
+		(wpf & SWP_SHOWWINDOW)    ? "SHOWW" : "-----");
+	    dock_window();
+	}
+    }
+
     //debug_printf ("callback: %d/0x%04x/0x%04x/0x%04x\n",hwnd,uMsg,wParam,lParam);
     for (i = 0; i < WINAMP_CLASSIC_WINS; i++) {
 	if (m_winamp_classic_wins[i].hwnd == hwnd)
@@ -451,7 +478,7 @@ dock_window ()
 	return;
     }
  SETWINDOW:
-    debug_printf ("SetWindowPos (%d %d %d %d)\n", left, top, RTWIDTH(rt), RTHEIGHT(rt));
+    debug_printf ("SetWindowPos-a [%d] (%d %d %d %d)\n", m_hwnd, left, top, RTWIDTH(rt), RTHEIGHT(rt));
     SetWindowPos (m_hwnd, NULL, left, top, RTWIDTH(rt), RTHEIGHT(rt), SWP_NOACTIVATE);
 }
 
@@ -481,6 +508,7 @@ dock_do_mousemove (HWND hWnd, LONG wParam, LONG lParam)
 
     if (!set_dock_side (&rtnew)) {
 	SetWindowPos (hWnd, NULL, rtnew.left, rtnew.top, RTWIDTH(rtnew), RTHEIGHT(rtnew), SWP_SHOWWINDOW);
+	debug_printf ("SetWindowPos-b [%d] (%d %d %d %d)\n", hWnd, rtnew.left, rtnew.top, RTWIDTH(rtnew), RTHEIGHT(rtnew));
 	m_docked = FALSE;
     } else {
 	dock_window ();
