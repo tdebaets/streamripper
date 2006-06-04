@@ -130,7 +130,8 @@ static COLORREF		m_prog_color;
 static HWND		m_hwnd;
 static DISPLAYDATA	m_ddinfo[IDR_NUMFIELDS];
 
-BOOL render_init(HINSTANCE hInst, HWND hWnd, LPCTSTR szBmpFile)
+BOOL
+render_init(HINSTANCE hInst, HWND hWnd, LPCTSTR szBmpFile)
 {
     if (!skindata_from_file(szBmpFile, &m_offscreenskind))
 	return FALSE;
@@ -146,7 +147,8 @@ BOOL render_init(HINSTANCE hInst, HWND hWnd, LPCTSTR szBmpFile)
     return TRUE;	
 }
 
-BOOL render_change_skin(LPCTSTR szBmpFile)
+BOOL
+render_change_skin(LPCTSTR szBmpFile)
 {
     skindata_close(m_offscreenskind);
     if (!skindata_from_file(szBmpFile, &m_offscreenskind))
@@ -154,7 +156,8 @@ BOOL render_change_skin(LPCTSTR szBmpFile)
     return TRUE;
 }
 
-VOID render_set_text_color(POINT pt)
+VOID
+render_set_text_color(POINT pt)
 {
     m_pt_color = pt;
     m_offscreenskind.textcolor = GetPixel(m_offscreenskind.bmdc.hdc, pt.x, pt.y);
@@ -232,7 +235,8 @@ render_add_button (RECT *normal, RECT *pressed, RECT *hot, RECT *grayed, RECT *d
     return (HBUTTON)m_num_buttons-1;
 }
 
-VOID CALLBACK on_timer(HWND hWnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+VOID CALLBACK
+on_timer(HWND hWnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
     POINT pt;
     RECT winrt;
@@ -249,8 +253,7 @@ VOID CALLBACK on_timer(HWND hWnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
     time(&now);
 
     // Turn off a hot button if it hasn't been mouse over'd for a while 
-    for(i = 0; i < m_num_buttons; i++)
-    {
+    for(i = 0; i < m_num_buttons; i++) {
 	b = &m_buttons[i];
 	if (!PtInRect(&b->dest, pt) && 
 	    b->hot_timeout >= now &&
@@ -294,7 +297,8 @@ render_do_mousemove (HWND hWnd, LONG wParam, LONG lParam)
     }
 }
 
-VOID render_do_lbuttonup(HWND hWnd, LONG wParam, LONG lParam)
+VOID
+render_do_lbuttonup(HWND hWnd, LONG wParam, LONG lParam)
 {
     POINT pt = {LOWORD(lParam), HIWORD(lParam)};
     BUTTON *b;
@@ -313,7 +317,8 @@ VOID render_do_lbuttonup(HWND hWnd, LONG wParam, LONG lParam)
     }
 }
 
-VOID render_do_lbuttondown(HWND hWnd, LONG wParam, LONG lParam)
+VOID
+render_do_lbuttondown(HWND hWnd, LONG wParam, LONG lParam)
 {
     POINT pt = {LOWORD(lParam), HIWORD(lParam)};
     BUTTON *b;
@@ -332,14 +337,16 @@ VOID render_do_lbuttondown(HWND hWnd, LONG wParam, LONG lParam)
     }
 }
 
-VOID render_clear_all_data()
+VOID
+render_clear_all_data()
 {
     int i;
     for(i = 0; i < IDR_NUMFIELDS; i++)
 	memset(m_ddinfo[i].str, 0, MAX_RENDER_LINE);
 }
 
-BOOL render_set_display_data(int idr, char *format, ...)
+BOOL
+render_set_display_data(int idr, char *format, ...)
 {
     va_list va;
 
@@ -352,7 +359,8 @@ BOOL render_set_display_data(int idr, char *format, ...)
     return TRUE;
 }
 
-BOOL render_set_display_data_pos(int idr, RECT *rt)
+BOOL
+render_set_display_data_pos(int idr, RECT *rt)
 {
     if (idr < 0 || idr > IDR_NUMFIELDS || !rt)
 	return FALSE;
@@ -363,18 +371,16 @@ BOOL render_set_display_data_pos(int idr, RECT *rt)
 }
 
 
-BOOL TrimTextOut(HDC hdc, int x, int y, int maxwidth, char *str)
+BOOL
+TrimTextOut(HDC hdc, int x, int y, int maxwidth, char *str)
 {
     char buf[MAX_RENDER_LINE];
     SIZE size;
 
     strcpy(buf, str);
     GetTextExtentPoint32(hdc, buf, strlen(buf), &size); 
-    if (size.cx > maxwidth)
-    {
-	while(size.cx > maxwidth && 
-	      strlen(buf))
-	{
+    if (size.cx > maxwidth) {
+	while(size.cx > maxwidth && strlen(buf)) {
 	    GetTextExtentPoint32(hdc, buf, strlen(buf), &size); 
 	    buf[strlen(buf)-1] = '\0';
 	} 
@@ -384,7 +390,8 @@ BOOL TrimTextOut(HDC hdc, int x, int y, int maxwidth, char *str)
     return TextOut(hdc, x, y, buf, strlen(buf));
 }
 
-BOOL render_destroy()
+BOOL
+render_destroy()
 {
 
     DeleteObject(m_tempfont);
@@ -393,7 +400,8 @@ BOOL render_destroy()
     return TRUE;
 }
 
-BOOL skindata_from_file(const char* skinfile, SKINDATA* pskind)
+BOOL
+skindata_from_file(const char* skinfile, SKINDATA* pskind)
 {
     if (!pskind)
 	return FALSE;
@@ -404,14 +412,16 @@ BOOL skindata_from_file(const char* skinfile, SKINDATA* pskind)
     return pskind->hbrush ? TRUE : FALSE;
 }
 
-void skindata_close(SKINDATA skind)
+void
+skindata_close(SKINDATA skind)
 {
     bitmapdc_close(skind.bmdc);
     DeleteObject(skind.hbrush);
     skind.hbrush = NULL;
 }
 
-BOOL bitmapdc_from_file(const char* skinfile, BITMAPDC* bmdc)
+BOOL
+bitmapdc_from_file(const char* skinfile, BITMAPDC* bmdc)
 {
     char tempfile[SR_MAX_PATH*5];
 	
@@ -485,11 +495,8 @@ internal_render_do_paint (SKINDATA skind, HDC outhdc)
     int i;
     HDC thdc = skind.bmdc.hdc;
 
-    //	DEBUG2(( "render_do_paint: %d\n", thdc ));
-
     // Create out temp dc if we haven't made it yet
-    if (m_tempdc.hdc == NULL)
-    {
+    if (m_tempdc.hdc == NULL) {
 	LOGFONT ft;
 
 	m_tempdc.hdc = CreateCompatibleDC(thdc);
@@ -518,8 +525,7 @@ internal_render_do_paint (SKINDATA skind, HDC outhdc)
 	   SRCCOPY);
 
     // Draw buttons
-    for(i = 0; i < m_num_buttons; i++)
-    {
+    for (i = 0; i < m_num_buttons; i++) {
 	b = &m_buttons[i];
 	prt = &b->rt[b->mode];
 	BitBlt(m_tempdc.hdc,
@@ -534,8 +540,7 @@ internal_render_do_paint (SKINDATA skind, HDC outhdc)
     }
 	
     // Draw progress bar
-    if (m_prog_on)
-    {
+    if (m_prog_on) {
 	RECT rt = {m_prog_point.x, 
 		   m_prog_point.y, 
 		   m_prog_point.x + (WIDTH(m_prog_rect)*15) + 11,   // yummy magic numbers
@@ -548,10 +553,8 @@ internal_render_do_paint (SKINDATA skind, HDC outhdc)
 	num_bars = (now-m_time_start) % 15;	// number of bars to draw
 	FrameRect(m_tempdc.hdc, &rt, skind.hbrush);
 		
-	for(i = 0; i < num_bars; i++)
-	{
-	    for(i = 0; i < num_bars; i++)
-	    {
+	for(i = 0; i < num_bars; i++) {
+	    for(i = 0; i < num_bars; i++) {
 		BitBlt(m_tempdc.hdc,
 		       rt.left + (i * (WIDTH(m_prog_rect)+1)+2),
 		       rt.top+2,
@@ -566,24 +569,22 @@ internal_render_do_paint (SKINDATA skind, HDC outhdc)
     }
 
     // Draw text data on the screen
-    {
-	SetBkMode(m_tempdc.hdc, TRANSPARENT); 
-		
-	// Draw text
-	SetTextColor(m_tempdc.hdc, skind.textcolor);
+    SetBkMode(m_tempdc.hdc, TRANSPARENT); 
+	    
+    // Draw text
+    SetTextColor(m_tempdc.hdc, skind.textcolor);
 
-	for(i = 0; i < IDR_NUMFIELDS; i++)
-	{		
-	    TrimTextOut(m_tempdc.hdc, m_ddinfo[i].rt.left, 
-			m_ddinfo[i].rt.top, 
-			WIDTH(m_ddinfo[i].rt), 
-			m_ddinfo[i].str); 
-	}
+    for (i = 0; i < IDR_NUMFIELDS; i++) {		
+	TrimTextOut(m_tempdc.hdc, m_ddinfo[i].rt.left, 
+		    m_ddinfo[i].rt.top, 
+		    WIDTH(m_ddinfo[i].rt), 
+		    m_ddinfo[i].str); 
     }
 
-    // onto the actual screen 
     debug_printf ("bltting: (%d %d)\n", WIDTH (m_rect_background),
 		   HEIGHT (m_rect_background));
+
+    // Onto the actual screen 
     BitBlt(outhdc,
 	   0,
 	   0,

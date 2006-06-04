@@ -91,7 +91,8 @@ static int m_curskin = 0;
 //JCBUG not yet implemented (need to figure out how to get this)
 static int m_last_sheet = 0;	
 
-BOOL get_skin_list()
+BOOL
+get_skin_list()
 {
     WIN32_FIND_DATA	filedata; 
     HANDLE			hsearch = NULL;
@@ -110,24 +111,24 @@ BOOL get_skin_list()
 	return FALSE;
 
     m_pskin_list[m_skin_list_size] = strdup(filedata.cFileName);
+    debug_printf ("GetSkinList: %d = %s\n", m_skin_list_size,
+	m_pskin_list[m_skin_list_size]);
     m_skin_list_size++;
 
-    while(TRUE)
-    {
-	if (FindNextFile(hsearch, &filedata)) 
-	{
+    while(TRUE) {
+	if (FindNextFile(hsearch, &filedata)) {
 	    m_pskin_list[m_skin_list_size] = strdup(filedata.cFileName);
+	    debug_printf ("GetSkinList: %d = %s\n", m_skin_list_size,
+		m_pskin_list[m_skin_list_size]);
 	    m_skin_list_size++;
 	    continue;
 	}
-	if (GetLastError() == ERROR_NO_MORE_FILES) 
-	{
+	if (GetLastError() == ERROR_NO_MORE_FILES) {
 	    break;
-	}
-	else 
-	{
-	    if (hsearch)
+	} else {
+	    if (hsearch) {
 		FindClose(hsearch);
+	    }
 	    return FALSE;
 	}
     }
@@ -136,13 +137,13 @@ BOOL get_skin_list()
     return TRUE;
 }
 
-void free_skin_list()
+void
+free_skin_list()
 {
     if (m_skin_list_size == 0)
 	return;
 
-    while(m_skin_list_size--)
-    {
+    while (m_skin_list_size--) {
 	assert(m_pskin_list[m_skin_list_size]);
 	free(m_pskin_list[m_skin_list_size]);
 	m_pskin_list[m_skin_list_size] = NULL;
@@ -150,7 +151,8 @@ void free_skin_list()
     m_skin_list_size = 0;
 }
 
-BOOL get_desktop_folder(char *path)
+BOOL
+get_desktop_folder(char *path)
 {
     static HMODULE hMod = NULL;
     PFNSHGETFOLDERPATHA pSHGetFolderPath = NULL;
@@ -285,7 +287,7 @@ options_dialog_show (HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, GUI_
     hPage[3] = create_prop_sheet_page(inst, IDD_PROPPAGE_SKIN, skin_dlg);
     hPage[4] = create_prop_sheet_page(inst, IDD_PROPPAGE_SPLITTING, splitting_dlg);
     hPage[5] = create_prop_sheet_page(inst, IDD_PROPPAGE_EXTERNAL, external_dlg);
-    memset(&psh, 0, sizeof(PROPSHEETHEADER));
+    memset (&psh, 0, sizeof(PROPSHEETHEADER));
     psh.dwSize = sizeof(PROPSHEETHEADER);
     psh.dwFlags = PSH_DEFAULT;
     psh.hwndParent = parent;
@@ -294,29 +296,25 @@ options_dialog_show (HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, GUI_
     psh.nPages = NUM_PROP_PAGES;
     psh.nStartPage = m_last_sheet;
     psh.phpage = hPage;
-    ret = PropertySheet(&psh);
-    if (ret == -1)
-    {
+    ret = PropertySheet (&psh);
+    if (ret == -1) {
 	char s[255];
 	sprintf(s, "There was an error while attempting to load the options dialog\r\n"
 		"Please check http://streamripper.sourceforge.net for updates\r\n"
 		"Error: %d\n", GetLastError());
 	MessageBox(parent, s, "Can't load options dialog", MB_ICONEXCLAMATION);
 	return; //JCBUG
-
     }
-    if (ret)
-    {
-	if (m_pskin_list[m_curskin])
-	{
-	    strcpy(m_guiOpt->default_skin, m_pskin_list[m_curskin]);
+    if (ret) {
+	if (m_pskin_list[m_curskin]) {
+	    strcpy (m_guiOpt->default_skin, m_pskin_list[m_curskin]);
 	    //JCBUG font color doesn't change until restart.
-	    render_change_skin(m_guiOpt->default_skin);
+	    render_change_skin (m_guiOpt->default_skin);
 	}
-	options_save(m_opt, m_guiOpt);
+	options_save (m_opt, m_guiOpt);
     }
 
-    free_skin_list();
+    free_skin_list ();
 }
 
 void
@@ -387,7 +385,8 @@ add_overwrite_complete_strings(HWND hdlg)
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"When larger");
 }
 
-void saveload_conn_opts(HWND hWnd, BOOL saveload)
+void
+saveload_conn_opts(HWND hWnd, BOOL saveload)
 {
     /*
       - reconnect
@@ -425,7 +424,8 @@ void saveload_conn_opts(HWND hWnd, BOOL saveload)
     }
 }
 
-void saveload_file_opts(HWND hWnd, BOOL saveload)
+void
+saveload_file_opts(HWND hWnd, BOOL saveload)
 {
     /*
       - seperate dir
@@ -462,7 +462,8 @@ void saveload_file_opts(HWND hWnd, BOOL saveload)
     }
 }
 
-void saveload_pat_opts(HWND hWnd, BOOL saveload)
+void
+saveload_pat_opts(HWND hWnd, BOOL saveload)
 {
     /*
       - seperate dir
@@ -533,23 +534,28 @@ saveload_external_opts (HWND hWnd, BOOL saveload)
 // it'll dispatch the calls forward with a confile boolean which tells if
 // it's the connection of file pages 
 //
-LRESULT CALLBACK con_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK
+con_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     return options_dlg(hWnd, message, wParam, lParam, 1);
 }
-LRESULT CALLBACK file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK
+file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     return options_dlg(hWnd, message, wParam, lParam, 2);
 }
-LRESULT CALLBACK pat_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK
+pat_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     return options_dlg(hWnd, message, wParam, lParam, 3);
 }
-LRESULT CALLBACK splitting_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK
+splitting_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     return options_dlg(hWnd, message, wParam, lParam, 4);
 }
-LRESULT CALLBACK external_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK
+external_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     return options_dlg(hWnd, message, wParam, lParam, 5);
 }
@@ -563,11 +569,12 @@ populate_skin_list (HWND dlg)
     if (!hlist)
 	return FALSE;
 
-    for(i = 0; i < m_skin_list_size; i++)
-    {
+    for(i = 0; i < m_skin_list_size; i++) {
 	assert(m_pskin_list[i]);
+	debug_printf ("pop_skin_list: %d = %s\n", i,
+	    m_pskin_list[i]);
 
-	SendMessage(hlist, LB_ADDSTRING, 0, 
+	SendMessage (hlist, LB_ADDSTRING, 0, 
 		    (LPARAM)m_pskin_list[i]);
 
 	if (strcmp(m_pskin_list[i], m_guiOpt->default_skin) == 0)
@@ -643,11 +650,11 @@ skin_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	    { 
 	    case LBN_SELCHANGE:
 		{
-		    HWND hwndlist = GetDlgItem(hWnd, IDC_SKIN_LIST); 
-		    m_curskin = SendMessage(hwndlist, LB_GETCURSEL, 0, 0); 
-		    assert(m_curskin >= 0 && m_curskin < m_skin_list_size);
-		    UpdateWindow(hWnd);
-		    InvalidateRect(hWnd, NULL, FALSE);
+		    HWND hwndlist = GetDlgItem (hWnd, IDC_SKIN_LIST); 
+		    m_curskin = SendMessage (hwndlist, LB_GETCURSEL, 0, 0); 
+		    assert (m_curskin >= 0 && m_curskin < m_skin_list_size);
+		    UpdateWindow (hWnd);
+		    InvalidateRect (hWnd, NULL, FALSE);
 		}
 	    }
 	}

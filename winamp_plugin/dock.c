@@ -44,7 +44,6 @@
 #define DOCKED_RIGHT		102
 #define DOCKED_BOTTOM		103
 
-
 #define RTWIDTH(rect)	((rect).right-(rect).left)
 #define RTHEIGHT(rect)	((rect).bottom-(rect).top)
 #if defined (commentout)
