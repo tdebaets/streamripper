@@ -332,9 +332,5 @@ SOURCE=..\lib\util.c
 SOURCE=..\lib\util.h
 # End Source File
 # End Group
-# Begin Source File
-
-SOURCE=.\gen_sripper.manifest
-# End Source File
 # End Target
 # End Project

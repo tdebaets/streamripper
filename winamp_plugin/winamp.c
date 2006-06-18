@@ -21,6 +21,8 @@
 
 #include "srtypes.h"
 #include "winamp.h"
+#include "debug.h"
+#include "util.h"
 
 /*********************************************************************************
  * Public functions
@@ -28,8 +30,6 @@
 BOOL winamp_init();			
 BOOL winamp_get_info(WINAMP_INFO *info, BOOL useoldway);
 BOOL winamp_add_track_to_playlist(char *track);
-BOOL winamp_get_path(char *path);
-
 
 /*********************************************************************************
  * Private Vars
@@ -39,41 +39,110 @@ static char m_winamps_path[SR_MAX_PATH] = {'\0'};
 // Get's winamp's path from the reg key ..
 // HKEY_CLASSES_ROOT\Applications\winamp.exe\shell\Enqueue\command
 BOOL
-winamp_get_path(char *path)
+get_string_from_registry (char *path, HKEY hkey, LPCTSTR subkey, LPTSTR name)
 {
+    LONG rc;
+    HKEY hkey_result;
     DWORD size = SR_MAX_PATH;
     char strkey[SR_MAX_PATH];
-    char winampstr[] = "WINAMP.EXE";
-    int winampstrlen = strlen(winampstr);
     int i;
-    HKEY hKey;
+    DWORD type;
+    int k = REG_SZ;
 
-    if (RegOpenKeyEx(HKEY_CLASSES_ROOT,
-		     TEXT("Winamp.File\\shell\\Enqueue\\command"),
-		     0,
-		     KEY_QUERY_VALUE,
-		     &hKey) != ERROR_SUCCESS) {
+    debug_printf ("Trying RegOpenKeyEx: 0x%08x %s\n", hkey, subkey);
+    rc = RegOpenKeyEx(hkey, subkey, 0, KEY_QUERY_VALUE, &hkey_result);
+    if (rc != ERROR_SUCCESS) {
 	return FALSE;
     }
 
-    if (RegQueryValue(hKey, NULL, (LPBYTE)strkey, &size) != ERROR_SUCCESS) {
+    debug_printf ("Trying RegQueryValueEx: %s\n", name);
+    rc = RegQueryValueEx (hkey_result, name, NULL, &type, (LPBYTE)strkey, &size);
+    if (rc != ERROR_SUCCESS) {
+	debug_printf ("Return code = %d\n", rc);
+	RegCloseKey (hkey_result);
 	return FALSE;
     }
 
-    // get the path out
-    for(i = 0; strkey[i]; i++)	
-	strkey[i] = toupper(strkey[i]);
-
-    for(i = 1; strncmp(strkey+i, winampstr, winampstrlen) != 0; i++) {
-	path[i-1] = strkey[i];
+    debug_printf ("RegQueryValueEx succeeded: %d\n", type);
+    for(i = 0; strkey[i]; i++) {
+	path[i] = toupper(strkey[i]);
     }
-    path[i-1] = '\0';
-    RegCloseKey(hKey);
+
+    RegCloseKey (hkey_result);
 
     return TRUE;
 }
 
+BOOL
+strip_registry_path (char* path, char* tail)
+{
+    int i = 0;
+    int tail_len = strlen(tail);
 
+    /* Skip the leading quote */
+    debug_printf ("Stripping registry path: %s\n", path);
+    if (path[0] == '\"') {
+	for (i = 1; path[i]; i++) {
+	    path[i-1] = path[i];
+	}
+	path[i-1] = path[i];
+        debug_printf ("Stripped quote mark: %s\n", path);
+    }
+
+    /* Search for, and strip, the tail */
+    i = 0;
+    while (path[i]) {
+	if (strncmp (&path[i], tail, tail_len) == 0) {
+	    path[i] = 0;
+	    debug_printf ("Found path: %s (%s)\n", path, tail);
+	    return TRUE;
+	}
+	i++;
+    }
+
+    debug_printf ("Did not find path\n");
+    return FALSE;
+}
+
+BOOL
+winamp_get_path(char *path)
+{
+    BOOL rc;
+    char* sr_winamp_home_env;
+
+    sr_winamp_home_env = getenv ("STREAMRIPPER_WINAMP_HOME");
+    debug_printf ("STREAMRIPPER_WINAMP_HOME = %s\n", sr_winamp_home_env);
+    if (sr_winamp_home_env) {
+	sr_strncpy (path, sr_winamp_home_env, SR_MAX_PATH);
+	return TRUE;
+    }
+
+    rc = get_string_from_registry (path, HKEY_LOCAL_MACHINE, 
+	    TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Winamp"),
+	    TEXT("UninstallString"));
+    if (rc == TRUE) {
+	rc = strip_registry_path (path, "UNINSTWA.EXE");
+	if (rc == TRUE) return TRUE;
+    }
+
+    rc = get_string_from_registry (path, HKEY_CLASSES_ROOT, 
+	    "Winamp.File\\shell\\Enqueue\\command", NULL);
+    if (rc == TRUE) {
+	rc = strip_registry_path (path, "WINAMP.EXE");
+	if (rc == TRUE) return TRUE;
+    }
+
+    /* The alternative is: */
+/* SendMessage(hwnd_winamp,WM_WA_IPC,0,IPC_GETINIDIRECTORY);
+    #define IPC_GETINIDIRECTORY 335
+    (Requires winamp 5.0)
+**
+** This returns a pointer to the directory where winamp.ini can be found and is
+** useful if you want store config files but you don't want to use winamp.ini.
+*/
+
+    return FALSE;
+}
 
 BOOL
 winamp_init ()

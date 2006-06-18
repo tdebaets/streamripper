@@ -101,10 +101,15 @@ get_skin_list()
     m_skin_list_size = 0;
     memset(m_pskin_list, 0, sizeof(m_pskin_list));
 		
-    if (!winamp_get_path(temppath))
+    if (!winamp_get_path(temppath)) {
+	debug_printf ("winamp_get_path failed #1\n");
 	return FALSE;
+    }
+
+    debug_printf ("temppath = %s\n", temppath);
     strcat(temppath, SKIN_PATH);
     strcat(temppath, "*.bmp");
+    debug_printf ("temppath = %s\n", temppath);
 
     hsearch = FindFirstFile(temppath, &filedata);
     if (hsearch == INVALID_HANDLE_VALUE) 
@@ -826,8 +831,10 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	desktop_path[0] = '\0';
     }
 
-    if (!winamp_get_path(filename))
+    if (!winamp_get_path(filename)) {
+	debug_printf ("winamp_get_path failed #2\n");
 	return FALSE;
+    }
 
     strcat(filename, "Plugins\\sripper.ini");
 
@@ -902,8 +909,10 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     debug_printf ("id3 flag = 0x%04x\n", OPT_ADD_ID3);
 
     /* Note, there is no way to change the rules file location (for now) */
-    if (!winamp_get_path(opt->rules_file))
+    if (!winamp_get_path(opt->rules_file)) {
+	debug_printf ("winamp_get_path failed #3\n");
 	return FALSE;
+    }
     strcat (opt->rules_file, "Plugins\\parse_rules.txt");
     debug_printf ("RULES: %s\n", opt->rules_file);
 
@@ -915,7 +924,10 @@ options_save (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 {
     char filename[MAX_INI_LINE_LEN];
     FILE *fp;
-    winamp_get_path(filename);
+    if (!winamp_get_path(filename)) {
+	debug_printf ("winamp_get_path failed #4\n");
+	return FALSE;
+    }
     strcat(filename, "Plugins\\sripper.ini");
     fp = fopen(filename, "w");
     if (!fp)

@@ -123,7 +123,7 @@ FunctionEnd
 
 !endif ; WINAMP_AUTOINSTALL
 ; The stuff to install
-Section "ThisNameIsIgnoredSoWhyBother?"
+Section "Installer Section"
 !ifdef WINAMP_AUTOINSTALL
   Call MakeSureIGotWinamp
 !endif
@@ -134,9 +134,12 @@ Section "ThisNameIsIgnoredSoWhyBother?"
   ; File to extract
   File "C:\program files\winamp\plugins\gen_sripper.dll"
   File "sripper_howto.txt"
+  SetOverwrite off
   File "..\parse_rules.txt"
+  SetOverwrite on
   File "..\fake_external_metadata.pl"
   File "..\fetch_external_metadata.pl"
+  WriteUninstaller $INSTDIR\sripper_uninstall.exe
 
   SetOutPath $INSTDIR\Skins\SrSkins
   File srskin.bmp
@@ -144,7 +147,7 @@ Section "ThisNameIsIgnoredSoWhyBother?"
   File srskin_XP.bmp
 
   SetOutPath $INSTDIR
-  File "c:\program files\winamp\winamp.exe.manifest"
+  ;; File "c:\program files\winamp\winamp.exe.manifest"
   ExecShell open "$WINDIR\notepad.exe" "$1\SRIPPER_HOWTO.TXT"
 
   ; prompt user, and if they select no, skip the following 3 instructions.
@@ -155,6 +158,11 @@ Section "ThisNameIsIgnoredSoWhyBother?"
     WriteINIStr "$INSTDIR\Winamp.ini" "Winamp" "genplugin_num" "0"
     ExecShell open  '"$INSTDIR\Winamp.exe"'
   NoWinamp:
+SectionEnd
+
+Section "un.Installer Section"
+  Delete $INSTDIR\sripper_uninstall.exe
+  Delete $INSTDIR\Plugins\gen_sripper.dll
 SectionEnd
 
 ; eof

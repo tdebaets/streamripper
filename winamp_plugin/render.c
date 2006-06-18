@@ -426,10 +426,13 @@ bitmapdc_from_file(const char* skinfile, BITMAPDC* bmdc)
     char tempfile[SR_MAX_PATH*5];
 	
     memset(tempfile, 0, SR_MAX_PATH*5);
-    if (!winamp_get_path(tempfile))
+    if (!winamp_get_path(tempfile)) {
+	debug_printf ("winamp_get_path failed #5\n");
 	return FALSE;
+    }
     strcat(tempfile, SKIN_PATH);
     strcat(tempfile, skinfile);
+    debug_printf ("bitmapdc_from_file: %s\n", tempfile);
 
     bmdc->bm = (HBITMAP) LoadImage(0, tempfile, IMAGE_BITMAP, 
 				   BIG_IMAGE_WIDTH, BIG_IMAGE_HEIGHT, 

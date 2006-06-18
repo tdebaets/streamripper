@@ -1,6 +1,8 @@
 New for 1.61.23
 ---------------
-* Fix sorting problem with skin list
+* Plugin: Fix problem where streamripper can't find winamp directory
+* Plugin: Fix sorting problem with skin list
+* Plugin: Installer no longer overwrites parse_rules.txt
 
 New for 1.61.22
 ---------------
