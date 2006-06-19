@@ -1,7 +1,9 @@
 New for 1.61.23
 ---------------
 * Plugin: Fix problem where streamripper can't find winamp directory
+* Plugin: Add STREAMRIPPER_WINAMP_HOME environment variable
 * Plugin: Fix sorting problem with skin list
+* Plugin: Add uninstaller
 * Plugin: Installer no longer overwrites parse_rules.txt
 
 New for 1.61.22

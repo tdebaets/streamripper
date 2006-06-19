@@ -9,10 +9,10 @@
 ;
 
 ; The name of the installer
-Name "Streamripper for Winamp 2.x/5.x v1.61.22"
+Name "Streamripper for Winamp 2.x/5.x v1.61.23"
 
 ; The file to write
-OutFile "srwa5-1.61.22.exe"
+OutFile "srwa5-1.61.23.exe"
 
 ; License page
 ; LicenseText "This installer will install the Nullsoft Tiny Visualization 2000 Plug-in for Winamp. Please read the license below."
@@ -139,12 +139,17 @@ Section "Installer Section"
   SetOverwrite on
   File "..\fake_external_metadata.pl"
   File "..\fetch_external_metadata.pl"
-  WriteUninstaller $INSTDIR\sripper_uninstall.exe
 
   SetOutPath $INSTDIR\Skins\SrSkins
   File srskin.bmp
   File srskin_winamp.bmp
   File srskin_XP.bmp
+
+  WriteUninstaller $INSTDIR\streamripper_uninstall.exe
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper.Plugin" "DisplayName" "Streamripper Plugin 1.61.23 (Remove only)"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper.Plugin" "UninstallString" "$INSTDIR\streamripper_uninstall.exe"
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper.Plugin" "NoModify" 1
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper.Plugin" "NoRepair" 1
 
   SetOutPath $INSTDIR
   ;; File "c:\program files\winamp\winamp.exe.manifest"
@@ -160,9 +165,16 @@ Section "Installer Section"
   NoWinamp:
 SectionEnd
 
-Section "un.Installer Section"
-  Delete $INSTDIR\sripper_uninstall.exe
+;; Section "un.Installer Section"
+Section "Uninstall"
+  Delete $INSTDIR\streamripper_uninstall.exe
   Delete $INSTDIR\Plugins\gen_sripper.dll
+  Delete $INSTDIR\Plugins\SRIPPER_HOWTO.TXT
+  Delete $INSTDIR\Plugins\sripper.ini
+  Delete $INSTDIR\Plugins\parse_rules.txt
+  Delete $INSTDIR\Plugins\fake_external_metadata.pl
+  Delete $INSTDIR\Plugins\fetch_external_metadata.pl
+  RMDir /r $INSTDIR\Skins\SrSkins
 SectionEnd
 
 ; eof
