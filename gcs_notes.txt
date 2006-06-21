@@ -717,6 +717,7 @@ http://www.thetradersden.org/
 www.filesoup.com
 http://www.dimeadozen.org/
 http://www.bootcity.org
+http://www.shnflac.net/
 
 Band specific sites:
 trading.countingcrows.com (Counting crows, B&P)
