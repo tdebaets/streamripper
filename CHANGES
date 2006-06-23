@@ -1,3 +1,7 @@
+New for 1.61.24
+---------------
+* Fix bug where external program wasn't being killed when reconnecting.
+
 New for 1.61.23
 ---------------
 * Plugin: Fix problem where streamripper can't find winamp directory

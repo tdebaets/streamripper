@@ -396,14 +396,13 @@ ripthread (void *notused)
 		// because filelib needs to keep track of it's file counters, and socklib.. umm..
 		// not sure about. no reasdon to i imagine.
 		socklib_close(&m_sock);
+		if (m_ripinfo.ep) {
+		    debug_printf ("Close external\n");
+		    close_external (&m_ripinfo.ep);
+		}
 		relaylib_shutdown();
-		// GCS testing...
 		filelib_shutdown();
 		ripstream_destroy();
-#if defined (commentout)
-		if (m_destroy_func)
-		    m_destroy_func();
-#endif
 		ret = start_ripping();
 		if (ret == SR_SUCCESS)
 		    break;
@@ -452,6 +451,7 @@ rip_manager_stop()
 
     // Kill external process
     if (m_ripinfo.ep) {
+	debug_printf ("Close external\n");
 	close_external (&m_ripinfo.ep);
     }
 
