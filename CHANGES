@@ -4,6 +4,7 @@ New for 1.61.24
 
 New for 1.61.23
 ---------------
+June 18, 2006
 * Plugin: Fix problem where streamripper can't find winamp directory
 * Plugin: Add STREAMRIPPER_WINAMP_HOME environment variable
 * Plugin: Fix sorting problem with skin list
