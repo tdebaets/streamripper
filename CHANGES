@@ -1,5 +1,6 @@
 New for 1.61.24
 ---------------
+Sun Jul  2 14:14:38 EDT 2006
 * Fix bug where external program wasn't being killed when reconnecting.
 
 New for 1.61.23
