@@ -89,6 +89,7 @@ static FHANDLE  m_cue_file;
 static int 	m_count;
 static int      m_do_show;
 static char 	m_default_pattern[SR_MAX_PATH];
+static char 	m_default_showfile_pattern[SR_MAX_PATH];
 static char 	m_output_directory[SR_MAX_PATH];
 static char 	m_output_pattern[SR_MAX_PATH];
 static char 	m_incomplete_directory[SR_MAX_PATH];
@@ -249,7 +250,7 @@ filelib_init (BOOL do_individual_tracks,
 			      m_showfile_pattern,
 			      showfile_pattern,
 			      output_directory,
-			      "%S/sr_program_%d",
+			      m_default_showfile_pattern,
 			      "",
 			      get_separate_dirs,
 			      get_date_stamp,
@@ -261,11 +262,13 @@ filelib_init (BOOL do_individual_tracks,
     return SR_SUCCESS;
 }
 
-/* This sets the value for m_default_pattern, using the -q & -s flags */
+/* This sets the value for m_default_pattern and m_default_showfile_pattern,
+   using the -q & -s flags.  This function cannot overflow 
+   these static buffers. */
 static void
 set_default_pattern (BOOL get_separate_dirs, BOOL do_count)
 {
-    /* None of these operations can overflow m_default_pattern */
+    /* m_default_pattern */
     m_default_pattern[0] = '\0';
     if (get_separate_dirs) {
 	strcpy (m_default_pattern, "%S" PATH_SLASH_STR);
@@ -279,6 +282,13 @@ set_default_pattern (BOOL get_separate_dirs, BOOL do_count)
 	}
     }
     strcat (m_default_pattern, "%A - %T");
+
+    /* m_default_showfile_pattern */
+    m_default_showfile_pattern[0] = '\0';
+    if (get_separate_dirs) {
+	strcpy (m_default_showfile_pattern, "%S" PATH_SLASH_STR);
+    }
+    strcat (m_default_showfile_pattern, "sr_program_%d");
 }
 
 /* This function sets the value of m_output_directory or 
