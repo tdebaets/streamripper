@@ -19,7 +19,6 @@
  * libmad library, distributed under the GNU General Public License.
  * Copyright (C) 2000-2004 Underbit Technologies, Inc.
  */
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
