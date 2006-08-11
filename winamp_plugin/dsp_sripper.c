@@ -93,10 +93,17 @@ int dont_modify_samples(struct winampDSPModule *this_mod, short int *samples, in
 int init()
 {
     WNDCLASS wc;
-		
-    winamp_init(m_plugin.hDllInstance);
+    char* sr_debug_env;
+
+    sr_debug_env = getenv ("STREAMRIPPER_DEBUG");
+    if (sr_debug_env) {
+	debug_enable();
+	debug_set_filename (sr_debug_env);
+    }
+
+    winamp_init (m_plugin.hDllInstance);
     set_rip_manager_options_defaults (&m_rmoOpt);
-    options_load(&m_rmoOpt, &m_guiOpt);
+    options_load (&m_rmoOpt, &m_guiOpt);
 
     if (!m_guiOpt.m_enabled)
 	return 0;
@@ -249,9 +256,12 @@ void UpdateNotRippingDisplay(HWND hwnd)
 {
     WINAMP_INFO winfo;
 
+    /* GCS: I can see no reason for doing this */
+#if defined (commentout)
     if (winamp_get_info(&winfo, m_guiOpt.use_old_playlist_ret) == FALSE)
     {
 	// if the new way didn't work, lets try the new way
+	debug_printf ("resetting use_old_playlist_ret = TRUE!\n");
 	if (m_guiOpt.use_old_playlist_ret == FALSE)
 	    m_guiOpt.use_old_playlist_ret = TRUE;	
 
@@ -259,6 +269,12 @@ void UpdateNotRippingDisplay(HWND hwnd)
     }
     assert(winfo.is_running);
     strcpy(m_rmoOpt.url, winfo.url);
+#endif
+
+    /* GCS: Lets do this instead */
+    if (winamp_get_info(&winfo, m_guiOpt.use_old_playlist_ret)) {
+        strcpy(m_rmoOpt.url, winfo.url);
+    }
 
     if (strchr(m_rmoOpt.url, ':'))
     {

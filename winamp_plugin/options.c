@@ -414,6 +414,7 @@ saveload_conn_opts(HWND hWnd, BOOL saveload)
 	GetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost, MAX_HOST_LEN);
 	GetDlgItemText(hWnd, IDC_USERAGENT, m_opt->useragent, MAX_USERAGENT_STR);
 	m_guiOpt->use_old_playlist_ret = get_checkbox(hWnd, IDC_USE_OLD_PLAYLIST_RET);
+	debug_printf ("setting: use_old_playlist_ret=%d\n", m_guiOpt->use_old_playlist_ret);
     } else {
 	set_checkbox(hWnd, IDC_RECONNECT, OPT_FLAG_ISSET(m_opt->flags, OPT_AUTO_RECONNECT));
 	set_checkbox(hWnd, IDC_MAKE_RELAY, OPT_FLAG_ISSET(m_opt->flags, OPT_MAKE_RELAY));
@@ -426,6 +427,7 @@ saveload_conn_opts(HWND hWnd, BOOL saveload)
 	    strcpy(m_opt->useragent, DEFAULT_USERAGENT);
 	SetDlgItemText(hWnd, IDC_USERAGENT, m_opt->useragent);
 	set_checkbox(hWnd, IDC_USE_OLD_PLAYLIST_RET, m_guiOpt->use_old_playlist_ret);
+	debug_printf ("getting: use_old_playlist_ret=%d\n", m_guiOpt->use_old_playlist_ret);
     }
 }
 
@@ -817,14 +819,6 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	    rip_single_file,
 	    use_ext_cmd;
     char overwrite_string[MAX_INI_LINE_LEN];
-    char* sr_debug_env;
-
-    sr_debug_env = getenv ("STREAMRIPPER_DEBUG");
-    if (sr_debug_env) {
-	debug_enable();
-	debug_set_filename (sr_debug_env);
-	//debug_set_filename ("d:\\sripper_1x\\gcs.txt");
-    }
 
     if (!get_desktop_folder(desktop_path)) {
 	// Maybe an error message? nahhh..
@@ -887,6 +881,7 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     guiOpt->oldpos.y = GetPrivateProfileInt(APPNAME, "window_y", 0, filename);
     guiOpt->m_enabled = GetPrivateProfileInt(APPNAME, "enabled", 1, filename);
     guiOpt->use_old_playlist_ret = GetPrivateProfileInt(APPNAME, "use_old_playlist_ret", 0, filename);
+    debug_printf ("loading: use_old_playlist_ret=%d\n", guiOpt->use_old_playlist_ret);
 
     if (guiOpt->oldpos.x < 0 || guiOpt->oldpos.y < 0)
 	guiOpt->oldpos.x = guiOpt->oldpos.y = 0;
@@ -977,6 +972,7 @@ options_save (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     fprintf(fp, "window_y=%d\n", guiOpt->oldpos.y);
     fprintf(fp, "enabled=%d\n", guiOpt->m_enabled);
     fprintf(fp, "default_skin=%s\n", guiOpt->default_skin);
+    debug_printf ("writing: use_old_playlist_ret=%d\n", guiOpt->use_old_playlist_ret);
     fprintf(fp, "use_old_playlist_ret=%d\n", guiOpt->use_old_playlist_ret);
 
     fclose(fp);

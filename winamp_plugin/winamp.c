@@ -15,14 +15,17 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include <windows.h>
 #include <stdio.h>
 
 #include "srtypes.h"
+#include "wa_ipc.h"
+#include "ipc_pe.h"
 #include "winamp.h"
 #include "debug.h"
 #include "util.h"
+
+#define DbgBox(_x_)	MessageBox(NULL, _x_, "Debug", 0)
 
 /*********************************************************************************
  * Public functions
@@ -30,11 +33,22 @@
 BOOL winamp_init();			
 BOOL winamp_get_info(WINAMP_INFO *info, BOOL useoldway);
 BOOL winamp_add_track_to_playlist(char *track);
+void winamp_add_rip_to_menu (void);
 
 /*********************************************************************************
  * Private Vars
  *********************************************************************************/
 static char m_winamps_path[SR_MAX_PATH] = {'\0'};
+
+BOOL
+winamp_init ()
+{
+    BOOL rc;
+    rc = winamp_get_path (m_winamps_path);
+    if (!rc) return rc;
+    //winamp_add_rip_to_menu ();
+    return TRUE;
+}
 
 // Get's winamp's path from the reg key ..
 // HKEY_CLASSES_ROOT\Applications\winamp.exe\shell\Enqueue\command
@@ -144,28 +158,47 @@ winamp_get_path(char *path)
     return FALSE;
 }
 
-BOOL
-winamp_init ()
+HWND
+winamp_get_hwnd (void)
 {
-    // Not implemented
-    return winamp_get_path(m_winamps_path);
+    return FindWindow("Winamp v1.x", NULL);
 }
 
-#define DbgBox(_x_)	MessageBox(NULL, _x_, "Debug", 0)
+HWND
+winamp_get_hwnd_pe (void)
+{
+    HWND hwnd_winamp;
+    HWND hwnd_pe = 0;
+    int wa_version;
+
+    hwnd_winamp = winamp_get_hwnd ();
+    wa_version = SendMessage (hwnd_winamp,WM_WA_IPC,0,IPC_GETVERSION);
+
+    if (wa_version >= 0x2900) {
+    	// use the built in api to get the handle
+    	hwnd_pe = (HWND)SendMessage(hwnd_winamp,WM_WA_IPC,IPC_GETWND_PE,IPC_GETWND);
+    }
+
+    // if it failed then use the old way :o)
+    if (!hwnd_pe) {
+    	hwnd_pe = FindWindow("Winamp PE",0);
+    }
+    return hwnd_pe;
+}
 
 BOOL
 winamp_get_info (WINAMP_INFO *info, BOOL useoldway)
 {
-    HWND hwndWinamp;
+    HWND hwnd_winamp;
     info->url[0] = '\0';
 
-    hwndWinamp = FindWindow("Winamp v1.x", NULL);
+    hwnd_winamp = winamp_get_hwnd ();
 
     /* Get winamp path */
     if (!m_winamps_path[0])
 	return FALSE;
 
-    if (!hwndWinamp) {
+    if (!hwnd_winamp) {
 	info->is_running = FALSE;
 	return FALSE;
     } else {
@@ -175,7 +208,7 @@ winamp_get_info (WINAMP_INFO *info, BOOL useoldway)
     if (useoldway) {
 	// Send a message to winamp to save the current playlist
 	// to a file, 'n' is the index of the currently selected item
-	int n  = SendMessage (hwndWinamp, WM_USER, (WPARAM)NULL, 120); 
+	int n  = SendMessage (hwnd_winamp, WM_USER, (WPARAM)NULL, 120); 
 	char m3u_path[SR_MAX_PATH];
 	char buf[4096] = {'\0'};
 	FILE *fp;
@@ -205,13 +238,22 @@ winamp_get_info (WINAMP_INFO *info, BOOL useoldway)
 	char* fname;
 	char *purl;
 
-	pos = (int)SendMessage (hwndWinamp, WM_USER, data, get_position);
-	fname = (char*)SendMessage (hwndWinamp, WM_USER, pos, get_filename);
+	pos = (int)SendMessage (hwnd_winamp, WM_USER, data, get_position);
+	fname = (char*)SendMessage (hwnd_winamp, WM_USER, pos, get_filename);
+	/* GCS: This is wrong. Winamp returns null if list is empty. */
+#if defined (commentout)
 	if (fname == NULL)
 	    return FALSE;
 	purl = strstr (fname, "http://");
 	if (purl)
 	    strncpy (info->url, purl, MAX_URL_LEN);
+#endif
+	if (fname) {
+	    purl = strstr (fname, "http://");
+	    if (purl) {
+		strncpy (info->url, purl, MAX_URL_LEN);
+	    }
+	}
     }
 
     return TRUE;
@@ -247,4 +289,43 @@ winamp_add_track_to_playlist (char *fullpath)
     sprintf (add_track, "/add \"%s\"", fullpath);
     ShellExecute (NULL, "open", winamp_path, add_track, NULL, SW_SHOWNORMAL);
     return TRUE;
+}
+
+void
+winamp_handle_pe_click (void)
+{
+    POINT pt;
+    RECT rc;
+    HWND hwnd_pe, hwnd_winamp;
+
+    hwnd_winamp = winamp_get_hwnd ();
+    hwnd_pe = winamp_get_hwnd_pe ();
+
+    // Get the current position of the mouse and the current client area of the playlist window
+    // and then mapping the mouse position to the client area
+    GetCursorPos(&pt);
+    // Get the client area of the playlist window and then map the mouse position to it
+    GetClientRect(hwnd_pe,&rc);
+    ScreenToClient(hwnd_pe,&pt);
+    // this corrects so the selection works correctly on the selection boundary
+    // appears to happen on the older 2.x series as well
+    pt.y -= 2;
+    // corrections for the playlist window area so that work is only done for valid positions
+    // and nicely enough it works for both classic and modern skin modes
+    rc.top += 18;
+    rc.left += 12;
+    rc.right -= 19;
+    rc.bottom -= 40;
+    // is the click in 
+    if(PtInRect(&rc,pt)){
+    // get the item index at the given point
+    // if this is out of range then it will return 0 (not very helpful really)
+    int idx = SendMessage(hwnd_pe,WM_WA_IPC,IPC_PE_GETIDXFROMPOINT,(LPARAM)&pt);
+	// makes sure that the item isn't past the last playlist item
+	if(idx < SendMessage(hwnd_pe,WM_WA_IPC,IPC_PE_GETINDEXTOTAL,0)){
+		// ... do stuff in here (this example will start playing the selected track)
+		SendMessage(hwnd_winamp,WM_WA_IPC,idx,IPC_SETPLAYLISTPOS);
+		SendMessage(hwnd_winamp,WM_COMMAND,WINAMP_BUTTON2,0);
+	}
+    }
 }

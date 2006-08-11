@@ -15,7 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include <windows.h>
 #include <time.h>
 #include <stdio.h>
@@ -200,7 +199,6 @@ render_set_prog_bar (BOOL on)
     do_refresh(NULL);
 }
 
-
 VOID
 render_set_button_enabled (HBUTTON hbut, BOOL enabled)
 {
@@ -213,7 +211,6 @@ render_set_button_enabled (HBUTTON hbut, BOOL enabled)
     }
     do_refresh(NULL);
 }
-
 
 HBUTTON
 render_add_button (RECT *normal, RECT *pressed, RECT *hot, RECT *grayed, RECT *dest, void (*clicked)())
@@ -274,7 +271,6 @@ on_timer(HWND hWnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 	last_diff = now-m_time_start;
     }
 }
-
 
 VOID
 render_do_mousemove (HWND hWnd, LONG wParam, LONG lParam)
@@ -369,7 +365,6 @@ render_set_display_data_pos(int idr, RECT *rt)
 
     return TRUE;
 }
-
 
 BOOL
 TrimTextOut(HDC hdc, int x, int y, int maxwidth, char *str)
@@ -488,7 +483,6 @@ BOOL render_do_paint(HDC hdc)
 {
     return internal_render_do_paint(m_offscreenskind, hdc);
 }
-
 
 BOOL
 internal_render_do_paint (SKINDATA skind, HDC outhdc)

@@ -1,6 +1,7 @@
 New for 1.61.25
 ---------------
 * Fix bug where -s flag was ignored when used with -a flag
+* Plugin: Fix problem with "old way of retrieving track"
 
 New for 1.61.24
 ---------------
