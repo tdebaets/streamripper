@@ -57,7 +57,7 @@ typedef int error_code;
 #define MAX_HOST_LEN		512
 #define MAX_IP_LEN			3+1+3+1+3+1+3+1
 #define MAX_HEADER_LEN		8192
-#define MAX_URL_LEN			8192
+#define MAX_URL_LEN		8192
 #define MAX_ICY_STRING		4024
 #define MAX_SERVER_LEN		1024
 //#define MAX_TRACK_LEN		MAX_PATH

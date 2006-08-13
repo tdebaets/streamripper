@@ -9,10 +9,11 @@
 #define IDD_PROPPAGE_CON                106
 #define IDD_PROPPAGE_SKIN               108
 #define IDD_PROPPAGE_SPLITTING          109
-#define IDR_POPUP_MENU                  110
+#define IDR_TASKBAR_POPUP               110
 #define IDD_PROPPAGE_PATTERN            112
 #define IDD_PROPPAGE_FILE               113
 #define IDD_PROPPAGE_EXTERNAL           114
+#define IDR_HISTORY_POPUP               121
 #define _IDC_BASE                       1000
 #define IDC_ENABLE                      1090
 #define IDC_MAX_BYTES                   1120
@@ -51,13 +52,14 @@
 #define ID_MENU_STOPRIPPING             40003
 #define ID_MENU_OPTIONS                 40004
 #define ID_MENU_OPEN                    40005
+#define ID_MENU_CLEAR_ENTRY             40006
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        120
-#define _APS_NEXT_COMMAND_VALUE         40006
+#define _APS_NEXT_RESOURCE_VALUE        123
+#define _APS_NEXT_COMMAND_VALUE         40020
 #define _APS_NEXT_CONTROL_VALUE         1379
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

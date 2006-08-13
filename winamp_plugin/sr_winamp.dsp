@@ -141,6 +141,10 @@ SOURCE=.\gen.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ipc_pe.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\options.h
 # End Source File
 # Begin Source File
@@ -150,6 +154,14 @@ SOURCE=.\render.h
 # Begin Source File
 
 SOURCE=.\resource.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\wa_ipc.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\wa_msgids.h
 # End Source File
 # Begin Source File
 

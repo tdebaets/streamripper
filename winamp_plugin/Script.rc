@@ -253,7 +253,7 @@ END
 // Menu
 //
 
-IDR_POPUP_MENU MENU DISCARDABLE 
+IDR_TASKBAR_POPUP MENU DISCARDABLE 
 BEGIN
     POPUP "Menu"
     BEGIN
@@ -262,6 +262,15 @@ BEGIN
         MENUITEM "&Start Ripping",              ID_MENU_STARTRIPPING
         MENUITEM "S&top Ripping",               ID_MENU_STOPRIPPING
         MENUITEM "&Options",                    ID_MENU_OPTIONS
+    END
+END
+
+IDR_HISTORY_POPUP MENU DISCARDABLE 
+BEGIN
+    POPUP "Menu"
+    BEGIN
+        MENUITEM "&Clear entry",                ID_MENU_CLEAR_ENTRY
+        MENUITEM SEPARATOR
     END
 END
 

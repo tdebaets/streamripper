@@ -17,6 +17,7 @@
  */
 #include "windows.h"
 #include <stdio.h>
+#include "wa_ipc.h"
 #include "dock.h"
 #include "debug.h"
 
@@ -45,29 +46,25 @@
 
 #define RTWIDTH(rect)	((rect).right-(rect).left)
 #define RTHEIGHT(rect)	((rect).bottom-(rect).top)
-#if defined (commentout)
-#define SETWINDOWPOS(left, top)	\
-		SetWindowPos(hWnd, NULL, left, top, RTWIDTH(rt), RTHEIGHT(rt), SWP_SHOWWINDOW);
-#endif
 
 /*****************************************************************************
  * Public functions
  *****************************************************************************/
 BOOL dock_hook_winamp(HWND hwnd);
-VOID dock_do_mousemove(HWND hWnd, LONG wParam, LONG lParam);
-VOID dock_do_lbuttondown(HWND hWnd, LONG wParam, LONG lParam);
-VOID dock_do_lbuttonup(HWND hWnd, LONG wParam, LONG lParam);
-VOID dock_show_window(HWND hWnd, int nCmdShow);
+VOID dock_do_mousemove(HWND hwnd, LONG wparam, LONG lparam);
+VOID dock_do_lbuttondown(HWND hwnd, LONG wparam, LONG lparam);
+VOID dock_do_lbuttonup(HWND hwnd, LONG wparam, LONG lparam);
+VOID dock_show_window(HWND hwnd, int nCmdShow);
 BOOL dock_unhook_winamp();
 
 /*****************************************************************************
  * Private functions
  *****************************************************************************/
-static LRESULT CALLBACK	hook_winamp_callback(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK	hook_winamp_callback(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam);
 static VOID dock_window();
 static BOOL set_dock_side(RECT *rtnew);
-static BOOL find_winamp_windows(HWND hWnd);
-static VOID get_new_rect(HWND hWnd, POINTS cur, POINTS last, RECT *rtnew);
+static BOOL find_winamp_windows ();
+static VOID get_new_rect(HWND hwnd, POINTS cur, POINTS last, RECT *rtnew);
 
 
 /*****************************************************************************
@@ -93,12 +90,12 @@ static int m_num_modern_wins = 0;
 static int m_skin_is_modern = 0;
 
 BOOL CALLBACK
-EnumWindowsProc (HWND hwnd, LPARAM lParam)
+EnumWindowsProc (HWND hwnd, LPARAM lparam)
 {
     int i;
     char classname[256];
     char title[256];
-    HWND bigowner = (HWND) lParam;
+    HWND bigowner = (HWND) lparam;
     HWND owner = GetWindow (hwnd, GW_OWNER);
     
     LONG win_id, style;
@@ -164,7 +161,7 @@ EnumWindowsProc (HWND hwnd, LPARAM lParam)
 }
 
 BOOL
-find_winamp_windows (HWND hwnd)
+find_winamp_windows (void)
 {
     int i;
     long style = 0;
@@ -176,6 +173,11 @@ find_winamp_windows (HWND hwnd)
 
     debug_printf ("is_modern = %d\n", m_skin_is_modern);
     debug_printf ("par o par = %d\n", GetParent(m_winamp_classic_wins[0].hwnd));
+
+    {
+    void winamp_test_stuff (void);
+    winamp_test_stuff();
+    }
 
     if (m_skin_is_modern) {
 	for (i = 0; i < m_num_modern_wins; i++) {
@@ -210,18 +212,6 @@ find_winamp_windows (HWND hwnd)
 	}
     }
 
-#define IPC_GETWND 260
-/* (requires Winamp 2.9+)
-** HWND h=SendMessage(hwnd_winamp,WM_WA_IPC,IPC_GETWND_xxx,IPC_GETWND);
-** returns the HWND of the window specified.
-*/
-#define IPC_GETWND_EQ 0 // use one of these for the param
-#define IPC_GETWND_PE 1
-#define IPC_GETWND_MB 2
-#define IPC_GETWND_VIDEO 3
-#define WM_WA_IPC WM_USER
-#define IPC_IS_WNDSHADE 638 
-
 #if defined (commentout)
     for (i = -1; i <= 10; i++) {
 	HWND h = (HWND) SendMessage (m_winamp_classic_wins[0].hwnd,WM_WA_IPC,i,IPC_GETWND);
@@ -254,7 +244,7 @@ dock_init (HWND hwnd)
     debug_printf ("parent = %d\n", m_winamp_classic_wins[0].hwnd);
     debug_printf ("par o par = %d\n", GetParent(m_winamp_classic_wins[0].hwnd));
 
-    find_winamp_windows (hwnd);
+    find_winamp_windows ();
 
     return;
 }
@@ -285,11 +275,15 @@ switch_docking_index (void)
 }
 
 LRESULT CALLBACK
-hook_winamp_callback (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+hook_winamp_callback (HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 {
     int i;
 
-    if (uMsg == WM_SHOWWINDOW && wParam == FALSE) {
+    if (umsg == WM_USER || umsg == WM_COPYDATA) {
+	debug_printf ("callback: %d/0x%04x/0x%04x/0x%08x\n",hwnd,umsg,wparam,lparam);
+    }
+
+    if (umsg == WM_SHOWWINDOW && wparam == FALSE) {
 	if (m_docked && m_skin_is_modern) {
 	    if (m_winamp_modern_wins[m_docked_index].hwnd == hwnd) {
 		switch_docking_index ();
@@ -298,16 +292,16 @@ hook_winamp_callback (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
     }
 
-    if (uMsg == WM_MOVE) {
+    if (umsg == WM_MOVE) {
 	/* Do nothing */
     }
 
-    if (uMsg == WM_WINDOWPOSCHANGED) {
+    if (umsg == WM_WINDOWPOSCHANGED) {
 	if ((m_skin_is_modern && m_winamp_modern_wins[m_docked_index].hwnd == hwnd)
 	    || (!m_skin_is_modern && m_winamp_classic_wins[m_docked_index].hwnd == hwnd))
 	{
-	    UINT wpf = ((WINDOWPOS*)lParam)->flags;
-	    debug_printf ("WM_WINDOWPOSCHANGED: %d/0x%04x/0x%04x/0x%04x/0x%04x\n",hwnd,uMsg,wParam,lParam,((WINDOWPOS*)lParam)->flags);
+	    UINT wpf = ((WINDOWPOS*)lparam)->flags;
+	    debug_printf ("WM_WINDOWPOSCHANGED: %d/0x%04x/0x%04x/0x%04x/0x%04x\n",hwnd,umsg,wparam,lparam,((WINDOWPOS*)lparam)->flags);
 	    debug_printf ("%s %s %s %s %s %s %s %s %s %s %s %s %s\n",
 		(wpf & SWP_DRAWFRAME)     ? "DRAWF" : "-----",
 		(wpf & SWP_FRAMECHANGED)  ? "FRAME" : "-----",
@@ -326,33 +320,33 @@ hook_winamp_callback (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
     }
 
-    //debug_printf ("callback: %d/0x%04x/0x%04x/0x%04x\n",hwnd,uMsg,wParam,lParam);
+    //debug_printf ("callback: %d/0x%04x/0x%04x/0x%08x\n",hwnd,umsg,wparam,lparam);
     for (i = 0; i < WINAMP_CLASSIC_WINS; i++) {
 	if (m_winamp_classic_wins[i].hwnd == hwnd)
-	    return CallWindowProc (m_winamp_classic_wins[i].orig_proc, hwnd, uMsg, wParam, lParam); 
+	    return CallWindowProc (m_winamp_classic_wins[i].orig_proc, hwnd, umsg, wparam, lparam); 
     }
     for (i = 0; i < m_num_modern_wins; i++) {
 	if (m_winamp_modern_wins[i].hwnd == hwnd)
-	    return CallWindowProc (m_winamp_modern_wins[i].orig_proc, hwnd, uMsg, wParam, lParam); 
+	    return CallWindowProc (m_winamp_modern_wins[i].orig_proc, hwnd, umsg, wparam, lparam); 
     }
 
-    debug_printf ("hook_callback problem: %d/0x%04x/0x%04x/0x%04x\n",hwnd,uMsg,wParam,lParam);
+    debug_printf ("hook_callback problem: %d/0x%04x/0x%04x/0x%04x\n",hwnd,umsg,wparam,lparam);
     return FALSE;
 }
 
 VOID
-dock_show_window (HWND hWnd, int nCmdShow)
+dock_show_window (HWND hwnd, int nCmdShow)
 {
     RECT rt;
 
     // Make sure we know about all the windows
-    find_winamp_windows (hWnd);
+    find_winamp_windows ();
 
     // Have it set the docking point to where-ever the window is
-    GetWindowRect (hWnd, &rt);
+    GetWindowRect (hwnd, &rt);
     set_dock_side (&rt);
 
-    ShowWindow (hWnd, nCmdShow);
+    ShowWindow (hwnd, nCmdShow);
 }
 
 BOOL
@@ -481,12 +475,12 @@ dock_window ()
 }
 
 VOID
-get_new_rect (HWND hWnd, POINTS cur, POINTS last, RECT *rtnew)
+get_new_rect (HWND hwnd, POINTS cur, POINTS last, RECT *rtnew)
 {
     RECT rt;
     POINT diff = {cur.x-last.x, cur.y-last.y};
 
-    GetWindowRect(hWnd, &rt);
+    GetWindowRect(hwnd, &rt);
     rtnew->left = rt.left+diff.x;
     rtnew->top = rt.top+diff.y;
     rtnew->right = rt.right+diff.x;
@@ -494,19 +488,19 @@ get_new_rect (HWND hWnd, POINTS cur, POINTS last, RECT *rtnew)
 }
 
 VOID
-dock_do_mousemove (HWND hWnd, LONG wParam, LONG lParam)
+dock_do_mousemove (HWND hwnd, LONG wparam, LONG lparam)
 {
     RECT rtnew;
 
     // Simulate the the caption bar
-    if (!(m_dragging && (wParam & MK_LBUTTON)))
+    if (!(m_dragging && (wparam & MK_LBUTTON)))
 	return;
 
-    get_new_rect(hWnd, MAKEPOINTS(lParam), m_drag_from, &rtnew);
+    get_new_rect(hwnd, MAKEPOINTS(lparam), m_drag_from, &rtnew);
 
     if (!set_dock_side (&rtnew)) {
-	SetWindowPos (hWnd, NULL, rtnew.left, rtnew.top, RTWIDTH(rtnew), RTHEIGHT(rtnew), SWP_SHOWWINDOW);
-	debug_printf ("SetWindowPos-b [%d] (%d %d %d %d)\n", hWnd, rtnew.left, rtnew.top, RTWIDTH(rtnew), RTHEIGHT(rtnew));
+	SetWindowPos (hwnd, NULL, rtnew.left, rtnew.top, RTWIDTH(rtnew), RTHEIGHT(rtnew), SWP_SHOWWINDOW);
+	debug_printf ("SetWindowPos-b [%d] (%d %d %d %d)\n", hwnd, rtnew.left, rtnew.top, RTWIDTH(rtnew), RTHEIGHT(rtnew));
 	m_docked = FALSE;
     } else {
 	dock_window ();
@@ -668,16 +662,16 @@ set_dock_side (RECT *rtnew)
 }
 
 VOID
-dock_do_lbuttondown (HWND hWnd, LONG wParam, LONG lParam)
+dock_do_lbuttondown (HWND hwnd, LONG wparam, LONG lparam)
 {
     RECT rt;
-    POINT cur = {LOWORD(lParam), HIWORD(lParam)};
+    POINT cur = {LOWORD(lparam), HIWORD(lparam)};
 
-    find_winamp_windows (hWnd);
-    GetClientRect (hWnd, &rt);
+    find_winamp_windows ();
+    GetClientRect (hwnd, &rt);
     rt.bottom = rt.top + 120;
     if (PtInRect (&rt, cur)) {
-	SetCapture(hWnd);
+	SetCapture(hwnd);
 	m_dragging = TRUE;
 	m_drag_from.x = (short)cur.x;
 	m_drag_from.y = (short)cur.y;
@@ -685,7 +679,7 @@ dock_do_lbuttondown (HWND hWnd, LONG wParam, LONG lParam)
 }
 
 VOID
-dock_do_lbuttonup (HWND hWnd, LONG wParam, LONG lParam)
+dock_do_lbuttonup (HWND hwnd, LONG wparam, LONG lparam)
 {
     if (m_dragging) {
 	ReleaseCapture ();

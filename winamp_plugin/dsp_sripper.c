@@ -15,7 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include <process.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -46,25 +45,19 @@
 #define WINDOW_HEIGHT		150
 #define WM_MY_TRAY_NOTIFICATION WM_USER+0
 
-
-static int	init();
-static void	config(); 
-static void	quit();
-static BOOL	CALLBACK WndProc(HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam);
-static int	dont_modify_samples(struct winampDSPModule *this_mod, short int *samples, int numsamples, int bps, int nch, int srate);
-static void	RipCallback(int message, void *data);
+static int  init();
+static void config(); 
+static void quit();
+static BOOL CALLBACK WndProc(HWND hwnd,UINT umsg,WPARAM wParam,LPARAM lParam);
+static void RipCallback(int message, void *data);
 static void stop_button_pressed();
-static void rotate_files(char *trackname);
-
-
-BOOL WINAPI _DllMainCRTStartup(HANDLE hInst, ULONG ul_reason_for_call, LPVOID lpReserved)
-{return TRUE;}
-
+static void populate_history_popup (void);
+static void insert_riplist (char* url, int pos);
 
 static RIP_MANAGER_OPTIONS	m_rmoOpt;
 static GUI_OPTIONS		m_guiOpt;
 static RIP_MANAGER_INFO		m_rmiInfo;
-static HWND			m_hWnd;
+static HWND			m_hwnd;
 static BOOL			m_bRipping = FALSE;
 static TCHAR 			m_szToopTip[] = "Streamripper For Winamp";
 static NOTIFYICONDATA		m_nid;
@@ -73,24 +66,36 @@ static HBUTTON			m_startbut;
 static HBUTTON			m_stopbut;
 static HBUTTON			m_relaybut;
 static char			m_szWindowClass[] = "sripper";
-static HMENU			m_hMenu = NULL;
-static HMENU			m_hPopupMenu = NULL;
+static HMENU			m_hmenu_systray = NULL;
+static HMENU			m_hmenu_systray_sub = NULL;
+static HMENU			m_hmenu_context = NULL;
+static HMENU			m_hmenu_context_sub = NULL;
 // a hack to make sure the options dialog is not
 // open if the user trys to disable streamripper
 static BOOL			m_doing_options_dialog = FALSE;
 
-winampGeneralPurposePlugin m_plugin= {GPPHDR_VER,
-				      m_szToopTip,
-				      init,
-				      config,
-				      quit};
+winampGeneralPurposePlugin g_plugin = {
+    GPPHDR_VER,
+    m_szToopTip,
+    init,
+    config,
+    quit
+};
 
-int dont_modify_samples(struct winampDSPModule *this_mod, short int *samples, int numsamples, int bps, int nch, int srate)
+BOOL WINAPI
+_DllMainCRTStartup (HANDLE hInst, ULONG ul_reason_for_call, LPVOID lpReserved)
 {
-    return numsamples;
+    return TRUE;
 }
 
-int init()
+__declspec(dllexport) winampGeneralPurposePlugin*
+winampGetGeneralPurposePlugin ()
+{
+    return &g_plugin;
+}
+
+int
+init ()
 {
     WNDCLASS wc;
     char* sr_debug_env;
@@ -101,57 +106,63 @@ int init()
 	debug_set_filename (sr_debug_env);
     }
 
-    winamp_init (m_plugin.hDllInstance);
+    winamp_init (g_plugin.hDllInstance);
     set_rip_manager_options_defaults (&m_rmoOpt);
     options_load (&m_rmoOpt, &m_guiOpt);
 
     if (!m_guiOpt.m_enabled)
 	return 0;
 
-    memset(&wc,0,sizeof(wc));
+    memset (&wc,0,sizeof(wc));
     wc.lpfnWndProc = WndProc;			// our window procedure
-    wc.hInstance = m_plugin.hDllInstance;	// hInstance of DLL
+    wc.hInstance = g_plugin.hDllInstance;	// hInstance of DLL
     wc.lpszClassName = m_szWindowClass;		// our window class name
-    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	
-    // Load popup menu 
-    m_hMenu = LoadMenu(m_plugin.hDllInstance, MAKEINTRESOURCE(IDR_POPUP_MENU));
-    m_hPopupMenu = GetSubMenu(m_hMenu, 0);
-    SetMenuDefaultItem(m_hPopupMenu, 0, TRUE);
+    wc.hCursor = LoadCursor (NULL, IDC_ARROW);
 
-    if (!RegisterClass(&wc)) 
-    {
-	MessageBox(m_plugin.hwndParent,"Error registering window class","blah",MB_OK);
+    // Load systray popup menu
+    m_hmenu_systray = LoadMenu (g_plugin.hDllInstance, MAKEINTRESOURCE(IDR_TASKBAR_POPUP));
+    m_hmenu_systray_sub = GetSubMenu (m_hmenu_systray, 0);
+    SetMenuDefaultItem (m_hmenu_systray_sub, 0, TRUE);
+
+    if (!RegisterClass(&wc)) {
+	MessageBox (g_plugin.hwndParent,"Error registering window class","blah",MB_OK);
 	return 1;
     }
-    m_hWnd = CreateWindow(m_szWindowClass, m_plugin.description, WS_POPUP,
-			  m_guiOpt.oldpos.x, m_guiOpt.oldpos.y, WINDOW_WIDTH, WINDOW_HEIGHT, 
-			  m_plugin.hwndParent, NULL, m_plugin.hDllInstance, NULL);
-
+    m_hwnd = CreateWindow (m_szWindowClass, g_plugin.description, WS_POPUP,
+			   m_guiOpt.oldpos.x, m_guiOpt.oldpos.y, WINDOW_WIDTH, WINDOW_HEIGHT, 
+			   g_plugin.hwndParent, NULL, g_plugin.hDllInstance, NULL);
 
     // Create a systray icon
     memset(&m_nid, 0, sizeof(NOTIFYICONDATA));
     m_nid.cbSize = sizeof(NOTIFYICONDATA);
-    m_nid.hIcon = LoadImage(m_plugin.hDllInstance, MAKEINTRESOURCE(IDI_SR_ICON), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
-    m_nid.hWnd = m_hWnd;
+    m_nid.hIcon = LoadImage(g_plugin.hDllInstance, MAKEINTRESOURCE(IDI_SR_ICON), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
+    m_nid.hWnd = m_hwnd;
     strcpy(m_nid.szTip, m_szToopTip);
     m_nid.uCallbackMessage = WM_MY_TRAY_NOTIFICATION;
     m_nid.uFlags =  NIF_MESSAGE | NIF_ICON | NIF_TIP;
     m_nid.uID = 1;
     Shell_NotifyIcon(NIM_ADD, &m_nid);
 
+    // Load main popup menu 
+    m_hmenu_context = LoadMenu (g_plugin.hDllInstance, MAKEINTRESOURCE(IDR_HISTORY_POPUP));
+    m_hmenu_context_sub = GetSubMenu (m_hmenu_context, 0);
+    SetMenuDefaultItem (m_hmenu_context_sub, 0, TRUE);
+
+    // Populate main popup menu
+    populate_history_popup ();
+
     if (!m_guiOpt.m_start_minimized)
-	dock_show_window(m_hWnd, SW_SHOWNORMAL);
+	dock_show_window(m_hwnd, SW_SHOWNORMAL);
     else
-	dock_show_window(m_hWnd, SW_HIDE);
+	dock_show_window(m_hwnd, SW_HIDE);
 	
     return 0;
 }
 
 INT_PTR CALLBACK
-EnableDlgProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+EnableDlgProc (HWND hwndDlg, UINT umsg, WPARAM wParam, LPARAM lParam)
 {
-    switch (uMsg)
+    switch (umsg)
     {
 
     case WM_INITDIALOG:
@@ -181,36 +192,36 @@ EnableDlgProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
-void config ()
+void
+config ()
 {
     BOOL prev_enabled = m_guiOpt.m_enabled;
 
-    if (m_doing_options_dialog)
-    {
-	MessageBox(m_hWnd, "Please close the options dialog in Streamripper before you try this", 
+    if (m_doing_options_dialog) {
+	MessageBox(m_hwnd, "Please close the options dialog in Streamripper before you try this", 
 		   "Can not open config dialog", 
 		   MB_ICONINFORMATION);
 	return;
     }
 
-    DialogBox(m_plugin.hDllInstance, 
+    DialogBox(g_plugin.hDllInstance, 
 	      MAKEINTRESOURCE(IDD_ENABLE), 
-	      m_plugin.hwndParent,
+	      g_plugin.hwndParent,
 	      EnableDlgProc);
 
     options_save(&m_rmoOpt, &m_guiOpt);
-    if (m_guiOpt.m_enabled)
-    {
-	if (!prev_enabled)
-	{
+    if (m_guiOpt.m_enabled) {
+	if (!prev_enabled) {
 	    init();
 	}
     }
-    else if(prev_enabled)
+    else if(prev_enabled) {
 	quit();
+    }
 }
 
-void quit()
+void
+quit()
 {
     options_save(&m_rmoOpt, &m_guiOpt);
     if (m_bRipping)
@@ -218,79 +229,97 @@ void quit()
 
     dock_unhook_winamp();
 
-
     render_destroy();
-    DestroyWindow(m_hWnd);
+    DestroyWindow(m_hwnd);
     Shell_NotifyIcon(NIM_DELETE, &m_nid);
     DestroyIcon(m_nid.hIcon);
-    UnregisterClass(m_szWindowClass, m_plugin.hDllInstance); // unregister window class
+    UnregisterClass(m_szWindowClass, g_plugin.hDllInstance); // unregister window class
 }
 
-
-void start_button_enable()
+void
+start_button_enable()
 {
     render_set_button_enabled(m_startbut, TRUE);
-    EnableMenuItem(m_hPopupMenu, ID_MENU_STARTRIPPING, MF_ENABLED);
+    EnableMenuItem(m_hmenu_systray_sub, ID_MENU_STARTRIPPING, MF_ENABLED);
 }
 
-void start_button_disable()
+void
+start_button_disable()
 {
     render_set_button_enabled(m_startbut, FALSE);
-    EnableMenuItem(m_hPopupMenu, ID_MENU_STARTRIPPING, MF_DISABLED|MF_GRAYED);
+    EnableMenuItem(m_hmenu_systray_sub, ID_MENU_STARTRIPPING, MF_DISABLED|MF_GRAYED);
 }
 
-void stop_button_enable()
+void
+stop_button_enable()
 {
     render_set_button_enabled(m_stopbut, TRUE);
-    EnableMenuItem(m_hPopupMenu, ID_MENU_STOPRIPPING, MF_ENABLED);
+    EnableMenuItem(m_hmenu_systray_sub, ID_MENU_STOPRIPPING, MF_ENABLED);
 }
 
-void stop_button_disable()
+void
+stop_button_disable()
 {
     render_set_button_enabled(m_stopbut, FALSE);
-    EnableMenuItem(m_hPopupMenu, ID_MENU_STOPRIPPING, MF_DISABLED|MF_GRAYED);
+    EnableMenuItem(m_hmenu_systray_sub, ID_MENU_STOPRIPPING, MF_DISABLED|MF_GRAYED);
 }
 
-
-void UpdateNotRippingDisplay(HWND hwnd)
+void
+compose_relay_url (char* relay_url, char *host, u_short port, int content_type)
 {
-    WINAMP_INFO winfo;
-
-    /* GCS: I can see no reason for doing this */
-#if defined (commentout)
-    if (winamp_get_info(&winfo, m_guiOpt.use_old_playlist_ret) == FALSE)
-    {
-	// if the new way didn't work, lets try the new way
-	debug_printf ("resetting use_old_playlist_ret = TRUE!\n");
-	if (m_guiOpt.use_old_playlist_ret == FALSE)
-	    m_guiOpt.use_old_playlist_ret = TRUE;	
-
-	winamp_get_info(&winfo, m_guiOpt.use_old_playlist_ret);
+    if (content_type == CONTENT_TYPE_OGG) {
+	sprintf (relay_url, "http://%s:%d/.ogg", host, port);
+    } else if (content_type == CONTENT_TYPE_NSV) {
+	sprintf (relay_url, "http://%s:%d/;stream.nsv", host, port);
+    } else {
+	sprintf (relay_url, "http://%s:%d", host, port);
     }
-    assert(winfo.is_running);
-    strcpy(m_rmoOpt.url, winfo.url);
-#endif
+}
 
-    /* GCS: Lets do this instead */
-    if (winamp_get_info(&winfo, m_guiOpt.use_old_playlist_ret)) {
-        strcpy(m_rmoOpt.url, winfo.url);
+BOOL
+stream_loaded (void)
+{
+    return (strchr(m_rmoOpt.url, ':') != 0);
+}
+
+void
+set_ripping_url (char* url)
+{
+    if (url) {
+	strcpy(m_rmoOpt.url, url);
     }
-
-    if (strchr(m_rmoOpt.url, ':'))
-    {
+    if (stream_loaded()) {
 	render_set_display_data(IDR_STREAMNAME, "Press start to rip %s", m_rmoOpt.url);
 	start_button_enable();
-    }
-    else
-    {
-	render_set_display_data(IDR_STREAMNAME, "Winamp is not listening to a stream");
+    } else {
+	render_set_display_data(IDR_STREAMNAME, "No stream loaded");
 	start_button_disable();
     }
 }
 
-void UpdateRippingDisplay()
+void
+UpdateNotRippingDisplay(HWND hwnd)
 {
+    WINAMP_INFO winfo;
 
+    debug_printf ("UNRD begin\n");
+    if (winamp_get_info(&winfo, m_guiOpt.use_old_playlist_ret)) {
+        debug_printf ("UNRD got winamp stream\n");
+	if (stream_loaded()) {
+	    debug_printf ("UNRD stream_loaded\n");
+	    insert_riplist (winfo.url, 1);
+	    set_ripping_url (0);
+	} else {
+	    debug_printf ("UNRD stream_NOT_loaded\n");
+	    insert_riplist (winfo.url, 0);
+	    set_ripping_url (winfo.url);
+        }
+    }
+}
+
+void
+UpdateRippingDisplay()
+{
     static int buffering_tick = 0;
     char sStatusStr[50];
 
@@ -316,8 +345,7 @@ void UpdateRippingDisplay()
     }
     render_set_display_data(IDR_STATUS, "%s", sStatusStr);
 
-    if (!m_rmiInfo.streamname[0])
-    {
+    if (!m_rmiInfo.streamname[0]) {
 	return;
     }
 
@@ -329,28 +357,24 @@ void UpdateRippingDisplay()
 	(strstr(m_rmiInfo.server_name, "Nanocaster") != NULL))
     {
 	render_set_display_data(IDR_METAINTERVAL, "Live365 Stream");
-    }
-    else if(m_rmiInfo.meta_interval)
-    {
+    } else if(m_rmiInfo.meta_interval) {
 	render_set_display_data(IDR_METAINTERVAL, "MetaInt:%d", m_rmiInfo.meta_interval);
-    }
-    else
-    {
+    } else {
 	render_set_display_data(IDR_METAINTERVAL, "No track data");
     }
 
-    if (m_rmiInfo.filename[0])
-    {
+    if (m_rmiInfo.filename[0]) {
 	char strsize[50];
 	format_byte_size(strsize, m_rmiInfo.filesize);
 	render_set_display_data(IDR_FILENAME, "[%s] - %s", strsize, m_rmiInfo.filename);
-    }
-    else
+    } else {
 	render_set_display_data(IDR_FILENAME, "Getting track data...");
+    }
 
 }
 
-VOID CALLBACK UpdateDisplay(HWND hwnd, UINT uMsg, UINT_PTR idEvent,DWORD dwTime)
+VOID CALLBACK
+UpdateDisplay(HWND hwnd, UINT umsg, UINT_PTR idEvent,DWORD dwTime)
 {
 
     if (m_bRipping)
@@ -358,11 +382,12 @@ VOID CALLBACK UpdateDisplay(HWND hwnd, UINT uMsg, UINT_PTR idEvent,DWORD dwTime)
     else
 	UpdateNotRippingDisplay(hwnd);
 
-    InvalidateRect(m_hWnd, NULL, FALSE);
+    InvalidateRect(m_hwnd, NULL, FALSE);
 	
 }
 
-void RipCallback(int message, void *data)
+void
+RipCallback(int message, void *data)
 {
     RIP_MANAGER_INFO *info;
     ERROR_INFO *err;
@@ -375,7 +400,7 @@ void RipCallback(int message, void *data)
     case RM_ERROR:
 	err = (ERROR_INFO*)data;
 	debug_printf("***RipCallback: about to post error dialog");
-	MessageBox(m_hWnd, err->error_str, "Streamripper", MB_SETFOREGROUND);
+	MessageBox(m_hwnd, err->error_str, "Streamripper", MB_SETFOREGROUND);
 	debug_printf("***RipCallback: done posting error dialog");
 	break;
     case RM_DONE:
@@ -408,11 +433,12 @@ void RipCallback(int message, void *data)
     }
 }
 
-
-void start_button_pressed()
+void
+start_button_pressed()
 {
     int ret;
     debug_printf("start\n");
+    insert_riplist (m_rmoOpt.url, 0);
 
     assert(!m_bRipping);
     render_clear_all_data();
@@ -421,17 +447,18 @@ void start_button_pressed()
 
     if ((ret = rip_manager_start(RipCallback, &m_rmoOpt)) != SR_SUCCESS)
     {
-	MessageBox(m_hWnd, rip_manager_get_error_str(ret), "Failed to connect to stream", MB_ICONSTOP);
+	MessageBox(m_hwnd, rip_manager_get_error_str(ret), "Failed to connect to stream", MB_ICONSTOP);
 	start_button_enable();
 	return;
     }
     m_bRipping = TRUE;
 
     render_set_prog_bar(TRUE);
-    PostMessage(m_hWnd, WM_MY_TRAY_NOTIFICATION, (WPARAM)NULL, WM_LBUTTONDBLCLK);
+    PostMessage(m_hwnd, WM_MY_TRAY_NOTIFICATION, (WPARAM)NULL, WM_LBUTTONDBLCLK);
 }
 
-void stop_button_pressed()
+void
+stop_button_pressed()
 {
     debug_printf("stop\n");
 
@@ -447,41 +474,117 @@ void stop_button_pressed()
     render_set_prog_bar(FALSE);
 }
 
-void options_button_pressed()
+void
+options_button_pressed()
 {
     m_doing_options_dialog = TRUE;
-    options_dialog_show(m_plugin.hDllInstance, m_hWnd, &m_rmoOpt, &m_guiOpt);
+    options_dialog_show(g_plugin.hDllInstance, m_hwnd, &m_rmoOpt, &m_guiOpt);
 
     render_set_button_enabled(m_relaybut, OPT_FLAG_ISSET(m_rmoOpt.flags, OPT_MAKE_RELAY)); 			
     m_doing_options_dialog = FALSE;
 
 }
 
-void close_button_pressed()
+void
+close_button_pressed()
 {
-    dock_show_window(m_hWnd, SW_HIDE);
+    dock_show_window(m_hwnd, SW_HIDE);
     m_guiOpt.m_start_minimized = TRUE;
 }
 
-
-void relay_pressed()
+void
+relay_pressed()
 {
     winamp_add_relay_to_playlist (m_guiOpt.localhost, 
 	rip_mananger_get_relay_port(),
 	rip_manager_get_content_type());
 }
 
+void
+debug_riplist (void)
+{
+    int i;
+    for (i = 0; i < RIPLIST_LEN; i++) {
+	debug_printf ("riplist%d=%s\n", i, m_guiOpt.riplist[i]);
+    }
+}
+
+/* return -1 if not in riplist */
+int
+find_url_in_riplist (char* url)
+{
+    int i;
+    for (i = 0; i < RIPLIST_LEN; i++) {
+	if (!strcmp(m_guiOpt.riplist[i],url)) {
+	    return i;
+	}
+    }
+    return -1;
+}
+
+/* pos is 0 to put at top, or 1 to put next to top */
+void
+insert_riplist (char* url, int pos)
+{
+    int i;
+    int oldpos;
+    char relay_url[SR_MAX_PATH];
+
+    /* Don't add if it's the relay stream */
+    compose_relay_url (relay_url, m_guiOpt.localhost, 
+			rip_mananger_get_relay_port(),
+			rip_manager_get_content_type());
+    if (!strcmp(relay_url, url)) return;
+
+    debug_printf ("Insert riplist (1): %d %s\n", pos, url);
+    debug_riplist ();
+
+    /* oldpos is previous position of this url. Don't shift if 
+       it's already at that position or above. */
+    oldpos = find_url_in_riplist (url);
+    if (oldpos == -1) {
+	oldpos = RIPLIST_LEN - 1;
+    }
+    if (oldpos <= pos) return;
+
+    /* Shift the url to the correct position */
+    for (i = oldpos; i > pos; i--) {
+	strcpy(m_guiOpt.riplist[i], m_guiOpt.riplist[i-1]);
+    }
+    strcpy(m_guiOpt.riplist[pos], url);
+
+    debug_printf ("Insert riplist (2): %d %s\n", pos, url);
+    debug_riplist ();
+
+    /* Rebuild the history menu */
+    populate_history_popup ();
+}
+
+void
+populate_history_popup (void)
+{
+    int i;
+    for (i = 0; i < RIPLIST_LEN; i++) {
+	RemoveMenu (m_hmenu_context_sub, ID_MENU_HISTORY_LIST+i, MF_BYCOMMAND);
+    }
+    for (i = 0; i < RIPLIST_LEN; i++) {
+	if (m_guiOpt.riplist[i][0]) {
+	    AppendMenu (m_hmenu_context_sub, MF_ENABLED | MF_STRING, ID_MENU_HISTORY_LIST+i, m_guiOpt.riplist[i]);
+	}
+    }
+}
+
 BOOL CALLBACK
-WndProc (HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
+WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
 {
     static HBRUSH hBrush = NULL;
 
-    switch (uMsg)
+    switch (umsg)
     {
     case WM_CREATE:
-	if (!render_init(m_plugin.hDllInstance, hWnd, m_guiOpt.default_skin))
+	if (!render_init(g_plugin.hDllInstance, hwnd, m_guiOpt.default_skin))
 	{
-	    MessageBox(hWnd, "Failed to find the skin bitmap", "Error", 0);
+	    MessageBox(hwnd, "Failed to find the skin bitmap", "Error", 0);
 	    break;
 	}
 	{
@@ -609,24 +712,24 @@ WndProc (HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 	    render_set_display_data(IDR_STREAMNAME, "Loading please wait...");
 	}
 			
-	SetTimer (hWnd, 1, 500, (TIMERPROC)UpdateDisplay);
-	dock_init (hWnd);
+	SetTimer (hwnd, 1, 500, (TIMERPROC)UpdateDisplay);
+	dock_init (hwnd);
 
 	return 0;
 
     case WM_PAINT:
 	{
 	    PAINTSTRUCT pt;
-	    HDC hdc = BeginPaint(hWnd, &pt);
+	    HDC hdc = BeginPaint(hwnd, &pt);
 	    render_do_paint(hdc);
-	    EndPaint(hWnd, &pt);
+	    EndPaint(hwnd, &pt);
 	}
 	return 0;
 
 		
     case WM_MOUSEMOVE:
-	render_do_mousemove(hWnd, wParam, lParam);
-	dock_do_mousemove(hWnd, wParam, lParam);
+	render_do_mousemove(hwnd, wParam, lParam);
+	dock_do_mousemove(hwnd, wParam, lParam);
 	break;
 
     case WM_COMMAND:
@@ -642,7 +745,18 @@ WndProc (HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 	    options_button_pressed();
 	    break;
 	case ID_MENU_OPEN:
-	    PostMessage(hWnd, WM_MY_TRAY_NOTIFICATION, (WPARAM)NULL, WM_LBUTTONDBLCLK);
+	    PostMessage(hwnd, WM_MY_TRAY_NOTIFICATION, (WPARAM)NULL, WM_LBUTTONDBLCLK);
+	    break;
+	case ID_MENU_CLEAR_ENTRY:
+	    set_ripping_url ("");
+	    break;
+	default:
+	    if (wParam >= ID_MENU_HISTORY_LIST && wParam < ID_MENU_HISTORY_LIST + RIPLIST_LEN) {
+		int i = wParam - ID_MENU_HISTORY_LIST;
+		char* url = m_guiOpt.riplist[i];
+		debug_printf ("Setting URL through history list\n");
+		set_ripping_url (url);
+	    }
 	    break;
 	}
 	break;
@@ -651,8 +765,8 @@ WndProc (HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 	switch(lParam)
 	{
 	case WM_LBUTTONDBLCLK:
-	    dock_show_window(m_hWnd, SW_NORMAL);
-	    SetForegroundWindow(hWnd);
+	    dock_show_window(m_hwnd, SW_NORMAL);
+	    SetForegroundWindow(hwnd);
 	    m_guiOpt.m_start_minimized = FALSE;
 	    break;
 
@@ -661,13 +775,13 @@ WndProc (HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 		int item;
 		POINT pt;
 		GetCursorPos(&pt);
-		SetForegroundWindow(hWnd);
-		item = TrackPopupMenu(m_hPopupMenu, 
+		SetForegroundWindow(hwnd);
+		item = TrackPopupMenu(m_hmenu_systray_sub, 
 				      0,
 				      pt.x,
 				      pt.y,
 				      (int)NULL,
-				      hWnd,
+				      hwnd,
 				      NULL);
 	    }
 	    break;
@@ -675,29 +789,38 @@ WndProc (HWND hWnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 	break;
 
     case WM_LBUTTONDOWN:
-	dock_do_lbuttondown(hWnd, wParam, lParam);
-	render_do_lbuttondown(hWnd, wParam, lParam);
+	dock_do_lbuttondown(hwnd, wParam, lParam);
+	render_do_lbuttondown(hwnd, wParam, lParam);
 	break;
 
     case WM_LBUTTONUP:
-	dock_do_lbuttonup(hWnd, wParam, lParam);
-	render_do_lbuttonup(hWnd, wParam, lParam);
+	dock_do_lbuttonup(hwnd, wParam, lParam);
+	render_do_lbuttonup(hwnd, wParam, lParam);
 	{
 	    RECT rt;
-	    GetWindowRect(hWnd, &rt);
+	    GetWindowRect(hwnd, &rt);
 	    m_guiOpt.oldpos.x = rt.left;
 	    m_guiOpt.oldpos.y = rt.top;
 	}
 	break;
 	
+    case WM_RBUTTONDOWN:
+	{
+	    int item;
+	    POINT pt;
+	    GetCursorPos (&pt);
+	    SetForegroundWindow (hwnd);
+	    item = TrackPopupMenu (m_hmenu_context_sub, 
+				    0,
+				    pt.x,
+				    pt.y,
+				    (int)NULL,
+				    hwnd,
+				    NULL);
+	}
+	break;
+
 
     }
-    return DefWindowProc(hWnd, uMsg, wParam, lParam);
+    return DefWindowProc (hwnd, umsg, wParam, lParam);
 }
-
-
-__declspec( dllexport ) winampGeneralPurposePlugin * winampGetGeneralPurposePlugin()
-{
-    return &m_plugin;
-}
-

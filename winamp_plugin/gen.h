@@ -1,3 +1,6 @@
+#ifndef _WA_GEN_H_
+#define _WA_GEN_H_
+
 typedef struct {
 	int version;
 	char *description;
@@ -12,3 +15,5 @@ typedef struct {
 
 extern winampGeneralPurposePlugin *gen_plugins[256];
 typedef winampGeneralPurposePlugin * (*winampGeneralPurposePluginGetter)();
+
+#endif

@@ -15,7 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 #include <windows.h>
 #include <windowsx.h>
 #include <shlobj.h>
@@ -808,6 +807,7 @@ options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 BOOL
 options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 {
+    int i, p;
     char desktop_path[MAX_INI_LINE_LEN];
     char filename[MAX_INI_LINE_LEN];
     BOOL    auto_reconnect,
@@ -911,12 +911,23 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     strcat (opt->rules_file, "Plugins\\parse_rules.txt");
     debug_printf ("RULES: %s\n", opt->rules_file);
 
+    /* Get history */
+    for (i = 0, p = 0; i < RIPLIST_LEN; i++) {
+	char profile_name[128];
+	sprintf (profile_name, "riplist%d", i);
+	GetPrivateProfileString (APPNAME, profile_name, "", guiOpt->riplist[p], MAX_INI_LINE_LEN, filename);
+	if (guiOpt->riplist[p][0]) {
+	    p++;
+	}
+    }
+
     return TRUE;
 }
 
 BOOL
 options_save (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 {
+    int i, p;
     char filename[MAX_INI_LINE_LEN];
     FILE *fp;
     if (!winamp_get_path(filename)) {
@@ -974,6 +985,14 @@ options_save (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     fprintf(fp, "default_skin=%s\n", guiOpt->default_skin);
     debug_printf ("writing: use_old_playlist_ret=%d\n", guiOpt->use_old_playlist_ret);
     fprintf(fp, "use_old_playlist_ret=%d\n", guiOpt->use_old_playlist_ret);
+
+    /* Save history */
+    for (i = 0, p = 0; i < RIPLIST_LEN; i++) {
+	if (guiOpt->riplist[i][0]) {
+	    fprintf (fp, "riplist%d=%s\n", p, guiOpt->riplist[i]);
+	    p++;
+	}
+    }
 
     fclose(fp);
 

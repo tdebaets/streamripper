@@ -18,6 +18,7 @@
 #include <windows.h>
 #include <stdio.h>
 
+#include "dsp_sripper.h"
 #include "srtypes.h"
 #include "wa_ipc.h"
 #include "ipc_pe.h"
@@ -31,7 +32,6 @@
  * Public functions
  *********************************************************************************/
 BOOL winamp_init();			
-BOOL winamp_get_info(WINAMP_INFO *info, BOOL useoldway);
 BOOL winamp_add_track_to_playlist(char *track);
 void winamp_add_rip_to_menu (void);
 
@@ -40,13 +40,16 @@ void winamp_add_rip_to_menu (void);
  *********************************************************************************/
 static char m_winamps_path[SR_MAX_PATH] = {'\0'};
 
+void winamp_test_stuff (void);
+
+
 BOOL
 winamp_init ()
 {
     BOOL rc;
     rc = winamp_get_path (m_winamps_path);
     if (!rc) return rc;
-    //winamp_add_rip_to_menu ();
+    winamp_test_stuff ();
     return TRUE;
 }
 
@@ -161,7 +164,11 @@ winamp_get_path(char *path)
 HWND
 winamp_get_hwnd (void)
 {
-    return FindWindow("Winamp v1.x", NULL);
+    /* This used to be done like this:
+        return FindWindow("Winamp v1.x", NULL);
+       But I found that it's easier and better(?) to use the 
+       input from the plugin interface */
+    return g_plugin.hwndParent;
 }
 
 HWND
@@ -176,11 +183,13 @@ winamp_get_hwnd_pe (void)
 
     if (wa_version >= 0x2900) {
     	// use the built in api to get the handle
+	debug_printf ("Trying new way to get PE HWND...\n");
     	hwnd_pe = (HWND)SendMessage(hwnd_winamp,WM_WA_IPC,IPC_GETWND_PE,IPC_GETWND);
     }
 
     // if it failed then use the old way :o)
     if (!hwnd_pe) {
+	debug_printf ("Trying new way to get PE HWND...\n");
     	hwnd_pe = FindWindow("Winamp PE",0);
     }
     return hwnd_pe;
@@ -262,22 +271,17 @@ winamp_get_info (WINAMP_INFO *info, BOOL useoldway)
 BOOL
 winamp_add_relay_to_playlist (char *host, u_short port, int content_type)
 {
+    char relay_url[SR_MAX_PATH];
     char relay_file[SR_MAX_PATH];
     char winamp_path[SR_MAX_PATH];
 
     sprintf (winamp_path, "%s%s", m_winamps_path, "winamp.exe");
-    if (content_type == CONTENT_TYPE_OGG) {
-	sprintf (relay_file, "/add http://%s:%d/.ogg", host, port);
-    } else if (content_type == CONTENT_TYPE_NSV) {
-	sprintf (relay_file, "/add http://%s:%d/;stream.nsv", host, port);
-    } else {
-	sprintf (relay_file, "/add http://%s:%d", host, port);
-    }
+    compose_relay_url (relay_url, host, port, content_type);
+    sprintf (relay_file, "/add %s", relay_url);
     ShellExecute (NULL, "open", winamp_path, relay_file, NULL, SW_SHOWNORMAL);
 
     return TRUE;
 }
-
 
 BOOL
 winamp_add_track_to_playlist (char *fullpath)
@@ -328,4 +332,14 @@ winamp_handle_pe_click (void)
 		SendMessage(hwnd_winamp,WM_COMMAND,WINAMP_BUTTON2,0);
 	}
     }
+}
+
+void
+winamp_test_stuff (void)
+{
+    HWND hwnd_pe = winamp_get_hwnd_pe ();
+    debug_printf ("Got PE: %d\n", hwnd_pe);
+
+    /* Try sending a user message. Will modern skin get it? */
+    SendMessage(hwnd_pe,WM_WA_IPC,0x888,0x888);
 }
