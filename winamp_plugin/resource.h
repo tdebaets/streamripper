@@ -52,7 +52,7 @@
 #define ID_MENU_STOPRIPPING             40003
 #define ID_MENU_OPTIONS                 40004
 #define ID_MENU_OPEN                    40005
-#define ID_MENU_CLEAR_ENTRY             40006
+#define ID_MENU_RESET_URL               40006
 
 // Next default values for new objects
 // 

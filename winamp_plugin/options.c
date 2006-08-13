@@ -158,9 +158,10 @@ free_skin_list()
 BOOL
 get_desktop_folder(char *path)
 {
+    HRESULT hresult;
     static HMODULE hMod = NULL;
     PFNSHGETFOLDERPATHA pSHGetFolderPath = NULL;
-	
+
     if (!path)
 	return FALSE;
 
@@ -170,16 +171,34 @@ get_desktop_folder(char *path)
     if (!hMod)
 	hMod = LoadLibrary("SHFolder.dll");
 
-    if (hMod == NULL)
+    if (hMod == NULL) {
+	debug_printf ("Failed to load SHFolder.dll\n");
 	return FALSE;
+    }
 
     // Obtain a pointer to the SHGetFolderPathA function
-    pSHGetFolderPath = (PFNSHGETFOLDERPATHA)GetProcAddress(hMod, "SHGetFolderPathA");
-    pSHGetFolderPath(NULL, CSIDL_COMMON_DESKTOPDIRECTORY, (HANDLE)0, (DWORD)0, path);
+    pSHGetFolderPath = (PFNSHGETFOLDERPATHA) GetProcAddress (hMod, "SHGetFolderPathA");
+    if (pSHGetFolderPath == 0) {
+	debug_printf ("Failed to get SHGetFolderPathA from SHFolder\n");
+	return FALSE;
+    }
 
+    // Use SHGetFolderPathA to get desktop folder
+    hresult = pSHGetFolderPath (NULL, CSIDL_COMMON_DESKTOPDIRECTORY, (HANDLE)0, (DWORD)0, path);
+    if (SUCCEEDED(hresult)) {
+	debug_printf ("SHGetFolderPathA succeeded %s (%08x)\n", path, hresult);
+    } else {
+	debug_printf ("SHGetFolderPathA failed %s (%08x)\n", path, hresult);
+	/* If failed (win98), try again */
+	hresult = pSHGetFolderPath (NULL, CSIDL_DESKTOPDIRECTORY, (HANDLE)0, (DWORD)0, path);
+	if (SUCCEEDED(hresult)) {
+	    debug_printf ("SHGetFolderPathA (2) succeeded %s (%08x)\n", path, hresult);
+	} else {
+	    debug_printf ("SHGetFolderPathA (2) failed %s (%08x)\n", path, hresult);
+	}
+    }
     return path[0] != '\0';
-} 
-
+}
 
 BOOL
 browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder, 
@@ -229,7 +248,6 @@ browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder,
 
     return retval;
 }
-
 
 BOOL
 browse_for_file(HWND hwnd, const char *title, UINT flags, 
@@ -821,7 +839,7 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     char overwrite_string[MAX_INI_LINE_LEN];
 
     if (!get_desktop_folder(desktop_path)) {
-	// Maybe an error message? nahhh..
+	debug_printf ("get_desktop_folder() failed\n");
 	desktop_path[0] = '\0';
     }
 
@@ -835,6 +853,9 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     GetPrivateProfileString(APPNAME, "url", "", opt->url, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "proxy", "", opt->proxyurl, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "output_dir", desktop_path, opt->output_directory, MAX_INI_LINE_LEN, filename);
+    if (opt->output_directory[0] == 0) {
+	strcpy (opt->output_directory, desktop_path);
+    }
     GetPrivateProfileString(APPNAME, "localhost", "localhost", guiOpt->localhost, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "useragent", DEFAULT_USERAGENT, opt->useragent, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "default_skin", DEFAULT_SKINFILE, guiOpt->default_skin, MAX_INI_LINE_LEN, filename);

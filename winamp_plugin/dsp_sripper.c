@@ -73,6 +73,9 @@ static HMENU			m_hmenu_context_sub = NULL;
 // a hack to make sure the options dialog is not
 // open if the user trys to disable streamripper
 static BOOL			m_doing_options_dialog = FALSE;
+// Ugh, this is awful.  Cache the stream url when requesting 
+// from winamp, so that we can detect when there was a change
+static char m_winamp_stream_cache[MAX_URL_LEN] = "0";
 
 winampGeneralPurposePlugin g_plugin = {
     GPPHDR_VER,
@@ -277,6 +280,17 @@ compose_relay_url (char* relay_url, char *host, u_short port, int content_type)
 }
 
 BOOL
+url_is_relay (char* url)
+{
+    char relay_url[SR_MAX_PATH];
+    compose_relay_url (relay_url, m_guiOpt.localhost, 
+			rip_mananger_get_relay_port(),
+			rip_manager_get_content_type());
+    debug_printf ("Comparing %s vs rly %s\n", url, relay_url);
+    return (!strcmp(relay_url, url));
+}
+
+BOOL
 stream_loaded (void)
 {
     return (strchr(m_rmoOpt.url, ':') != 0);
@@ -289,36 +303,41 @@ set_ripping_url (char* url)
 	strcpy(m_rmoOpt.url, url);
     }
     if (stream_loaded()) {
-	render_set_display_data(IDR_STREAMNAME, "Press start to rip %s", m_rmoOpt.url);
-	start_button_enable();
+	debug_printf ("IDR_STREAMNAME:Press start to rip %s\n", m_rmoOpt.url);
+	render_set_display_data (IDR_STREAMNAME, "Press start to rip %s", m_rmoOpt.url);
+	start_button_enable ();
     } else {
-	render_set_display_data(IDR_STREAMNAME, "No stream loaded");
-	start_button_disable();
+	debug_printf ("IDR_STREAMNAME:No stream loaded\n");
+	render_set_display_data (IDR_STREAMNAME, "No stream loaded");
+	start_button_disable ();
     }
 }
 
 void
-UpdateNotRippingDisplay(HWND hwnd)
+UpdateNotRippingDisplay (HWND hwnd)
 {
     WINAMP_INFO winfo;
 
     debug_printf ("UNRD begin\n");
     if (winamp_get_info(&winfo, m_guiOpt.use_old_playlist_ret)) {
         debug_printf ("UNRD got winamp stream\n");
+	if (url_is_relay (winfo.url)) {
+	    return;
+	}
 	if (stream_loaded()) {
-	    debug_printf ("UNRD stream_loaded\n");
-	    insert_riplist (winfo.url, 1);
-	    set_ripping_url (0);
-	} else {
-	    debug_printf ("UNRD stream_NOT_loaded\n");
-	    insert_riplist (winfo.url, 0);
-	    set_ripping_url (winfo.url);
-        }
+	    if (!strcmp (winfo.url, m_winamp_stream_cache)) {
+		return;
+	    }
+	}
+	strcpy (m_winamp_stream_cache, winfo.url);
+	debug_printf ("UNRD stream_NOT_loaded\n");
+	insert_riplist (winfo.url, 0);
+	set_ripping_url (winfo.url);
     }
 }
 
 void
-UpdateRippingDisplay()
+UpdateRippingDisplay ()
 {
     static int buffering_tick = 0;
     char sStatusStr[50];
@@ -349,6 +368,7 @@ UpdateRippingDisplay()
 	return;
     }
 
+    debug_printf ("IDR_STREAMNAME:%s\n", m_rmiInfo.streamname);
     render_set_display_data(IDR_STREAMNAME, "%s", m_rmiInfo.streamname);
     render_set_display_data(IDR_BITRATE, "%dkbit", m_rmiInfo.bitrate);
     render_set_display_data(IDR_SERVERTYPE, "%s", m_rmiInfo.server_name);
@@ -370,7 +390,6 @@ UpdateRippingDisplay()
     } else {
 	render_set_display_data(IDR_FILENAME, "Getting track data...");
     }
-
 }
 
 VOID CALLBACK
@@ -383,11 +402,10 @@ UpdateDisplay(HWND hwnd, UINT umsg, UINT_PTR idEvent,DWORD dwTime)
 	UpdateNotRippingDisplay(hwnd);
 
     InvalidateRect(m_hwnd, NULL, FALSE);
-	
 }
 
 void
-RipCallback(int message, void *data)
+RipCallback (int message, void *data)
 {
     RIP_MANAGER_INFO *info;
     ERROR_INFO *err;
@@ -442,6 +460,7 @@ start_button_pressed()
 
     assert(!m_bRipping);
     render_clear_all_data();
+    debug_printf ("IDR_STREAMNAME:Connecting...\n");
     render_set_display_data(IDR_STREAMNAME, "Connecting...");
     start_button_disable();
 
@@ -471,6 +490,7 @@ stop_button_pressed()
     m_bRipping = FALSE;
     start_button_enable();
     stop_button_disable();
+    set_ripping_url(0);
     render_set_prog_bar(FALSE);
 }
 
@@ -482,7 +502,6 @@ options_button_pressed()
 
     render_set_button_enabled(m_relaybut, OPT_FLAG_ISSET(m_rmoOpt.flags, OPT_MAKE_RELAY)); 			
     m_doing_options_dialog = FALSE;
-
 }
 
 void
@@ -528,13 +547,9 @@ insert_riplist (char* url, int pos)
 {
     int i;
     int oldpos;
-    char relay_url[SR_MAX_PATH];
 
     /* Don't add if it's the relay stream */
-    compose_relay_url (relay_url, m_guiOpt.localhost, 
-			rip_mananger_get_relay_port(),
-			rip_manager_get_content_type());
-    if (!strcmp(relay_url, url)) return;
+    if (url_is_relay (url)) return;
 
     debug_printf ("Insert riplist (1): %d %s\n", pos, url);
     debug_riplist ();
@@ -709,6 +724,7 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
 	}
 
 	{
+	    debug_printf ("IDR_STREAMNAME:Loading please wait...\n");
 	    render_set_display_data(IDR_STREAMNAME, "Loading please wait...");
 	}
 			
@@ -747,7 +763,7 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
 	case ID_MENU_OPEN:
 	    PostMessage(hwnd, WM_MY_TRAY_NOTIFICATION, (WPARAM)NULL, WM_LBUTTONDBLCLK);
 	    break;
-	case ID_MENU_CLEAR_ENTRY:
+	case ID_MENU_RESET_URL:
 	    set_ripping_url ("");
 	    break;
 	default:
@@ -808,15 +824,17 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
 	{
 	    int item;
 	    POINT pt;
-	    GetCursorPos (&pt);
-	    SetForegroundWindow (hwnd);
-	    item = TrackPopupMenu (m_hmenu_context_sub, 
-				    0,
-				    pt.x,
-				    pt.y,
-				    (int)NULL,
-				    hwnd,
-				    NULL);
+	    if (!m_bRipping) {
+		GetCursorPos (&pt);
+		SetForegroundWindow (hwnd);
+		item = TrackPopupMenu (m_hmenu_context_sub, 
+					0,
+					pt.x,
+					pt.y,
+					(int)NULL,
+					hwnd,
+					NULL);
+	    }
 	}
 	break;
 
