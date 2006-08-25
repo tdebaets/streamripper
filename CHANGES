@@ -6,7 +6,7 @@ Thu Aug 24 21:50:47 EDT 2006
 
 New for 1.61.25
 ---------------
-August 13, 2006
+Sunday, August 13, 2006
 * Fix bug where -s flag was ignored when used with -a flag
 * Plugin: Add popup menu with history of recent URL's
 * Plugin: Fix problem with "old way of retrieving track"
