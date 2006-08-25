@@ -275,7 +275,7 @@ httplib_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
     int rc;
     char *start;
     char versionbuf[64];
-    char stempbr[50];
+    char stempbr[MAX_ICY_STRING];
     URLINFO url_info;
     int url_path_len;
     int content_type_by_url;
@@ -394,7 +394,7 @@ httplib_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
     else if ((start = (char *)strstr(header, "SHOUTcast")) != NULL) {
 	strcpy(info->server, "SHOUTcast/");
 	if ((start = (char *)strstr(start, "Server/")) != NULL) {
-	    sscanf(start, "Server/%[^<]<", versionbuf);
+	    sscanf(start, "Server/%63[^<]<", versionbuf);
 	    strcat(info->server, versionbuf);
 	}
 
@@ -412,7 +412,7 @@ httplib_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
 	if (!info->server[0]) {
 	    strcpy(info->server, "icecast/");
 	    if ((start = (char *)strstr(start, "version ")) != NULL) {
-		sscanf(start, "version %[^<]<", versionbuf);
+		sscanf(start, "version %63[^<]<", versionbuf);
 		strcat(info->server, versionbuf);
 	    }
 	}

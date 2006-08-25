@@ -1,5 +1,12 @@
+New for 1.61.26
+---------------
+Thu Aug 24 21:50:47 EDT 2006
+* Fix for security problem CVE-2006-3124, buffer overflow in http 
+  header parsing that could result in remote exploit
+
 New for 1.61.25
 ---------------
+August 13, 2006
 * Fix bug where -s flag was ignored when used with -a flag
 * Plugin: Add popup menu with history of recent URL's
 * Plugin: Fix problem with "old way of retrieving track"
