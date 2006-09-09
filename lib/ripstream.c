@@ -720,7 +720,7 @@ start_track_mp3 (TRACK_INFO* ti)
 	ret = rip_manager_put_data((char *)&(id3v2frame2.pad), 3);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 3;
-	sent += sizeof(id3v2frame2);
+	//sent += sizeof(id3v2frame2);
 	ret = rip_manager_put_data(comment, strlen(comment));
 	if (ret != SR_SUCCESS) return ret;
 	sent += strlen(comment);
