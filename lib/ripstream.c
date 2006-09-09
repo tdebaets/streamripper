@@ -584,6 +584,9 @@ end_track_mp3 (u_long pos1, u_long pos2, TRACK_INFO* ti)
     // pos2 is beginning of next track
     int ret;
 
+    /* GCS pos1 is byte position. Here we convert it into a "count". */
+    pos1++;
+
     // I think pos can be zero if the silence is right at the beginning
     // i.e. it is a bug in s.r.
     u_char *buf = (u_char *)malloc(pos1);

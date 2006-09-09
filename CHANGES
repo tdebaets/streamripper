@@ -1,3 +1,8 @@
+New for 1.61.27
+---------------
+* Fix bug that caused extra garbage between id3v2 and first frame.
+* Fix bug that truncated last byte of last frame in mp3 files.
+
 New for 1.61.26
 ---------------
 Thu Aug 24 21:50:47 EDT 2006
