@@ -772,3 +772,59 @@ b) Get a callback before start of play
 
 Type C
 a) Internal caching of recent streams (not releated to winamp)
+
+-----------------------------------------------------------------------
+
+AAC goop. Ugh (:P), but here we go...
+
+
+Definitions
+===========
+mpeg-4		Complementary to mpeg-2. Aac may be used with mpeg-2 or mpeg-4.
+
+		Mpeg-4 is patented, and it is hard to know who owns 
+		the patents.  AT&T is suing Apple over this.
+
+aac		This would be mpeg-2 part 7 or mpeg-4 part 3.
+
+		No patents are required for aac decoding, but encoding 
+		may require licenses.
+
+aac-lc		Low complexity, one of four default "profiles" or algorithms.
+
+he-aac		(aacPlus v1 or aac+) High efficiency. This is an extension.
+		It is a combination of SBR (Spectral Band Replication) 
+		and AAC.
+
+		Proprietary? http://www.codingtechnologies.com
+
+he-aac v2	(aacPlus v2) Combines parametric stereo and HE-AAC.
+
+		Proprietary? http://www.codingtechnologies.com
+
+
+Software
+========
+FAAD2		The last GPL-compatible version is apparently 2005-01-30.
+	http://www.rarewares.org/rja/faad2-2005-01-30.rar
+	http://www.hydrogenaudio.org/forums/lofiversion/index.php/t35535.html
+
+FAAD		Any reason to use this over the GPL-compatible version 
+		of FAAD2
+
+FAAD2 forks	Useful? Xine-lib, mplayer, others?
+
+MPEG4IP		Useful?
+	http://mpeg4ip.sourceforge.net
+
+
+To build faad2-2.5, do this:
+===========================
+tar xf faad2-2.5.tar.gz &&
+cd faad2 &&
+echo > plugins/Makefile.am &&
+echo > plugins/xmms/src/Makefile.am &&
+sed -i '/E_B/d' configure.in &&
+autoreconf -vif &&
+./configure --prefix=/usr &&
+make
