@@ -784,6 +784,7 @@ mpeg-4		Complementary to mpeg-2. Aac may be used with mpeg-2 or mpeg-4.
 
 		Mpeg-4 is patented, and it is hard to know who owns 
 		the patents.  AT&T is suing Apple over this.
+		Apparently, mpeg-4 is an extension of the quicktime format.
 
 aac		This would be mpeg-2 part 7 or mpeg-4 part 3.
 
@@ -791,17 +792,23 @@ aac		This would be mpeg-2 part 7 or mpeg-4 part 3.
 		may require licenses.
 
 aac-lc		Low complexity, one of four default "profiles" or algorithms.
+		This exists in mpeg-2 or mpeg-4.
 
 he-aac		(aacPlus v1 or aac+) High efficiency. This is an extension.
 		It is a combination of SBR (Spectral Band Replication) 
-		and AAC.
+		and AAC.  This exists only in mpeg-4.
 
-		Proprietary? http://www.codingtechnologies.com
+		This also seems to be proprietary.
+		 http://www.codingtechnologies.com
 
 he-aac v2	(aacPlus v2) Combines parametric stereo and HE-AAC.
 
-		Proprietary? http://www.codingtechnologies.com
+		This also seems to be proprietary.
+		 http://www.codingtechnologies.com
 
+An interesting web page
+=======================
+http://wiki.multimedia.cx/index.php?title=Understanding_AAC
 
 Software
 ========
@@ -817,14 +824,57 @@ FAAD2 forks	Useful? Xine-lib, mplayer, others?
 MPEG4IP		Useful?
 	http://mpeg4ip.sourceforge.net
 
+Building mpeg4ip
+================
+bash-3.00$ ./bootstrap 
+dir: .
+SDL appears to be installed
+Error - we have detected a version of faac that has libmp4v2 support
+and no copy of mpeg4ip-config.  This means faac was built with
+faad2 and the libraries will be incompatible.
+Please reinstall faac without mp4v2 support
+bash-3.00$   
 
+So I rebuilt faac as follows:
+
+ ./configure --prefix=/usr --without-mp4v2
+
+Again rebuilding
+
+
+Building faad
+=============
 To build faad2-2.5, do this:
-===========================
-tar xf faad2-2.5.tar.gz &&
-cd faad2 &&
-echo > plugins/Makefile.am &&
-echo > plugins/xmms/src/Makefile.am &&
-sed -i '/E_B/d' configure.in &&
-autoreconf -vif &&
-./configure --prefix=/usr &&
+ tar xf faad2-2.5.tar.gz &&
+ cd faad2 &&
+ echo > plugins/Makefile.am &&
+ echo > plugins/xmms/src/Makefile.am &&
+ sed -i '/E_B/d' configure.in &&
+ autoreconf -vif &&
+ ./configure --prefix=/usr &&
 make
+
+Faad can depend on mpeg4ip
+Try building like this:
+
+ ./configure --with-mpeg4ip
+
+Dependency chart (?)
+====================
+Here, "->" meand "depends on
+
+libavcodec (ffmpeg) -> faad
+libavcodec (ffmpeg) -> faac
+faad -> mpeg4ip
+mpeg4ip -> faac,lame,x264
+mpeg4ip -> ffmpeg (??)
+
+Nero AAC
+========
+There are two tricks to getting the neroAacEnc to run.
+
+First, the input shouldn't be something like 16000Hz mono, which causes 
+the program to choke.  Standard 44100Hz stereo does seem to work.
+
+Second, it doesn't like it if you run (under wine) from a normal 
+directory.  You have to put it in ~/.wine/drive_c/windows/temp or such.

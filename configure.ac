@@ -124,6 +124,14 @@ else
   AC_SUBST(LIBIBERTY_LIBS)
 fi
 
+dnl -------- Tests for using faad2 ------
+AC_SUBST(FAAD_LIBS)
+AC_CHECK_LIB(faad,NeAACDecDecode2,[
+	FAAD_LIBS="-lfaad"
+        AC_DEFINE(HAVE_FAAD,1,[Define to 1 if you have faad2 libraries installed])
+	],
+        AC_DEFINE(HAVE_FAAD,0,[Define to 1 if you have faad2 libraries installed]))
+AC_SUBST(FAAD_LIBS)
 
 dnl -------- Tests for using ogg/vorbis ------
 AC_SUBST(VORBIS_CFLAGS)

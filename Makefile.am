@@ -35,6 +35,7 @@ streamripper_SOURCES = \
 	lib/parse.c \
 	lib/relaylib.c \
 	lib/rip_manager.c \
+	lib/ripaac.c \
 	lib/ripogg.c \
 	lib/ripstream.c \
 	lib/socklib.c \
@@ -352,6 +353,7 @@ DIST_SUBDIRS =
 streamripper_LDADD = @LIBMAD@ @LIBREGEX@ @THREADLIBS@ \
 	@LTLIBICONV@ @LIBCHARSET@ \
 	@LIBIBERTY_LIBS@ \
-	@OGG_LIBS@ @VORBIS_LIBS@
+	@OGG_LIBS@ @VORBIS_LIBS@ \
+	@FAAD_LIBS@
 
 ACLOCAL_AMFLAGS = -I m4

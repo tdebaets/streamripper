@@ -14,7 +14,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Portions were adapted from ogginfo.c
+ * This file is adapted from ogginfo.c of the vorbis-tools project.
  * Copyright 2002 Michael Smith <msmith@xiph.org>
  * Licensed under the GNU GPL, distributed with this program.
  */
@@ -815,4 +815,4 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size,
     INIT_LIST_HEAD (page_list);
 }
 
-#endif
+#endif /* HAVE_OGG_VORBIS */
