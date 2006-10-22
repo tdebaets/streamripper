@@ -859,6 +859,16 @@ Try building like this:
 
  ./configure --with-mpeg4ip
 
+Next, I switched back to the GPL version for development purposes. 
+I rebuilt it like this:
+
+ ./configure --with-mp4v2
+
+When you run checkinstall, you gotta do this:
+
+  checkinstall --pkgname=faad2 --pkgversion=2005-01-30
+
+
 Dependency chart (?)
 ====================
 Here, "->" meand "depends on

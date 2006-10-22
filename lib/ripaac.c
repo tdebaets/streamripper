@@ -24,24 +24,6 @@
 
 #include "faad.h"
 
-#ifndef FAADAPI
-#define FAADAPI
-#endif
-
-/*
- * when CONFIG_FAADBIN is defined the libfaad will be opened at runtime
- */
-//#undef CONFIG_FAADBIN
-//#define CONFIG_FAADBIN
-
-#ifdef CONFIG_FAADBIN
-#include <dlfcn.h>
-static const char* libfaadname = "libfaad.so.0";
-#else
-#define dlopen(a)
-#define dlclose(a)
-#endif
-
 typedef struct {
     void* handle;               /* dlopen handle */
     void* faac_handle;          /* FAAD library handle */
@@ -49,43 +31,10 @@ typedef struct {
     int init;
 
     /* faad calls */
-    faacDecHandle FAADAPI (*faacDecOpen)(void);
-    faacDecConfigurationPtr FAADAPI (*faacDecGetCurrentConfiguration)(faacDecHandle hDecoder);
-#ifndef FAAD2_VERSION
-        int FAADAPI (*faacDecSetConfiguration)(faacDecHandle hDecoder,
-                                           faacDecConfigurationPtr config);
-        int FAADAPI (*faacDecInit)(faacDecHandle hDecoder,
-                                unsigned char *buffer,
-                                unsigned long *samplerate,
-                                unsigned long *channels);
-        int FAADAPI (*faacDecInit2)(faacDecHandle hDecoder, unsigned char *pBuffer,
-                                unsigned long SizeOfDecoderSpecificInfo,
-                                unsigned long *samplerate, unsigned long *channels);
-        int FAADAPI (*faacDecDecode)(faacDecHandle hDecoder,
-                                unsigned char *buffer,
-                                unsigned long *bytesconsumed,
-                                short *sample_buffer,
-                                unsigned long *samples);
-#else
-        unsigned char FAADAPI (*faacDecSetConfiguration)(faacDecHandle hDecoder,
-                                                     faacDecConfigurationPtr config);
-        long FAADAPI (*faacDecInit)(faacDecHandle hDecoder,
-                                   unsigned char *buffer,
-                                 unsigned long buffer_size,
-                                 unsigned long *samplerate,
-                                 unsigned char *channels);
-        char FAADAPI (*faacDecInit2)(faacDecHandle hDecoder, unsigned char *pBuffer,
-                                 unsigned long SizeOfDecoderSpecificInfo,
-                                 unsigned long *samplerate, unsigned char *channels);
-        void *FAADAPI (*faacDecDecode)(faacDecHandle hDecoder,
-                                         faacDecFrameInfo *hInfo,
-                                         unsigned char *buffer,
-                                                                 unsigned long buffer_size);
-        char* FAADAPI (*faacDecGetErrorMessage)(unsigned char errcode);
-#endif
+    faacDecHandle (*faacDecOpen)(void);
+    faacDecConfigurationPtr (*faacDecGetCurrentConfiguration)(faacDecHandle hDecoder);
 
-    void FAADAPI (*faacDecClose)(faacDecHandle hDecoder);
-
+    void (*faacDecClose)(faacDecHandle hDecoder);
 
 } FAACContext;
 
