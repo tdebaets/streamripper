@@ -1,5 +1,5 @@
-/* util.c - jonclegg@yahoo.com
- * general util library
+/* util.c
+ * general util library - actually it is codeset and string processing
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,6 +14,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * REFS:
+ *   http://mail.nl.linux.org/linux-utf8/2001-04/msg00083.html
+ *   http://www.cl.cam.ac.uk/~mgk25/unicode.html
+ *
+ * STRATEGY 1:
+ *   If you don't have wchar, best effort (e.g. ASCII-only) processing.
+ *   If you have wchar, but not iconv, no transcoding is done. 
+ *   If you have wchar & iconv, do full transcoding.
+ * CRITIQUE:
+ *   This is less functionality than currently done, where accented 
+ *   chars are accepted w/o wchar.
+ *
+ * STRATEGY 2:
+ *   If you don't have wchar, use included utf8.
+ *   If you have wchar, but not iconv, no transcoding is done.
+ *   If you have wchar & iconv, do full transcoding.
+ * CRITIQUE:
+ *   TRE might not be configured with utf8, or might be using 
+ *   native regex.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,7 +87,6 @@ void 	null_printf(char *s, ...);
  * Private global variables
  *****************************************************************************/
 const char* codeset_metadata;
-const char* codeset_matchstring;
 const char* codeset_relay;
 const char* codeset_id3;
 const char* codeset_filesys;
@@ -184,10 +203,6 @@ set_codeset (char* codeset_type, const char* codeset)
 	codeset_metadata = codeset;
 	return;
     }
-    if (!strcmp(codeset_type, "CODESET_MATCHSTRING")) {
-	codeset_matchstring = codeset;
-	return;
-    }
     if (!strcmp(codeset_type, "CODESET_RELAY")) {
 	codeset_relay = codeset;
 	return;
@@ -202,7 +217,6 @@ set_codeset (char* codeset_type, const char* codeset)
     }
     if (!strcmp(codeset_type, "CODESET_ALL")) {
 	codeset_metadata = codeset;
-	codeset_matchstring = codeset;
 	codeset_relay = codeset;
 	codeset_id3 = codeset;
 	codeset_filesys = codeset;
@@ -257,8 +271,11 @@ initialize_default_locale (CODESET_OPTIONS* cs_opt)
 
     /* Override from command line if requested */
     if (!cs_opt) return;
-    if (cs_opt->codeset) {
-	set_codeset ("CODESET_ALL", cs_opt->codeset);
+    if (cs_opt->codeset_filesys) {
+	set_codeset ("CODESET_FILESYS", cs_opt->codeset_filesys);
+    }
+    if (cs_opt->codeset_metadata) {
+	set_codeset ("CODESET_METADATA", cs_opt->codeset_metadata);
     }
 }
 
@@ -268,9 +285,9 @@ initialize_default_locale (CODESET_OPTIONS* cs_opt)
                                 { wchar -> relay stream
 
   metadata_locale: use locale()
-  matchstring: use locale() - same as metadata
+  matchstring is *required* to be utf8
   filename: <<special/platform-specific>> use utf8
-  id3, cue: use locale()
+  id3/cue: use locale()
   relay stream: use locale() - same as metadata
 
   if have iconv 
@@ -290,9 +307,8 @@ initialize_default_locale (CODESET_OPTIONS* cs_opt)
   answer: i don't know, but check AT&T compatibility page, linked 
     off tre page.
 
-  --codeset
+  --codeset (sets all)
   --codeset-metadata
-  --codeset-matchstring
   --codeset-relay
   --codeset-id3
   --codeset-filesys
@@ -314,6 +330,9 @@ initialize_default_locale (CODESET_OPTIONS* cs_opt)
    linux:   utf8 or locale_mbcs + open() or fopen()
    osx:     utf8 + open() or utf8 + wfopen()
    windows: utf8 + OpenFile() or locale_mbcs + OpenFile()
+
+   RMK: osx has iconv starting with 10.3.  It seems to also 
+   be the case that osx has wchar.h starting with 10.3.
 
    But still need to convert to wchar for stripping.  Note, this 
    doesn't work all the time using mbstowcs.  

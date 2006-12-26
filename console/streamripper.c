@@ -263,6 +263,11 @@ void print_usage()
     fprintf(stderr, "      --quiet        - Don't print ripping status to console\n");
     fprintf(stderr, "      --debug        - Save debugging trace\n");
     fprintf(stderr, "      --xs_???       - Invoke splitpoint detection rules (see README/man page)\n");
+    fprintf(stderr, "   -- codeset options --\n");
+    fprintf(stderr, "      --codeset-filesys=??    - Specify codeset for the file system\n");
+    fprintf(stderr, "      --codeset-id3=??        - Specify codeset for id3 tags\n");
+    fprintf(stderr, "      --codeset-metadata=??   - Specify codeset for metadata\n");
+    fprintf(stderr, "      --codeset-relay=??      - Specify codeset for the relay stream\n");
 }
 
 /* 
@@ -507,10 +512,32 @@ parse_extended_options (char* rule)
     }
 
     /* codeset options */
-    x = strlen("codeset=");
-    if (!strncmp(rule,"codeset=",x)) {
-	m_opt.cs_opt.codeset = &rule[x];
-	printf ("Setting codeset to %s\n",m_opt.cs_opt.codeset);
+    x = strlen("codeset-filesys=");
+    if (!strncmp(rule,"codeset-filesys=",x)) {
+	m_opt.cs_opt.codeset_filesys = &rule[x];
+	printf ("Setting filesys codeset to %s\n",
+		m_opt.cs_opt.codeset_filesys);
+	return;
+    }
+    x = strlen("codeset-id3=");
+    if (!strncmp(rule,"codeset-id3=",x)) {
+	m_opt.cs_opt.codeset_id3 = &rule[x];
+	printf ("Setting id3 codeset to %s\n",
+		m_opt.cs_opt.codeset_id3);
+	return;
+    }
+    x = strlen("codeset-metadata=");
+    if (!strncmp(rule,"codeset-metadata=",x)) {
+	m_opt.cs_opt.codeset_metadata = &rule[x];
+	printf ("Setting metadata codeset to %s\n",
+		m_opt.cs_opt.codeset_metadata);
+	return;
+    }
+    x = strlen("codeset-relay=");
+    if (!strncmp(rule,"codeset-relay=",x)) {
+	m_opt.cs_opt.codeset_relay = &rule[x];
+	printf ("Setting relay codeset to %s\n",
+		m_opt.cs_opt.codeset_relay);
 	return;
     }
 

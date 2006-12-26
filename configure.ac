@@ -87,6 +87,7 @@ else
 fi
 
 dnl -------- Tests for using included tre ------
+dnl Note that sun now has a regwcomp() also.  Is it compatible?
 LIBREGEX=""
 AC_SUBST(LIBREGEX)
 use_included_tre=yes
@@ -102,9 +103,11 @@ if test "$use_included_tre" = yes; then
   CPPFLAGS="-Itre-0.7.2/lib $CPPFLAGS"
   AC_SUBST(CPPFLAGS)
   AC_CONFIG_SUBDIRS(tre-0.7.2)
+  AC_DEFINE(HAVE_REGWCOMP,1)
 else
   LIBREGEX=""
   AC_SUBST(LIBREGEX)
+  AC_CHECK_FUNC(regwcomp)
 fi
 
 
