@@ -46,6 +46,9 @@
 /* Define to 1 if you have the `socket' library (-lsocket). */
 #undef HAVE_LIBSOCKET
 
+/* Define to 1 if you have the `tre' library (-ltre). */
+#undef HAVE_LIBTRE
+
 /* Define if you have locale_charset() in <localcharset.h>. */
 #undef HAVE_LOCALE_CHARSET
 

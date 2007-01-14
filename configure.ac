@@ -1,6 +1,15 @@
 dnl Process this file with autoconf to produce a configure script.
-dnl AC_INIT(lib/types.h)
+dnl ---------------------
+dnl I found a great tutorial on autoconf:
+dnl    http://mi.eng.cam.ac.uk/~er258/code/autoconf/index.html
+dnl ---------------------
+dnl These macros create entries in config.h
+dnl   AC_CHECK_HEADERS, AC_CHECK_TYPES, AC_CHECK_FUNCS
+dnl These macros do not
+dnl   AC_CHECK_LIB:   prepends the library to LIBS
+dnl   AC_CHECK_FUNC:  defines a shell variable
 
+AC_PREREQ(2.59)
 AC_INIT(streamripper,1.61.27)
 AM_INIT_AUTOMAKE
 
@@ -86,18 +95,26 @@ else
   AC_SUBST(LIBMAD)
 fi
 
-dnl -------- Tests for using included tre ------
-dnl Note that sun now has a regwcomp() also.  Is it compatible?
+
+dnl -------- Tests for regular expressions ---------
+dnl Preference:
+dnl   1) Use system tre
+dnl   2) Use system regex
+dnl   3) Use included tre
+dnl Note: If using included tre, it's not easy to know whether or not 
+dnl   it has regwcomp() or not.  We will assume it does.
+dnl Note: Solaris now has a regwcomp() in system regex.  Is it compatible?
 LIBREGEX=""
 AC_SUBST(LIBREGEX)
-use_included_tre=yes
+
 if test "$force_use_included_tre" = no; then
-  dnl Here is where I verify regex
-  dnl Until then, do nothing
-  use_included_tre=no
+  AC_CHECK_LIB(tre,regcomp)
+  AC_CHECK_FUNCS(regwcomp)
+  AC_CHECK_FUNC(regcomp,,$force_use_included_tre=yes)
 fi
-AM_CONDITIONAL(SUBDIR_TRE, test "$use_included_tre" = yes)
-if test "$use_included_tre" = yes; then
+
+AM_CONDITIONAL(SUBDIR_TRE, test "$force_use_included_tre" = yes)
+if test "$force_use_included_tre" = yes; then
   LIBREGEX="tre-0.7.2/lib/.libs/libtre.a"
   AC_SUBST(LIBREGEX)
   CPPFLAGS="-Itre-0.7.2/lib $CPPFLAGS"
@@ -107,9 +124,7 @@ if test "$use_included_tre" = yes; then
 else
   LIBREGEX=""
   AC_SUBST(LIBREGEX)
-  AC_CHECK_FUNC(regwcomp)
 fi
-
 
 dnl -------- Tests for using libiberty or argv.c ------
 use_included_argv=yes
