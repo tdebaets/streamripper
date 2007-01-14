@@ -262,12 +262,16 @@ void print_usage()
     fprintf(stderr, "      -E command     - Run external command to fetch metadata\n");
     fprintf(stderr, "      --quiet        - Don't print ripping status to console\n");
     fprintf(stderr, "      --debug        - Save debugging trace\n");
-    fprintf(stderr, "      --xs_???       - Invoke splitpoint detection rules (see README/man page)\n");
-    fprintf(stderr, "   -- codeset options --\n");
-    fprintf(stderr, "      --codeset-filesys=??    - Specify codeset for the file system\n");
-    fprintf(stderr, "      --codeset-id3=??        - Specify codeset for id3 tags\n");
-    fprintf(stderr, "      --codeset-metadata=??   - Specify codeset for metadata\n");
-    fprintf(stderr, "      --codeset-relay=??      - Specify codeset for the relay stream\n");
+    fprintf(stderr, "Splitpoint opts (mp3 only):\n");
+    fprintf(stderr, "      --xs_offset                  - Shift relative to metadata (msec)\n");
+    fprintf(stderr, "      --xs_padding=num:num         - Add extra to prev:next track (msec)\n");
+    fprintf(stderr, "      --xs_search_window=num:num   - Search window relative to metadata (msec)\n");
+    fprintf(stderr, "      --xs_silence_length=num      - Expected length of silence (msec)\n");
+    fprintf(stderr, "Codeset opts:\n");
+    fprintf(stderr, "      --codeset-filesys=codeset    - Specify codeset for the file system\n");
+    fprintf(stderr, "      --codeset-id3=codeset        - Specify codeset for id3 tags\n");
+    fprintf(stderr, "      --codeset-metadata=codeset   - Specify codeset for metadata\n");
+    fprintf(stderr, "      --codeset-relay=codeset      - Specify codeset for the relay stream\n");
 }
 
 /* 
