@@ -263,10 +263,10 @@ void print_usage()
     fprintf(stderr, "      --quiet        - Don't print ripping status to console\n");
     fprintf(stderr, "      --debug        - Save debugging trace\n");
     fprintf(stderr, "Splitpoint opts (mp3 only):\n");
-    fprintf(stderr, "      --xs_offset                  - Shift relative to metadata (msec)\n");
-    fprintf(stderr, "      --xs_padding=num:num         - Add extra to prev:next track (msec)\n");
-    fprintf(stderr, "      --xs_search_window=num:num   - Search window relative to metadata (msec)\n");
-    fprintf(stderr, "      --xs_silence_length=num      - Expected length of silence (msec)\n");
+    fprintf(stderr, "      --xs-offset                  - Shift relative to metadata (msec)\n");
+    fprintf(stderr, "      --xs-padding=num:num         - Add extra to prev:next track (msec)\n");
+    fprintf(stderr, "      --xs-search-window=num:num   - Search window relative to metadata (msec)\n");
+    fprintf(stderr, "      --xs-silence-length=num      - Expected length of silence (msec)\n");
     fprintf(stderr, "Codeset opts:\n");
     fprintf(stderr, "      --codeset-filesys=codeset    - Specify codeset for the file system\n");
     fprintf(stderr, "      --codeset-id3=codeset        - Specify codeset for id3 tags\n");
@@ -482,33 +482,39 @@ parse_extended_options (char* rule)
     }
 
     /* Splitpoint options */
-    if (!strcmp(rule,"xs_none")) {
+    if ((!strcmp(rule,"xs-none"))
+	|| (!strcmp(rule,"xs_none"))) {
 	m_opt.sp_opt.xs = 0;
 	printf ("Disable silence detection");
 	return;
     }
-    if (1==sscanf(rule,"xs_min_volume=%d",&x)) {
+    if ((1==sscanf(rule,"xs-min-volume=%d",&x)) ||
+	|| (1==sscanf(rule,"xs_min_volume=%d",&x))) {
 	m_opt.sp_opt.xs_min_volume = x;
 	printf ("Setting minimum volume to %d\n",x);
 	return;
     }
-    if (1==sscanf(rule,"xs_silence_length=%d",&x)) {
+    if ((1==sscanf(rule,"xs-silence-length=%d",&x))
+	|| (1==sscanf(rule,"xs_silence_length=%d",&x))) {
 	m_opt.sp_opt.xs_silence_length = x;
 	printf ("Setting silence length to %d\n",x);
 	return;
     }
-    if (2==sscanf(rule,"xs_search_window=%d:%d",&x,&y)) {
+    if ((2==sscanf(rule,"xs-search-window=%d:%d",&x,&y))
+	|| (2==sscanf(rule,"xs_search_window=%d:%d",&x,&y))) {
 	m_opt.sp_opt.xs_search_window_1 = x;
 	m_opt.sp_opt.xs_search_window_2 = y;
 	printf ("Setting search window to (%d:%d)\n",x,y);
 	return;
     }
-    if (1==sscanf(rule,"xs_offset=%d",&x)) {
+    if ((1==sscanf(rule,"xs-offset=%d",&x))
+	|| (1==sscanf(rule,"xs_offset=%d",&x))) {
 	m_opt.sp_opt.xs_offset = x;
 	printf ("Setting silence offset to %d\n",x);
 	return;
     }
-    if (2==sscanf(rule,"xs_padding=%d:%d",&x,&y)) {
+    if ((2==sscanf(rule,"xs-padding=%d:%d",&x,&y))
+	|| (2==sscanf(rule,"xs_padding=%d:%d",&x,&y))) {
 	m_opt.sp_opt.xs_padding_1 = x;
 	m_opt.sp_opt.xs_padding_2 = y;
 	printf ("Setting file output padding to (%d:%d)\n",x,y);
