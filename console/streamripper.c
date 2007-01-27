@@ -488,7 +488,7 @@ parse_extended_options (char* rule)
 	printf ("Disable silence detection");
 	return;
     }
-    if ((1==sscanf(rule,"xs-min-volume=%d",&x)) ||
+    if ((1==sscanf(rule,"xs-min-volume=%d",&x)) 
 	|| (1==sscanf(rule,"xs_min_volume=%d",&x))) {
 	m_opt.sp_opt.xs_min_volume = x;
 	printf ("Setting minimum volume to %d\n",x);
