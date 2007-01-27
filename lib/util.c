@@ -261,6 +261,7 @@ initialize_default_locale (CODESET_OPTIONS* cs_opt)
 #endif
 
     /* Set default codesets */
+    /* I could potentially add stuff like utf8 for filesys on osx here */
     fromcode = get_default_codeset ();
     if (fromcode) {
         debug_printf ("LOCALE CODESET is %s\n", fromcode);

@@ -380,43 +380,6 @@ a) which files to remove from cvs?  (e.g. configure)
 b) get rid of installation from Makefile.am's
 c) add manifest to distro
 
------------------------------------------
-Console mode:
-
-main				(streamripper.c)
-rip_manager_start	(rip_manager.c)
-	rip_manager::m_in.get_data <- myrecv
-threadlib_beginthread
-ripthread			(rip_manager.c)
-	start_ripping
-		rip_manager::m_in    == ripshout::m_in
-		rip_manager::m_ripin == ripstream::m_in
-		ripshout_init
-			rip_manager::m_ripin::get_data <- ripshout::getdata
-		ripstream_init
-			cbuffer_init
-	ripstream_rip
-		m_in->get_data
-		end_track
-
-ripstream::m_in::get_data == ripshout::getdata
-	ripshout::m_in::get_data == myrecv (for m_buffersize)
-	ripshout::m_in::get_data == myrecv (for metadata)
-
-The first byte of the (signed char) metadata is the length
-of the metadata string (1-127)*16.
-
-Note that rip_manager_start, console streamripper.c sets up a
-callback so that it can display track changes to console.
-	m_status_callback <- rip_callback
-
-There are two places for the bitrate/samplerate:
-	(1) In the http header
-		getsize == meta_interval ~~ 8192 (bytes)
-		bitrate = 24
-	(2) From the mp3 data
-		samplesize = 22050 (cpm data bps)
-
 ---------------------------------------
 
 For n seconds, we need buffersize of b bytes:
@@ -482,45 +445,6 @@ along meta-inf boundaries.
 The below obsolete section is mostly right, but we want 
 to include the entire core chunk.
 
-
-BEGIN OBSOLETE
----------------
-Now, depending on the value of xs_offset, we have 3 cases.
-The mi point can be before, during or after the 
-required window
-
-
- (1)            (2)                       (3)
-  x              x                         x
-
-    |-----------------------------------|
-             required window
-
-
-  |-------------------------------------|         (case 1)
-    |-----------------------------------|         (case 2)
-    |--------------------------------------|      (case 3)
-           CBUF, depending on case
-
-
-Case 1:
-  mi to beginning     pos
-  mi to end           pos
-Case 2:
-  mi to beginning     neg
-  mi to end           pos
-Case 3:
-  mi to beginning     neg
-  mi to end           neg
-
-Thus, we need 3 variables:
-  m_cbuffer_size
-  m_mi_to_cbuffer_start
-  m_mi_to_cbuffer_end
----------------
-BEGIN OBSOLETE
-
-
 ---------------------------------------
 http://www.hydrogenaudio.org/index.php?showtopic=12633&
 --
@@ -564,7 +488,24 @@ localedef -v -c -i ja_JP -f EUC-JP ja_JP.EUC-JP
 Here is how to display
 
 export LANG=ja_JP.SJIS
-xterm -fn -misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-iso10646-1
+## The following no longer works.  Why?
+## xterm -fn -misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-iso10646-1
+xterm
+
+bash-3.00$ export LANG=ja_JP.EUC-JP
+bash-3.00$ xterm
+bash-3.00$ export LANG=ja_JP.SJIS
+bash-3.00$ xterm
+bash-3.00$ export LANG=ja_JP.UTF-8
+bash-3.00$ xterm
+
+
+-----------------------------------------------------------------------
+How do strings pass through the program?
+
+ripstream_rip_mp3
+  get_stream_data --> fill in m_current_track.raw_metadata
+  parse_metadata  --> fill in m_current_track.artist,title,album
 
 
 -----------------------------------------------------------------------
