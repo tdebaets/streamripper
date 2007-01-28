@@ -190,11 +190,37 @@ mstring_from_string (mchar* m, int mlen, char* c, int codeset_type)
 	return wstring_from_string (m, mlen, c, codeset_metadata);
 	break;
     default:
-	printf ("Program error.  Bad codeset.\n");
+	printf ("Program error.  Bad codeset m->c.\n");
 	exit (-1);
     }
 #else
     strncpy (m, c, mlen);
+#endif
+}
+
+int
+string_from_mstring (char* c, int clen, mchar* m, int codeset_type)
+{
+#if defined (HAVE_WCHAR_SUPPORT)
+    switch (codeset_type) {
+    case CODESET_UTF8:
+	return string_from_wstring (c, clen, m, "UTF-8");
+	break;
+    case CODESET_FILESYS:
+	return string_from_wstring (c, clen, m, codeset_filesys);
+	break;
+    case CODESET_ID3:
+	return string_from_wstring (c, clen, m, codeset_id3);
+	break;
+    case CODESET_RELAY:
+	return string_from_wstring (c, clen, m, codeset_relay);
+	break;
+    default:
+	printf ("Program error.  Bad codeset c->m.\n");
+	exit (-1);
+    }
+#else
+    strncpy (c, m, mlen);
 #endif
 }
 
@@ -683,6 +709,18 @@ sr_strncpy (char* dst, char* src, int n)
     dst[i] = 0;
 }
 
+void
+mstrncpy (mchar* dst, mchar* src, int n)
+{
+    int i = 0;
+    for (i = 0; i < n-1; i++) {
+	if (!(dst[i] = src[i])) {
+	    return;
+	}
+    }
+    dst[i] = 0;
+}
+
 mchar* 
 mstrdup (mchar* src)
 {
@@ -694,4 +732,39 @@ mstrdup (mchar* src)
 #else
     return strdup (src);
 #endif
+}
+
+mchar* 
+mstrcpy (mchar* dest, const mchar* src)
+{
+#if defined HAVE_WCHAR_SUPPORT
+    return wcscpy (dest, src);
+#else
+    return strcpy (dest, src);
+#endif
+}
+
+size_t
+mstrlen (mchar* s)
+{
+#if defined HAVE_WCHAR_SUPPORT
+    return wcslen (s);
+#else
+    return strlen (s);
+#endif
+}
+
+/* GCS FIX: gcc can give a warning about vswprintf.  This may require 
+   setting gcc -std=c99, or gcc -lang-c99 */
+int
+msnprintf (mchar* dest, size_t n, const mchar* fmt, ...)
+{
+    va_list ap;
+    va_start (ap, fmt);
+#if defined HAVE_WCHAR_SUPPORT
+    return vswprintf (dest, n, fmt, ap);
+#else
+    return vsnprintf (dest, n, fmt, ap);
+#endif
+    va_end (ap);
 }

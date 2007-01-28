@@ -120,6 +120,17 @@ sr_regcomp (Parse_Rule* pr, mchar* rule_string, int cflags)
 #endif
 }
 
+static int
+mregexec (const regex_t* preg, const mchar* string, size_t nmatch,
+	  regmatch_t pmatch[], int eflags)
+{
+#if defined HAVE_WCHAR_SUPPORT
+    return regwexec (preg, string, nmatch, pmatch, eflags);
+#else
+    return regexec (preg, string, nmatch, pmatch, eflags);
+#endif
+}
+
 /* Returns 1 if successful, 0 if failure */
 static int
 compile_rule (Parse_Rule* pr, mchar* rule_string)
@@ -135,7 +146,6 @@ compile_rule (Parse_Rule* pr, mchar* rule_string)
 	cflags |= REG_ICASE;
     }
     rc = sr_regcomp(pr, rule_string, cflags);
-    //W    rc = regcomp(pr->reg, rule_string, cflags);
     if (rc != 0) {
 	printf ("Warning: malformed regular expression:\n%s\n",
 	    rule_string);
@@ -160,11 +170,12 @@ use_default_rules (void)
 }
 
 static void
-copy_rule_result (char* dest, char* query_string, regmatch_t* pmatch, int idx)
+copy_rule_result (mchar* dest, mchar* query_string, 
+		  regmatch_t* pmatch, int idx)
 {
     if (idx > 0 && idx <= MAX_SUBMATCHES) {
-	sr_strncpy(dest, query_string + pmatch[idx].rm_so,
-	    pmatch[idx].rm_eo - pmatch[idx].rm_so + 1);
+	mstrncpy (dest, query_string + pmatch[idx].rm_so,
+		  pmatch[idx].rm_eo - pmatch[idx].rm_so + 1);
     }
 }
 
@@ -285,6 +296,7 @@ init_metadata_parser (char* rules_file)
 	char match_buf[MAX_RULE_SIZE];
 	char subst_buf[MAX_RULE_SIZE];
 	mchar w_match_buf[MAX_RULE_SIZE];
+	mchar w_subst_buf[MAX_RULE_SIZE];
 	char* rbp;
 	int got_command;
 	int rc;
@@ -365,7 +377,9 @@ init_metadata_parser (char* rules_file)
 	/* Copy rule strings */
 	m_global_rule_list[ri].match = mstrdup(w_match_buf);
 	if (m_global_rule_list[ri].cmd == PARSERULE_CMD_SUBST) {
-	    m_global_rule_list[ri].subst = strdup(subst_buf);
+	    mstring_from_string (w_subst_buf, MAX_RULE_SIZE, subst_buf, 
+				 CODESET_UTF8);
+	    m_global_rule_list[ri].subst = mstrdup(w_subst_buf);
 	}
 
 	ri++;
@@ -379,15 +393,28 @@ init_metadata_parser (char* rules_file)
 void
 compose_metadata (TRACK_INFO* ti)
 {
+    mchar w_composed_metadata[MAX_TRACK_LEN];
     if (ti->have_track_info) {
 	if (ti->artist[0]) {
-	    sprintf (ti->composed_metadata, "StreamTitle='%s - %s';",
-		     ti->artist, ti->title);
+	    msnprintf (w_composed_metadata, MAX_TRACK_LEN,
+#if HAVE_WCHAR_SUPPORT
+		       L"StreamTitle='%s - %s';",
+#else
+		       "StreamTitle='%s - %s';",
+#endif
+		       ti->artist, ti->title);
 	} else {
-	    sprintf (ti->composed_metadata, "StreamTitle='%s';",
-		     ti->title);
+	    msnprintf (w_composed_metadata, MAX_TRACK_LEN,
+#if HAVE_WCHAR_SUPPORT
+		       L"StreamTitle='%s';",
+#else
+		       "StreamTitle='%s';",
+#endif
+		       ti->title);
 	}
     }
+    string_from_mstring (ti->composed_metadata, MAX_TRACK_LEN, 
+			 w_composed_metadata, CODESET_RELAY);
 }
 
 void
@@ -395,7 +422,7 @@ parse_metadata (TRACK_INFO* ti)
 {
     int eflags;
     int rc;
-    char query_string[MAX_TRACK_LEN];
+    mchar query_string[MAX_TRACK_LEN];
     Parse_Rule* rulep;
 
     /* Has any m/.../s rule matched? */
@@ -423,14 +450,15 @@ parse_metadata (TRACK_INFO* ti)
     /* Loop through rules, if we find a matching rule, then use it */
     /* For now, only default rules supported with ascii 
        regular expressions. */
-    strcpy (query_string, ti->raw_metadata);
+    mstring_from_string (query_string, MAX_TRACK_LEN, 
+			 ti->raw_metadata, CODESET_METADATA);
     for (rulep = m_global_rule_list; rulep->cmd; rulep++) {
 	regmatch_t pmatch[MAX_SUBMATCHES+1];
 
 	eflags = 0;
 	if (rulep->cmd == PARSERULE_CMD_MATCH) {
 	    if (rulep->flags & PARSERULE_SKIP) {
-		rc = regexec(rulep->reg, query_string, 0, NULL, eflags);
+		rc = mregexec(rulep->reg, query_string, 0, NULL, eflags);
 		if (rc != 0) {
 		    /* Didn't match rule. */
 		    continue;
@@ -441,7 +469,7 @@ parse_metadata (TRACK_INFO* ti)
 		ti->have_track_info = 0;
 		return;
 	    } else if (rulep->flags & PARSERULE_SAVE) {
-		rc = regexec(rulep->reg, query_string, 0, NULL, eflags);
+		rc = mregexec(rulep->reg, query_string, 0, NULL, eflags);
 		if (rc != 0) {
 		    /* Didn't match rule. */
 		    if (!save_track_matched)
@@ -455,7 +483,7 @@ parse_metadata (TRACK_INFO* ti)
 		    save_track_matched = TRUE;
 		}
 	    } else if (rulep->flags & PARSERULE_EXCLUDE) {
-		rc = regexec(rulep->reg, query_string, 0, NULL, eflags);
+		rc = mregexec(rulep->reg, query_string, 0, NULL, eflags);
 		if (rc == 0 && !save_track_matched) {
 		    /* Rule matched => Exclude track */
 		    ti->save_track = FALSE;
@@ -463,7 +491,8 @@ parse_metadata (TRACK_INFO* ti)
 		}
 	    } else {
     		eflags = 0;
-		rc = regexec(rulep->reg, query_string, MAX_SUBMATCHES+1, pmatch, eflags);
+		rc = mregexec(rulep->reg, query_string, MAX_SUBMATCHES+1, 
+			      pmatch, eflags);
 		if (rc != 0) {
 		    /* Didn't match rule. */
 		    continue;
@@ -480,25 +509,27 @@ parse_metadata (TRACK_INFO* ti)
 	    }
 	}
 	else if (rulep->cmd == PARSERULE_CMD_SUBST) {
-	    char subst_string[MAX_TRACK_LEN];
+	    mchar subst_string[MAX_TRACK_LEN];
 	    int used, left;
-	    rc = regexec(rulep->reg, query_string, 1, pmatch, eflags);
+	    rc = mregexec(rulep->reg, query_string, 1, pmatch, eflags);
 	    if (rc != 0) {
 		/* Didn't match rule. */
 		continue;
 	    }
 	    /* Update the query string and continue. */
-	    strncpy(subst_string, query_string, pmatch[0].rm_so);
+	    mstrncpy (subst_string, query_string, pmatch[0].rm_so);
 	    used = pmatch[0].rm_so;
 	    left = MAX_TRACK_LEN - used;
-	    strncpy(subst_string + used, rulep->subst, left-1);
-	    used += strlen (rulep->subst);
+	    mstrncpy (subst_string + used, rulep->subst, left-1);
+	    used += mstrlen (rulep->subst);
 	    left = MAX_TRACK_LEN - used;
-	    sr_strncpy(subst_string + used, query_string + pmatch[0].rm_eo, left);
-	    sr_strncpy(query_string, subst_string, MAX_TRACK_LEN);
+	    mstrncpy(subst_string + used, 
+		     query_string + pmatch[0].rm_eo, left);
+	    mstrncpy(query_string, subst_string, MAX_TRACK_LEN);
 	}
     }
     debug_printf ("Fell through while parsing data...\n");
-    strcpy (ti->title, ti->raw_metadata);
+    mstring_from_string (ti->title, MAX_TRACK_LEN, ti->raw_metadata, 
+			 CODESET_METADATA);
     ti->have_track_info = 1;
 }

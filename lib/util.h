@@ -18,6 +18,11 @@ void set_codeset (char* codeset_type, const char* codeset);
 void sr_strncpy(char* dst, char* src, int n);
 
 int mstring_from_string (mchar* m, int mlen, char* c, int codeset_type);
-mchar mstrdup (mchar* src);
+int string_from_mstring (char* c, int clen, mchar* m, int codeset_type);
+mchar* mstrdup (mchar* src);
+mchar* mstrcpy (mchar* dest, const mchar* src);
+int msnprintf (mchar* dest, size_t n, const mchar* fmt, ...);
+void mstrncpy (mchar* dst, mchar* src, int n);
+size_t mstrlen (mchar* s);
 
 #endif //__UTIL_H__

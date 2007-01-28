@@ -147,7 +147,6 @@ typedef struct CODESET_OPTIONSst
 /* 
  * Various CODESET types
  */
-#define CODESET_C             0
 #define CODESET_UTF8          1
 #define CODESET_FILESYS       2
 #define CODESET_ID3           3
@@ -170,12 +169,12 @@ typedef struct TRACK_INFOst
 {
     int have_track_info;
     char raw_metadata[MAX_TRACK_LEN];
-    char artist[MAX_TRACK_LEN];
-    char title[MAX_TRACK_LEN];
-    char album[MAX_TRACK_LEN];
-    char track[MAX_TRACK_LEN];
-    char composed_metadata[MAX_TRACK_LEN];
     mchar w_raw_metadata[MAX_TRACK_LEN];
+    mchar artist[MAX_TRACK_LEN];
+    mchar title[MAX_TRACK_LEN];
+    mchar album[MAX_TRACK_LEN];
+    mchar track[MAX_TRACK_LEN];
+    char composed_metadata[MAX_TRACK_LEN];      /* For relay stream */
     BOOL save_track;
 } TRACK_INFO;
 
