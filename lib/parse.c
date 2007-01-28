@@ -26,10 +26,6 @@
 #include "regex.h"
 
 /*****************************************************************************
- * Public functions
- *****************************************************************************/
-
-/*****************************************************************************
  * Private global variables
  *****************************************************************************/
 #define MAX_RULE_SIZE                2048
@@ -53,46 +49,80 @@ struct parse_rule {
     int album_idx;
     int trackno_idx;
     regex_t* reg;
-    char* match;
-    char* subst;
+    mchar* match;
+    mchar* subst;
 };
 typedef struct parse_rule Parse_Rule;
 
 static Parse_Rule m_default_rule_list[] = {
     { PARSERULE_CMD_MATCH, 
-	PARSERULE_SKIP,
-	0, 0, 0, 0,
-	0, 
-	"^A suivre:",
-	""
+      PARSERULE_SKIP,
+      0, 0, 0, 0,
+      0, 
+#if defined HAVE_WCHAR_SUPPORT
+      /* GCS FIX: L string literals are not good */
+      L"^A suivre:",
+      L""
+#else
+      "^A suivre:",
+      ""
+#endif
     },
     { PARSERULE_CMD_SUBST, 
-	PARSERULE_ICASE,
-	0, 0, 0, 0,
-	0, 
-	"[[:space:]]*-?[[:space:]]*mp3pro$",
-	""
+      PARSERULE_ICASE,
+      0, 0, 0, 0,
+      0, 
+#if defined HAVE_WCHAR_SUPPORT
+      L"[[:space:]]*-?[[:space:]]*mp3pro$",
+      L""
+#else
+      "[[:space:]]*-?[[:space:]]*mp3pro$",
+      ""
+#endif
     },
     { PARSERULE_CMD_MATCH, 
-	PARSERULE_ICASE,
-	1, 2, 0, 0,
-	0, 
-	"^[[:space:]]*([^-]*[^-[:space:]])[[:space:]]*-[[:space:]]*(.*)[[:space:]]*$",
-	""
+      PARSERULE_ICASE,
+      1, 2, 0, 0,
+      0, 
+#if defined HAVE_WCHAR_SUPPORT
+      L"^[[:space:]]*([^-]*[^-[:space:]])[[:space:]]*-[[:space:]]*(.*)[[:space:]]*$",
+      L""
+#else
+      "^[[:space:]]*([^-]*[^-[:space:]])[[:space:]]*-[[:space:]]*(.*)[[:space:]]*$",
+      ""
+#endif
     },
     { 0x00, 
-	0x00,
-	0, 0, 0, 0,
-	0, 
-	"",
-	""
+      0x00,
+      0, 0, 0, 0,
+      0, 
+#if defined HAVE_WCHAR_SUPPORT
+      L"",
+      L""
+#else
+      "",
+      ""
+#endif
     }
 };
 static Parse_Rule* m_global_rule_list = m_default_rule_list;
 
+/*****************************************************************************
+ * Public functions
+ *****************************************************************************/
+static int
+sr_regcomp (Parse_Rule* pr, mchar* rule_string, int cflags)
+{
+#if defined HAVE_WCHAR_SUPPORT
+    return regwcomp(pr->reg, rule_string, cflags);
+#else
+    return regcomp(pr->reg, rule_string, cflags);
+#endif
+}
+
 /* Returns 1 if successful, 0 if failure */
 static int
-compile_rule (Parse_Rule* pr, char* rule_string)
+compile_rule (Parse_Rule* pr, mchar* rule_string)
 {
     int rc;
     int cflags;
@@ -104,7 +134,8 @@ compile_rule (Parse_Rule* pr, char* rule_string)
     if (pr->flags & PARSERULE_ICASE) {
 	cflags |= REG_ICASE;
     }
-    rc = regcomp(pr->reg, rule_string, cflags);
+    rc = sr_regcomp(pr, rule_string, cflags);
+    //W    rc = regcomp(pr->reg, rule_string, cflags);
     if (rc != 0) {
 	printf ("Warning: malformed regular expression:\n%s\n",
 	    rule_string);
@@ -253,13 +284,14 @@ init_metadata_parser (char* rules_file)
 	char rule_buf[MAX_RULE_SIZE];
 	char match_buf[MAX_RULE_SIZE];
 	char subst_buf[MAX_RULE_SIZE];
+	mchar w_match_buf[MAX_RULE_SIZE];
 	char* rbp;
 	int got_command;
 	int rc;
 	
 	/* Allocate memory for rule */
 	m_global_rule_list = realloc (m_global_rule_list,
-	    (ri+1) * sizeof(Parse_Rule));
+				      (ri+1) * sizeof(Parse_Rule));
 	memset (&m_global_rule_list[ri], 0, sizeof(Parse_Rule));
 
 	/* Get next line from file */
@@ -287,7 +319,7 @@ init_metadata_parser (char* rules_file)
 	default:
 	    got_command = 0;
 	    printf ("Warning: malformed command in rules file:\n%s\n",
-		rule_buf);
+		    rule_buf);
 	    break;
 	}
 	if (!got_command) continue;
@@ -295,24 +327,24 @@ init_metadata_parser (char* rules_file)
 	/* Skip past fwd slash */
 	if (*rbp++ != '/') {
 	    printf ("Warning: malformed command in rules file:\n%s\n",
-		rule_buf);
+		    rule_buf);
 	    continue;
 	}
 
 	/* Parse match string */
 	rbp = parse_escaped_string (match_buf, rbp);
-	    if (!rbp) {
-		printf ("Warning: malformed command in rules file:\n%s\n",
+	if (!rbp) {
+	    printf ("Warning: malformed command in rules file:\n%s\n",
 		    rule_buf);
-		continue;
-	    }
+	    continue;
+	}
 
 	/* Parse subst string */
 	if (m_global_rule_list[ri].cmd == PARSERULE_CMD_SUBST) {
 	    rbp = parse_escaped_string (subst_buf, rbp);
 	    if (!rbp) {
 		printf ("Warning: malformed command in rules file:\n%s\n",
-		    rule_buf);
+			rule_buf);
 		continue;
 	    }
 	}
@@ -321,15 +353,17 @@ init_metadata_parser (char* rules_file)
 	rc = parse_flags (&m_global_rule_list[ri], rbp);
 	if (!rc) {
 	    printf ("Warning: malformed command in rules file:\n%s\n",
-		rule_buf);
+		    rule_buf);
 	    continue;
 	}
 
 	/* Compile the rule */
-	if (!compile_rule(&m_global_rule_list[ri], match_buf)) continue;
+	mstring_from_string (w_match_buf, MAX_RULE_SIZE, match_buf, 
+			     CODESET_UTF8);
+	if (!compile_rule(&m_global_rule_list[ri], w_match_buf)) continue;
 
 	/* Copy rule strings */
-	m_global_rule_list[ri].match = strdup(match_buf);
+	m_global_rule_list[ri].match = mstrdup(w_match_buf);
 	if (m_global_rule_list[ri].cmd == PARSERULE_CMD_SUBST) {
 	    m_global_rule_list[ri].subst = strdup(subst_buf);
 	}
@@ -338,7 +372,7 @@ init_metadata_parser (char* rules_file)
     }
     /* Add null rule to the end */
     m_global_rule_list = realloc (m_global_rule_list,
-	(ri+1) * sizeof(Parse_Rule));
+				  (ri+1) * sizeof(Parse_Rule));
     memset (&m_global_rule_list[ri], 0, sizeof(Parse_Rule));
 }
 
@@ -380,6 +414,11 @@ parse_metadata (TRACK_INFO* ti)
 	debug_printf ("Couldn't parse because no meta data\n");
 	return;
     }
+
+    /* Convert to wchar if available */
+#if defined HAVE_WCTYPE_H && defined HAVE_REGWCOMP
+    
+#endif
 
     /* Loop through rules, if we find a matching rule, then use it */
     /* For now, only default rules supported with ascii 

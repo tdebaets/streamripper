@@ -37,10 +37,7 @@ AC_ARG_WITH(included-libmad,
 dnl AC_MSG_RESULT($force_use_included_libmad)
 
 AC_ARG_WITH(included-tre,
-  [  --with-included-tre use the tre library included with streamripper],
-  force_use_included_tre=$withval,
-  force_use_included_tre=no)
-dnl AC_MSG_RESULT($force_use_included_tre)
+  [  --with-included-tre use the tre library included with streamripper])
 
 AC_ARG_WITH(included-argv,
   [  --with-included-argv use argv.c included with streamripper],
@@ -95,38 +92,102 @@ else
   AC_SUBST(LIBMAD)
 fi
 
+dnl Checks for header files.
+AC_HEADER_DIRENT
+AC_HEADER_STDC
+AC_CHECK_HEADERS(unistd.h)
+
+dnl -------- Tests for wchar support ---------
+dnl Wchar support is either all or nothing.  All the following 
+dnl must be present:
+dnl   1) Working wchar in C library
+dnl   2) Regular expression library with wide character support
+dnl   3) iconv library
+
+dnl It seems that it could be in wchar.h, stddef.h, or builtin
+AC_CHECK_HEADERS(wchar.h)
+AC_CHECK_HEADERS(wctype.h)
+AC_CHECK_TYPES([wchar_t],[],[],[
+#if HAVE_WCHAR_H
+#include <wchar.h>
+#endif
+#if STDC_HEADERS
+#include <stddef.h>
+#endif
+])
+dnl More wide character madness.  FreeBSD doesn't have an iswcntrl().
+AC_CHECK_FUNCS(iswcntrl)
+AC_FUNC_MBRTOWC
+
+dnl -------- Check for iconv & related
+AM_ICONV
+AM_LANGINFO_CODESET
+SR_FIND_LOCALE_CHARSET
+
+dnl -------- Check for wchar support
+dnl  This is will be used and updated in the regex test below
+have_wchar=no
+if test "$ac_cv_type_wchar_t" = yes; then
+if test "$ac_cv_func_mbrtowc" = yes; then
+if test "$ac_cv_func_iswcntrl" = yes; then
+if test "$am_cv_func_iconv" = yes; then
+  have_wchar=yes
+fi
+fi
+fi
+fi
 
 dnl -------- Tests for regular expressions ---------
 dnl Preference:
-dnl   1) Use system tre
-dnl   2) Use system regex
-dnl   3) Use included tre
+dnl   1)  Use system tre if installed
+dnl   2a) If we don't have wchar, use system regex
+dnl   2b) If we have wchar, and system regex has regwcomp, use system regex
+dnl   3)  Use included tre
 dnl Note: If using included tre, it's not easy to know whether or not 
-dnl   it has regwcomp() or not.  We will assume it does.
+dnl   it will compile with regwcomp() or not.  We will assume it does.
 dnl Note: Solaris now has a regwcomp() in system regex.  Is it compatible?
 LIBREGEX=""
 AC_SUBST(LIBREGEX)
-
-if test "$force_use_included_tre" = no; then
-  AC_CHECK_LIB(tre,regcomp)
-  AC_CHECK_FUNCS(regwcomp)
-  AC_CHECK_FUNC(regcomp,,$force_use_included_tre=yes)
+use_included_tre=no
+if test "$with_included_tre" = "yes"; then
+  use_included_tre=yes
+else
+  AC_CHECK_LIB(tre,regwcomp)
+  if test "$ac_cv_lib_tre_regwcomp" = "no"; then
+    if test "$have_wchar" = "yes"; then
+      if test "$with_included_tre" = "no"; then
+        AC_CHECK_FUNC(regwcomp,,have_wchar=no)
+      else
+        AC_CHECK_FUNC(regwcomp,,use_included_tre=yes)
+      fi
+    fi
+    if test "$have_wchar" = "no"; then
+      AC_CHECK_LIB(tre,regcomp)
+      if test "$ac_cv_lib_tre_regcomp" = "no"; then
+        if test "$with_included_tre" = "no"; then
+          AC_CHECK_FUNC(regcomp,,AC_MSG_ERROR([cannot find regular expression library]))
+        else
+          AC_CHECK_FUNC(regcomp,use_included_tre=no)
+        fi
+      fi
+    fi
+  fi
 fi
-
-AM_CONDITIONAL(SUBDIR_TRE, test "$force_use_included_tre" = yes)
-if test "$force_use_included_tre" = yes; then
+AM_CONDITIONAL(SUBDIR_TRE, test "$use_included_tre" = yes)
+if test "$use_included_tre" = "yes"; then
   LIBREGEX="tre-0.7.2/lib/.libs/libtre.a"
   AC_SUBST(LIBREGEX)
   CPPFLAGS="-Itre-0.7.2/lib $CPPFLAGS"
   AC_SUBST(CPPFLAGS)
   AC_CONFIG_SUBDIRS(tre-0.7.2)
-  AC_DEFINE(HAVE_REGWCOMP,1)
-else
-  LIBREGEX=""
-  AC_SUBST(LIBREGEX)
 fi
 
-dnl -------- Tests for using libiberty or argv.c ------
+dnl -------- WCHAR support revisited
+if test "$have_wchar" = yes; then
+  AC_DEFINE(HAVE_WCHAR_SUPPORT,1,[Define to 1 if you have wide characters, iconv, and regwcomp])
+fi
+
+dnl -------- Tests for using libiberty or argv.c
 use_included_argv=yes
 if test "$force_use_included_argv" = no; then
   AC_CHECK_LIB(iberty, buildargv,
@@ -165,6 +226,7 @@ XIPH_PATH_OGG([
     AC_SUBST(VORBIS_CFLAGS)
     AC_SUBST(VORBIS_LIBS)
     AC_DEFINE(HAVE_OGG_VORBIS,1,[Define to 1 if you have both the ogg and vorbis libraries installed])
+    sr_have_ogg=yes
     ],
     AC_DEFINE(HAVE_OGG_VORBIS,0,[Define to 1 if you have both the ogg and vorbis libraries installed]))],
   AC_DEFINE(HAVE_OGG_VORBIS,0,[Define to 1 if you have both the ogg and vorbis libraries installed])
@@ -174,41 +236,6 @@ dnl Check for semaphore library
 AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(sem, sem_init,))
 dnl Solaris needs this: -lrt
 AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(rt, sem_init,))
-
-dnl Checks for header files.
-AC_HEADER_DIRENT
-AC_HEADER_STDC
-AC_CHECK_HEADERS(unistd.h)
-
-dnl Check for wchar_t
-dnl It seems that it could be in wchar.h, stddef.h, or builtin
-AC_CHECK_HEADERS(wchar.h)
-AC_CHECK_HEADERS(wctype.h)
-AC_CHECK_TYPES([wchar_t],[],[],[
-#if HAVE_WCHAR_H
-#include <wchar.h>
-#endif
-#if STDC_HEADERS
-#include <stddef.h>
-#endif
-])
-
-dnl More wide character madness.  FreeBSD doesn't have an iswcntrl().
-AC_CHECK_FUNCS(iswcntrl)
-AC_FUNC_MBRTOWC
-
-if test "$ac_cv_type_wchar_t" = yes; then
-if test "$ac_cv_func_mbrtowc" = yes; then
-if test "$ac_cv_func_iswcntrl" = yes; then
-  AC_DEFINE(HAVE_WCHAR_SUPPORT,1,[Define to 1 if wide characters is supported])
-fi
-fi
-fi
-
-dnl Check for iconv & related
-AM_ICONV
-AM_LANGINFO_CODESET
-SR_FIND_LOCALE_CHARSET
 
 dnl uint32_t vs. u_int32_t
 dnl ISO C 99 requires uint32_t, but u_int32_t is more common(?)
@@ -270,3 +297,12 @@ AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(mkdir socket strerror strstr)
 
 AC_OUTPUT(Makefile)
+
+cat <<EOF
+* Streamripper configuration
+
+  Wide character support?            $have_wchar
+  Using included TRE library?        $use_included_tre
+  Using included MAD library?        $use_included_libmad
+  Ogg/vorbis support?                $sr_have_ogg
+EOF

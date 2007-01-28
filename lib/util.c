@@ -18,22 +18,8 @@
  * REFS:
  *   http://mail.nl.linux.org/linux-utf8/2001-04/msg00083.html
  *   http://www.cl.cam.ac.uk/~mgk25/unicode.html
- *
- * STRATEGY 1:
- *   If you don't have wchar, best effort (e.g. ASCII-only) processing.
- *   If you have wchar, but not iconv, no transcoding is done. 
- *   If you have wchar & iconv, do full transcoding.
- * CRITIQUE:
- *   This is less functionality than currently done, where accented 
- *   chars are accepted w/o wchar.
- *
- * STRATEGY 2:
- *   If you don't have wchar, use included utf8.
- *   If you have wchar, but not iconv, no transcoding is done.
- *   If you have wchar & iconv, do full transcoding.
- * CRITIQUE:
- *   TRE might not be configured with utf8, or might be using 
- *   native regex.
+ *   http://mail.nl.linux.org/linux-utf8/2001-06/msg00020.html
+ *   http://mail.nl.linux.org/linux-utf8/2001-04/msg00254.html
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,24 +37,20 @@
 #if defined HAVE_WCTYPE_H
 #include <wctype.h>
 #endif
-#endif
-#include <locale.h>
-#include <time.h>
-#include <errno.h>
 #if defined HAVE_ICONV
 #include <iconv.h>
+#endif
 #endif
 #if defined HAVE_LOCALE_CHARSET
 #include <localcharset.h>
 #elif defined HAVE_LANGINFO_CODESET
 #include <langinfo.h>
 #endif
+#include <locale.h>
+#include <time.h>
+#include <errno.h>
 #include "debug.h"
 #include "srtypes.h"
-
-
-/* uncomment to use new i18n code */
-/* #define NEW_I18N_CODE 1 */
 
 /*****************************************************************************
  * Public functions
@@ -195,6 +177,26 @@ wstring_from_string (wchar_t* w, int wlen, char* c, const char* codeset)
     return 0;
 }
 #endif /* HAVE_WCHAR_SUPPORT */
+
+int
+mstring_from_string (mchar* m, int mlen, char* c, int codeset_type)
+{
+#if defined (HAVE_WCHAR_SUPPORT)
+    switch (codeset_type) {
+    case CODESET_UTF8:
+	return wstring_from_string (m, mlen, c, "UTF-8");
+	break;
+    case CODESET_METADATA:
+	return wstring_from_string (m, mlen, c, codeset_metadata);
+	break;
+    default:
+	printf ("Program error.  Bad codeset.\n");
+	exit (-1);
+    }
+#else
+    strncpy (m, c, mlen);
+#endif
+}
 
 void
 set_codeset (char* codeset_type, const char* codeset)
@@ -679,4 +681,17 @@ sr_strncpy (char* dst, char* src, int n)
 	}
     }
     dst[i] = 0;
+}
+
+mchar* 
+mstrdup (mchar* src)
+{
+#if defined HAVE_WCHAR_SUPPORT
+    /* wstrdup/wcsdup is non-standard */
+    mchar* new_string = (mchar*) malloc (sizeof(mchar)*wcslen(src));
+    wcscpy (new_string, src);
+    return new_string;
+#else
+    return strdup (src);
+#endif
 }

@@ -145,13 +145,27 @@ typedef struct CODESET_OPTIONSst
 } CODESET_OPTIONS;
 
 /* 
- * TRACK_INFO is the parsed metadata
+ * Various CODESET types
+ */
+#define CODESET_C             0
+#define CODESET_UTF8          1
+#define CODESET_FILESYS       2
+#define CODESET_ID3           3
+#define CODESET_METADATA      4
+#define CODESET_RELAY         5
+
+/* 
+ * Wide character support
  */
 #if HAVE_WCHAR_SUPPORT
-typedef char mchar;
-#else
 typedef wchar_t mchar;
+#else
+typedef char mchar;
 #endif
+
+/* 
+ * TRACK_INFO is the parsed metadata
+ */
 typedef struct TRACK_INFOst
 {
     int have_track_info;
@@ -161,6 +175,7 @@ typedef struct TRACK_INFOst
     char album[MAX_TRACK_LEN];
     char track[MAX_TRACK_LEN];
     char composed_metadata[MAX_TRACK_LEN];
+    mchar w_raw_metadata[MAX_TRACK_LEN];
     BOOL save_track;
 } TRACK_INFO;
 

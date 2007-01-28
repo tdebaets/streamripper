@@ -17,4 +17,7 @@ void initialize_default_locale (CODESET_OPTIONS* cs_opt);
 void set_codeset (char* codeset_type, const char* codeset);
 void sr_strncpy(char* dst, char* src, int n);
 
+int mstring_from_string (mchar* m, int mlen, char* c, int codeset_type);
+mchar mstrdup (mchar* src);
+
 #endif //__UTIL_H__

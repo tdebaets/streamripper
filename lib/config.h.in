@@ -67,9 +67,6 @@
 /* Define to 1 if you have both the ogg and vorbis libraries installed */
 #undef HAVE_OGG_VORBIS
 
-/* Define to 1 if you have the `regwcomp' function. */
-#undef HAVE_REGWCOMP
-
 /* Define to 1 if you have the `socket' function. */
 #undef HAVE_SOCKET
 
@@ -123,7 +120,7 @@
 /* Define to 1 if you have the <wchar.h> header file. */
 #undef HAVE_WCHAR_H
 
-/* Define to 1 if wide characters is supported */
+/* Define to 1 if you have wide characters, iconv, and regwcomp */
 #undef HAVE_WCHAR_SUPPORT
 
 /* Define to 1 if the system has the type `wchar_t'. */
