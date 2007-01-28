@@ -583,20 +583,22 @@ filelib_write_cue(TRACK_INFO* ti, int secs)
 {
     static int track_no = 1;
     int rc;
-    char buf[1024];
+    char buf[MAX_TRACK_LEN];
 
     if (!m_do_show) return SR_SUCCESS;
     if (!m_cue_file) return SR_SUCCESS;
 
-    rc = snprintf(buf,1024,"  TRACK %02d AUDIO\n",track_no++);
-    filelib_write(m_cue_file,buf,rc);
-    rc = snprintf(buf,1024,"    TITLE \"%s\"\n",ti->title);
-    filelib_write(m_cue_file,buf,rc);
-    rc = snprintf(buf,1024,"    PERFORMER \"%s\"\n",ti->artist);
-    filelib_write(m_cue_file,buf,rc);
-    rc = snprintf(buf,1024,"    INDEX 01 %02d:%02d:00\n",
-	secs / 60, secs % 60);
-    filelib_write(m_cue_file,buf,rc);
+    rc = snprintf (buf, MAX_TRACK_LEN, "  TRACK %02d AUDIO\n", track_no++);
+    filelib_write (m_cue_file, buf, rc);
+    string_from_mstring (buf, MAX_TRACK_LEN, ti->title, CODESET_ID3);
+    rc = snprintf (buf, MAX_TRACK_LEN, "    TITLE \"%s\"\n", buf);
+    filelib_write (m_cue_file, buf, rc);
+    string_from_mstring (buf, MAX_TRACK_LEN, ti->artist, CODESET_ID3);
+    rc = snprintf (buf, MAX_TRACK_LEN, "    PERFORMER \"%s\"\n", buf);
+    filelib_write (m_cue_file, buf, rc);
+    rc = snprintf (buf, MAX_TRACK_LEN, "    INDEX 01 %02d:%02d:00\n", 
+		   secs / 60, secs % 60);
+    filelib_write (m_cue_file, buf, rc);
 
     return SR_SUCCESS;
 }
@@ -614,9 +616,9 @@ parse_and_subst_pat (char* newfile,
 		     char* pattern,
 		     char* extension)
 {
-    char stripped_artist[SR_MAX_PATH];
-    char stripped_title[SR_MAX_PATH];
-    char stripped_album[SR_MAX_PATH];
+    mchar stripped_artist[SR_MAX_PATH];
+    mchar stripped_title[SR_MAX_PATH];
+    mchar stripped_album[SR_MAX_PATH];
 #define DATEBUF_LEN 50
     char temp[DATEBUF_LEN];
     char datebuf[DATEBUF_LEN];
@@ -636,12 +638,12 @@ parse_and_subst_pat (char* newfile,
 
     /* Strip artist, title, album */
     if (ti) {
-	sr_strncpy (stripped_artist, ti->artist, SR_MAX_PATH);
-	sr_strncpy (stripped_title, ti->title, SR_MAX_PATH);
-	sr_strncpy (stripped_album, ti->album, SR_MAX_PATH);
-	strip_invalid_chars(stripped_artist);
-	strip_invalid_chars(stripped_title);
-	strip_invalid_chars(stripped_album);
+	mstrncpy (stripped_artist, ti->artist, SR_MAX_PATH);
+	mstrncpy (stripped_title, ti->title, SR_MAX_PATH);
+	mstrncpy (stripped_album, ti->album, SR_MAX_PATH);
+	strip_invalid_chars_new (stripped_artist);
+	strip_invalid_chars_new (stripped_title);
+	strip_invalid_chars_new (stripped_album);
     }
 
     while (nfi < MAX_FILEBASELEN) {
@@ -685,7 +687,7 @@ parse_and_subst_pat (char* newfile,
 	case 'a':
 	    /* album */
 	    if (!ti) goto illegal_pattern;
-	    strncat (newfile, stripped_album, MAX_FILEBASELEN-nfi);
+	    mstrncat (newfile, stripped_album, MAX_FILEBASELEN-nfi);
 	    nfi = strlen (newfile);
 	    opi+=2;
 	    continue;

@@ -51,6 +51,7 @@
 #include <errno.h>
 #include "debug.h"
 #include "srtypes.h"
+#include "util.h"
 
 /*****************************************************************************
  * Public functions
@@ -660,6 +661,38 @@ strip_invalid_chars(char *str)
 #endif
 }
 
+mchar* 
+strip_invalid_chars_new (mchar *str)
+{
+#if HAVE_WCHAR_SUPPORT
+# if defined (WIN32)
+    wchar_t invalid_chars[] = L"\\/:*?\"<>|~";
+# else
+    wchar_t invalid_chars[] = L"\\/:*?\"<>|.~";
+# endif
+#else
+# if defined (WIN32)
+    char invalid_chars[] = "\\/:*?\"<>|~";
+# else
+    char invalid_chars[] = "\\/:*?\"<>|.~";
+# endif
+#endif
+
+    mchar *oldstr = str;						
+    mchar *newstr = str;
+
+    if (!str) return NULL;
+
+    for (;*oldstr; oldstr++) {
+	if (mstrchr(invalid_chars, *oldstr) != NULL)
+		continue;
+	*newstr = *oldstr;
+	newstr++;
+    }
+    *newstr = '\0';
+    return str;
+}
+
 char *format_byte_size(char *str, long size)
 {
     const long ONE_K = 1024;
@@ -767,4 +800,24 @@ msnprintf (mchar* dest, size_t n, const mchar* fmt, ...)
     return vsnprintf (dest, n, fmt, ap);
 #endif
     va_end (ap);
+}
+
+mchar*
+mstrchr (const mchar* ws, mchar wc)
+{
+#if defined HAVE_WCHAR_SUPPORT
+    return wcschr (ws, wc);
+#else
+    return strchr (ws, wc);
+#endif
+}
+
+mchar*
+mstrncat (mchar* ws1, const mchar* ws2, size_t n)
+{
+#if defined HAVE_WCHAR_SUPPORT
+    return wcsncat (ws1, ws2, n);
+#else
+    return strncat (ws1, ws2, n);
+#endif
 }

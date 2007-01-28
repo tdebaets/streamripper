@@ -24,5 +24,9 @@ mchar* mstrcpy (mchar* dest, const mchar* src);
 int msnprintf (mchar* dest, size_t n, const mchar* fmt, ...);
 void mstrncpy (mchar* dst, mchar* src, int n);
 size_t mstrlen (mchar* s);
+mchar* mstrchr (const mchar* ws, mchar wc);
+mchar* mstrncat (mchar* ws1, const mchar* ws2, size_t n);
+
+mchar* strip_invalid_chars_new (mchar *str);
 
 #endif //__UTIL_H__
