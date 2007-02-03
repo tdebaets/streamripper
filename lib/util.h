@@ -28,5 +28,6 @@ mchar* mstrchr (const mchar* ws, mchar wc);
 mchar* mstrncat (mchar* ws1, const mchar* ws2, size_t n);
 
 mchar* strip_invalid_chars_new (mchar *str);
+int is_id3_unicode (void);
 
 #endif //__UTIL_H__

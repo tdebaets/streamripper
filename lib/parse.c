@@ -147,8 +147,6 @@ compile_rule (Parse_Rule* pr, mchar* rule_string)
     }
     rc = sr_regcomp(pr, rule_string, cflags);
     if (rc != 0) {
-	printf ("Warning: malformed regular expression:\n%s\n",
-	    rule_string);
 	free(pr->reg);
 	return 0;
     }
@@ -372,7 +370,11 @@ init_metadata_parser (char* rules_file)
 	/* Compile the rule */
 	mstring_from_string (w_match_buf, MAX_RULE_SIZE, match_buf, 
 			     CODESET_UTF8);
-	if (!compile_rule(&m_global_rule_list[ri], w_match_buf)) continue;
+	if (!compile_rule(&m_global_rule_list[ri], w_match_buf)) {
+	    printf ("Warning: malformed regular expression:\n%s\n", 
+		    match_buf);
+	    continue;
+	}
 
 	/* Copy rule strings */
 	m_global_rule_list[ri].match = mstrdup(w_match_buf);

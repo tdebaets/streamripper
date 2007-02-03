@@ -198,6 +198,19 @@ post_status(int status)
     m_status_callback(RM_UPDATE, &m_ripinfo);
 }
 
+void
+compose_console_string (TRACK_INFO* ti)
+{
+#if defined HAVE_WCHAR_SUPPORT
+    mchar* fmt = L"%s - %s";
+#else
+    mchar* fmt = "%s - %s";
+#endif
+    mchar console_string[SR_MAX_PATH];
+    msnprintf (console_string, SR_MAX_PATH, fmt, ti->artist, ti->title);
+    string_from_mstring (m_ripinfo.filename, SR_MAX_PATH, console_string,
+			 CODESET_LOCALE);
+}
 
 /* 
  * This is called by ripstream when we get a new track. 
@@ -229,8 +242,7 @@ rip_manager_start_track (TRACK_INFO* ti, int track_count)
     m_ripinfo.track_count = track_count;
 
     /* Compose the string for the console output */
-    snprintf (m_ripinfo.filename, SR_MAX_PATH, "%s - %s", 
-	      ti->artist, ti->title);
+    compose_console_string (ti);
     m_ripinfo.filename[SR_MAX_PATH-1] = '\0';
     m_status_callback(RM_NEW_TRACK, (void*) m_ripinfo.filename);
     post_status(0);
@@ -589,7 +601,8 @@ start_ripping()
 			 m_ripinfo.bitrate, 
 			 m_http_info.meta_interval,
 			 m_http_info.content_type, 
-			 GET_ADD_ID3(m_options.flags),
+			 GET_ADD_ID3V1(m_options.flags),
+			 GET_ADD_ID3V2(m_options.flags),
 			 m_ripinfo.ep);
     if (ret != SR_SUCCESS) {
 	ripstream_destroy();
@@ -705,7 +718,8 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
     m_opt->flags = OPT_AUTO_RECONNECT | 
 	    OPT_SEPERATE_DIRS | 
 	    OPT_SEARCH_PORTS |
-	    OPT_ADD_ID3 |
+	    OPT_ADD_ID3V1 |
+	    OPT_ADD_ID3V2 |
 	    OPT_INDIVIDUAL_TRACKS;
 
     /* GCS FIX: What is the difference between this timeout 

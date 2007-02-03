@@ -148,10 +148,11 @@ typedef struct CODESET_OPTIONSst
  * Various CODESET types
  */
 #define CODESET_UTF8          1
-#define CODESET_FILESYS       2
-#define CODESET_ID3           3
-#define CODESET_METADATA      4
-#define CODESET_RELAY         5
+#define CODESET_LOCALE        2
+#define CODESET_FILESYS       3
+#define CODESET_ID3           4
+#define CODESET_METADATA      5
+#define CODESET_RELAY         6
 
 /* 
  * Wide character support

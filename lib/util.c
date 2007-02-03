@@ -69,10 +69,11 @@ void 	null_printf(char *s, ...);
 /*****************************************************************************
  * Private global variables
  *****************************************************************************/
-const char* codeset_metadata;
-const char* codeset_relay;
-const char* codeset_id3;
-const char* codeset_filesys;
+const char* m_codeset_locale;
+const char* m_codeset_filesys;
+const char* m_codeset_id3;
+const char* m_codeset_metadata;
+const char* m_codeset_relay;
 
 char*
 subnstr_until(const char *str, char *until, char *newstr, int maxlen)
@@ -104,7 +105,7 @@ char *left_str(char *str, int len)
 #if HAVE_WCHAR_SUPPORT
 # if HAVE_ICONV
 int 
-iconv_convert_string (char* dst, int dst_len, char* src,
+iconv_convert_string (char* dst, int dst_len, char* src, int src_len, 
 		      const char* dst_codeset, const char* src_codeset)
 {
     size_t rc;
@@ -119,7 +120,7 @@ iconv_convert_string (char* dst, int dst_len, char* src,
 		      dst_codeset, src_codeset);
 	return -1;
     }
-    src_left = strlen(src);
+    src_left = src_len;
     dst_left = dst_len;
     src_ptr = src;
     dst_ptr = dst;
@@ -136,19 +137,22 @@ iconv_convert_string (char* dst, int dst_len, char* src,
 	}
     }
     iconv_close (ict);
-    return 0;
+    return dst_len - dst_left;
 }
 # endif
 
-/* What does the rc mean here? */
+/* Return value is the number of bytes occupied by the converted string, 
+   including the null character. */
 int 
 string_from_wstring (char* c, int clen, wchar_t* w, const char* codeset)
 {
     int rc;
 
 # if HAVE_ICONV
-    rc = iconv_convert_string (c, clen, (char*) w, codeset, "WCHAR_T");
-    if (rc == 0) return 0;
+    int wlen;
+    wlen = wcslen (w) + 1;
+    rc = iconv_convert_string (c, clen, (char*) w, wlen, codeset, "WCHAR_T");
+    if (rc >= 0) return rc;
     /* Otherwise, fall through to wcstombs method */
 # endif
 
@@ -156,17 +160,18 @@ string_from_wstring (char* c, int clen, wchar_t* w, const char* codeset)
     if (rc == -1) {
 	/* Do something smart here */
     }
-    return 0;
+    return rc;
 }
 
-/* What does the rc mean here? */
 int 
 wstring_from_string (wchar_t* w, int wlen, char* c, const char* codeset)
 {
     int rc;
 
 # if HAVE_ICONV
-    rc = iconv_convert_string ((char*) w, wlen, c, "WCHAR_T", codeset);
+    int clen;
+    clen = strlen (c);  // <----<<<<  GCS FIX. String is arbitrarily encoded.
+    rc = iconv_convert_string ((char*) w, wlen, c, clen, "WCHAR_T", codeset);
     if (rc == 0) return 0;
     /* Otherwise, fall through to mbstowcs method */
 # endif
@@ -177,8 +182,26 @@ wstring_from_string (wchar_t* w, int wlen, char* c, const char* codeset)
     }
     return 0;
 }
+
+int 
+wchar_from_char (char c, const char* codeset)
+{
+    wchar_t w[1];
+    int rc;
+
+# if HAVE_ICONV
+    rc = iconv_convert_string (&w, 1, &c, 1, "WCHAR_T", codeset);
+    if (rc == 1) return w[0];
+    /* Otherwise, fall through to mbstowcs method */
+# endif
+
+    /* Do something smart here */
+    return 0;
+}
 #endif /* HAVE_WCHAR_SUPPORT */
 
+/* Return value is the number of bytes occupied by the converted string, 
+   including the null character */
 int
 mstring_from_string (mchar* m, int mlen, char* c, int codeset_type)
 {
@@ -187,8 +210,11 @@ mstring_from_string (mchar* m, int mlen, char* c, int codeset_type)
     case CODESET_UTF8:
 	return wstring_from_string (m, mlen, c, "UTF-8");
 	break;
+    case CODESET_LOCALE:
+	return wstring_from_string (m, mlen, c, m_codeset_locale);
+	break;
     case CODESET_METADATA:
-	return wstring_from_string (m, mlen, c, codeset_metadata);
+	return wstring_from_string (m, mlen, c, m_codeset_metadata);
 	break;
     default:
 	printf ("Program error.  Bad codeset m->c.\n");
@@ -196,6 +222,7 @@ mstring_from_string (mchar* m, int mlen, char* c, int codeset_type)
     }
 #else
     strncpy (m, c, mlen);
+    ERROR need return value;
 #endif
 }
 
@@ -207,14 +234,17 @@ string_from_mstring (char* c, int clen, mchar* m, int codeset_type)
     case CODESET_UTF8:
 	return string_from_wstring (c, clen, m, "UTF-8");
 	break;
+    case CODESET_LOCALE:
+	return string_from_wstring (c, clen, m, m_codeset_locale);
+	break;
     case CODESET_FILESYS:
-	return string_from_wstring (c, clen, m, codeset_filesys);
+	return string_from_wstring (c, clen, m, m_codeset_filesys);
 	break;
     case CODESET_ID3:
-	return string_from_wstring (c, clen, m, codeset_id3);
+	return string_from_wstring (c, clen, m, m_codeset_id3);
 	break;
     case CODESET_RELAY:
-	return string_from_wstring (c, clen, m, codeset_relay);
+	return string_from_wstring (c, clen, m, m_codeset_relay);
 	break;
     default:
 	printf ("Program error.  Bad codeset c->m.\n");
@@ -225,32 +255,33 @@ string_from_mstring (char* c, int clen, mchar* m, int codeset_type)
 #endif
 }
 
-void
-set_codeset (char* codeset_type, const char* codeset)
+mchar
+mchar_from_char (char c, int codeset_type)
 {
-    if (!strcmp(codeset_type, "CODESET_METADATA")) {
-	codeset_metadata = codeset;
-	return;
+#if defined (HAVE_WCHAR_SUPPORT)
+    switch (codeset_type) {
+    case CODESET_UTF8:
+	return wchar_from_char (c, "UTF-8");
+	break;
+    case CODESET_LOCALE:
+	return wchar_from_char (c, m_codeset_locale);
+	break;
+    case CODESET_FILESYS:
+	return wchar_from_char (c, m_codeset_filesys);
+	break;
+    case CODESET_ID3:
+	return wchar_from_char (c, m_codeset_id3);
+	break;
+    case CODESET_RELAY:
+	return wchar_from_char (c, m_codeset_relay);
+	break;
+    default:
+	printf ("Program error.  Bad codeset c->m.\n");
+	exit (-1);
     }
-    if (!strcmp(codeset_type, "CODESET_RELAY")) {
-	codeset_relay = codeset;
-	return;
-    }
-    if (!strcmp(codeset_type, "CODESET_ID3")) {
-	codeset_id3 = codeset;
-	return;
-    }
-    if (!strcmp(codeset_type, "CODESET_FILESYS")) {
-	codeset_filesys = codeset;
-	return;
-    }
-    if (!strcmp(codeset_type, "CODESET_ALL")) {
-	codeset_metadata = codeset;
-	codeset_relay = codeset;
-	codeset_id3 = codeset;
-	codeset_filesys = codeset;
-	return;
-    }
+#else
+    return c;
+#endif
 }
 
 const char*
@@ -258,12 +289,23 @@ get_default_codeset (void)
 {
     const char* fromcode = 0;
 #if defined HAVE_LOCALE_CHARSET
+    debug_printf ("Using locale_charset() to get system codeset.\n");
     fromcode = locale_charset ();
 #elif defined HAVE_LANGINFO_CODESET
+    debug_printf ("Using nl_langinfo() to get system codeset.\n");
     fromcode = nl_langinfo (CODESET);
 #else
     /* No way to get default codeset */
+    debug_printf ("No way to get system codeset.\n");
+    fromcode = "ISO-8859-1";
 #endif
+
+#if defined HAVE_ICONV
+    debug_printf ("Have iconv.\n");
+#else
+    debug_printf ("No iconv.\n");
+#endif
+
     return fromcode;
 }
 
@@ -275,154 +317,52 @@ initialize_default_locale (CODESET_OPTIONS* cs_opt)
     setlocale (LC_CTYPE, "");
     debug_printf ("LOCALE is %s\n",setlocale(LC_ALL,NULL));
 
-#if defined HAVE_LOCALE_CHARSET
-    debug_printf ("Using locale_charset() to get system codeset.\n");
-#elif defined HAVE_LANGINFO_CODESET
-    debug_printf ("Using nl_langinfo() to get system codeset.\n");
-#else
-    debug_printf ("No way to get system codeset.\n");
-#endif
-
-#if defined HAVE_ICONV
-    debug_printf ("Found iconv.\n");
-#else
-    debug_printf ("No iconv.\n");
-#endif
-
     /* Set default codesets */
-    /* I could potentially add stuff like utf8 for filesys on osx here */
     fromcode = get_default_codeset ();
     if (fromcode) {
         debug_printf ("LOCALE CODESET is %s\n", fromcode);
-	set_codeset ("CODESET_ALL", fromcode);
+	m_codeset_locale = fromcode;
+	m_codeset_filesys = fromcode;
+	m_codeset_id3 = fromcode;
+	m_codeset_metadata = fromcode;
+	m_codeset_relay = fromcode;
     } else {
-	set_codeset ("CODESET_ALL", 0);
+	/* GCS FIX: Is this right? */
+	m_codeset_locale = "";
+	m_codeset_filesys = 0;
+	m_codeset_id3 = 0;
+	m_codeset_metadata = 0;
+	m_codeset_relay = 0;
     }
+
+    /* I could potentially add stuff like forcing filesys to be utf8 
+       (or whatever) for osx here */
 
     /* Override from command line if requested */
     if (!cs_opt) return;
     if (cs_opt->codeset_filesys) {
-	set_codeset ("CODESET_FILESYS", cs_opt->codeset_filesys);
+	m_codeset_filesys = cs_opt->codeset_filesys;
+    }
+    if (cs_opt->codeset_id3) {
+	m_codeset_id3 = cs_opt->codeset_id3;
     }
     if (cs_opt->codeset_metadata) {
-	set_codeset ("CODESET_METADATA", cs_opt->codeset_metadata);
+	m_codeset_metadata = cs_opt->codeset_metadata;
+    }
+    if (cs_opt->codeset_relay) {
+	m_codeset_relay = cs_opt->codeset_relay;
     }
 }
 
-/*
-  metadata     -> wchar }       { wchar -> filename
-  matchstring  -> wchar } parse { wchar -> id3, cue
-                                { wchar -> relay stream
-
-  metadata_locale: use locale()
-  matchstring is *required* to be utf8
-  filename: <<special/platform-specific>> use utf8
-  id3/cue: use locale()
-  relay stream: use locale() - same as metadata
-
-  if have iconv 
-     && iconv has conversion to wchar_t?
-     && HAVE_LOCALE_CHARSET || HAVE_LANGINFO_CODESET
-  then
-     use iconv for conversion to wchar
-  else
-     only default locale available
-     use mbcstowc for conversion to wchar
-
-  // question: what if posix wchar r.e. matching is not available?
-  // answer: default to ascii r.e. matching or simple matching.
-  
-  default approach, use tre for regular expressions.
-  question: should I use built-in posix r.e. at all?
-  answer: i don't know, but check AT&T compatibility page, linked 
-    off tre page.
-
-  --codeset (sets all)
-  --codeset-metadata
-  --codeset-relay
-  --codeset-id3
-  --codeset-filesys
-
-  Three places processing are needed:
-
-  1) stream name -> parsing -> directory name
-  2) meta data -> parsing -> file name, id3, relay
-  3) What is the third??  
-
-*/
-/* Given a multibyte string containing the title, three names are 
-   suggested.  One in utf8 encoding, one with wchar_t encoding,
-   one in the multibyte encoding of the locale, and one that 
-   is a "guaranteed-to-work" ascii name.
-
-   For saving, set up filename like this:
-
-   linux:   utf8 or locale_mbcs + open() or fopen()
-   osx:     utf8 + open() or utf8 + wfopen()
-   windows: utf8 + OpenFile() or locale_mbcs + OpenFile()
-
-   RMK: osx has iconv starting with 10.3.  It seems to also 
-   be the case that osx has wchar.h starting with 10.3.
-
-   But still need to convert to wchar for stripping.  Note, this 
-   doesn't work all the time using mbstowcs.  
-
-   Finally, user should be able to override.
-
-   ------------------------------------------------------
-   Pseudocode:
-   ------------------------------------------------------
-   convert to wchar
-
-   if it seemed to work (non-null)
-     strip using wchar
-   else
-     give up, and use anonymous ascii
-
-   if target_lang user spec'd
-   if have iconv
-     convert wchar to user spec'd
-     try to open file
-     if successful, done
-
-   target_lang is utf8
-   if have iconv
-     convert wchar to utf8
-     try to open file
-     if successful, done
-
-   if have wchar_open
-     try to open file
-     if successful, done
-
-   target_lang is locale_mbcs
-   if have iconv
-     convert using wchar
-   else
-     convert using wcstombs
-   if successful, done
-
-   give up, and use anonymous ascii
-   ------------------------------------------------------
-   Note that even the above doesn't consider what 
-   to do about the id3 information. :-)
-*/
-#if defined (commentout)
-void
-suggest_filenames (char *input_string, char *utf8_name, char *wchar_name, 
-		   char *locale_mbcs_name, char *ascii_name,
-		   int buflen)
+/* This is used to set the codeset byte for id3v2 frames */
+int
+is_id3_unicode (void)
 {
-    static unsigned int anonymous_idx = 0;
-
-    *utf8_name = 0;
-    *wchar_name = 0;
-    *locale_mbcs_name = 0;
-    *ascii_name = 0;
-    if (!input_string) return;
-    if (buflen <= 1) return;
+    if (!strcmp ("UCS-2", m_codeset_id3)) {
+	return 1;
+    }
+    return 0;
 }
-#endif
 
 #if HAVE_WCHAR_SUPPORT
 # if HAVE_ICONV
@@ -821,3 +761,4 @@ mstrncat (mchar* ws1, const mchar* ws2, size_t n)
     return strncat (ws1, ws2, n);
 #endif
 }
+
