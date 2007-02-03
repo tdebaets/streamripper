@@ -243,9 +243,9 @@ copy_track_info (TRACK_INFO* dest, TRACK_INFO* src)
 {
     dest->have_track_info = src->have_track_info;
     strcpy (dest->raw_metadata, src->raw_metadata);
-    strcpy (dest->artist, src->artist);
-    strcpy (dest->title, src->title);
-    strcpy (dest->album, src->album);
+    mstrcpy (dest->artist, src->artist);
+    mstrcpy (dest->title, src->title);
+    mstrcpy (dest->album, src->album);
     strcpy (dest->composed_metadata, src->composed_metadata);
     dest->save_track = src->save_track;
 }
@@ -611,13 +611,16 @@ end_track_mp3 (u_long pos1, u_long pos2, TRACK_INFO* ti)
     /* This is id3v1 */
     if (m_addID3tag) {
 	ID3Tag id3;
-	memset(&id3, '\000',sizeof(id3));
-	strncpy(id3.tag, "TAG", strlen("TAG"));
-	strncpy(id3.artist, ti->artist, sizeof(id3.artist));
-	strncpy(id3.songtitle, ti->title, sizeof(id3.songtitle));
-	strncpy(id3.album, ti->album, sizeof(id3.album));
+	memset (&id3, '\000',sizeof(id3));
+	strncpy (id3.tag, "TAG", strlen("TAG"));
+	string_from_mstring (id3.artist, sizeof(id3.artist), 
+			     ti->artist, CODESET_ID3);
+	string_from_mstring (id3.songtitle, sizeof(id3.songtitle), 
+			     ti->title, CODESET_ID3);
+	string_from_mstring (id3.album, sizeof(id3.album),
+			     ti->album, CODESET_ID3);
 	id3.genre = (char) 0xFF; // see http://www.id3.org/id3v2.3.0.html#secA
-	ret = rip_manager_put_data((char *)&id3, sizeof(id3));
+	ret = rip_manager_put_data ((char *)&id3, sizeof(id3));
 	if (ret != SR_SUCCESS) {
 	    goto BAIL;
 	}
