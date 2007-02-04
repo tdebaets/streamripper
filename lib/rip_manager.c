@@ -41,7 +41,7 @@
 #include "filelib.h"
 #include "socklib.h"
 #include "http.h"
-#include "util.h"
+#include "mchar.h"
 #include "findsep.h"
 #include "relaylib.h"
 #include "rip_manager.h"
@@ -258,7 +258,7 @@ rip_manager_start_track (TRACK_INFO* ti, int track_count)
 error_code
 rip_manager_end_track(TRACK_INFO* ti)
 {
-    char fullpath[SR_MAX_PATH];
+    mchar fullpath[SR_MAX_PATH];
 
     if (m_write_data) {
         filelib_end (ti, m_options.overwrite, 
@@ -267,6 +267,7 @@ rip_manager_end_track(TRACK_INFO* ti)
     }
 
     post_status(0);
+    /* GCS FIX - Need to convert here */
     m_status_callback(RM_TRACK_DONE, (void*)fullpath);
 
     return SR_SUCCESS;

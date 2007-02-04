@@ -19,7 +19,7 @@
 #include "srtypes.h"
 #include "socklib.h"
 #include "http.h"
-#include "util.h"
+#include "mchar.h"  /* for substrn_until, etc. */
 #include "debug.h"
 
 /******************************************************************************

@@ -21,7 +21,7 @@
 #include "srtypes.h"
 #include "threadlib.h"
 #include "rip_manager.h"
-#include "util.h"
+#include "mchar.h"
 #include "debug.h"
 
 #if WIN32

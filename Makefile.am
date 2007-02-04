@@ -31,6 +31,7 @@ streamripper_SOURCES = \
 	lib/findsep.c \
 	lib/http.c \
 	lib/iconvert.c \
+	lib/mchar.c \
 	lib/mpeg.c \
 	lib/parse.c \
 	lib/relaylib.c \
@@ -41,7 +42,6 @@ streamripper_SOURCES = \
 	lib/socklib.c \
 	lib/threadlib.c \
 	lib/utf8.c \
-	lib/util.c \
 	lib/cbuf2.h \
 	lib/charmaps.h \
 	lib/charset.h \
@@ -52,6 +52,7 @@ streamripper_SOURCES = \
 	lib/findsep.h \
 	lib/http.h \
 	lib/list.h \
+	lib/mchar.h \
 	lib/mpeg.h \
 	lib/parse.h \
 	lib/relaylib.h \
@@ -63,8 +64,7 @@ streamripper_SOURCES = \
 	lib/threadlib.h \
 	lib/srtypes.h \
 	lib/uce_dirent.h \
-	lib/utf8.h \
-	lib/util.h
+	lib/utf8.h
 
 if USE_INCLUDED_ARGV
 streamripper_SOURCES += lib/argv.c

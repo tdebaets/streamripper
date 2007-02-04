@@ -26,7 +26,7 @@
 #include "srtypes.h"
 #include "cbuf2.h"
 #include "findsep.h"
-#include "util.h"
+#include "mchar.h"
 #include "parse.h"
 #include "rip_manager.h"
 #include "ripstream.h"

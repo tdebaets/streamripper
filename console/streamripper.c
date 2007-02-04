@@ -24,7 +24,7 @@
 #include <time.h>
 #include "srtypes.h"
 #include "rip_manager.h"
-#include "util.h"
+#include "mchar.h"
 #include "filelib.h"
 #include "debug.h"
 
@@ -250,7 +250,6 @@ void print_usage()
     fprintf(stderr, "      -l seconds     - Number of seconds to run, otherwise runs forever\n");
     fprintf(stderr, "      -M megabytes   - Stop ripping after this many megabytes\n");
     fprintf(stderr, "      -q [start]     - Add sequence number to output file\n");
-    fprintf(stderr, "      -i             - Don't add ID3 tags to output file\n");
     fprintf(stderr, "      -u useragent   - Use a different UserAgent than \"Streamripper\"\n");
     fprintf(stderr, "      -w rulefile    - Parse metadata using rules in file.\n");
     fprintf(stderr, "      -m timeout     - Number of seconds before force-closing stalled conn\n");
@@ -262,6 +261,11 @@ void print_usage()
     fprintf(stderr, "      -E command     - Run external command to fetch metadata\n");
     fprintf(stderr, "      --quiet        - Don't print ripping status to console\n");
     fprintf(stderr, "      --debug        - Save debugging trace\n");
+    fprintf(stderr, "ID3 opts (mp3/aac/nsv):\n");
+    fprintf(stderr, "       [The default behavior is adding both ID3V1 and ID3V2]\n");
+    fprintf(stderr, "      -i                           - Don't add any ID3 tags to output file\n");
+    fprintf(stderr, "      --without-id3v1              - Don't add ID3V1 tags to output file\n");
+    fprintf(stderr, "      --without-id3v2              - Don't add ID3V2 tags to output file\n");
     fprintf(stderr, "Splitpoint opts (mp3 only):\n");
     fprintf(stderr, "      --xs-offset                  - Shift relative to metadata (msec)\n");
     fprintf(stderr, "      --xs-padding=num:num         - Add extra to prev:next track (msec)\n");
@@ -348,7 +352,9 @@ void parse_arguments(int argc, char **argv)
             exit(0);
 	    break;
 	case 'i':
-	    m_opt.flags ^= OPT_ADD_ID3;
+	    //	    m_opt.flags ^= OPT_ADD_ID3;
+	    OPT_FLAG_SET(m_opt.flags,OPT_ADD_ID3V1,0);
+	    OPT_FLAG_SET(m_opt.flags,OPT_ADD_ID3V2,0);
 	    break;
 	case 'I':
 	    i++;

@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <time.h>
 #include "srtypes.h"
-#include "util.h"
 #include "threadlib.h"
 #include "debug.h"
 

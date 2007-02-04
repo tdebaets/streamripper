@@ -41,7 +41,6 @@
 #endif
 
 #include "srtypes.h"
-#include "util.h"
 #include "socklib.h"
 #include "threadlib.h"
 #include "compat.h"

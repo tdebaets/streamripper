@@ -22,7 +22,7 @@
 #include <errno.h>
 #include "compat.h"
 #include "filelib.h"
-#include "util.h"
+#include "mchar.h"
 #include "debug.h"
 #include <assert.h>
 #include <sys/types.h>
@@ -42,42 +42,43 @@ error_code filelib_remove(char *filename);
 /*****************************************************************************
  * Private Functions
  *****************************************************************************/
-static error_code device_split (char* dirname, char* device, char* path);
-static error_code mkdir_if_needed (char *str);
-static error_code mkdir_recursive (char *str, int make_last);
+static error_code device_split (mchar* dirname, mchar* device, mchar* path);
+static error_code mkdir_if_needed (mchar *str);
+static error_code mkdir_recursive (mchar *str, int make_last);
 static void close_file (FHANDLE* fp);
 static void close_files ();
 static error_code filelib_write (FHANDLE fp, char *buf, u_long size);
-static BOOL file_exists (char *filename);
-static void trim_filename (char *filename, char* out);
-static void trim_mp3_suffix (char *filename);
-static error_code filelib_open_for_write (FHANDLE* fp, char *filename);
+static BOOL file_exists (mchar *filename);
+static void trim_filename (mchar* out, mchar *filename);
+static void trim_mp3_suffix (mchar *filename);
+static error_code filelib_open_for_write (FHANDLE* fp, mchar *filename);
 static void
-parse_and_subst_dir (char* pattern_head, char* pattern_tail, char* opat_path,
-		     int is_for_showfile);
+parse_and_subst_dir (mchar* pattern_head, mchar* pattern_tail, 
+		     mchar* opat_path, int is_for_showfile);
 static void
-parse_and_subst_pat (char* newfile,
+parse_and_subst_pat (mchar* newfile,
 		     TRACK_INFO* ti,
-		     char* directory,
-		     char* pattern,
-		     char* extension);
+		     mchar* directory,
+		     mchar* pattern,
+		     mchar* extension);
 static void set_default_pattern (BOOL get_separate_dirs, BOOL do_count);
 static error_code 
-set_output_directory (char* global_output_directory,
-		      char* global_output_pattern,
-		      char* output_pattern,
-		      char* output_directory,
-		      char* default_pattern,
-		      char* default_pattern_tail,
+set_output_directory (mchar* global_output_directory,
+		      mchar* global_output_pattern,
+		      mchar* output_pattern,
+		      mchar* output_directory,
+		      mchar* default_pattern,
+		      mchar* default_pattern_tail,
 		      int get_separate_dirs,
 		      int get_date_stamp,
 		      int is_for_showfile
 		      );
-static error_code sr_getcwd (char* dirbuf);
-static error_code add_trailing_slash (char *str);
-static int get_next_sequence_number (char* fn_base);
-static void fill_date_buf (char* datebuf, int datebuf_len);
+static error_code sr_getcwd (mchar* dirbuf);
+static error_code add_trailing_slash (mchar *str);
+static int get_next_sequence_number (mchar* fn_base);
+static void fill_date_buf (mchar* datebuf, int datebuf_len);
 static error_code filelib_open_showfiles ();
+static void move_file (mchar* new_filename, mchar* old_filename);
 
 /*****************************************************************************
  * Private Vars
@@ -88,33 +89,35 @@ static FHANDLE 	m_show_file;
 static FHANDLE  m_cue_file;
 static int 	m_count;
 static int      m_do_show;
-static char 	m_default_pattern[SR_MAX_PATH];
-static char 	m_default_showfile_pattern[SR_MAX_PATH];
-static char 	m_output_directory[SR_MAX_PATH];
-static char 	m_output_pattern[SR_MAX_PATH];
-static char 	m_incomplete_directory[SR_MAX_PATH];
-static char     m_incomplete_filename[SR_MAX_PATH];
-static char 	m_showfile_directory[SR_MAX_PATH];
-static char     m_showfile_pattern[SR_MAX_PATH];
+static mchar 	m_default_pattern[SR_MAX_PATH];
+static mchar 	m_default_showfile_pattern[SR_MAX_PATH];
+static mchar 	m_output_directory[SR_MAX_PATH];
+static mchar 	m_output_pattern[SR_MAX_PATH];
+static mchar 	m_incomplete_directory[SR_MAX_PATH];
+static mchar    m_incomplete_filename[SR_MAX_PATH];
+static mchar 	m_showfile_directory[SR_MAX_PATH];
+static mchar    m_showfile_pattern[SR_MAX_PATH];
 static BOOL	m_keep_incomplete = TRUE;
 static int      m_max_filename_length;
-static char 	m_show_name[SR_MAX_PATH];
-static char 	m_cue_name[SR_MAX_PATH];
-static char 	m_icy_name[SR_MAX_PATH];
-static char*	m_extension;
+static mchar 	m_show_name[SR_MAX_PATH];
+static mchar 	m_cue_name[SR_MAX_PATH];
+static mchar 	m_icy_name[SR_MAX_PATH];
+static mchar*	m_extension;
 static BOOL	m_do_individual_tracks;
-static char     m_session_datebuf[DATEBUF_LEN];
-static char     m_stripped_icy_name[SR_MAX_PATH];
+static mchar    m_session_datebuf[DATEBUF_LEN];
+static mchar    m_stripped_icy_name[SR_MAX_PATH];
 
 // For now we're not going to care. If it makes it good. it not, will know 
 // When we try to create a file in the path.
 static error_code
-mkdir_if_needed(char *str)
+mkdir_if_needed (mchar *str)
 {
+    char s[SR_MAX_PATH];
+    string_from_mstring (s, SR_MAX_PATH, str, CODESET_FILESYS);
 #if WIN32
-    mkdir(str);
+    mkdir (s);
 #else
-    mkdir(str, 0777);
+    mkdir (s, 0777);
 #endif
     return SR_SUCCESS;
 }
@@ -123,16 +126,16 @@ mkdir_if_needed(char *str)
    substring (after the last '/') is considered a directory rather 
    than a file name */
 static error_code
-mkdir_recursive (char *str, int make_last)
+mkdir_recursive (mchar *str, int make_last)
 {
-    char buf[SR_MAX_PATH];
-    char* p = buf;
-    char q;
+    mchar buf[SR_MAX_PATH];
+    mchar* p = buf;
+    mchar q;
 
-    buf[0] = '\0';
-    while ((q = *p++ = *str++) != '\0') {
+    buf[0] = 0;
+    while ((q = *p++ = *str++) != 0) {
 	if (ISSLASH(q)) {
-	    *p = '\0';
+	    *p = 0;
 	    mkdir_if_needed (buf);
 	}
     }
@@ -149,13 +152,17 @@ filelib_init (BOOL do_individual_tracks,
 	      BOOL keep_incomplete,
 	      BOOL do_show_file,
 	      int content_type,
-	      char* output_directory,
-	      char* output_pattern,
-	      char* showfile_pattern,
+	      char* output_directory,  /* Locale encoded - from command line */
+	      char* output_pattern,    /* Locale encoded - from command line */
+	      char* showfile_pattern,  /* Locale encoded - from command line */
 	      int get_separate_dirs,
 	      int get_date_stamp,
 	      char* icy_name)
 {
+    mchar tmp_output_directory[SR_MAX_PATH];
+    mchar tmp_output_pattern[SR_MAX_PATH];
+    mchar tmp_showfile_pattern[SR_MAX_PATH];
+
     m_file = INVALID_FHANDLE;
     m_show_file = INVALID_FHANDLE;
     m_cue_file = INVALID_FHANDLE;
@@ -173,25 +180,30 @@ filelib_init (BOOL do_individual_tracks,
     debug_printf ("FILELIB_INIT: showfile_pattern=%s\n",
 		  showfile_pattern ? showfile_pattern : "");
 
-    sr_strncpy (m_icy_name, icy_name, SR_MAX_PATH);
-    sr_strncpy (m_stripped_icy_name, icy_name, SR_MAX_PATH);
-    debug_printf ("Stripping icy name...\n");
-    strip_invalid_chars (m_stripped_icy_name);
-    debug_printf ("Done stripping icy name.\n");
+    mstring_from_string (tmp_output_directory, SR_MAX_PATH, output_directory, 
+			 CODESET_LOCALE);
+    mstring_from_string (tmp_output_pattern, SR_MAX_PATH, output_pattern, 
+			 CODESET_LOCALE);
+    mstring_from_string (tmp_showfile_pattern, SR_MAX_PATH, showfile_pattern, 
+			 CODESET_LOCALE);
+    mstring_from_string (m_icy_name, SR_MAX_PATH, icy_name, 
+			 CODESET_METADATA);
+    mstrcpy (m_stripped_icy_name, m_icy_name);
+    strip_invalid_chars_new (m_stripped_icy_name);
 
     switch (content_type) {
     case CONTENT_TYPE_MP3:
-	m_extension = ".mp3";
+	m_extension = m(".mp3");
 	break;
     case CONTENT_TYPE_NSV:
     case CONTENT_TYPE_ULTRAVOX:
-	m_extension = ".nsv";
+	m_extension = m(".nsv");
 	break;
     case CONTENT_TYPE_OGG:
-	m_extension = ".ogg";
+	m_extension = m(".ogg");
 	break;
     case CONTENT_TYPE_AAC:
-	m_extension = ".aac";
+	m_extension = m(".aac");
 	break;
     default:
 	fprintf (stderr, "Error (wrong suggested content type: %d)\n", 
@@ -211,17 +223,16 @@ filelib_init (BOOL do_individual_tracks,
        was specified. */
     set_output_directory (m_output_directory,
 			  m_output_pattern,
-			  output_pattern,
-			  output_directory,
+			  tmp_output_pattern,
+			  tmp_output_directory,
 			  m_default_pattern,
-			  "%A - %T",
+			  m("%A - %T"),
 			  get_separate_dirs,
 			  get_date_stamp,
 			  0);
 
-    sprintf (m_incomplete_directory, "%s%s%c", m_output_directory,
-	     "incomplete", PATH_SLASH);
-    debug_printf ("Incomplete directory: %s\n", m_incomplete_directory);
+    msnprintf (m_incomplete_directory, SR_MAX_PATH, m("%s%s%c"), 
+	       m_output_directory, m("incomplete"), PATH_SLASH);
 
     /* Recursively make the output directory & incomplete directory */
     if (m_do_individual_tracks) {
@@ -231,27 +242,27 @@ filelib_init (BOOL do_individual_tracks,
 
 	/* Next, make the incomplete directory */
 	if (m_do_individual_tracks) {
-	    mkdir_if_needed(m_incomplete_directory);
+	    mkdir_if_needed (m_incomplete_directory);
 	}
     }
 
     /* Compute the amount of remaining path length for the filenames */
-    m_max_filename_length = SR_MAX_PATH - strlen(m_incomplete_directory);
+    m_max_filename_length = SR_MAX_PATH - mstrlen(m_incomplete_directory);
 
     /* Get directory and pattern of showfile */
     if (do_show_file) {
-	if (showfile_pattern && *showfile_pattern) {
-	    trim_mp3_suffix (showfile_pattern);
-	    if (strlen(m_show_name) > SR_MAX_PATH - 5) {
+	if (*tmp_showfile_pattern) {
+	    trim_mp3_suffix (tmp_showfile_pattern);
+	    if (mstrlen(m_show_name) > SR_MAX_PATH - 5) {
 		return SR_ERROR_DIR_PATH_TOO_LONG;
 	    }
 	}
 	set_output_directory (m_showfile_directory,
 			      m_showfile_pattern,
-			      showfile_pattern,
-			      output_directory,
+			      tmp_showfile_pattern,
+			      tmp_output_directory,
 			      m_default_showfile_pattern,
-			      "",
+			      m(""),
 			      get_separate_dirs,
 			      get_date_stamp,
 			      1);
@@ -269,67 +280,62 @@ static void
 set_default_pattern (BOOL get_separate_dirs, BOOL do_count)
 {
     /* m_default_pattern */
-    m_default_pattern[0] = '\0';
+    m_default_pattern[0] = 0;
     if (get_separate_dirs) {
-	strcpy (m_default_pattern, "%S" PATH_SLASH_STR);
+	mstrcpy (m_default_pattern, m("%S") PATH_SLASH_STR);
     }
     if (do_count) {
 	if (m_count < 0) {
-	    strcat (m_default_pattern, "%q_");
+	    mstrncat (m_default_pattern, m("%q_"), SR_MAX_PATH);
 	} else {
-	    sprintf (&m_default_pattern[strlen(m_default_pattern)], 
-		     "%%%dq_", m_count);
+	    msnprintf (&m_default_pattern[mstrlen(m_default_pattern)], 
+		       SR_MAX_PATH - mstrlen(m_default_pattern), 
+		       m("%%%dq_"), m_count);
 	}
     }
-    strcat (m_default_pattern, "%A - %T");
+    mstrncat (m_default_pattern, m("%A - %T"), SR_MAX_PATH);
 
     /* m_default_showfile_pattern */
-    m_default_showfile_pattern[0] = '\0';
+    m_default_showfile_pattern[0] = 0;
     if (get_separate_dirs) {
-	strcpy (m_default_showfile_pattern, "%S" PATH_SLASH_STR);
+	mstrcpy (m_default_showfile_pattern, m("%S") PATH_SLASH_STR);
     }
-    strcat (m_default_showfile_pattern, "sr_program_%d");
+    mstrncat (m_default_showfile_pattern, m("sr_program_%d"), SR_MAX_PATH);
 }
 
 /* This function sets the value of m_output_directory or 
    m_showfile_directory. */
 static error_code 
-set_output_directory (char* global_output_directory,
-		      char* global_output_pattern,
-		      char* output_pattern,
-		      char* output_directory,
-		      char* default_pattern,
-		      char* default_pattern_tail,
+set_output_directory (mchar* global_output_directory,
+		      mchar* global_output_pattern,
+		      mchar* output_pattern,
+		      mchar* output_directory,
+		      mchar* default_pattern,
+		      mchar* default_pattern_tail,
 		      int get_separate_dirs,
 		      int get_date_stamp,
 		      int is_for_showfile
 		      )
 {
     error_code ret;
-    char opat_device[3];
-    char odir_device[3];
-    char cwd_device[3];
-    char* device;
-    char opat_path[SR_MAX_PATH];
-    char odir_path[SR_MAX_PATH];
-    char cwd_path[SR_MAX_PATH];
-    char cwd[SR_MAX_PATH];
+    mchar opat_device[3];
+    mchar odir_device[3];
+    mchar cwd_device[3];
+    mchar* device;
+    mchar opat_path[SR_MAX_PATH];
+    mchar odir_path[SR_MAX_PATH];
+    mchar cwd_path[SR_MAX_PATH];
+    mchar cwd[SR_MAX_PATH];
 
-    char pattern_head[SR_MAX_PATH];
-    char pattern_tail[SR_MAX_PATH];
-
-
-    debug_printf ("SET_OUTPUT_DIR:output_pattern=%s\n",output_pattern?output_pattern:"");
-    debug_printf ("SET_OUTPUT_DIR:output_directory=%s\n",output_directory?output_directory:"");
-    debug_printf ("SET_OUTPUT_DIR:default_pattern=%s\n",default_pattern?default_pattern:"");
-    debug_printf ("SET_OUTPUT_DIR:default_pattern_tail=%s\n",default_pattern_tail?default_pattern_tail:"");
+    mchar pattern_head[SR_MAX_PATH];
+    mchar pattern_tail[SR_MAX_PATH];
 
     /* Initialize strings */
-    cwd[0] = '\0';
-    odir_device[0] = '\0';
-    opat_device[0] = '\0';
-    odir_path[0] = '\0';
-    opat_path[0] = '\0';
+    cwd[0] = 0;
+    odir_device[0] = 0;
+    opat_device[0] = 0;
+    odir_path[0] = 0;
+    opat_path[0] = 0;
     ret = sr_getcwd (cwd);
     if (ret != SR_SUCCESS) return ret;
 
@@ -349,15 +355,15 @@ set_output_directory (char* global_output_directory,
 	device = odir_device;
     } else {
 	/* No device */
-	device = "";
+	device = m("");
     }
 
     /* Generate the output file pattern. */
     if (IS_ABSOLUTE_PATH(opat_path)) {
-	cwd_path[0] = '\0';
-	odir_path[0] = '\0';
+	cwd_path[0] = 0;
+	odir_path[0] = 0;
     } else if (IS_ABSOLUTE_PATH(odir_path)) {
-	cwd_path[0] = '\0';
+	cwd_path[0] = 0;
     }
     if (*odir_path) {
 	ret = add_trailing_slash(odir_path);
@@ -367,27 +373,26 @@ set_output_directory (char* global_output_directory,
 	ret = add_trailing_slash(cwd_path);
 	if (ret != SR_SUCCESS) return ret;
     }
-    if (strlen(device)+strlen(cwd_path)+strlen(opat_path)
-	+strlen(odir_path) > SR_MAX_PATH-1) {
+    if (mstrlen(device) + mstrlen(cwd_path) + mstrlen(opat_path) 
+	+ mstrlen(odir_path) > SR_MAX_PATH-1) {
 	return SR_ERROR_DIR_PATH_TOO_LONG;
     }
 
     /* Fill in %S and %d patterns */
-    sprintf (pattern_head, "%s%s%s", device, cwd_path, odir_path);
-    debug_printf ("SET_OUTPUT_DIR:pattern_head(pre)=%s\n",pattern_head);
-    debug_printf ("SET_OUTPUT_DIR:opat_path=%s\n",opat_path);
+    msnprintf (pattern_head, SR_MAX_PATH, m("%s%s%s"), device, 
+	       cwd_path, odir_path);
     parse_and_subst_dir (pattern_head, pattern_tail, opat_path, 
 			 is_for_showfile);
 
     /* In case there is no %A, no %T, etc., use the default pattern */
     if (!*pattern_tail) {
-	strcpy (pattern_tail, default_pattern_tail);
+	mstrcpy (pattern_tail, default_pattern_tail);
     }
 
     /* Set the global variables */
-    strcpy (global_output_directory, pattern_head);
+    mstrcpy (global_output_directory, pattern_head);
     add_trailing_slash (global_output_directory);
-    strcpy (global_output_pattern, pattern_tail);
+    mstrcpy (global_output_pattern, pattern_tail);
 
     return SR_SUCCESS;
 }
@@ -400,21 +405,20 @@ set_output_directory (char* global_output_directory,
    If there is no %A, no %T, etc.
 */
 static void
-parse_and_subst_dir (char* pattern_head, char* pattern_tail, char* opat_path,
-		     int is_for_showfile)
+parse_and_subst_dir (mchar* pattern_head, mchar* pattern_tail, 
+		     mchar* opat_path, int is_for_showfile)
 {
     int opi = 0;
     unsigned int phi = 0;
     int ph_base_len;
     int op_tail_idx;
 
-    phi = strlen(pattern_head);
+    phi = mstrlen(pattern_head);
     opi = 0;
     ph_base_len = phi;
     op_tail_idx = opi;
 
     while (phi < SR_MAX_BASE) {
-	debug_printf ("::%d %d %d %d\n", phi, opi, ph_base_len, op_tail_idx);
 	if (ISSLASH(opat_path[opi])) {
 	    pattern_head[phi++] = PATH_SLASH;
 	    opi++;
@@ -422,7 +426,7 @@ parse_and_subst_dir (char* pattern_head, char* pattern_tail, char* opat_path,
 	    op_tail_idx = opi;
 	    continue;
 	}
-	if (opat_path[opi] == '\0') {
+	if (opat_path[opi] == 0) {
 	    /* This means there are no artist/title info in the filename.
 	       In this case, we fall back on the default pattern. */
 	    if (!is_for_showfile) {
@@ -431,38 +435,39 @@ parse_and_subst_dir (char* pattern_head, char* pattern_tail, char* opat_path,
 	    }
 	    break;
 	}
-	if (opat_path[opi] != '%') {
+	if (opat_path[opi] != m('%')) {
 	    pattern_head[phi++] = opat_path[opi++];
 	    continue;
 	}
 	/* If we got here, we have a '%' */
 	switch (opat_path[opi+1]) {
-	case '%':
-	    pattern_head[phi++]='%';
+	case m('%'):
+	    pattern_head[phi++]=m('%');
 	    opi+=2;
 	    continue;
-	case 'S':
+	case m('S'):
 	    /* append stream name */
-	    strncpy (&pattern_head[phi], m_stripped_icy_name, SR_MAX_BASE-phi);
-	    phi = strlen (pattern_head);
+	    mstrncpy (&pattern_head[phi], m_stripped_icy_name, 
+		      SR_MAX_BASE-phi);
+	    phi = mstrlen (pattern_head);
 	    opi+=2;
 	    continue;
-	case 'd':
+	case m('d'):
 	    /* append date info */
-	    strncpy (&pattern_head[phi], m_session_datebuf, SR_MAX_BASE-phi);
-	    phi = strlen (pattern_head);
+	    mstrncpy (&pattern_head[phi], m_session_datebuf, SR_MAX_BASE-phi);
+	    phi = mstrlen (pattern_head);
 	    opi+=2;
 	    continue;
-	case '0': case '1': case '2': case '3': case '4': 
-	case '5': case '6': case '7': case '8': case '9': 
-	case 'a':
-	case 'A':
-	case 'D':
-	case 'q':
-	case 'T':
+	case m('0'): case m('1'): case m('2'): case m('3'): case m('4'): 
+	case m('5'): case m('6'): case m('7'): case m('8'): case m('9'): 
+	case m('a'):
+	case m('A'):
+	case m('D'):
+	case m('q'):
+	case m('T'):
 	    /* These are track specific patterns */
 	    break;
-	case '\0':
+	case 0:
 	    /* This means there are no artist/title info in the filename.
 	       In this case, we fall back on the default pattern. */
 	    pattern_head[phi++] = opat_path[opi++];
@@ -480,37 +485,36 @@ parse_and_subst_dir (char* pattern_head, char* pattern_tail, char* opat_path,
 	break;
     }
     /* Terminate the pattern_head string */
-    debug_printf ("::%d %d %d %d\n", phi, opi, ph_base_len, op_tail_idx);
     pattern_head[ph_base_len] = 0;
-    debug_printf ("Got pattern head: %s\n", pattern_head);
-    debug_printf ("Got opat tail:    %s\n", &opat_path[op_tail_idx]);
 
-    strcpy (pattern_tail, &opat_path[op_tail_idx]);
+    mstrcpy (pattern_tail, &opat_path[op_tail_idx]);
 }
 
 static void
-fill_date_buf (char* datebuf, int datebuf_len)
+fill_date_buf (mchar* datebuf, int datebuf_len)
 {
+    char tmp[DATEBUF_LEN];
     time_t now = time(NULL);
-    strftime (datebuf, datebuf_len, "%Y_%m_%d_%H_%M_%S", localtime(&now));
+    strftime (tmp, datebuf_len, "%Y_%m_%d_%H_%M_%S", localtime(&now));
+    mstring_from_string (datebuf, DATEBUF_LEN, tmp, CODESET_FILESYS);
 }
 
 static error_code
-add_trailing_slash (char *str)
+add_trailing_slash (mchar *str)
 {
-    int len = strlen(str);
+    int len = mstrlen(str);
     if (len >= SR_MAX_PATH-1)
 	return SR_ERROR_DIR_PATH_TOO_LONG;
-    if (!ISSLASH(str[strlen(str)-1]))
-	strcat (str, PATH_SLASH_STR);
+    if (!ISSLASH(str[mstrlen(str)-1]))
+	mstrncat (str,  PATH_SLASH_STR, SR_MAX_PATH);
     return SR_SUCCESS;
 }
 
 /* Split off the device */
 static error_code 
-device_split (char* dirname,
-	      char* device,
-	      char* path
+device_split (mchar* dirname,
+	      mchar* device,
+	      mchar* path
 	      )
 {
     int di;
@@ -518,37 +522,43 @@ device_split (char* dirname,
     if (HAS_DEVICE(dirname)) {
 	device[0] = dirname[0];
 	device[1] = dirname[1];
-	device[2] = '\0';
+	device[2] = 0;
 	di = 2;
     } else {
-	device[0] = '\0';
+	device[0] = 0;
 	di = 0;
     }
-    strcpy (path, &dirname[di]);
+    mstrcpy (path, &dirname[di]);
     return SR_SUCCESS;
 }
 
 static error_code 
-sr_getcwd (char* dirbuf)
+sr_getcwd (mchar* dirbuf)
 {
+    char db[SR_MAX_PATH];
 #if defined (WIN32)
-    if (!_getcwd (dirbuf, SR_MAX_PATH)) {
+    if (!_getcwd (db, SR_MAX_PATH)) {
 	debug_printf ("getcwd returned zero?\n");
 	return SR_ERROR_DIR_PATH_TOO_LONG;
     }
 #else
-    if (!getcwd (dirbuf, SR_MAX_PATH)) {
+    if (!getcwd (db, SR_MAX_PATH)) {
 	debug_printf ("getcwd returned zero?\n");
 	return SR_ERROR_DIR_PATH_TOO_LONG;
     }
 #endif
+    mstring_from_string (dirbuf, SR_MAX_PATH, db, CODESET_FILESYS);
     return SR_SUCCESS;
 }
 
-void close_file(FHANDLE* fp)
+void close_file (FHANDLE* fp)
 {
     if (*fp != INVALID_FHANDLE) {
-	CloseFile(*fp);
+#if defined WIN32
+	CloseHandle (*fp);
+#else
+	close (*fp);
+#endif
 	*fp = INVALID_FHANDLE;
     }
 }
@@ -561,7 +571,7 @@ void close_files()
 }
 
 BOOL
-file_exists(char *filename)
+file_exists (mchar *filename)
 {
     FHANDLE f;
 #if defined (WIN32)
@@ -569,17 +579,19 @@ file_exists(char *filename)
 	    FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
 	    FILE_ATTRIBUTE_NORMAL, NULL);
 #else
-    f = open(filename, O_RDONLY);
+    char fn[SR_MAX_PATH];
+    string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    f = open (fn, O_RDONLY);
 #endif
     if (f == INVALID_FHANDLE) {
 	return FALSE;
     }
-    CloseFile(f);
+    close_file (&f);
     return TRUE;
 }
 
 error_code
-filelib_write_cue(TRACK_INFO* ti, int secs)
+filelib_write_cue (TRACK_INFO* ti, int secs)
 {
     static int track_no = 1;
     int rc;
@@ -610,30 +622,29 @@ filelib_write_cue(TRACK_INFO* ti, int secs)
 /* If (TRACK_INFO* ti) is NULL, that means we're being called for the 
    showfile, and therefore some parts don't apply */
 static void
-parse_and_subst_pat (char* newfile,
+parse_and_subst_pat (mchar* newfile,
 		     TRACK_INFO* ti,
-		     char* directory,
-		     char* pattern,
-		     char* extension)
+		     mchar* directory,
+		     mchar* pattern,
+		     mchar* extension)
 {
     mchar stripped_artist[SR_MAX_PATH];
     mchar stripped_title[SR_MAX_PATH];
     mchar stripped_album[SR_MAX_PATH];
 #define DATEBUF_LEN 50
-    char temp[DATEBUF_LEN];
-    char datebuf[DATEBUF_LEN];
+    mchar temp[DATEBUF_LEN];
+    mchar datebuf[DATEBUF_LEN];
     int opi = 0;
     int nfi = 0;
     int done;
-    char* pat = pattern;
+    mchar* pat = pattern;
 
     /* Reserve 5 bytes: 4 for the .mp3 extension, and 1 for null char */
     int MAX_FILEBASELEN = SR_MAX_PATH-5;
 
-    debug_printf ("OUTPUT PATTERN:%s\n", pattern);
-    strcpy (newfile, directory);
+    mstrcpy (newfile, directory);
     opi = 0;
-    nfi = strlen(newfile);
+    nfi = mstrlen(newfile);
     done = 0;
 
     /* Strip artist, title, album */
@@ -647,97 +658,96 @@ parse_and_subst_pat (char* newfile,
     }
 
     while (nfi < MAX_FILEBASELEN) {
-	debug_printf ("COMPOSING OUTPUT PATTERN:%s\n", newfile);
-	if (pat[opi] == '\0') {
+	if (pat[opi] == 0) {
 	    done = 1;
 	    break;
 	}
-	if (pat[opi] != '%') {
+	if (pat[opi] != m('%')) {
 	    newfile[nfi++] = pat[opi++];
-	    newfile[nfi] = '\0';
+	    newfile[nfi] = 0;
 	    continue;
 	}
 	/* If we got here, we have a '%' */
 	switch (pat[opi+1]) {
-	case '%':
-	    newfile[nfi++]='%';
-	    newfile[nfi] = '\0';
+	case m('%'):
+	    newfile[nfi++] = m('%');
+	    newfile[nfi] = 0;
 	    opi+=2;
 	    continue;
-	case 'S':
+	case m('S'):
 	    /* stream name */
-	    /* oops */
-	    strncat (newfile, m_icy_name, MAX_FILEBASELEN-nfi);
-	    nfi = strlen (newfile);
+	    /* GCS FIX: Not sure here */
+	    mstrncat (newfile, m_icy_name, MAX_FILEBASELEN-nfi);
+	    nfi = mstrlen (newfile);
 	    opi+=2;
 	    continue;
-	case 'd':
+	case m('d'):
 	    /* append date info */
-	    strncat (newfile, m_session_datebuf, MAX_FILEBASELEN-nfi);
-	    nfi = strlen (newfile);
+	    mstrncat (newfile, m_session_datebuf, MAX_FILEBASELEN-nfi);
+	    nfi = mstrlen (newfile);
 	    opi+=2;
 	    continue;
-	case 'D':
+	case m('D'):
 	    /* current timestamp */
 	    fill_date_buf (datebuf, DATEBUF_LEN);
-	    strncat (newfile, datebuf, MAX_FILEBASELEN-nfi);
-	    nfi = strlen (newfile);
+	    mstrncat (newfile, datebuf, MAX_FILEBASELEN-nfi);
+	    nfi = mstrlen (newfile);
 	    opi+=2;
 	    continue;
-	case 'a':
+	case m('a'):
 	    /* album */
 	    if (!ti) goto illegal_pattern;
 	    mstrncat (newfile, stripped_album, MAX_FILEBASELEN-nfi);
-	    nfi = strlen (newfile);
+	    nfi = mstrlen (newfile);
 	    opi+=2;
 	    continue;
-	case 'A':
+	case m('A'):
 	    /* artist */
 	    if (!ti) goto illegal_pattern;
-	    strncat (newfile, stripped_artist, MAX_FILEBASELEN-nfi);
-	    nfi = strlen (newfile);
+	    mstrncat (newfile, stripped_artist, MAX_FILEBASELEN-nfi);
+	    nfi = mstrlen (newfile);
 	    opi+=2;
 	    continue;
-	case 'q':
+	case m('q'):
 	    /* automatic sequence number */
-	    snprintf (temp, DATEBUF_LEN, "%04d", 
-		      get_next_sequence_number (newfile));
-	    strncat (newfile, temp, MAX_FILEBASELEN-nfi);
-	    nfi = strlen (newfile);
+	    msnprintf (temp, DATEBUF_LEN, m("%04d"), 
+		       get_next_sequence_number (newfile));
+	    mstrncat (newfile, temp, MAX_FILEBASELEN-nfi);
+	    nfi = mstrlen (newfile);
 	    opi+=2;
 	    continue;
-	case 'T':
+	case m('T'):
 	    /* title */
 	    if (!ti) goto illegal_pattern;
-	    strncat (newfile, stripped_title, MAX_FILEBASELEN-nfi);
-	    nfi = strlen (newfile);
+	    mstrncat (newfile, stripped_title, MAX_FILEBASELEN-nfi);
+	    nfi = mstrlen (newfile);
 	    opi+=2;
 	    continue;
-	case '\0':
+	case 0:
 	    /* The pattern ends in '%', but that's ok. */
 	    newfile[nfi++] = pat[opi++];
-	    newfile[nfi] = '\0';
+	    newfile[nfi] = 0;
 	    done = 1;
 	    break;
-	case '0': case '1': case '2': case '3': case '4': 
-	case '5': case '6': case '7': case '8': case '9': 
+	case m('0'): case m('1'): case m('2'): case m('3'): case m('4'): 
+	case m('5'): case m('6'): case m('7'): case m('8'): case m('9'): 
 	    {
 		/* Get integer */
 		int ai = 0;
-		char ascii_buf[7];      /* max 6 chars */
+		mchar ascii_buf[7];      /* max 6 chars */
 		while (isdigit (pat[opi+1+ai]) && ai < 6) {
 		    ascii_buf[ai] = pat[opi+1+ai];
 		    ai ++;
 		}
-		ascii_buf[ai] = '\0';
+		ascii_buf[ai] = 0;
 		/* If we got a q, get starting number */
-		if (pat[opi+1+ai] == 'q') {
+		if (pat[opi+1+ai] == m('q')) {
 		    if (m_count == -1) {
-			m_count = atoi(ascii_buf);
+			m_count = mtol(ascii_buf);
 		    }
-		    snprintf (temp, DATEBUF_LEN, "%04d", m_count);
-		    strncat (newfile, temp, MAX_FILEBASELEN-nfi);
-		    nfi = strlen (newfile);
+		    msnprintf (temp, DATEBUF_LEN, m("%04d"), m_count);
+		    mstrncat (newfile, temp, MAX_FILEBASELEN-nfi);
+		    nfi = mstrlen (newfile);
 		    opi+=ai+2;
 		    continue;
 		}
@@ -747,61 +757,65 @@ parse_and_subst_pat (char* newfile,
 	illegal_pattern:
 	    /* Illegal pattern, but that's ok. */
 	    newfile[nfi++] = pat[opi++];
-	    newfile[nfi] = '\0';
+	    newfile[nfi] = 0;
 	    continue;
 	}
     }
 
     /* Pop on the extension */
-    strcat (newfile, extension);
+    /* GCS FIX - is SR_MAX_PATH right here? */
+    mstrncat (newfile, extension, SR_MAX_PATH);
 }
 
 error_code
 filelib_start (TRACK_INFO* ti)
 {
-    char newfile[TEMP_STR_LEN];
-    char fnbase[TEMP_STR_LEN];
-    char fnbase1[TEMP_STR_LEN];
-    char fnbase2[TEMP_STR_LEN];
+    mchar newfile[TEMP_STR_LEN];
+    mchar fnbase[TEMP_STR_LEN];
+    mchar fnbase1[TEMP_STR_LEN];
+    mchar fnbase2[TEMP_STR_LEN];
 
     if (!m_do_individual_tracks) return SR_SUCCESS;
 
     close_file(&m_file);
 
     /* Compose and trim filename (not including directory) */
-    sprintf (fnbase1, "%s - %s", ti->artist, ti->title);
-    debug_printf ("Composed filename: %s\n", fnbase1);
-    trim_filename (fnbase1, fnbase);
-    debug_printf ("Trimmed filename: %s\n", fnbase);
-    sprintf (newfile, "%s%s%s", m_incomplete_directory, fnbase, m_extension);
+    msnprintf (fnbase1, TEMP_STR_LEN, m("%s - %s"), 
+	       ti->artist, ti->title);
+    trim_filename (fnbase, fnbase1);
+    msnprintf (newfile, TEMP_STR_LEN, m("%s%s%s"), 
+	       m_incomplete_directory, fnbase, m_extension);
     if (m_keep_incomplete) {
 	int n = 1;
-	char oldfilename[TEMP_STR_LEN];
-	char oldfile[TEMP_STR_LEN];
-	strcpy(oldfilename, fnbase);
-	sprintf(oldfile, "%s%s%s", m_incomplete_directory, 
-		fnbase, m_extension);
-	strcpy (fnbase1, fnbase);
-	while(file_exists(oldfile)) {
-	    sprintf(fnbase1, "(%d)%s", n, fnbase);
-	    trim_filename (fnbase1, fnbase2);
-	    sprintf(oldfile, "%s%s%s", m_incomplete_directory,
-		    fnbase2, m_extension);
+	mchar oldfile[TEMP_STR_LEN];
+	msnprintf (oldfile, TEMP_STR_LEN, m("%s%s%s"), 
+		   m_incomplete_directory, fnbase, m_extension);
+	mstrcpy (fnbase1, fnbase);
+	while (file_exists (oldfile)) {
+	    msnprintf (fnbase1, TEMP_STR_LEN, m("(%d)%s"), 
+		       n, fnbase);
+	    trim_filename (fnbase2, fnbase1);
+	    msnprintf (oldfile, TEMP_STR_LEN, m("%s%s%s"), 
+		       m_incomplete_directory,
+		       fnbase2, m_extension);
 	    n++;
 	}
-	if (strcmp(newfile, oldfile) != 0) {
-	    MoveFile(newfile, oldfile);
+	if (mstrcmp (newfile, oldfile) != 0) {
+	    move_file (oldfile, newfile);
 	}
     }
-    strcpy (m_incomplete_filename, newfile);
+    mstrcpy (m_incomplete_filename, newfile);
     return filelib_open_for_write(&m_file, newfile);
 }
 
 static long
-get_file_size (char *filename)
+get_file_size (mchar *filename)
 {
     long len;
-    FILE* fp = fopen(filename, "r");
+    char fn[SR_MAX_PATH];
+
+    string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    FILE* fp = fopen (fn, "r");
     if (!fp) return 0;
 
     if (fseek (fp, 0, SEEK_END)) {
@@ -824,7 +838,7 @@ get_file_size (char *filename)
  * captures, modified by GCS to get file size from file system 
  */
 static BOOL
-new_file_is_better (char *oldfile, char *newfile)
+new_file_is_better (mchar *oldfile, mchar *newfile)
 {
     long oldfilesize=0;
     long newfilesize=0;
@@ -869,18 +883,56 @@ new_file_is_better (char *oldfile, char *newfile)
 		  "overwriting file\n", oldfilesize, newfilesize);
     return TRUE;
 }
- 
+
+void
+truncate_file (mchar* filename)
+{
+#if defined WIN32
+    ERROR unimplemented;
+#else
+    char fn[SR_MAX_PATH];
+    string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    close (open (fn, O_RDWR | O_CREAT | O_TRUNC, 
+		 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
+#endif
+}
+
+void
+move_file (mchar* new_filename, mchar* old_filename)
+{
+#if defined WIN32
+    ERROR unimplemented;
+#else
+    char old_fn[SR_MAX_PATH];
+    char new_fn[SR_MAX_PATH];
+    string_from_mstring (old_fn, SR_MAX_PATH, old_filename, CODESET_FILESYS);
+    string_from_mstring (new_fn, SR_MAX_PATH, new_filename, CODESET_FILESYS);
+    rename (old_fn, new_fn);
+#endif
+}
+
+void
+delete_file (mchar* filename)
+{
+#if defined WIN32
+    ERROR unimplemented;
+#else
+    char fn[SR_MAX_PATH];
+    string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    unlink (fn);
+#endif
+}
 
 // Moves the file from incomplete to complete directory
 // fullpath is an output parameter
 error_code
-filelib_end (TRACK_INFO* ti, 
+filelib_end (TRACK_INFO* ti,
 	     enum OverwriteOpt overwrite,
-	     BOOL truncate_dup, 
-	     char *fullpath)
+	     BOOL truncate_dup,
+	     mchar *fullpath)
 {
     BOOL ok_to_write = TRUE;
-    char newfile[TEMP_STR_LEN];
+    mchar newfile[TEMP_STR_LEN];
 
     if (!m_do_individual_tracks) return SR_SUCCESS;
 
@@ -915,46 +967,50 @@ filelib_end (TRACK_INFO* ti,
 
     if (ok_to_write) {
 	if (file_exists (newfile)) {
-	    DeleteFile (newfile);
+	    delete_file (newfile);
 	}
-	MoveFile (m_incomplete_filename, newfile);
+	move_file (newfile, m_incomplete_filename);
     } else {
-	if (truncate_dup && file_exists(m_incomplete_filename)) {
-	    TruncateFile(m_incomplete_filename);
+	if (truncate_dup && file_exists (m_incomplete_filename)) {
+	    // TruncateFile(m_incomplete_filename);
+	    truncate_file (m_incomplete_filename);
 	}
     }
 
-    if (fullpath)
-	strcpy(fullpath, newfile); 
+    if (fullpath) {
+	mstrcpy (fullpath, newfile);
+    }
     if (m_count != -1)
 	m_count++;
     return SR_SUCCESS;
 }
 
 static error_code
-filelib_open_for_write(FHANDLE* fp, char* filename)
+filelib_open_for_write (FHANDLE* fp, mchar* filename)
 {
-    debug_printf ("filelib_open_for_write: %s\n", filename);
-#if WIN32	
-    *fp = CreateFile(filename, GENERIC_WRITE,    // open for reading 
-			FILE_SHARE_READ,           // share for reading 
-			NULL,                      // no security 
-			CREATE_ALWAYS,             // existing file only 
-			FILE_ATTRIBUTE_NORMAL,     // normal file 
-			NULL);                     // no attr. template 
-    if (*fp == INVALID_FHANDLE)
-    {
+#if WIN32
+    *fp = CreateFile (filename, GENERIC_WRITE,   // open for reading 
+		      FILE_SHARE_READ,           // share for reading 
+		      NULL,                      // no security 
+		      CREATE_ALWAYS,             // existing file only 
+		      FILE_ATTRIBUTE_NORMAL,     // normal file 
+		      NULL);                     // no attr. template 
+    if (*fp == INVALID_FHANDLE) {
 	int r = GetLastError();
 	r = strlen(filename);
 	printf ("ERROR creating file: %s\n",filename);
 	return SR_ERROR_CANT_CREATE_FILE;
     }
 #else
-    // Needs to be better tested
-    *fp = OpenFile(filename);
-    if (*fp == INVALID_FHANDLE)
-    {
-	printf ("ERROR creating file: %s\n",filename);
+    /* For unix, we need to convert to char, and just open. 
+       http://mail.nl.linux.org/linux-utf8/2001-02/msg00103.html
+    */
+    char fn1[SR_MAX_PATH];
+    string_from_mstring (fn1, SR_MAX_PATH, filename, CODESET_FILESYS);
+    *fp = open (fn1, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    if (*fp == INVALID_FHANDLE) {
+	/* GCS FIX -- need error message here! */
+	// printf ("ERROR creating file: %s\n",filename);
 	return SR_ERROR_CANT_CREATE_FILE;
     }
 #endif
@@ -992,21 +1048,26 @@ static error_code
 filelib_open_showfiles ()
 {
     int rc;
+    mchar mcue_buf[1024];
     char cue_buf[1024];
 
     parse_and_subst_pat (m_show_name, 0, m_showfile_directory, 
 			 m_showfile_pattern, m_extension);
     parse_and_subst_pat (m_cue_name, 0, m_showfile_directory, 
-			 m_showfile_pattern, ".cue");
+			 m_showfile_pattern, 
+			 m(".cue"));
 
     rc = filelib_open_for_write (&m_cue_file, m_cue_name);
     if (rc != SR_SUCCESS) {
 	m_do_show = 0;
 	return rc;
     }
+
     /* Write cue header here */
-    rc = snprintf(cue_buf,1024,"FILE \"%s\" MP3\n",m_show_name);
-    rc = filelib_write(m_cue_file,cue_buf,rc);
+    /* GCS FIX: What encoding should the FILE line be? */
+    rc = msnprintf (mcue_buf, 1024, m("FILE \"%s\" MP3\n"), m_show_name);
+    rc = string_from_mstring (cue_buf, 1024, mcue_buf, CODESET_FILESYS);
+    rc = filelib_write (m_cue_file, cue_buf, rc);
     if (rc != SR_SUCCESS) {
 	m_do_show = 0;
 	return rc;
@@ -1039,28 +1100,14 @@ filelib_shutdown()
     close_files();
 }
 
-#if defined (commentout)
-error_code
-filelib_remove(char *filename)
-{
-    char delfile[SR_MAX_PATH];
-	
-    sprintf(delfile, m_filename_format, m_output_directory, filename, m_extension);
-    if (!DeleteFile(delfile))
-	return SR_ERROR_FAILED_TO_MOVE_FILE;
-
-    return SR_SUCCESS;
-}
-#endif
-
 /* GCS: This should get only the name, not the directory */
 static void
-trim_filename(char *filename, char* out)
+trim_filename (mchar* out, mchar *filename)
 {
     long maxlen = m_max_filename_length;
-    strncpy(out, filename, MAX_TRACK_LEN);
-    strip_invalid_chars(out);
-    out[maxlen-4] = '\0';	// -4 for ".mp3"
+    mstrncpy (out, filename, MAX_TRACK_LEN);
+    strip_invalid_chars_new (out);
+    out[maxlen-4] = 0;	// -4 = make room for ".mp3"
 }
 
 #if defined (commentout)
@@ -1077,30 +1124,29 @@ trim_mp3_suffix (char *filename, char* out)
 #endif
 
 static void
-trim_mp3_suffix (char *filename)
+trim_mp3_suffix (mchar *filename)
 {
-    char* suffix_ptr;
-    suffix_ptr = filename + strlen(filename) - 4;  // -4 for ".mp3"
-    if (strcmp (suffix_ptr, m_extension) == 0) {
+    mchar* suffix_ptr;
+    if (mstrlen(filename) <= 4) return;
+    suffix_ptr = filename + mstrlen(filename) - 4;  // -4 for ".mp3"
+    if (mstrcmp (suffix_ptr, m_extension) == 0) {
 	*suffix_ptr = 0;
     }
 }
 
 static int
-get_next_sequence_number (char* fn_base)
+get_next_sequence_number (mchar* fn_base)
 {
+    int rc;
     int di = 0;
     int edi = 0;
     int seq;
-    char dir_name[SR_MAX_PATH];
-    char fn_prefix[SR_MAX_PATH];
-#if defined (WIN32)
+    mchar dir_name[SR_MAX_PATH];
+    mchar fn_prefix[SR_MAX_PATH];
+    char dname[SR_MAX_PATH];
+    char fnp[SR_MAX_PATH];
     DIR* dp;
     struct dirent* de;
-#else
-    DIR* dp;
-    struct dirent* de;
-#endif
 
     /* Get directory from fn_base */
     while (fn_base[di]) {
@@ -1109,29 +1155,25 @@ get_next_sequence_number (char* fn_base)
 	}
 	di++;
     }
-    strncpy (dir_name, fn_base, edi);
-    dir_name[edi] = '\0';
+    mstrncpy (dir_name, fn_base, edi);
+    dir_name[edi] = 0;
 
     /* Get fn prefix from fn_base */
-    fn_prefix[0] = '\0';
-    strcpy (fn_prefix, &fn_base[edi+1]);
+    fn_prefix[0] = 0;
+    mstrcpy (fn_prefix, &fn_base[edi+1]);
 
 #if defined (WIN32)
+    /* GCS FIX - does this still work with mchar? */
     /* Look through directory for a filenames that match prefix */
-    debug_printf ("Trying to opendir: %s\n", dir_name);
-    if ((dp = opendir (dir_name)) == 0) {
+    rc = string_from_mstring (dname, SR_MAX_PATH, dir_name, CODESET_FILESYS);
+    if ((dp = opendir (dname)) == 0) {
 	return 0;
     }
-    debug_printf ("dir:%s\nprefix:%s\n", dir_name, fn_prefix);
     seq = 0;
     while ((de = readdir (dp)) != 0) {
-	debug_printf ("Checking file for sequence number: %s\n", de->d_name);
-	if (strncmp(de->d_name, fn_prefix, strlen(fn_prefix)) == 0) {
-	    debug_printf ("Prefix match\n", de->d_name);
-	    if (isdigit(de->d_name[strlen(fn_prefix)])) {
-		int this_seq = atoi(&de->d_name[strlen(fn_prefix)]);
-		debug_printf ("Digit match:%c,%d\n", 
-			      de->d_name[strlen(fn_prefix)], this_seq);
+	if (strncmp(de->d_name, fnp, strlen(fnp)) == 0) {
+	    if (isdigit(de->d_name[strlen(fnp)])) {
+		int this_seq = atoi(&de->d_name[strlen(fnp)]);
 		if (seq <= this_seq) {
 		    seq = this_seq + 1;
 		}
@@ -1139,24 +1181,19 @@ get_next_sequence_number (char* fn_base)
 	}
     }
     closedir (dp);
-    debug_printf ("Final sequence number found: %d\n",seq);
     return seq;
 #else
     /* Look through directory for a filenames that match prefix */
-    debug_printf ("Trying to opendir: %s\n", dir_name);
-    if ((dp = opendir (dir_name)) == 0) {
+    rc = string_from_mstring (dname, SR_MAX_PATH, dir_name, CODESET_FILESYS);
+    rc = string_from_mstring (fnp, SR_MAX_PATH, fn_prefix, CODESET_FILESYS);
+    if ((dp = opendir (dname)) == 0) {
 	return 0;
     }
-    debug_printf ("dir:%s\nprefix:%s\n", dir_name, fn_prefix);
     seq = 0;
     while ((de = readdir (dp)) != 0) {
-	debug_printf ("Checking file for sequence number: %s\n", de->d_name);
-	if (strncmp(de->d_name, fn_prefix, strlen(fn_prefix)) == 0) {
-	    debug_printf ("Prefix match\n", de->d_name);
-	    if (isdigit(de->d_name[strlen(fn_prefix)])) {
-		int this_seq = atoi(&de->d_name[strlen(fn_prefix)]);
-		debug_printf ("Digit match:%c,%d\n", 
-			      de->d_name[strlen(fn_prefix)], this_seq);
+	if (strncmp(de->d_name, fnp, strlen(fnp)) == 0) {
+	    if (isdigit(de->d_name[strlen(fnp)])) {
+		int this_seq = atoi(&de->d_name[strlen(fnp)]);
 		if (seq <= this_seq) {
 		    seq = this_seq + 1;
 		}
@@ -1164,7 +1201,6 @@ get_next_sequence_number (char* fn_base)
 	}
     }
     closedir (dp);
-    debug_printf ("Final sequence number found: %d\n",seq);
     return seq;
 #endif
 }

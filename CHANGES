@@ -1,3 +1,8 @@
+New for 1.62-beta1
+------------------
+* New codeset options
+* Id3v1 and id3v2 are now independently selectable
+
 New for 1.61.27
 ---------------
 Saturday, September 09, 2006

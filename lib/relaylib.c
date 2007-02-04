@@ -39,7 +39,6 @@
 #endif
 
 #include <string.h>
-#include "util.h"
 #include "relaylib.h"
 #include "srtypes.h"
 #include "http.h"

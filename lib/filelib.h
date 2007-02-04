@@ -23,11 +23,11 @@
 #endif
 
 #if WIN32
-#define PATH_SLASH '\\'
-#define PATH_SLASH_STR "\\"
+#define PATH_SLASH m('\\')
+#define PATH_SLASH_STR m("\\")
 #else
-#define PATH_SLASH '/'
-#define PATH_SLASH_STR "/"
+#define PATH_SLASH m('/')
+#define PATH_SLASH_STR m("/")
 #endif
 
 
@@ -40,16 +40,17 @@
                         it may be concatenated to a directory pathname. */
 #if defined _WIN32 || defined __WIN32__ || defined __EMX__ || defined __DJGPP__
   /* Win32, OS/2, DOS */
-# define ISSLASH(C) ((C) == '/' || (C) == '\\')
+# define ISSLASH(C) ((C) == m('/') || (C) == m('\\'))
 # define HAS_DEVICE(P) \
-    ((((P)[0] >= 'A' && (P)[0] <= 'Z') || ((P)[0] >= 'a' && (P)[0] <= 'z')) \
-     && (P)[1] == ':')
+    ((((P)[0] >= m('A') && (P)[0] <= m('Z')) \
+      || ((P)[0] >= m('a') && (P)[0] <= m('z'))) \
+     && (P)[1] == m(':'))
 /* GCS: This is not correct, because it could be c:foo which is relative */
 /* # define IS_ABSOLUTE_PATH(P) (ISSLASH ((P)[0]) || HAS_DEVICE (P)) */
 # define IS_ABSOLUTE_PATH(P) ISSLASH ((P)[0])
 #else
   /* Unix */
-# define ISSLASH(C) ((C) == '/')
+# define ISSLASH(C) ((C) == m('/'))
 # define HAS_DEVICE(P) (0)
 # define IS_ABSOLUTE_PATH(P) ISSLASH ((P)[0])
 #endif
@@ -79,10 +80,8 @@ filelib_init (BOOL do_individual_tracks,
 	      int get_date_stamp,
 	      char* icy_name);
 error_code filelib_start (TRACK_INFO* ti);
-error_code filelib_end (TRACK_INFO* ti, 
-	     enum OverwriteOpt overwrite,
-	     BOOL truncate_dup, 
-	     char *fullpath);
+error_code filelib_end (TRACK_INFO* ti, enum OverwriteOpt overwrite,
+			BOOL truncate_dup, mchar *fullpath);
 error_code filelib_write_track(char *buf, u_long size);
 error_code filelib_write_show(char *buf, u_long size);
 void filelib_shutdown();

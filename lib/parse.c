@@ -22,7 +22,7 @@
 #include "srconfig.h"
 #include "debug.h"
 #include "srtypes.h"
-#include "util.h"
+#include "mchar.h"
 #include "regex.h"
 
 /*****************************************************************************

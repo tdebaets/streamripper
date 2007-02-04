@@ -28,7 +28,6 @@
 #include <assert.h>
 #include "mad.h"
 #include "findsep.h"
-#include "util.h"
 #include "srtypes.h"
 #include "debug.h"
 #include "list.h"

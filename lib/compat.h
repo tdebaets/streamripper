@@ -43,7 +43,7 @@
 #define OpenFile(_filename_)	CreateFile(_filename_, GENERIC_READ,  	\
 		FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 	\
 		FILE_ATTRIBUTE_NORMAL, NULL)
-#define CloseFile(_fhandle_) 	CloseHandle(_fhandle_)
+// #define CloseFile(_fhandle_) 	CloseHandle(_fhandle_)
 #define TruncateFile(_filename_) \
        CloseFile(CreateFile(_filename_, GENERIC_WRITE, \
 		FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, \
@@ -54,11 +54,11 @@
 #elif __UNIX__
 
 #define FHANDLE	int
-#define OpenFile(_filename_)	open(_filename_, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)
-#define CloseFile(_fhandle_) 	close(_fhandle_)
-#define TruncateFile(_filename_)	CloseFile(open(_filename_, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH))
-#define MoveFile(_oldfile_, _newfile_)     rename(_oldfile_, _newfile_)
-#define DeleteFile(_file_)  	(!unlink(_file_))
+// #define OpenFile(_filename_)	open(_filename_, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)
+// #define CloseFile(_fhandle_) 	close(_fhandle_)
+// #define TruncateFile(_filename_)	CloseFile(open(_filename_, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH))
+// #define MoveFile(_oldfile_, _newfile_)     rename(_oldfile_, _newfile_)
+// #define DeleteFile(_file_)  	(!unlink(_file_))
 #define INVALID_FHANDLE 	-1
 
 #endif 
