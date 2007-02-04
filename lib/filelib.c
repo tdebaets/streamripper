@@ -30,6 +30,12 @@
 
 #define TEMP_STR_LEN	(SR_MAX_PATH*2)
 
+/* Missing prototype */
+int swprintf(wchar_t* ws, size_t n,
+	     const wchar_t * format, ...);
+#if 0
+#endif
+
 /*****************************************************************************
  * Public functions
  *****************************************************************************/
@@ -188,6 +194,8 @@ filelib_init (BOOL do_individual_tracks,
 			 CODESET_LOCALE);
     mstring_from_string (m_icy_name, SR_MAX_PATH, icy_name, 
 			 CODESET_METADATA);
+    debug_printf ("Converted output directory: len=%d\n", 
+		  mstrlen (tmp_output_directory));
     mstrcpy (m_stripped_icy_name, m_icy_name);
     strip_invalid_chars_new (m_stripped_icy_name);
 
@@ -346,6 +354,10 @@ set_output_directory (mchar* global_output_directory,
     /* Get the device. It can be empty. */
     if (output_directory && *output_directory) {
 	device_split (output_directory, odir_device, odir_path);
+	debug_printf ("devicesplit: %d -> %d %d\n", 
+		      mstrlen (output_directory), 
+		      mstrlen (odir_device),
+		      mstrlen (odir_path));
     }
     device_split (output_pattern, opat_device, opat_path);
     device_split (cwd, cwd_device, cwd_path);
@@ -362,8 +374,10 @@ set_output_directory (mchar* global_output_directory,
     if (IS_ABSOLUTE_PATH(opat_path)) {
 	cwd_path[0] = 0;
 	odir_path[0] = 0;
+	debug_printf ("Got opat_path absolute path\n");
     } else if (IS_ABSOLUTE_PATH(odir_path)) {
 	cwd_path[0] = 0;
+	debug_printf ("Got odir_path absolute path\n");
     }
     if (*odir_path) {
 	ret = add_trailing_slash(odir_path);
@@ -379,8 +393,15 @@ set_output_directory (mchar* global_output_directory,
     }
 
     /* Fill in %S and %d patterns */
+#if defined (commentout)
     msnprintf (pattern_head, SR_MAX_PATH, m("%s%s%s"), device, 
 	       cwd_path, odir_path);
+#endif
+    swprintf (pattern_head, SR_MAX_PATH, L"%s%s%s", L"", 
+	      L"Hello world", L" Good bye");
+    debug_printf ("Composed pattern head (%d) <- (%d,%d,%d)\n",
+		  mstrlen(pattern_head), mstrlen(device), 
+		  mstrlen(cwd_path), mstrlen(odir_path));
     parse_and_subst_dir (pattern_head, pattern_tail, opat_path, 
 			 is_for_showfile);
 
@@ -843,11 +864,6 @@ new_file_is_better (mchar *oldfile, mchar *newfile)
     long oldfilesize=0;
     long newfilesize=0;
 
-#if defined (commentout)
-    test_file=open(oldfile, O_RDWR | O_EXCL);
-    oldfilesize=FileSize(test_file);
-#endif
-
     oldfilesize = get_file_size (oldfile);
     newfilesize = get_file_size (newfile);
     
@@ -892,6 +908,7 @@ truncate_file (mchar* filename)
 #else
     char fn[SR_MAX_PATH];
     string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    debug_printf ("Trying to truncate file: %s\n", fn);
     close (open (fn, O_RDWR | O_CREAT | O_TRUNC, 
 		 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
 #endif
@@ -1005,9 +1022,10 @@ filelib_open_for_write (FHANDLE* fp, mchar* filename)
     /* For unix, we need to convert to char, and just open. 
        http://mail.nl.linux.org/linux-utf8/2001-02/msg00103.html
     */
-    char fn1[SR_MAX_PATH];
-    string_from_mstring (fn1, SR_MAX_PATH, filename, CODESET_FILESYS);
-    *fp = open (fn1, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    char fn[SR_MAX_PATH];
+    string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    debug_printf ("Trying to create file: %s\n", fn);
+    *fp = open (fn, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (*fp == INVALID_FHANDLE) {
 	/* GCS FIX -- need error message here! */
 	// printf ("ERROR creating file: %s\n",filename);

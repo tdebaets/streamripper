@@ -444,8 +444,6 @@ ripstream_rip_mp3 (void)
 	if (!m_current_track.have_track_info) {
 	    strcpy (m_current_track.raw_metadata, m_no_meta_name);
 	}
-	debug_printf ("rip_manager_start_track: ti=%s\n", 
-		      m_current_track.title);
 	ret = rip_manager_start_track (&m_current_track, m_track_count);
 	if (ret != SR_SUCCESS) {
 	    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
@@ -456,7 +454,8 @@ ripstream_rip_mp3 (void)
     }
 
     /* Check for track change. */
-    debug_printf ("m_current_track.have_track_info = %d\n", m_current_track.have_track_info);
+    debug_printf ("m_current_track.have_track_info = %d\n", 
+		  m_current_track.have_track_info);
     if (m_current_track.have_track_info && is_track_changed()) {
 	/* Set m_find_silence equal to the number of additional blocks 
 	   needed until we can do silence separation. */

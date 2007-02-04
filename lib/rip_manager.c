@@ -57,9 +57,6 @@
 static void			ripthread(void *bla);
 static error_code		start_relay(int content_type);
 static void			post_status(int status);
-//static error_code		start_track(char *track);
-//static error_code		rip_manager_end_track(char *track);
-//static error_code		rip_manager_put_data(char *buf, int size);
 static error_code		start_ripping();
 static void			destroy_subsystems();
 

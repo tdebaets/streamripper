@@ -261,8 +261,7 @@ void print_usage()
     fprintf(stderr, "      -E command     - Run external command to fetch metadata\n");
     fprintf(stderr, "      --quiet        - Don't print ripping status to console\n");
     fprintf(stderr, "      --debug        - Save debugging trace\n");
-    fprintf(stderr, "ID3 opts (mp3/aac/nsv):\n");
-    fprintf(stderr, "       [The default behavior is adding both ID3V1 and ID3V2]\n");
+    fprintf(stderr, "ID3 opts (mp3/aac/nsv):  [The default behavior is adding both ID3V1 and ID3V2]\n");
     fprintf(stderr, "      -i                           - Don't add any ID3 tags to output file\n");
     fprintf(stderr, "      --without-id3v1              - Don't add ID3V1 tags to output file\n");
     fprintf(stderr, "      --without-id3v2              - Don't add ID3V2 tags to output file\n");
@@ -491,39 +490,39 @@ parse_extended_options (char* rule)
     if ((!strcmp(rule,"xs-none"))
 	|| (!strcmp(rule,"xs_none"))) {
 	m_opt.sp_opt.xs = 0;
-	printf ("Disable silence detection");
+	debug_printf ("Disable silence detection");
 	return;
     }
     if ((1==sscanf(rule,"xs-min-volume=%d",&x)) 
 	|| (1==sscanf(rule,"xs_min_volume=%d",&x))) {
 	m_opt.sp_opt.xs_min_volume = x;
-	printf ("Setting minimum volume to %d\n",x);
+	debug_printf ("Setting minimum volume to %d\n",x);
 	return;
     }
     if ((1==sscanf(rule,"xs-silence-length=%d",&x))
 	|| (1==sscanf(rule,"xs_silence_length=%d",&x))) {
 	m_opt.sp_opt.xs_silence_length = x;
-	printf ("Setting silence length to %d\n",x);
+	debug_printf ("Setting silence length to %d\n",x);
 	return;
     }
     if ((2==sscanf(rule,"xs-search-window=%d:%d",&x,&y))
 	|| (2==sscanf(rule,"xs_search_window=%d:%d",&x,&y))) {
 	m_opt.sp_opt.xs_search_window_1 = x;
 	m_opt.sp_opt.xs_search_window_2 = y;
-	printf ("Setting search window to (%d:%d)\n",x,y);
+	debug_printf ("Setting search window to (%d:%d)\n",x,y);
 	return;
     }
     if ((1==sscanf(rule,"xs-offset=%d",&x))
 	|| (1==sscanf(rule,"xs_offset=%d",&x))) {
 	m_opt.sp_opt.xs_offset = x;
-	printf ("Setting silence offset to %d\n",x);
+	debug_printf ("Setting silence offset to %d\n",x);
 	return;
     }
     if ((2==sscanf(rule,"xs-padding=%d:%d",&x,&y))
 	|| (2==sscanf(rule,"xs_padding=%d:%d",&x,&y))) {
 	m_opt.sp_opt.xs_padding_1 = x;
 	m_opt.sp_opt.xs_padding_2 = y;
-	printf ("Setting file output padding to (%d:%d)\n",x,y);
+	debug_printf ("Setting file output padding to (%d:%d)\n",x,y);
 	return;
     }
 
@@ -531,29 +530,29 @@ parse_extended_options (char* rule)
     x = strlen("codeset-filesys=");
     if (!strncmp(rule,"codeset-filesys=",x)) {
 	m_opt.cs_opt.codeset_filesys = &rule[x];
-	printf ("Setting filesys codeset to %s\n",
-		m_opt.cs_opt.codeset_filesys);
+	debug_printf ("Setting filesys codeset to %s\n",
+		      m_opt.cs_opt.codeset_filesys);
 	return;
     }
     x = strlen("codeset-id3=");
     if (!strncmp(rule,"codeset-id3=",x)) {
 	m_opt.cs_opt.codeset_id3 = &rule[x];
-	printf ("Setting id3 codeset to %s\n",
-		m_opt.cs_opt.codeset_id3);
+	debug_printf ("Setting id3 codeset to %s\n",
+		      m_opt.cs_opt.codeset_id3);
 	return;
     }
     x = strlen("codeset-metadata=");
     if (!strncmp(rule,"codeset-metadata=",x)) {
 	m_opt.cs_opt.codeset_metadata = &rule[x];
-	printf ("Setting metadata codeset to %s\n",
-		m_opt.cs_opt.codeset_metadata);
+	debug_printf ("Setting metadata codeset to %s\n",
+		      m_opt.cs_opt.codeset_metadata);
 	return;
     }
     x = strlen("codeset-relay=");
     if (!strncmp(rule,"codeset-relay=",x)) {
 	m_opt.cs_opt.codeset_relay = &rule[x];
-	printf ("Setting relay codeset to %s\n",
-		m_opt.cs_opt.codeset_relay);
+	debug_printf ("Setting relay codeset to %s\n",
+		      m_opt.cs_opt.codeset_relay);
 	return;
     }
 
