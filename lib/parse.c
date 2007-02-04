@@ -395,28 +395,28 @@ init_metadata_parser (char* rules_file)
 void
 compose_metadata (TRACK_INFO* ti)
 {
-    mchar w_composed_metadata[MAX_TRACK_LEN];
+    int num_bytes;
+    unsigned char num_16_bytes;
+    mchar w_composed_metadata[MAX_METADATA_LEN+1];
+
     if (ti->have_track_info) {
 	if (ti->artist[0]) {
-	    msnprintf (w_composed_metadata, MAX_TRACK_LEN,
-#if HAVE_WCHAR_SUPPORT
-		       L"StreamTitle='%s - %s';",
-#else
-		       "StreamTitle='%s - %s';",
-#endif
+	    msnprintf (w_composed_metadata, MAX_METADATA_LEN,
+		       m("StreamTitle='%s - %s';"),
 		       ti->artist, ti->title);
 	} else {
-	    msnprintf (w_composed_metadata, MAX_TRACK_LEN,
-#if HAVE_WCHAR_SUPPORT
-		       L"StreamTitle='%s';",
-#else
-		       "StreamTitle='%s';",
-#endif
+	    msnprintf (w_composed_metadata, MAX_METADATA_LEN,
+		       m("StreamTitle='%s';"),
 		       ti->title);
 	}
     }
-    string_from_mstring (ti->composed_metadata, MAX_TRACK_LEN, 
-			 w_composed_metadata, CODESET_RELAY);
+    num_bytes = string_from_mstring (&ti->composed_metadata[1], 
+				     MAX_METADATA_LEN, 
+				     w_composed_metadata, 
+				     CODESET_RELAY);
+    ti->composed_metadata[MAX_METADATA_LEN] = 0;  // note, not LEN-1
+    num_16_bytes = (num_bytes + 15) / 16;
+    ti->composed_metadata[0] = num_16_bytes;
 }
 
 void

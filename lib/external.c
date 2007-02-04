@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <string.h>
 #include "debug.h"
+#include "mchar.h"
 #include "external.h"
 #include "compat.h"
 
@@ -70,12 +71,19 @@ parse_external_byte (External_Process* ep, TRACK_INFO* ti, char c)
 	}
     } else {
 	if (!strcmp (".",ep->line_buf)) {
-	    /* End of record */
-	    strcpy (ti->artist,ep->artist_buf);
-	    strcpy (ti->album,ep->album_buf);
-	    strcpy (ti->title,ep->title_buf);
-	    snprintf (ti->raw_metadata, MAX_EXT_LINE_LEN, "%s - %s",
-		      ti->artist, ti->title);
+	    /* Found end of record! */
+	    mchar w_raw_metadata[MAX_TRACK_LEN];
+	    mstring_from_string (ti->artist, MAX_TRACK_LEN, ep->artist_buf,
+				 CODESET_METADATA);
+	    mstring_from_string (ti->album, MAX_TRACK_LEN, ep->album_buf,
+				 CODESET_METADATA);
+	    mstring_from_string (ti->title, MAX_TRACK_LEN, ep->title_buf,
+				 CODESET_METADATA);
+	    /* GCS FIX - this is not quite right */
+	    msnprintf (w_raw_metadata, MAX_EXT_LINE_LEN, m("%s - %s"),
+		       ti->artist, ti->title);
+	    string_from_mstring (ti->raw_metadata, MAX_EXT_LINE_LEN, 
+				 w_raw_metadata, CODESET_METADATA);
 	    ti->have_track_info = 1;
 	    ti->save_track = TRUE;
 

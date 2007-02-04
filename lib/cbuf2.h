@@ -22,8 +22,6 @@
 #include "list.h"
 #include "relaylib.h"
 
-#define MAX_METADATA_LEN (127*16)
-
 /* Each metadata within the cbuf gets this struct */
 typedef struct METADATA_LIST_struct METADATA_LIST;
 struct METADATA_LIST_struct

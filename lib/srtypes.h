@@ -68,6 +68,9 @@ typedef int error_code;
 #define MAX_AUTH_LEN            255
 //#define MAX_DROPSTRING_LEN      255
 
+#define MAX_METADATA_LEN (127*16)
+
+
 #ifdef WIN32
   #ifndef _WINSOCKAPI_
     #define __DEFINE_TYPES__
@@ -175,7 +178,7 @@ typedef struct TRACK_INFOst
     mchar title[MAX_TRACK_LEN];
     mchar album[MAX_TRACK_LEN];
     mchar track[MAX_TRACK_LEN];
-    char composed_metadata[MAX_TRACK_LEN];      /* For relay stream */
+    char composed_metadata[MAX_METADATA_LEN+1];      /* For relay stream */
     BOOL save_track;
 } TRACK_INFO;
 

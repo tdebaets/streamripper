@@ -395,18 +395,24 @@ cbuf2_insert_chunk (CBUF2 *cbuf2, const char *data, u_long count,
 	list_splice (&this_page_list, cbuf2->ogg_page_list.prev);
     } else if (ti && ti->have_track_info) {
 	/* Insert metadata data */
+#if defined (commentout)
 	int num_bytes;
 	unsigned char num_16_bytes;
+#endif
 	METADATA_LIST* ml;
 	ml = (METADATA_LIST*) malloc (sizeof(METADATA_LIST));
 	/* GCS FIX: Check malloc error */
 	ml->m_chunk = chunk_no;
+#if defined (commentout)
 	num_bytes = snprintf (&ml->m_composed_metadata[1], MAX_METADATA_LEN,
 			      "StreamTitle='%s - %s';", 
 			      ti->artist, ti->title);
 	ml->m_composed_metadata[MAX_METADATA_LEN] = 0;  // note, not LEN-1
 	num_16_bytes = (num_bytes + 15) / 16;
 	ml->m_composed_metadata[0] = num_16_bytes;
+#endif
+	memcpy (ml->m_composed_metadata, ti->composed_metadata, 
+		MAX_METADATA_LEN+1);
 	list_add_tail (&(ml->m_list), &(cbuf2->metadata_list));
     }
     debug_printf ("CBUF_INSERT\n");
@@ -721,6 +727,7 @@ cbuf2_offset_2 (CBUF2 *cbuf2, u_long pos)
 }
 
 /* returns pos1 - pos2 (not used) */
+#if defined (commentout)
 static u_long
 cbuf2_subtract (CBUF2 *cbuf2, u_long pos1, u_long pos2)
 {
@@ -731,6 +738,7 @@ cbuf2_subtract (CBUF2 *cbuf2, u_long pos1, u_long pos2)
 	return diff + cbuf2->item_count;
     }
 }
+#endif
 
 static u_long
 cbuf2_idx_to_chunk (CBUF2 *cbuf2, u_long idx)
