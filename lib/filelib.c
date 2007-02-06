@@ -239,7 +239,7 @@ filelib_init (BOOL do_individual_tracks,
 			  get_date_stamp,
 			  0);
 
-    msnprintf (m_incomplete_directory, SR_MAX_PATH, m("%s%s%c"), 
+    msnprintf (m_incomplete_directory, SR_MAX_PATH, mS mS mC, 
 	       m_output_directory, m("incomplete"), PATH_SLASH);
 
     /* Recursively make the output directory & incomplete directory */
@@ -393,12 +393,8 @@ set_output_directory (mchar* global_output_directory,
     }
 
     /* Fill in %S and %d patterns */
-#if defined (commentout)
-    msnprintf (pattern_head, SR_MAX_PATH, m("%s%s%s"), device, 
+    msnprintf (pattern_head, SR_MAX_PATH, mS mS mS, device, 
 	       cwd_path, odir_path);
-#endif
-    swprintf (pattern_head, SR_MAX_PATH, L"%s%s%s", L"", 
-	      L"Hello world", L" Good bye");
     debug_printf ("Composed pattern head (%d) <- (%d,%d,%d)\n",
 		  mstrlen(pattern_head), mstrlen(device), 
 		  mstrlen(cwd_path), mstrlen(odir_path));
@@ -801,22 +797,22 @@ filelib_start (TRACK_INFO* ti)
     close_file(&m_file);
 
     /* Compose and trim filename (not including directory) */
-    msnprintf (fnbase1, TEMP_STR_LEN, m("%s - %s"), 
+    msnprintf (fnbase1, TEMP_STR_LEN, mS m(" - ") mS, 
 	       ti->artist, ti->title);
     trim_filename (fnbase, fnbase1);
-    msnprintf (newfile, TEMP_STR_LEN, m("%s%s%s"), 
+    msnprintf (newfile, TEMP_STR_LEN, mS mS mS, 
 	       m_incomplete_directory, fnbase, m_extension);
     if (m_keep_incomplete) {
 	int n = 1;
 	mchar oldfile[TEMP_STR_LEN];
-	msnprintf (oldfile, TEMP_STR_LEN, m("%s%s%s"), 
+	msnprintf (oldfile, TEMP_STR_LEN, mS mS mS, 
 		   m_incomplete_directory, fnbase, m_extension);
 	mstrcpy (fnbase1, fnbase);
 	while (file_exists (oldfile)) {
-	    msnprintf (fnbase1, TEMP_STR_LEN, m("(%d)%s"), 
+	    msnprintf (fnbase1, TEMP_STR_LEN, m("(%d)") mS, 
 		       n, fnbase);
 	    trim_filename (fnbase2, fnbase1);
-	    msnprintf (oldfile, TEMP_STR_LEN, m("%s%s%s"), 
+	    msnprintf (oldfile, TEMP_STR_LEN, mS mS mS, 
 		       m_incomplete_directory,
 		       fnbase2, m_extension);
 	    n++;
@@ -1083,7 +1079,8 @@ filelib_open_showfiles ()
 
     /* Write cue header here */
     /* GCS FIX: What encoding should the FILE line be? */
-    rc = msnprintf (mcue_buf, 1024, m("FILE \"%s\" MP3\n"), m_show_name);
+    rc = msnprintf (mcue_buf, 1024, m("FILE \"") mS m("\" MP3\n"), 
+		    m_show_name);
     rc = string_from_mstring (cue_buf, 1024, mcue_buf, CODESET_FILESYS);
     rc = filelib_write (m_cue_file, cue_buf, rc);
     if (rc != SR_SUCCESS) {

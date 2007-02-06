@@ -402,11 +402,11 @@ compose_metadata (TRACK_INFO* ti)
     if (ti->have_track_info) {
 	if (ti->artist[0]) {
 	    msnprintf (w_composed_metadata, MAX_METADATA_LEN,
-		       m("StreamTitle='%s - %s';"),
+		       m("StreamTitle='") mS m(" - ") mS m("';"),
 		       ti->artist, ti->title);
 	} else {
 	    msnprintf (w_composed_metadata, MAX_METADATA_LEN,
-		       m("StreamTitle='%s';"),
+		       m("StreamTitle='") mS m("';"),
 		       ti->title);
 	}
     }
