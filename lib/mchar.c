@@ -1,5 +1,5 @@
-/* util.c
- * general util library - actually it is codeset and string processing
+/* mchar.c
+ * Codeset and wide character processing
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,20 +51,16 @@
 #include <errno.h>
 #include "debug.h"
 #include "srtypes.h"
-#include "util.h"
+#include "mchar.h"
 
 /*****************************************************************************
  * Public functions
  *****************************************************************************/
-char	*escape_string_alloc(const char *str);
 char	*left_str(char *str, int len);
-char	*strip_last_word(char *str);
-int	word_count(char *str);
 char	*subnstr_until(const char *str, char *until, char *newstr, int maxlen);
 char	*strip_invalid_chars(char *str);
 char	*format_byte_size(char *str, long size);
 void	trim(char *str);
-void 	null_printf(char *s, ...);
 
 /*****************************************************************************
  * Private global variables
@@ -75,6 +71,9 @@ const char* m_codeset_id3;
 const char* m_codeset_metadata;
 const char* m_codeset_relay;
 
+/*****************************************************************************
+ * These functions are NOT mchar related
+ *****************************************************************************/
 char*
 subnstr_until(const char *str, char *until, char *newstr, int maxlen)
 {
@@ -102,6 +101,58 @@ char *left_str(char *str, int len)
     return str;
 }
 
+char *format_byte_size(char *str, long size)
+{
+    const long ONE_K = 1024;
+    const long ONE_M = ONE_K*ONE_K;
+
+    if (size < ONE_K)
+	sprintf(str, "%ldb", size);
+    else if (size < ONE_M)
+	sprintf(str, "%ldkb", size/ONE_K);
+    else 
+	sprintf(str, "%.2fM", (float)size/(ONE_M));
+	
+    return str;
+}
+
+void trim(char *str)
+{
+    int size = strlen(str)-1;
+    while(str[size] == 13 || str[size] == 10 || str[size] == ' ')
+    {
+	str[size] = '\0';
+	size--;
+    }
+    size = strlen(str);
+    while(str[0] == ' ')
+    {
+	size--;
+	memmove(str, str+1, size);
+    }
+    str[size] = '\0';
+}
+
+/* This is a little different from standard strncpy, because:
+   1) behavior is known when dst & src overlap
+   2) only copy n-1 characters max
+   3) then add the null char
+*/
+void
+sr_strncpy (char* dst, char* src, int n)
+{
+    int i = 0;
+    for (i = 0; i < n-1; i++) {
+	if (!(dst[i] = src[i])) {
+	    return;
+	}
+    }
+    dst[i] = 0;
+}
+
+/*****************************************************************************
+ * These functions ARE mchar related
+ *****************************************************************************/
 #if HAVE_WCHAR_SUPPORT
 # if HAVE_ICONV
 int 
@@ -126,14 +177,20 @@ iconv_convert_string (char* dst, int dst_len, char* src, int src_len,
     dst_ptr = dst;
     rc = iconv(ict,&src_ptr,&src_left,&dst_ptr,&dst_left);
     if (rc == -1) {
-	if (errno == EINVAL || errno == E2BIG) {
-	    /* EINVAL means the last character was truncated
-	       E2BIG means the output buffer was too small.
+	if (errno == EINVAL) {
+	    /* EINVAL means the last character was truncated 
 	       Declare success and try to continue... */
-	    printf ("Oops 1\n");
+	    debug_printf ("ICONV: EINVAL\n");
+	    printf ("ICONV: EINVAL\n");
+	} else if (errno == E2BIG) {
+	    /* E2BIG means the output buffer was too small.
+	       Declare success and try to continue... */
+	    debug_printf ("ICONV: E2BIG\n");
+	    printf ("ICONV: E2BIG\n");
 	} else if (errno == EILSEQ) {
 	    /* Here I should advance cptr and try to continue, right? */
-	    printf ("Oops 2\n");
+	    debug_printf ("ICONV: EILSEQ\n");
+	    printf ("ICONV: EILSEQ\n");
 	}
     }
     iconv_close (ict);
@@ -150,8 +207,12 @@ string_from_wstring (char* c, int clen, wchar_t* w, const char* codeset)
 
 # if HAVE_ICONV
     int wlen;
-    wlen = wcslen (w) + 1;
+    //    wlen = (wcslen (w) + 1) * sizeof(wchar_t);
+    wlen = wcslen (w) * sizeof(wchar_t);
+    debug_printf ("ICONV: c <- w (codeset=%s,clen=%d,wlen=%d)\n", 
+		  codeset, clen, wlen);
     rc = iconv_convert_string (c, clen, (char*) w, wlen, codeset, "WCHAR_T");
+    debug_printf ("rc = %d\n", rc);
     if (rc >= 0) return rc;
     /* Otherwise, fall through to wcstombs method */
 # endif
@@ -171,7 +232,9 @@ wstring_from_string (wchar_t* w, int wlen, char* c, const char* codeset)
 # if HAVE_ICONV
     int clen;
     clen = strlen (c);  // <----<<<<  GCS FIX. String is arbitrarily encoded.
+    debug_printf ("ICONV: w <- c (%s)\n", c);
     rc = iconv_convert_string ((char*) w, wlen, c, clen, "WCHAR_T", codeset);
+    debug_printf ("rc = %d\n", rc);
     if (rc == 0) return 0;
     /* Otherwise, fall through to mbstowcs method */
 # endif
@@ -190,7 +253,8 @@ wchar_from_char (char c, const char* codeset)
     int rc;
 
 # if HAVE_ICONV
-    rc = iconv_convert_string (&w, 1, &c, 1, "WCHAR_T", codeset);
+    rc = iconv_convert_string ((char*) w, sizeof(wchar_t), &c, 1, 
+			       "WCHAR_T", codeset);
     if (rc == 1) return w[0];
     /* Otherwise, fall through to mbstowcs method */
 # endif
@@ -205,6 +269,9 @@ wchar_from_char (char c, const char* codeset)
 int
 mstring_from_string (mchar* m, int mlen, char* c, int codeset_type)
 {
+    if (mlen < 0) return 0;
+    *m = 0;
+    if (!c) return 0;
 #if defined (HAVE_WCHAR_SUPPORT)
     switch (codeset_type) {
     case CODESET_UTF8:
@@ -213,11 +280,14 @@ mstring_from_string (mchar* m, int mlen, char* c, int codeset_type)
     case CODESET_LOCALE:
 	return wstring_from_string (m, mlen, c, m_codeset_locale);
 	break;
+    case CODESET_FILESYS:
+	return wstring_from_string (m, mlen, c, m_codeset_filesys);
+	break;
     case CODESET_METADATA:
 	return wstring_from_string (m, mlen, c, m_codeset_metadata);
 	break;
     default:
-	printf ("Program error.  Bad codeset m->c.\n");
+	printf ("Program error.  Bad codeset m->c (%d)\n", codeset_type);
 	exit (-1);
     }
 #else
@@ -229,6 +299,9 @@ mstring_from_string (mchar* m, int mlen, char* c, int codeset_type)
 int
 string_from_mstring (char* c, int clen, mchar* m, int codeset_type)
 {
+    if (clen < 0) return 0;
+    *c = 0;
+    if (!m) return 0;
 #if defined (HAVE_WCHAR_SUPPORT)
     switch (codeset_type) {
     case CODESET_UTF8:
@@ -252,6 +325,7 @@ string_from_mstring (char* c, int clen, mchar* m, int codeset_type)
     }
 #else
     strncpy (c, m, mlen);
+    ERROR need return value;
 #endif
 }
 
@@ -320,7 +394,6 @@ initialize_default_locale (CODESET_OPTIONS* cs_opt)
     /* Set default codesets */
     fromcode = get_default_codeset ();
     if (fromcode) {
-        debug_printf ("LOCALE CODESET is %s\n", fromcode);
 	m_codeset_locale = fromcode;
 	m_codeset_filesys = fromcode;
 	m_codeset_id3 = fromcode;
@@ -339,19 +412,26 @@ initialize_default_locale (CODESET_OPTIONS* cs_opt)
        (or whatever) for osx here */
 
     /* Override from command line if requested */
-    if (!cs_opt) return;
-    if (cs_opt->codeset_filesys) {
-	m_codeset_filesys = cs_opt->codeset_filesys;
+    if (cs_opt) {
+	if (cs_opt->codeset_filesys) {
+	    m_codeset_filesys = cs_opt->codeset_filesys;
+	}
+	if (cs_opt->codeset_id3) {
+	    m_codeset_id3 = cs_opt->codeset_id3;
+	}
+	if (cs_opt->codeset_metadata) {
+	    m_codeset_metadata = cs_opt->codeset_metadata;
+	}
+	if (cs_opt->codeset_relay) {
+	    m_codeset_relay = cs_opt->codeset_relay;
+	}
     }
-    if (cs_opt->codeset_id3) {
-	m_codeset_id3 = cs_opt->codeset_id3;
-    }
-    if (cs_opt->codeset_metadata) {
-	m_codeset_metadata = cs_opt->codeset_metadata;
-    }
-    if (cs_opt->codeset_relay) {
-	m_codeset_relay = cs_opt->codeset_relay;
-    }
+
+    debug_printf ("Locale codeset: %s\n", m_codeset_locale);
+    debug_printf ("Filesys codeset: %s\n", m_codeset_filesys);
+    debug_printf ("ID3 codeset: %s\n", m_codeset_id3);
+    debug_printf ("Metadata codeset: %s\n", m_codeset_metadata);
+    debug_printf ("Relay codeset: %s\n", m_codeset_relay);
 }
 
 /* This is used to set the codeset byte for id3v2 frames */
@@ -633,55 +713,6 @@ strip_invalid_chars_new (mchar *str)
     return str;
 }
 
-char *format_byte_size(char *str, long size)
-{
-    const long ONE_K = 1024;
-    const long ONE_M = ONE_K*ONE_K;
-
-    if (size < ONE_K)
-	sprintf(str, "%ldb", size);
-    else if (size < ONE_M)
-	sprintf(str, "%ldkb", size/ONE_K);
-    else 
-	sprintf(str, "%.2fM", (float)size/(ONE_M));
-	
-    return str;
-}
-
-void trim(char *str)
-{
-    int size = strlen(str)-1;
-    while(str[size] == 13 || str[size] == 10 || str[size] == ' ')
-    {
-	str[size] = '\0';
-	size--;
-    }
-    size = strlen(str);
-    while(str[0] == ' ')
-    {
-	size--;
-	memmove(str, str+1, size);
-    }
-    str[size] = '\0';
-}
-
-/* This is a little different from standard strncpy, because:
-   1) behavior is known when dst & src overlap
-   2) only copy n-1 characters max
-   3) then add the null char
-*/
-void
-sr_strncpy (char* dst, char* src, int n)
-{
-    int i = 0;
-    for (i = 0; i < n-1; i++) {
-	if (!(dst[i] = src[i])) {
-	    return;
-	}
-    }
-    dst[i] = 0;
-}
-
 void
 mstrncpy (mchar* dst, mchar* src, int n)
 {
@@ -732,14 +763,16 @@ mstrlen (mchar* s)
 int
 msnprintf (mchar* dest, size_t n, const mchar* fmt, ...)
 {
+    int rc;
     va_list ap;
     va_start (ap, fmt);
 #if defined HAVE_WCHAR_SUPPORT
-    return vswprintf (dest, n, fmt, ap);
+    rc = vswprintf (dest, n, fmt, ap);
 #else
-    return vsnprintf (dest, n, fmt, ap);
+    rc = vsnprintf (dest, n, fmt, ap);
 #endif
     va_end (ap);
+    return rc;
 }
 
 mchar*
@@ -762,3 +795,22 @@ mstrncat (mchar* ws1, const mchar* ws2, size_t n)
 #endif
 }
 
+int
+mstrcmp (const mchar* ws1, const mchar* ws2)
+{
+#if defined HAVE_WCHAR_SUPPORT
+    return wcscmp (ws1, ws2);
+#else
+    return strcmp (ws1, ws2);
+#endif
+}
+
+long int
+mtol (const mchar* string)
+{
+#if defined HAVE_WCHAR_SUPPORT
+    return wcstol (string, 0, 0);
+#else
+    return strtol (string, 0, 0);
+#endif
+}
