@@ -1,8 +1,18 @@
-# This is an example of a file that can be customized for parsing metadata
-# Use it this like this:
-#     streamripper URL -w parse_rules.txt
+##--------------------------------------------------------------------------!
+#  This is an example of a file that can be customized for parsing metadata
+#
+#   USAGE:    streamripper URL -w parse_rules.txt
+##--------------------------------------------------------------------------!
 
 # Lines that start with '#' are comments, and blank lines are ignored.
+
+#####  CAUTION: Do not place your USER ADDED RULES at the end of the default
+#  parse_rules.txt file, because there is a [M]atch rule already there,
+#  (Artist - Title), that will prevent Streamripper from processing them.
+
+##===========================================================================
+##=====USER ADDED RULES=====
+##===========================================================================
 
 # Ignore metadata that begins with "A suivre"
 # The leading "m" says this is a match rule
