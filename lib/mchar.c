@@ -198,8 +198,8 @@ iconv_convert_string (char* dst, int dst_len, char* src, int src_len,
 }
 # endif
 
-/* Return value is the number of bytes occupied by the converted string, 
-   including the null character. */
+/* Return value is the number of char occupied by the converted string, 
+   not including the null character. */
 int 
 string_from_wstring (char* c, int clen, wchar_t* w, const char* codeset)
 {
@@ -213,6 +213,7 @@ string_from_wstring (char* c, int clen, wchar_t* w, const char* codeset)
 		  codeset, clen, wlen);
     rc = iconv_convert_string (c, clen, (char*) w, wlen, codeset, "WCHAR_T");
     debug_printf ("rc = %d\n", rc);
+    debug_printf ("val = %s\n", c);
     if (rc >= 0) return rc;
     /* Otherwise, fall through to wcstombs method */
 # endif
@@ -224,6 +225,8 @@ string_from_wstring (char* c, int clen, wchar_t* w, const char* codeset)
     return rc;
 }
 
+/* Return value is the number of wchar_t occupied by the converted string, 
+   not including the null character. */
 int 
 wstring_from_string (wchar_t* w, int wlen, char* c, const char* codeset)
 {
@@ -235,6 +238,7 @@ wstring_from_string (wchar_t* w, int wlen, char* c, const char* codeset)
     debug_printf ("ICONV: w <- c (%s)\n", c);
     rc = iconv_convert_string ((char*) w, wlen, c, clen, "WCHAR_T", codeset);
     debug_printf ("rc = %d\n", rc);
+    debug_mprintf ("val = " mS "\n", w);
     if (rc == 0) return 0;
     /* Otherwise, fall through to mbstowcs method */
 # endif
@@ -264,8 +268,8 @@ wchar_from_char (char c, const char* codeset)
 }
 #endif /* HAVE_WCHAR_SUPPORT */
 
-/* Return value is the number of bytes occupied by the converted string, 
-   including the null character */
+/* Return value is the number of mchar occupied by the converted string, 
+   not including the null character. */
 int
 mstring_from_string (mchar* m, int mlen, char* c, int codeset_type)
 {
@@ -296,6 +300,8 @@ mstring_from_string (mchar* m, int mlen, char* c, int codeset_type)
 #endif
 }
 
+/* Return value is the number of char occupied by the converted string, 
+   not including the null character. */
 int
 string_from_mstring (char* c, int clen, mchar* m, int codeset_type)
 {

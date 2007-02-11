@@ -31,15 +31,14 @@
 /*****************************************************************************
  * Public functions
  *****************************************************************************/
-#define DEBUG_PRINTF_TO_FILE 1
-
+#define DEBUG_BUF_LEN 2048
 int debug_on = 0;
-int command_line_debug = 0;
 FILE* gcsfp = 0;
 static HSEM m_debug_lock;
 static char* debug_filename = 0;
 static char filename_buf[SR_MAX_PATH];
 static char* default_filename = "gcs.txt";
+static int debug_initialized = 0;
 
 void
 debug_set_filename (char* filename)
@@ -82,52 +81,84 @@ debug_close (void)
 void
 debug_printf (char* fmt, ...)
 {
-#if (DEBUG_PRINTF_TO_FILE)
-    static int initialized = 0;
     int was_open = 1;
-#endif
     va_list argptr;
 
     if (!debug_on) return;
 
-    if (!initialized) {
+    if (!debug_initialized) {
         m_debug_lock = threadlib_create_sem();
         threadlib_signal_sem(&m_debug_lock);
     }
     threadlib_waitfor_sem (&m_debug_lock);
 
-#if (DEBUG_PRINTF_TO_FILE)
     va_start (argptr, fmt);
     if (!gcsfp) {
 	was_open = 0;
 	debug_open();
 	if (!gcsfp) return;
     }
-    if (!initialized) {
-	initialized = 1;
+    if (!debug_initialized) {
+	debug_initialized = 1;
 	fprintf (gcsfp, "=========================\n");
 	fprintf (gcsfp, "STREAMRIPPER " SRPLATFORM " " SRVERSION "\n");
     }
+
     vfprintf (gcsfp, fmt, argptr);
     fflush (gcsfp);
-#endif
 
-    if (command_line_debug) {
-#if (!DEBUG_PRINTF_TO_FILE)
-      va_start (argptr, fmt);
-#endif
-      vprintf (fmt, argptr);
-#if (!DEBUG_PRINTF_TO_FILE)
-      va_end (argptr);
-#endif
-    }
-
-#if (DEBUG_PRINTF_TO_FILE)
     va_end (argptr);
     if (!was_open) {
 	debug_close ();
     }
+    threadlib_signal_sem (&m_debug_lock);
+}
+
+void
+debug_mprintf (mchar* fmt, ...)
+{
+    int was_open = 1;
+    va_list argptr;
+    int rc;
+    mchar mbuf[DEBUG_BUF_LEN];
+    char cbuf[DEBUG_BUF_LEN];
+
+    if (!debug_on) return;
+
+    if (!debug_initialized) {
+        m_debug_lock = threadlib_create_sem();
+        threadlib_signal_sem(&m_debug_lock);
+    }
+    threadlib_waitfor_sem (&m_debug_lock);
+
+    va_start (argptr, fmt);
+    if (!gcsfp) {
+	was_open = 0;
+	debug_open();
+	if (!gcsfp) return;
+    }
+    if (!debug_initialized) {
+	debug_initialized = 1;
+	fprintf (gcsfp, "=========================\n");
+	fprintf (gcsfp, "STREAMRIPPER " SRPLATFORM " " SRVERSION "\n");
+    }
+
+#if defined HAVE_WCHAR_SUPPORT
+    rc = vswprintf (mbuf, DEBUG_BUF_LEN, fmt, argptr);
+    rc = string_from_mstring (cbuf, DEBUG_BUF_LEN, mbuf, CODESET_LOCALE);
+#else
+    rc = vsnprintf (cbuf, DEBUG_BUF_LEN, fmt, argptr);
 #endif
+
+    //    vfprintf (gcsfp, fmt, argptr);
+    fwrite (cbuf, 1, rc, gcsfp);
+
+    fflush (gcsfp);
+
+    va_end (argptr);
+    if (!was_open) {
+	debug_close ();
+    }
     threadlib_signal_sem (&m_debug_lock);
 }
 
