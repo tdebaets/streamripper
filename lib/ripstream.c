@@ -216,20 +216,20 @@ is_track_changed()
 static void
 format_track_info (TRACK_INFO* ti, char* tag)
 {
-    debug_printf ("----- TRACK_INFO %s\n"
-	"HAVETI: %d\n"
-	"RAW_MD: %s\n"
-	"ARTIST: %s\n"
-	"TITLE:  %s\n"
-	"ALBUM:  %s\n"
-	"SAVE:   %d\n",
-	tag,
-        ti->have_track_info,
-	ti->raw_metadata,
-	ti->artist,
-	ti->title,
-	ti->album,
-	ti->save_track);
+    debug_mprintf (m("----- TRACK_INFO %s\n")
+		   m("HAVETI: %d\n")
+		   m("RAW_MD: %s\n")
+		   m("ARTIST: ") mS m("\n")
+		   m("TITLE:  ") mS m("\n")
+		   m("ALBUM:  ") mS m("\n")
+		   m("SAVE:   %d\n"),
+		   tag,
+		   ti->have_track_info,
+		   ti->raw_metadata,
+		   ti->artist,
+		   ti->title,
+		   ti->album,
+		   ti->save_track);
 }
 
 static void

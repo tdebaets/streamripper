@@ -61,7 +61,7 @@ typedef struct RIP_MANAGER_INFOst
     char filename[SR_MAX_PATH];  // it's not the filename, it's the trackname
     u_long filesize;
     int	status;
-    int  track_count;
+    int track_count;
     External_Process* ep;
 } RIP_MANAGER_INFO;
 

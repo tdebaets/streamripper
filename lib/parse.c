@@ -409,7 +409,10 @@ compose_metadata (TRACK_INFO* ti)
 		       m("StreamTitle='") mS m("';"),
 		       ti->title);
 	}
+    } else {
+	debug_printf ("No track info when composing relay metadata\n");
     }
+    debug_printf ("Converting relay string to char\n");
     num_bytes = string_from_mstring (&ti->composed_metadata[1], 
 				     MAX_METADATA_LEN, 
 				     w_composed_metadata, 
@@ -452,6 +455,7 @@ parse_metadata (TRACK_INFO* ti)
     /* Loop through rules, if we find a matching rule, then use it */
     /* For now, only default rules supported with ascii 
        regular expressions. */
+    debug_printf ("Converting query string to wide\n");
     mstring_from_string (query_string, MAX_TRACK_LEN, 
 			 ti->raw_metadata, CODESET_METADATA);
     for (rulep = m_global_rule_list; rulep->cmd; rulep++) {
@@ -502,11 +506,14 @@ parse_metadata (TRACK_INFO* ti)
 		copy_rule_result (ti->artist, query_string, pmatch, rulep->artist_idx);
 		copy_rule_result (ti->title, query_string, pmatch, rulep->title_idx);
 		copy_rule_result (ti->album, query_string, pmatch, rulep->album_idx);
-		compose_metadata (ti);
-		/* GCS FIX: We don't have a track no */
 		ti->have_track_info = 1;
-		debug_printf ("Parsed track info.\nARTIST: %s\nTITLE: %s\nALBUM: %s\n",
-			ti->artist, ti->title, ti->album);
+		compose_metadata (ti);
+		/* GCS FIX: We don't have a track number. */
+		debug_mprintf (m("Parsed track info.\n")
+			       m("ARTIST: " mS "\n")
+			       m("TITLE: " mS "\n")
+			       m("ALBUM: " mS "\n"),
+			       ti->artist, ti->title, ti->album);
 		return;
 	    }
 	}
@@ -531,7 +538,9 @@ parse_metadata (TRACK_INFO* ti)
 	}
     }
     debug_printf ("Fell through while parsing data...\n");
+    debug_printf ("Converting unparsed string to wide\n");
     mstring_from_string (ti->title, MAX_TRACK_LEN, ti->raw_metadata, 
 			 CODESET_METADATA);
     ti->have_track_info = 1;
+    compose_metadata (ti);
 }

@@ -28,6 +28,9 @@
 	#define vsnprintf _vsnprintf
 #endif
 
+/* This prototype is missing in some systems */
+int vswprintf (wchar_t * ws, size_t n, const wchar_t * format, va_list arg);
+
 /*****************************************************************************
  * Public functions
  *****************************************************************************/
@@ -145,12 +148,13 @@ debug_mprintf (mchar* fmt, ...)
 
 #if defined HAVE_WCHAR_SUPPORT
     rc = vswprintf (mbuf, DEBUG_BUF_LEN, fmt, argptr);
+    debug_on = 0;
     rc = string_from_mstring (cbuf, DEBUG_BUF_LEN, mbuf, CODESET_LOCALE);
+    debug_on = 1;
 #else
     rc = vsnprintf (cbuf, DEBUG_BUF_LEN, fmt, argptr);
 #endif
 
-    //    vfprintf (gcsfp, fmt, argptr);
     fwrite (cbuf, 1, rc, gcsfp);
 
     fflush (gcsfp);

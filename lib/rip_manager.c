@@ -198,13 +198,9 @@ post_status(int status)
 void
 compose_console_string (TRACK_INFO* ti)
 {
-#if defined HAVE_WCHAR_SUPPORT
-    mchar* fmt = L"%s - %s";
-#else
-    mchar* fmt = "%s - %s";
-#endif
     mchar console_string[SR_MAX_PATH];
-    msnprintf (console_string, SR_MAX_PATH, fmt, ti->artist, ti->title);
+    msnprintf (console_string, SR_MAX_PATH, mS m(" - ") mS, 
+	       ti->artist, ti->title);
     string_from_mstring (m_ripinfo.filename, SR_MAX_PATH, console_string,
 			 CODESET_LOCALE);
 }

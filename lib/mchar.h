@@ -35,9 +35,6 @@ mchar* mstrncat (mchar* ws1, const mchar* ws2, size_t n);
 int mstrcmp (const mchar* ws1, const mchar* ws2);
 long int mtol (const mchar* string);
 
-char *strip_invalid_chars(char *str);
-mchar* strip_invalid_chars_new (mchar *str);
-
 int is_id3_unicode (void);
 
 #endif /*__MCHAR_H__*/

@@ -85,6 +85,7 @@ static int get_next_sequence_number (mchar* fn_base);
 static void fill_date_buf (mchar* datebuf, int datebuf_len);
 static error_code filelib_open_showfiles ();
 static void move_file (mchar* new_filename, mchar* old_filename);
+static mchar* replace_invalid_chars (mchar *str);
 
 /*****************************************************************************
  * Private Vars
@@ -197,7 +198,8 @@ filelib_init (BOOL do_individual_tracks,
     debug_printf ("Converted output directory: len=%d\n", 
 		  mstrlen (tmp_output_directory));
     mstrcpy (m_stripped_icy_name, m_icy_name);
-    strip_invalid_chars_new (m_stripped_icy_name);
+    
+    replace_invalid_chars (m_stripped_icy_name);
 
     switch (content_type) {
     case CONTENT_TYPE_MP3:
@@ -244,12 +246,14 @@ filelib_init (BOOL do_individual_tracks,
 
     /* Recursively make the output directory & incomplete directory */
     if (m_do_individual_tracks) {
-	debug_printf("Trying to make output_directory: %s\n", 
-		     m_output_directory);
+	debug_mprintf (m("Trying to make output_directory: ") mS m("\n"), 
+		       m_output_directory);
 	mkdir_recursive (m_output_directory, 1);
 
 	/* Next, make the incomplete directory */
 	if (m_do_individual_tracks) {
+	    debug_mprintf (m("Trying to make incomplete_directory: ") 
+			   mS m("\n"), m_incomplete_directory);
 	    mkdir_if_needed (m_incomplete_directory);
 	}
     }
@@ -669,9 +673,9 @@ parse_and_subst_pat (mchar* newfile,
 	mstrncpy (stripped_artist, ti->artist, SR_MAX_PATH);
 	mstrncpy (stripped_title, ti->title, SR_MAX_PATH);
 	mstrncpy (stripped_album, ti->album, SR_MAX_PATH);
-	strip_invalid_chars_new (stripped_artist);
-	strip_invalid_chars_new (stripped_title);
-	strip_invalid_chars_new (stripped_album);
+	replace_invalid_chars (stripped_artist);
+	replace_invalid_chars (stripped_title);
+	replace_invalid_chars (stripped_album);
     }
 
     while (nfi < MAX_FILEBASELEN) {
@@ -1121,22 +1125,9 @@ trim_filename (mchar* out, mchar *filename)
 {
     long maxlen = m_max_filename_length;
     mstrncpy (out, filename, MAX_TRACK_LEN);
-    strip_invalid_chars_new (out);
+    replace_invalid_chars (out);
     out[maxlen-4] = 0;	// -4 = make room for ".mp3"
 }
-
-#if defined (commentout)
-static void
-trim_mp3_suffix (char *filename, char* out)
-{
-    char* suffix_ptr;
-    strncpy (out, filename, SR_MAX_PATH);
-    suffix_ptr = out + strlen(out) - 4;  // -4 for ".mp3"
-    if (strcmp (suffix_ptr, m_extension) == 0) {
-	*suffix_ptr = 0;
-    }
-}
-#endif
 
 static void
 trim_mp3_suffix (mchar *filename)
@@ -1218,4 +1209,32 @@ get_next_sequence_number (mchar* fn_base)
     closedir (dp);
     return seq;
 #endif
+}
+
+/* GCS FIX: This should only strip "." at beginning of path */
+mchar* 
+replace_invalid_chars (mchar *str)
+{
+# if defined (WIN32)
+    mchar invalid_chars[] = m("\\/:*?\"<>|~");
+# else
+    mchar invalid_chars[] = m("\\/:*?\"<>|.~");
+# endif
+    mchar replacement = m('-');
+
+    mchar *oldstr = str;
+    mchar *newstr = str;
+
+    if (!str) return NULL;
+
+    for (;*oldstr; oldstr++) {
+	if (mstrchr(invalid_chars, *oldstr) == NULL) {
+	    *newstr++ = *oldstr;
+	} else {
+	    *newstr++ = replacement;
+	}
+    }
+    *newstr = '\0';
+
+    return str;
 }

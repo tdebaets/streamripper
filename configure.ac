@@ -115,8 +115,11 @@ AC_CHECK_TYPES([wchar_t],[],[],[
 #include <stddef.h>
 #endif
 ])
-dnl More wide character madness.  FreeBSD doesn't have an iswcntrl().
+dnl -- More wide character madness.
+dnl FreeBSD doesn't have an iswcntrl()
 AC_CHECK_FUNCS(iswcntrl)
+dnl Linux is missing vswprintf prototype
+AC_CHECK_FUNCS(vswprintf)
 AC_FUNC_MBRTOWC
 
 dnl -------- Check for iconv & related

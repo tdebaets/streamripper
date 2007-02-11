@@ -53,12 +53,15 @@
 #include "srtypes.h"
 #include "mchar.h"
 
+/* This prototype is missing in some systems */
+int vswprintf (wchar_t * ws, size_t n, const wchar_t * format, va_list arg);
+
 /*****************************************************************************
  * Public functions
  *****************************************************************************/
 char	*left_str(char *str, int len);
 char	*subnstr_until(const char *str, char *until, char *newstr, int maxlen);
-char	*strip_invalid_chars(char *str);
+// char	*strip_invalid_chars(char *str);
 char	*format_byte_size(char *str, long size);
 void	trim(char *str);
 
@@ -181,16 +184,19 @@ iconv_convert_string (char* dst, int dst_len, char* src, int src_len,
 	    /* EINVAL means the last character was truncated 
 	       Declare success and try to continue... */
 	    debug_printf ("ICONV: EINVAL\n");
-	    printf ("ICONV: EINVAL\n");
+	    printf ("ICONV: EINVAL\n\n");
 	} else if (errno == E2BIG) {
 	    /* E2BIG means the output buffer was too small.
 	       Declare success and try to continue... */
 	    debug_printf ("ICONV: E2BIG\n");
-	    printf ("ICONV: E2BIG\n");
+	    printf ("ICONV: E2BIG\n\n");
 	} else if (errno == EILSEQ) {
 	    /* Here I should advance cptr and try to continue, right? */
 	    debug_printf ("ICONV: EILSEQ\n");
-	    printf ("ICONV: EILSEQ\n");
+	    printf ("ICONV: EILSEQ\n\n");
+	} else {
+	    debug_printf ("ICONV: ERROR %d\n", errno);
+	    printf ("ICONV:ERROR %d\n\n", errno);
 	}
     }
     iconv_close (ict);
@@ -206,16 +212,15 @@ string_from_wstring (char* c, int clen, wchar_t* w, const char* codeset)
     int rc;
 
 # if HAVE_ICONV
-    int wlen;
-    //    wlen = (wcslen (w) + 1) * sizeof(wchar_t);
+    int wlen, clen_out;
     wlen = wcslen (w) * sizeof(wchar_t);
-    debug_printf ("ICONV: c <- w (codeset=%s,clen=%d,wlen=%d)\n", 
-		  codeset, clen, wlen);
+    debug_printf ("ICONV: c <- w (len=%d,tgt=%s)\n", wlen, codeset);
     rc = iconv_convert_string (c, clen, (char*) w, wlen, codeset, "WCHAR_T");
     debug_printf ("rc = %d\n", rc);
-    debug_printf ("val = %s\n", c);
-    if (rc >= 0) return rc;
-    /* Otherwise, fall through to wcstombs method */
+    clen_out = rc;
+    if (clen_out == clen) clen_out--;
+    c[clen_out] = 0;
+    return clen_out;
 # endif
 
     rc = wcstombs(c,w,clen);
@@ -233,14 +238,17 @@ wstring_from_string (wchar_t* w, int wlen, char* c, const char* codeset)
     int rc;
 
 # if HAVE_ICONV
-    int clen;
+    int clen, wlen_out;
     clen = strlen (c);  // <----<<<<  GCS FIX. String is arbitrarily encoded.
     debug_printf ("ICONV: w <- c (%s)\n", c);
-    rc = iconv_convert_string ((char*) w, wlen, c, clen, "WCHAR_T", codeset);
+    rc = iconv_convert_string ((char*) w, wlen * sizeof(wchar_t), 
+			       c, clen, "WCHAR_T", codeset);
     debug_printf ("rc = %d\n", rc);
-    debug_mprintf ("val = " mS "\n", w);
-    if (rc == 0) return 0;
-    /* Otherwise, fall through to mbstowcs method */
+    //    debug_mprintf (m("val = ") mS m("\n"), w);
+    wlen_out = rc / sizeof(wchar_t);
+    if (wlen_out == wlen) wlen_out--;
+    w[wlen_out] = 0;
+    return wlen_out;
 # endif
 
     rc = mbstowcs(w,c,wlen);
@@ -268,7 +276,8 @@ wchar_from_char (char c, const char* codeset)
 }
 #endif /* HAVE_WCHAR_SUPPORT */
 
-/* Return value is the number of mchar occupied by the converted string, 
+/* Input value mlen is measured in mchar, not bytes.
+   Return value is the number of mchar occupied by the converted string, 
    not including the null character. */
 int
 mstring_from_string (mchar* m, int mlen, char* c, int codeset_type)
@@ -450,6 +459,7 @@ is_id3_unicode (void)
     return 0;
 }
 
+#if defined (commentout)
 #if HAVE_WCHAR_SUPPORT
 # if HAVE_ICONV
 char*
@@ -687,37 +697,7 @@ strip_invalid_chars(char *str)
 #endif
 }
 
-mchar* 
-strip_invalid_chars_new (mchar *str)
-{
-#if HAVE_WCHAR_SUPPORT
-# if defined (WIN32)
-    wchar_t invalid_chars[] = L"\\/:*?\"<>|~";
-# else
-    wchar_t invalid_chars[] = L"\\/:*?\"<>|.~";
-# endif
-#else
-# if defined (WIN32)
-    char invalid_chars[] = "\\/:*?\"<>|~";
-# else
-    char invalid_chars[] = "\\/:*?\"<>|.~";
-# endif
-#endif
-
-    mchar *oldstr = str;						
-    mchar *newstr = str;
-
-    if (!str) return NULL;
-
-    for (;*oldstr; oldstr++) {
-	if (mstrchr(invalid_chars, *oldstr) != NULL)
-		continue;
-	*newstr = *oldstr;
-	newstr++;
-    }
-    *newstr = '\0';
-    return str;
-}
+#endif /* commentout */
 
 void
 mstrncpy (mchar* dst, mchar* src, int n)
@@ -774,6 +754,7 @@ msnprintf (mchar* dest, size_t n, const mchar* fmt, ...)
     va_start (ap, fmt);
 #if defined HAVE_WCHAR_SUPPORT
     rc = vswprintf (dest, n, fmt, ap);
+    debug_printf ("vswprintf got %d\n", rc);
 #else
     rc = vsnprintf (dest, n, fmt, ap);
 #endif
