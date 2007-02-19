@@ -1,6 +1,8 @@
 New for 1.62-beta1
 ------------------
-* New codeset options
+Sun Feb 11 17:07:31 EST 2007
+* New codeset options - codesets for metadata, id3, filesystem and 
+  relay are independently selectable
 * Id3v1 and id3v2 are now independently selectable
 
 New for 1.61.27

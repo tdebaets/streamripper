@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "STREAMRIPPER" "1" "13 August 2006" "" ""
+.TH "STREAMRIPPER" "1" "11 February 2007" "" ""
 
 .SH NAME
 streamripper \- rip shoutcast radio streams to mp3 files
@@ -12,10 +12,12 @@ streamripper \- rip shoutcast radio streams to mp3 files
 \fBstreamripper\fR URL [options]
 .SH "DESCRIPTION"
 .PP
-Streamripper records shoutcast and icecast compatible streams.  It uses
-meta data within a shoutcast stream to determine the beginning and
+Streamripper records shoutcast and icecast compatible streams,
+in their native format.  The following formats are
+supported: mp3, nsv, aac, and ogg.  The
+meta data within the stream are interpreted to determine the beginning and
 end of each song, and stores the songs on your hard disk
-as individual mp3 files.  In addition, streamripper includes
+as individual files.  In addition, streamripper includes
 a relay server for listening to the station while you are recording.
 .SH "OPTIONS"
 .TP
@@ -320,6 +322,21 @@ Set offset from center of silence window
 Set amount to pad before and after splitpoint.
 The 1st number is the number of msec to add to the end of each song.
 The 2nd number is the number of msec to add to the beginning of each song.
+.TP
+\fB--codeset-filesys=codeset\fR
+Tells streamripper what codeset to use for the file names when
+it writes to your hard drive.
+.TP
+\fB--codeset-id3=codeset\fR
+Tells streamripper what codeset to use for the id3 information.
+.TP
+\fB--codeset-metadata=codeset\fR
+Tells streamripper what codeset is being used for metadata
+in the stream coming from the network.
+.TP
+\fB--codeset-relay=codeset\fR
+Tells streamripper what codeset to use for metadata that it sends
+to your player on the relay stream.
 .SH "GETTING STARTED"
 .PP
 The easiest way to get started is to find the URL of a stream you want
@@ -336,17 +353,41 @@ into two directory's one called "Monkey Radio" and a sub-directory
 "Monkey Radio/incomplete" the incomplete directory is for tracks that
 streamripper does not know the begging or end of. The first and last
 tracks your rip for instance, would be in incomplete.
+.SH "LISTENING TO THE RELAY"
 .PP
-Also you can listen to the stream by creating a relay server.
+You can listen to the stream while you are ripping by
+creating a relay server.  This is done by using the -r option.
 
 .nf
   streamripper http://205.188.245.132:8038 -r
 .fi
 .PP
-When the program starts it will display what port it's relaying the
-stream on, it defaults to 8000 but you can choose another port. To
-listen to your relay server open up XMMS or Winamp and enter your
+When streamripper starts it will display what port it's relaying the
+stream on. It defaults to 8000 but you can choose another port.
+To listen to your relay server, open up XMMS or Winamp and enter your
 machine name with the port as you would any other stream.
+For example, if you are using the default relay stream, you would
+want to open up this URL:
+
+.nf
+  http://localhost:8000
+.fi
+.PP
+However, if you are ripping an ogg stream, you usually need to tell
+the player that the stream is ogg, which can be done by appending ".ogg"
+to the stream URL.
+
+.nf
+  http://localhost:8000/.ogg
+.fi
+.PP
+Similarly, if you want to watch an nsv stream while you rip, you need
+to tell the player that the stream is nsv, which can be done by
+appending ";stream.nsv" to the URL.
+
+.nf
+  http://localhost:8000/;stream.nsv
+.fi
 .SH "SPLITPOINT DETECTION"
 .PP
 Streamripper automatically splits tracks based on detection of a
@@ -510,6 +551,6 @@ http://www.shoutcast.com
 http://www.icecast.org
 .SH "COPYING"
 .PP
-Copyright © 2000-2002 Jon Clegg, © 2004-2006 Gregory C. Sharp.
+Copyright © 2000-2002 Jon Clegg, © 2004-2007 Gregory C. Sharp.
 Free use of this software is
 granted under the terms of the GNU General Public License (GPL).
