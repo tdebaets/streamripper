@@ -53,8 +53,15 @@
 #include "srtypes.h"
 #include "mchar.h"
 
+#if WIN32
+	#define vsnprintf _vsnprintf
+	#define vswprintf _vsnwprintf
+#endif
+
+#if !defined (WIN32)
 /* This prototype is missing in some systems */
 int vswprintf (wchar_t * ws, size_t n, const wchar_t * format, va_list arg);
+#endif
 
 /*****************************************************************************
  * Public functions

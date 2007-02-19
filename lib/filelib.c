@@ -30,12 +30,6 @@
 
 #define TEMP_STR_LEN	(SR_MAX_PATH*2)
 
-/* Missing prototype */
-int swprintf(wchar_t* ws, size_t n,
-	     const wchar_t * format, ...);
-#if 0
-#endif
-
 /*****************************************************************************
  * Public functions
  *****************************************************************************/
@@ -832,11 +826,12 @@ filelib_start (TRACK_INFO* ti)
 static long
 get_file_size (mchar *filename)
 {
+    FILE* fp;
     long len;
     char fn[SR_MAX_PATH];
 
     string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
-    FILE* fp = fopen (fn, "r");
+    fp = fopen (fn, "r");
     if (!fp) return 0;
 
     if (fseek (fp, 0, SEEK_END)) {

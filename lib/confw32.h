@@ -11,6 +11,9 @@
 /* Define to 1 if you don't have `vprintf' but do have `_doprnt.' */
 #undef HAVE_DOPRNT
 
+/* Define to 1 if you have faad2 libraries installed */
+#undef HAVE_FAAD
+
 /* Define if you have the iconv() function. */
 #define HAVE_ICONV 1
 
@@ -43,6 +46,9 @@
 
 /* Define to 1 if you have the `socket' library (-lsocket). */
 #undef HAVE_LIBSOCKET
+
+/* Define to 1 if you have the `tre' library (-ltre). */
+#define HAVE_LIBTRE 1
 
 /* Define if you have locale_charset() in <localcharset.h>. */
 #define HAVE_LOCALE_CHARSET 1
@@ -111,6 +117,9 @@
 
 /* Define to 1 if you have the `vprintf' function. */
 #define HAVE_VPRINTF 1
+
+/* Define to 1 if you have the `vswprintf' function. */
+#undef HAVE_VSWPRINTF
 
 /* Define to 1 if you have the <wchar.h> header file. */
 #define HAVE_WCHAR_H 1

@@ -21,6 +21,7 @@
 #include "srconfig.h"
 
 #if defined (HAVE_FAAD)
+#if defined (commentout)
 
 #include "faad.h"
 
@@ -44,7 +45,6 @@ static const unsigned long faac_srates[] =
     24000, 22050, 16000, 12000, 11025, 8000
 };
 
-#if defined (commentout)
 static int faac_init_mp4 (AVCodecContext *avctx)
 {
     FAACContext *s = (FAACContext *) avctx->priv_data;

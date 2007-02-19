@@ -164,6 +164,14 @@ SOURCE=..\lib\list.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\lib\mchar.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\mchar.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\lib\mpeg.c
 # End Source File
 # Begin Source File
@@ -249,10 +257,6 @@ SOURCE=..\lib\utf8.c
 # Begin Source File
 
 SOURCE=..\lib\utf8.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\lib\util.c
 # End Source File
 # End Group
 # Begin Source File

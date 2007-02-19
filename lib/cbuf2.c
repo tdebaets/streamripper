@@ -376,7 +376,7 @@ cbuf2_insert_chunk (CBUF2 *cbuf2, const char *data, u_long count,
 	    page_loc = cbuf2_add (cbuf2, tmp->m_page_start, tmp->m_page_len);
 	}
 	
-	p = &this_page_list.next;
+	// p = &this_page_list.next;
 	list_for_each (p, &this_page_list) {
 	    tmp = list_entry(p, OGG_PAGE_LIST, m_list);
 	    tmp->m_page_start = page_loc;

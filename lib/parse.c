@@ -510,9 +510,9 @@ parse_metadata (TRACK_INFO* ti)
 		compose_metadata (ti);
 		/* GCS FIX: We don't have a track number. */
 		debug_mprintf (m("Parsed track info.\n")
-			       m("ARTIST: " mS "\n")
-			       m("TITLE: " mS "\n")
-			       m("ALBUM: " mS "\n"),
+			       m("ARTIST: ") mS m("\n")
+			       m("TITLE: ")  mS m("\n")
+			       m("ALBUM: ")  mS m("\n"),
 			       ti->artist, ti->title, ti->album);
 		return;
 	    }
