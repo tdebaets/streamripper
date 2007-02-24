@@ -193,10 +193,9 @@ iconv_convert_string (char* dst, int dst_len, char* src, int src_len,
 	    debug_printf ("ICONV: EINVAL\n");
 	    printf ("ICONV: EINVAL\n\n");
 	} else if (errno == E2BIG) {
-	    /* E2BIG means the output buffer was too small.
-	       Declare success and try to continue... */
+	    /* E2BIG means the output buffer was too small.  This can 
+	       happen, for example, when converting for id3v1 tags */
 	    debug_printf ("ICONV: E2BIG\n");
-	    printf ("ICONV: E2BIG\n\n");
 	} else if (errno == EILSEQ) {
 	    /* Here I should advance cptr and try to continue, right? */
 	    debug_printf ("ICONV: EILSEQ\n");
