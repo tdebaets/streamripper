@@ -1,6 +1,7 @@
 New for 1.62-beta2
 ------------------
 * Add codeset options to windows
+* Upgrade windows iconv to 1.11
 
 New for 1.62-beta1
 ------------------
