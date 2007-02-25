@@ -509,12 +509,16 @@ ripstream_rip_mp3
 
 
 -----------------------------------------------------------------------
-How to open a new file (start track)
+For Windows
 
-1) Use wfopen with utf8
-2) Use open with local encoding
-3) Use open with utf8
-4) Recoded
+Unicows:
+http://www.microsoft.com/downloads/details.aspx?FamilyID=73ba7bd7-ed06-4f0d-80a4-2a7eeaee17e2&DisplayLang=en
+http://www.microsoft.com/globaldev/handson/dev/mslu_announce.mspx
+
+-----------------------------------------------------------------------
+For Mac OSX 10.3
+
+1) Use wopen with utf8 (?)
 
 -----------------------------------------------------------------------
 How to build libiconv on windows

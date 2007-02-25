@@ -204,6 +204,10 @@ SOURCE=..\lib\rip_manager.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\lib\ripaac.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\lib\ripogg.c
 # End Source File
 # Begin Source File

@@ -395,6 +395,17 @@ get_default_codeset (void)
     fromcode = "ISO-8859-1";
 #endif
 
+#if defined (WIN32)
+    {
+	LCID lcid;
+	lcid = GetSystemDefaultLCID ();
+	debug_printf ("SystemDefaultLCID: %04x\n", lcid);
+	lcid = GetUserDefaultLCID ();
+	debug_printf ("UserDefaultLCID: %04x\n", lcid);
+    }
+#endif
+
+
 #if defined HAVE_ICONV
     debug_printf ("Have iconv.\n");
 #else

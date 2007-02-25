@@ -118,8 +118,7 @@ tag_compare (char *str, char *tag)
 
     len = strlen(tag);
 
-    for (i=0; i<len; i++) 
-    {
+    for (i=0; i<len; i++) {
 	a = tolower (str[i]);
 	b = tolower (tag[i]);
 	if ((a != b) || (a == 0))
@@ -139,8 +138,7 @@ header_receive (int sock, int *icy_metadata)
 
     *icy_metadata = 0;
         
-    while (1)
-    {
+    while (1) {
 	// use select to prevent deadlock on malformed http header
 	// that lacks CRLF delimiter
 	FD_ZERO(&fds);
@@ -161,16 +159,14 @@ header_receive (int sock, int *icy_metadata)
 
 	buf[r] = 0;
 	md = strtok (buf, HTTP_HEADER_DELIM);
-	while (md)
-	{
+	while (md) {
 	    debug_printf ("Got token: %s\n", md);
 	    // Finished when we are at end of header: only CRLF will be there.
 	    if ((md[0] == '\r') && (md[1] == 0))
 		return 0;
 	
 	    // Check for desired tag
-	    if (tag_compare (md, ICY_METADATA_TAG) == 0) 
-	    {
+	    if (tag_compare (md, ICY_METADATA_TAG) == 0) {
 		for (md += strlen(ICY_METADATA_TAG); md[0] && (isdigit(md[0]) == 0); md++);
 		
 		if (md[0])
@@ -201,29 +197,24 @@ swallow_receive (int sock)
     BOOL hasmore = TRUE;
         
     FD_ZERO(&fds);
-    while(hasmore)
-    {
+    while (hasmore) {
         // Poll the socket to see if it has anything to read
         hasmore = FALSE;
         FD_SET(sock, &fds);
         tv.tv_sec = 0;
         tv.tv_usec = 0;
         ret = select(sock + 1, &fds, NULL, NULL, &tv);
-        if (ret == 1)
-        {
+        if (ret == 1) {
             // Read and throw away data, ignoring errors
             ret = recv(sock, buf, BUFSIZE, 0);
-            if (ret > 0)
-            {
+            if (ret > 0) {
                 hasmore = TRUE;
             }
-            else if (ret == SOCKET_ERROR)
-            {
+            else if (ret == SOCKET_ERROR) {
                 break;
             }
         }
-        else if (ret == SOCKET_ERROR)
-        {
+        else if (ret == SOCKET_ERROR) {
             break;
         }
     }
@@ -240,8 +231,7 @@ make_nonblocking (int sock)
 
 #ifndef WIN32
     opt = fcntl(sock, F_GETFL);
-    if (opt != SOCKET_ERROR)
-    {
+    if (opt != SOCKET_ERROR) {
         fcntl(sock, F_SETFL, opt | O_NONBLOCK);
     }
 #else
@@ -385,15 +375,13 @@ void
 relaylib_shutdown ()
 {
     debug_printf("relaylib_shutdown:start\n");
-    if (!relaylib_isrunning())
-    {
+    if (!relaylib_isrunning()) {
         debug_printf("***relaylib_shutdown:return\n");
         return;
     }
     m_running = FALSE;
     threadlib_signal_sem(&m_sem_not_connected);
-    if (closesocket(m_listensock) == SOCKET_ERROR)
-    {   
+    if (closesocket(m_listensock) == SOCKET_ERROR) {   
         // JCBUG, what can we do?
     }
     m_listensock = SOCKET_ERROR;                // Accept thread will watch for this and not try to accept anymore

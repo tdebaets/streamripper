@@ -589,13 +589,13 @@ BOOL
 file_exists (mchar *filename)
 {
     FHANDLE f;
+    char fn[SR_MAX_PATH];
+    string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
 #if defined (WIN32)
-    f = CreateFile (filename, GENERIC_READ,
+    f = CreateFile (fn, GENERIC_READ,
 	    FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
 	    FILE_ATTRIBUTE_NORMAL, NULL);
 #else
-    char fn[SR_MAX_PATH];
-    string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
     f = open (fn, O_RDONLY);
 #endif
     if (f == INVALID_FHANDLE) {
@@ -898,12 +898,15 @@ new_file_is_better (mchar *oldfile, mchar *newfile)
 void
 truncate_file (mchar* filename)
 {
-#if defined WIN32
-    ERROR unimplemented;
-#else
     char fn[SR_MAX_PATH];
     string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
     debug_printf ("Trying to truncate file: %s\n", fn);
+#if defined WIN32
+    CloseHandle (CreateFile(fn, GENERIC_WRITE, 
+		FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, 
+		TRUNCATE_EXISTING, 
+		FILE_ATTRIBUTE_NORMAL, NULL));
+#else
     close (open (fn, O_RDWR | O_CREAT | O_TRUNC, 
 		 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
 #endif
@@ -912,13 +915,13 @@ truncate_file (mchar* filename)
 void
 move_file (mchar* new_filename, mchar* old_filename)
 {
-#if defined WIN32
-    ERROR unimplemented;
-#else
     char old_fn[SR_MAX_PATH];
     char new_fn[SR_MAX_PATH];
     string_from_mstring (old_fn, SR_MAX_PATH, old_filename, CODESET_FILESYS);
     string_from_mstring (new_fn, SR_MAX_PATH, new_filename, CODESET_FILESYS);
+#if defined WIN32
+    MoveFile(old_fn, new_fn);
+#else
     rename (old_fn, new_fn);
 #endif
 }
@@ -926,11 +929,11 @@ move_file (mchar* new_filename, mchar* old_filename)
 void
 delete_file (mchar* filename)
 {
-#if defined WIN32
-    ERROR unimplemented;
-#else
     char fn[SR_MAX_PATH];
     string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+#if defined WIN32
+    DeleteFile (fn);
+#else
     unlink (fn);
 #endif
 }
@@ -1000,8 +1003,11 @@ filelib_end (TRACK_INFO* ti,
 static error_code
 filelib_open_for_write (FHANDLE* fp, mchar* filename)
 {
+    char fn[SR_MAX_PATH];
+    string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    debug_printf ("Trying to create file: %s\n", fn);
 #if WIN32
-    *fp = CreateFile (filename, GENERIC_WRITE,   // open for reading 
+    *fp = CreateFile (fn, GENERIC_WRITE,         // open for reading 
 		      FILE_SHARE_READ,           // share for reading 
 		      NULL,                      // no security 
 		      CREATE_ALWAYS,             // existing file only 
@@ -1009,7 +1015,7 @@ filelib_open_for_write (FHANDLE* fp, mchar* filename)
 		      NULL);                     // no attr. template 
     if (*fp == INVALID_FHANDLE) {
 	int r = GetLastError();
-	r = strlen(filename);
+	r = strlen(fn);
 	printf ("ERROR creating file: %s\n",filename);
 	return SR_ERROR_CANT_CREATE_FILE;
     }
@@ -1017,9 +1023,6 @@ filelib_open_for_write (FHANDLE* fp, mchar* filename)
     /* For unix, we need to convert to char, and just open. 
        http://mail.nl.linux.org/linux-utf8/2001-02/msg00103.html
     */
-    char fn[SR_MAX_PATH];
-    string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
-    debug_printf ("Trying to create file: %s\n", fn);
     *fp = open (fn, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (*fp == INVALID_FHANDLE) {
 	/* GCS FIX -- need error message here! */
