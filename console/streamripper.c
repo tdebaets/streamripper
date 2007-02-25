@@ -266,7 +266,7 @@ void print_usage()
     fprintf(stderr, "      --without-id3v1              - Don't add ID3V1 tags to output file\n");
     fprintf(stderr, "      --without-id3v2              - Don't add ID3V2 tags to output file\n");
     fprintf(stderr, "Splitpoint opts (mp3 only):\n");
-    fprintf(stderr, "      --xs-offset                  - Shift relative to metadata (msec)\n");
+    fprintf(stderr, "      --xs-offset=num              - Shift relative to metadata (msec)\n");
     fprintf(stderr, "      --xs-padding=num:num         - Add extra to prev:next track (msec)\n");
     fprintf(stderr, "      --xs-search-window=num:num   - Search window relative to metadata (msec)\n");
     fprintf(stderr, "      --xs-silence-length=num      - Expected length of silence (msec)\n");
