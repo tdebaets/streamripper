@@ -23,11 +23,11 @@
 #endif
 
 #if WIN32
-#define PATH_SLASH m('\\')
-#define PATH_SLASH_STR m("\\")
+#define PATH_SLASH m_('\\')
+#define PATH_SLASH_STR m_("\\")
 #else
-#define PATH_SLASH m('/')
-#define PATH_SLASH_STR m("/")
+#define PATH_SLASH m_('/')
+#define PATH_SLASH_STR m_("/")
 #endif
 
 
@@ -40,17 +40,17 @@
                         it may be concatenated to a directory pathname. */
 #if defined _WIN32 || defined __WIN32__ || defined __EMX__ || defined __DJGPP__
   /* Win32, OS/2, DOS */
-# define ISSLASH(C) ((C) == m('/') || (C) == m('\\'))
+# define ISSLASH(C) ((C) == m_('/') || (C) == m_('\\'))
 # define HAS_DEVICE(P) \
-    ((((P)[0] >= m('A') && (P)[0] <= m('Z')) \
-      || ((P)[0] >= m('a') && (P)[0] <= m('z'))) \
-     && (P)[1] == m(':'))
+    ((((P)[0] >= m_('A') && (P)[0] <= m_('Z')) \
+      || ((P)[0] >= m_('a') && (P)[0] <= m_('z'))) \
+     && (P)[1] == m_(':'))
 /* GCS: This is not correct, because it could be c:foo which is relative */
 /* # define IS_ABSOLUTE_PATH(P) (ISSLASH ((P)[0]) || HAS_DEVICE (P)) */
 # define IS_ABSOLUTE_PATH(P) ISSLASH ((P)[0])
 #else
   /* Unix */
-# define ISSLASH(C) ((C) == m('/'))
+# define ISSLASH(C) ((C) == m_('/'))
 # define HAS_DEVICE(P) (0)
 # define IS_ABSOLUTE_PATH(P) ISSLASH ((P)[0])
 #endif

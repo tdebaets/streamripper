@@ -199,7 +199,7 @@ void
 compose_console_string (TRACK_INFO* ti)
 {
     mchar console_string[SR_MAX_PATH];
-    msnprintf (console_string, SR_MAX_PATH, mS m(" - ") mS, 
+    msnprintf (console_string, SR_MAX_PATH, m_S m_(" - ") m_S, 
 	       ti->artist, ti->title);
     string_from_mstring (m_ripinfo.filename, SR_MAX_PATH, console_string,
 			 CODESET_LOCALE);

@@ -80,7 +80,7 @@ parse_external_byte (External_Process* ep, TRACK_INFO* ti, char c)
 	    mstring_from_string (ti->title, MAX_TRACK_LEN, ep->title_buf,
 				 CODESET_METADATA);
 	    /* GCS FIX - this is not quite right */
-	    msnprintf (w_raw_metadata, MAX_EXT_LINE_LEN, mS m(" - ") mS,
+	    msnprintf (w_raw_metadata, MAX_EXT_LINE_LEN, m_S m_(" - ") m_S,
 		       ti->artist, ti->title);
 	    string_from_mstring (ti->raw_metadata, MAX_EXT_LINE_LEN, 
 				 w_raw_metadata, CODESET_METADATA);

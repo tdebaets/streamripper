@@ -197,17 +197,17 @@ filelib_init (BOOL do_individual_tracks,
 
     switch (content_type) {
     case CONTENT_TYPE_MP3:
-	m_extension = m(".mp3");
+	m_extension = m_(".mp3");
 	break;
     case CONTENT_TYPE_NSV:
     case CONTENT_TYPE_ULTRAVOX:
-	m_extension = m(".nsv");
+	m_extension = m_(".nsv");
 	break;
     case CONTENT_TYPE_OGG:
-	m_extension = m(".ogg");
+	m_extension = m_(".ogg");
 	break;
     case CONTENT_TYPE_AAC:
-	m_extension = m(".aac");
+	m_extension = m_(".aac");
 	break;
     default:
 	fprintf (stderr, "Error (wrong suggested content type: %d)\n", 
@@ -230,24 +230,24 @@ filelib_init (BOOL do_individual_tracks,
 			  tmp_output_pattern,
 			  tmp_output_directory,
 			  m_default_pattern,
-			  m("%A - %T"),
+			  m_("%A - %T"),
 			  get_separate_dirs,
 			  get_date_stamp,
 			  0);
 
-    msnprintf (m_incomplete_directory, SR_MAX_PATH, mS mS mC, 
-	       m_output_directory, m("incomplete"), PATH_SLASH);
+    msnprintf (m_incomplete_directory, SR_MAX_PATH, m_S m_S m_C, 
+	       m_output_directory, m_("incomplete"), PATH_SLASH);
 
     /* Recursively make the output directory & incomplete directory */
     if (m_do_individual_tracks) {
-	debug_mprintf (m("Trying to make output_directory: ") mS m("\n"), 
+	debug_mprintf (m_("Trying to make output_directory: ") m_S m_("\n"), 
 		       m_output_directory);
 	mkdir_recursive (m_output_directory, 1);
 
 	/* Next, make the incomplete directory */
 	if (m_do_individual_tracks) {
-	    debug_mprintf (m("Trying to make incomplete_directory: ") 
-			   mS m("\n"), m_incomplete_directory);
+	    debug_mprintf (m_("Trying to make incomplete_directory: ") 
+			   m_S m_("\n"), m_incomplete_directory);
 	    mkdir_if_needed (m_incomplete_directory);
 	}
     }
@@ -268,7 +268,7 @@ filelib_init (BOOL do_individual_tracks,
 			      tmp_showfile_pattern,
 			      tmp_output_directory,
 			      m_default_showfile_pattern,
-			      m(""),
+			      m_(""),
 			      get_separate_dirs,
 			      get_date_stamp,
 			      1);
@@ -288,25 +288,25 @@ set_default_pattern (BOOL get_separate_dirs, BOOL do_count)
     /* m_default_pattern */
     m_default_pattern[0] = 0;
     if (get_separate_dirs) {
-	mstrcpy (m_default_pattern, m("%S") PATH_SLASH_STR);
+	mstrcpy (m_default_pattern, m_("%S") PATH_SLASH_STR);
     }
     if (do_count) {
 	if (m_count < 0) {
-	    mstrncat (m_default_pattern, m("%q_"), SR_MAX_PATH);
+	    mstrncat (m_default_pattern, m_("%q_"), SR_MAX_PATH);
 	} else {
 	    msnprintf (&m_default_pattern[mstrlen(m_default_pattern)], 
 		       SR_MAX_PATH - mstrlen(m_default_pattern), 
-		       m("%%%dq_"), m_count);
+		       m_("%%%dq_"), m_count);
 	}
     }
-    mstrncat (m_default_pattern, m("%A - %T"), SR_MAX_PATH);
+    mstrncat (m_default_pattern, m_("%A - %T"), SR_MAX_PATH);
 
     /* m_default_showfile_pattern */
     m_default_showfile_pattern[0] = 0;
     if (get_separate_dirs) {
-	mstrcpy (m_default_showfile_pattern, m("%S") PATH_SLASH_STR);
+	mstrcpy (m_default_showfile_pattern, m_("%S") PATH_SLASH_STR);
     }
-    mstrncat (m_default_showfile_pattern, m("sr_program_%d"), SR_MAX_PATH);
+    mstrncat (m_default_showfile_pattern, m_("sr_program_%d"), SR_MAX_PATH);
 }
 
 /* This function sets the value of m_output_directory or 
@@ -365,7 +365,7 @@ set_output_directory (mchar* global_output_directory,
 	device = odir_device;
     } else {
 	/* No device */
-	device = m("");
+	device = m_("");
     }
 
     /* Generate the output file pattern. */
@@ -391,7 +391,7 @@ set_output_directory (mchar* global_output_directory,
     }
 
     /* Fill in %S and %d patterns */
-    msnprintf (pattern_head, SR_MAX_PATH, mS mS mS, device, 
+    msnprintf (pattern_head, SR_MAX_PATH, m_S m_S m_S, device, 
 	       cwd_path, odir_path);
     debug_printf ("Composed pattern head (%d) <- (%d,%d,%d)\n",
 		  mstrlen(pattern_head), mstrlen(device), 
@@ -450,36 +450,36 @@ parse_and_subst_dir (mchar* pattern_head, mchar* pattern_tail,
 	    }
 	    break;
 	}
-	if (opat_path[opi] != m('%')) {
+	if (opat_path[opi] != m_('%')) {
 	    pattern_head[phi++] = opat_path[opi++];
 	    continue;
 	}
 	/* If we got here, we have a '%' */
 	switch (opat_path[opi+1]) {
-	case m('%'):
-	    pattern_head[phi++]=m('%');
+	case m_('%'):
+	    pattern_head[phi++]=m_('%');
 	    opi+=2;
 	    continue;
-	case m('S'):
+	case m_('S'):
 	    /* append stream name */
 	    mstrncpy (&pattern_head[phi], m_stripped_icy_name, 
 		      SR_MAX_BASE-phi);
 	    phi = mstrlen (pattern_head);
 	    opi+=2;
 	    continue;
-	case m('d'):
+	case m_('d'):
 	    /* append date info */
 	    mstrncpy (&pattern_head[phi], m_session_datebuf, SR_MAX_BASE-phi);
 	    phi = mstrlen (pattern_head);
 	    opi+=2;
 	    continue;
-	case m('0'): case m('1'): case m('2'): case m('3'): case m('4'): 
-	case m('5'): case m('6'): case m('7'): case m('8'): case m('9'): 
-	case m('a'):
-	case m('A'):
-	case m('D'):
-	case m('q'):
-	case m('T'):
+	case m_('0'): case m_('1'): case m_('2'): case m_('3'): case m_('4'): 
+	case m_('5'): case m_('6'): case m_('7'): case m_('8'): case m_('9'): 
+	case m_('a'):
+	case m_('A'):
+	case m_('D'):
+	case m_('q'):
+	case m_('T'):
 	    /* These are track specific patterns */
 	    break;
 	case 0:
@@ -677,61 +677,61 @@ parse_and_subst_pat (mchar* newfile,
 	    done = 1;
 	    break;
 	}
-	if (pat[opi] != m('%')) {
+	if (pat[opi] != m_('%')) {
 	    newfile[nfi++] = pat[opi++];
 	    newfile[nfi] = 0;
 	    continue;
 	}
 	/* If we got here, we have a '%' */
 	switch (pat[opi+1]) {
-	case m('%'):
-	    newfile[nfi++] = m('%');
+	case m_('%'):
+	    newfile[nfi++] = m_('%');
 	    newfile[nfi] = 0;
 	    opi+=2;
 	    continue;
-	case m('S'):
+	case m_('S'):
 	    /* stream name */
 	    /* GCS FIX: Not sure here */
 	    mstrncat (newfile, m_icy_name, MAX_FILEBASELEN-nfi);
 	    nfi = mstrlen (newfile);
 	    opi+=2;
 	    continue;
-	case m('d'):
+	case m_('d'):
 	    /* append date info */
 	    mstrncat (newfile, m_session_datebuf, MAX_FILEBASELEN-nfi);
 	    nfi = mstrlen (newfile);
 	    opi+=2;
 	    continue;
-	case m('D'):
+	case m_('D'):
 	    /* current timestamp */
 	    fill_date_buf (datebuf, DATEBUF_LEN);
 	    mstrncat (newfile, datebuf, MAX_FILEBASELEN-nfi);
 	    nfi = mstrlen (newfile);
 	    opi+=2;
 	    continue;
-	case m('a'):
+	case m_('a'):
 	    /* album */
 	    if (!ti) goto illegal_pattern;
 	    mstrncat (newfile, stripped_album, MAX_FILEBASELEN-nfi);
 	    nfi = mstrlen (newfile);
 	    opi+=2;
 	    continue;
-	case m('A'):
+	case m_('A'):
 	    /* artist */
 	    if (!ti) goto illegal_pattern;
 	    mstrncat (newfile, stripped_artist, MAX_FILEBASELEN-nfi);
 	    nfi = mstrlen (newfile);
 	    opi+=2;
 	    continue;
-	case m('q'):
+	case m_('q'):
 	    /* automatic sequence number */
-	    msnprintf (temp, DATEBUF_LEN, m("%04d"), 
+	    msnprintf (temp, DATEBUF_LEN, m_("%04d"), 
 		       get_next_sequence_number (newfile));
 	    mstrncat (newfile, temp, MAX_FILEBASELEN-nfi);
 	    nfi = mstrlen (newfile);
 	    opi+=2;
 	    continue;
-	case m('T'):
+	case m_('T'):
 	    /* title */
 	    if (!ti) goto illegal_pattern;
 	    mstrncat (newfile, stripped_title, MAX_FILEBASELEN-nfi);
@@ -744,8 +744,8 @@ parse_and_subst_pat (mchar* newfile,
 	    newfile[nfi] = 0;
 	    done = 1;
 	    break;
-	case m('0'): case m('1'): case m('2'): case m('3'): case m('4'): 
-	case m('5'): case m('6'): case m('7'): case m('8'): case m('9'): 
+	case m_('0'): case m_('1'): case m_('2'): case m_('3'): case m_('4'): 
+	case m_('5'): case m_('6'): case m_('7'): case m_('8'): case m_('9'): 
 	    {
 		/* Get integer */
 		int ai = 0;
@@ -756,11 +756,11 @@ parse_and_subst_pat (mchar* newfile,
 		}
 		ascii_buf[ai] = 0;
 		/* If we got a q, get starting number */
-		if (pat[opi+1+ai] == m('q')) {
+		if (pat[opi+1+ai] == m_('q')) {
 		    if (m_count == -1) {
 			m_count = mtol(ascii_buf);
 		    }
-		    msnprintf (temp, DATEBUF_LEN, m("%04d"), m_count);
+		    msnprintf (temp, DATEBUF_LEN, m_("%04d"), m_count);
 		    mstrncat (newfile, temp, MAX_FILEBASELEN-nfi);
 		    nfi = mstrlen (newfile);
 		    opi+=ai+2;
@@ -795,22 +795,22 @@ filelib_start (TRACK_INFO* ti)
     close_file(&m_file);
 
     /* Compose and trim filename (not including directory) */
-    msnprintf (fnbase1, TEMP_STR_LEN, mS m(" - ") mS, 
+    msnprintf (fnbase1, TEMP_STR_LEN, m_S m_(" - ") m_S, 
 	       ti->artist, ti->title);
     trim_filename (fnbase, fnbase1);
-    msnprintf (newfile, TEMP_STR_LEN, mS mS mS, 
+    msnprintf (newfile, TEMP_STR_LEN, m_S m_S m_S, 
 	       m_incomplete_directory, fnbase, m_extension);
     if (m_keep_incomplete) {
 	int n = 1;
 	mchar oldfile[TEMP_STR_LEN];
-	msnprintf (oldfile, TEMP_STR_LEN, mS mS mS, 
+	msnprintf (oldfile, TEMP_STR_LEN, m_S m_S m_S, 
 		   m_incomplete_directory, fnbase, m_extension);
 	mstrcpy (fnbase1, fnbase);
 	while (file_exists (oldfile)) {
-	    msnprintf (fnbase1, TEMP_STR_LEN, m("(%d)") mS, 
+	    msnprintf (fnbase1, TEMP_STR_LEN, m_("(%d)") m_S, 
 		       n, fnbase);
 	    trim_filename (fnbase2, fnbase1);
-	    msnprintf (oldfile, TEMP_STR_LEN, mS mS mS, 
+	    msnprintf (oldfile, TEMP_STR_LEN, m_S m_S m_S, 
 		       m_incomplete_directory,
 		       fnbase2, m_extension);
 	    n++;
@@ -1071,7 +1071,7 @@ filelib_open_showfiles ()
 			 m_showfile_pattern, m_extension);
     parse_and_subst_pat (m_cue_name, 0, m_showfile_directory, 
 			 m_showfile_pattern, 
-			 m(".cue"));
+			 m_(".cue"));
 
     rc = filelib_open_for_write (&m_cue_file, m_cue_name);
     if (rc != SR_SUCCESS) {
@@ -1081,7 +1081,7 @@ filelib_open_showfiles ()
 
     /* Write cue header here */
     /* GCS FIX: What encoding should the FILE line be? */
-    rc = msnprintf (mcue_buf, 1024, m("FILE \"") mS m("\" MP3\n"), 
+    rc = msnprintf (mcue_buf, 1024, m_("FILE \"") m_S m_("\" MP3\n"), 
 		    m_show_name);
     rc = string_from_mstring (cue_buf, 1024, mcue_buf, CODESET_FILESYS);
     rc = filelib_write (m_cue_file, cue_buf, rc);
@@ -1214,11 +1214,11 @@ mchar*
 replace_invalid_chars (mchar *str)
 {
 # if defined (WIN32)
-    mchar invalid_chars[] = m("\\/:*?\"<>|~");
+    mchar invalid_chars[] = m_("\\/:*?\"<>|~");
 # else
-    mchar invalid_chars[] = m("\\/:*?\"<>|.~");
+    mchar invalid_chars[] = m_("\\/:*?\"<>|.~");
 # endif
-    mchar replacement = m('-');
+    mchar replacement = m_('-');
 
     mchar *oldstr = str;
     mchar *newstr = str;

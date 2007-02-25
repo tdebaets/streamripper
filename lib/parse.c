@@ -402,11 +402,11 @@ compose_metadata (TRACK_INFO* ti)
     if (ti->have_track_info) {
 	if (ti->artist[0]) {
 	    msnprintf (w_composed_metadata, MAX_METADATA_LEN,
-		       m("StreamTitle='") mS m(" - ") mS m("';"),
+		       m_("StreamTitle='") m_S m_(" - ") m_S m_("';"),
 		       ti->artist, ti->title);
 	} else {
 	    msnprintf (w_composed_metadata, MAX_METADATA_LEN,
-		       m("StreamTitle='") mS m("';"),
+		       m_("StreamTitle='") m_S m_("';"),
 		       ti->title);
 	}
     } else {
@@ -509,10 +509,10 @@ parse_metadata (TRACK_INFO* ti)
 		ti->have_track_info = 1;
 		compose_metadata (ti);
 		/* GCS FIX: We don't have a track number. */
-		debug_mprintf (m("Parsed track info.\n")
-			       m("ARTIST: ") mS m("\n")
-			       m("TITLE: ")  mS m("\n")
-			       m("ALBUM: ")  mS m("\n"),
+		debug_mprintf (m_("Parsed track info.\n")
+			       m_("ARTIST: ") m_S m_("\n")
+			       m_("TITLE: ")  m_S m_("\n")
+			       m_("ALBUM: ")  m_S m_("\n"),
 			       ti->artist, ti->title, ti->album);
 		return;
 	    }

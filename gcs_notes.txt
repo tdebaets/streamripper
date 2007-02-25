@@ -524,23 +524,14 @@ For Mac OSX 10.3
 How to build libiconv on windows
 
 
-STEP 1: Make config.h.msvc
---------------------------
+STEP 1: Make changes to config.h.msvc
+-------------------------------------
 
-/* Define as good substitute value for EILSEQ. */
-/* #undef EILSEQ */
 #define      EILSEQ          42
-
-/* Define to 1 if the package shall run at any location in the filesystem. */
-/* #define ENABLE_RELOCATABLE 1 */
 #undef ENABLE_RELOCATABLE
-
-/* Define to the value of ${prefix}, as a string. */
-#define INSTALLPREFIX "c:\\usr"
-
-/* Define as const if the declaration of iconv() needs const. */
-/* #undef ICONV_CONST */
 #define ICONV_CONST const
+#define HAVE_WCHAR_H 1
+#define HAVE_WCHAR_T 1
 
 
 STEP 2: Build dll's
@@ -549,25 +540,23 @@ STEP 2: Build dll's
 copy /y config.h.msvc config.h
 copy /y config.h libcharset
 copy /y config.h lib
+
+erase lib\*.obj
+erase srclib\*.obj
+erase libcharset\lib\*.obj
+
 //nmake -f Makefile.msvc NO_NLS=1 DLL=1 MFLAGS=-MD
 nmake -f Makefile.msvc NO_NLS=1 MFLAGS=-MD
 
-STEP 3: Gather files
+step 3: gather files
 --------------------
 
-mkdir iconv-win32
+mkdir iconv-win32-1.11
+copy /y libcharset\include\localcharset.h iconv-win32-1.11
+copy /y include\iconv.h iconv-win32-1.11
 
-//copy lib\iconv.lib iconv-win32
-//copy lib\iconv.dll iconv-win32
-//copy libcharset\lib\charset.lib iconv-win32
-//copy libcharset\lib\charset.dll iconv-win32
-//copy libcharset\include\localcharset.h iconv-win32
-//copy include\iconv.h iconv-win32
-
-copy /y lib\iconv.lib iconv-win32
-copy /y libcharset\lib\charset.lib iconv-win32
-copy /y libcharset\include\localcharset.h iconv-win32
-copy /y include\iconv.h iconv-win32
+move /y lib\iconv.lib iconv-win32-1.11
+move /y libcharset\lib\charset.lib iconv-win32-1.11
 
 
 -----------------------------------------------------------------------

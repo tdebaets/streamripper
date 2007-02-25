@@ -54,14 +54,15 @@
 #include "mchar.h"
 
 #if WIN32
-	#define vsnprintf _vsnprintf
-	#define vswprintf _vsnwprintf
+    #define ICONV_WCHAR "UCS-2-INTERNAL"
+    #define vsnprintf _vsnprintf
+    #define vswprintf _vsnwprintf
+#else
+    #define ICONV_WCHAR "WCHAR_T"
+    /* This prototype is missing in some systems */
+    int vswprintf (wchar_t * ws, size_t n, const wchar_t * format, va_list arg);
 #endif
 
-#if !defined (WIN32)
-/* This prototype is missing in some systems */
-int vswprintf (wchar_t * ws, size_t n, const wchar_t * format, va_list arg);
-#endif
 
 /*****************************************************************************
  * Public functions
@@ -175,17 +176,18 @@ iconv_convert_string (char* dst, int dst_len, char* src, int src_len,
     char *src_ptr, *dst_ptr;
 
     /* First try to convert using iconv. */
-    ict = iconv_open(dst_codeset, src_codeset);
+    ict = iconv_open (dst_codeset, src_codeset);
     if (ict == (iconv_t)(-1)) {
 	printf ("Error on iconv_open(\"%s\",\"%s\")\n",
 		      dst_codeset, src_codeset);
+	perror ("Error string is: ");
 	return -1;
     }
     src_left = src_len;
     dst_left = dst_len;
     src_ptr = src;
     dst_ptr = dst;
-    rc = iconv(ict,&src_ptr,&src_left,&dst_ptr,&dst_left);
+    rc = iconv (ict,&src_ptr,&src_left,&dst_ptr,&dst_left);
     if (rc == -1) {
 	if (errno == EINVAL) {
 	    /* EINVAL means the last character was truncated 
@@ -221,7 +223,7 @@ string_from_wstring (char* c, int clen, wchar_t* w, const char* codeset)
     int wlen, clen_out;
     wlen = wcslen (w) * sizeof(wchar_t);
     debug_printf ("ICONV: c <- w (len=%d,tgt=%s)\n", wlen, codeset);
-    rc = iconv_convert_string (c, clen, (char*) w, wlen, codeset, "WCHAR_T");
+    rc = iconv_convert_string (c, clen, (char*) w, wlen, codeset, ICONV_WCHAR);
     debug_printf ("rc = %d\n", rc);
     clen_out = rc;
     if (clen_out == clen) clen_out--;
@@ -248,7 +250,7 @@ wstring_from_string (wchar_t* w, int wlen, char* c, const char* codeset)
     clen = strlen (c);  // <----<<<<  GCS FIX. String is arbitrarily encoded.
     debug_printf ("ICONV: w <- c (%s)\n", c);
     rc = iconv_convert_string ((char*) w, wlen * sizeof(wchar_t), 
-			       c, clen, "WCHAR_T", codeset);
+			       c, clen, ICONV_WCHAR, codeset);
     debug_printf ("rc = %d\n", rc);
     //    debug_mprintf (m("val = ") mS m("\n"), w);
     wlen_out = rc / sizeof(wchar_t);
@@ -272,7 +274,7 @@ wchar_from_char (char c, const char* codeset)
 
 # if HAVE_ICONV
     rc = iconv_convert_string ((char*) w, sizeof(wchar_t), &c, 1, 
-			       "WCHAR_T", codeset);
+			       ICONV_WCHAR, codeset);
     if (rc == 1) return w[0];
     /* Otherwise, fall through to mbstowcs method */
 # endif

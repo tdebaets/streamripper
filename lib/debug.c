@@ -25,13 +25,11 @@
 #include "debug.h"
 
 #if WIN32
-	#define vsnprintf _vsnprintf
-	#define vswprintf _vsnwprintf
-#endif
-
-#if !defined (WIN32)
-/* This prototype is missing in some systems */
-int vswprintf (wchar_t * ws, size_t n, const wchar_t * format, va_list arg);
+    #define vsnprintf _vsnprintf
+    #define vswprintf _vsnwprintf
+#else
+    /* This prototype is missing in some systems */
+    int vswprintf (wchar_t * ws, size_t n, const wchar_t * format, va_list arg);
 #endif
 
 /*****************************************************************************
@@ -90,7 +88,15 @@ debug_printf (char* fmt, ...)
     int was_open = 1;
     va_list argptr;
 
-    if (!debug_on) return;
+    if (!debug_on) {
+	/* Uncomment to debug debug_mprintf() */
+#if defined (commentout)
+	va_start (argptr, fmt);
+        vprintf (fmt, argptr);
+	va_end (argptr);
+#endif
+	return;
+    }
 
     if (!debug_initialized) {
         m_debug_lock = threadlib_create_sem();
@@ -151,7 +157,7 @@ debug_mprintf (mchar* fmt, ...)
 
 #if defined HAVE_WCHAR_SUPPORT
     rc = vswprintf (mbuf, DEBUG_BUF_LEN, fmt, argptr);
-    debug_on = 0;
+    debug_on = 0;   /* Avoid recursive call which hangs on semaphore */
     rc = string_from_mstring (cbuf, DEBUG_BUF_LEN, mbuf, CODESET_LOCALE);
     debug_on = 1;
 #else
