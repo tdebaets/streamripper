@@ -480,6 +480,27 @@ Also see,
 http://www.unrelatedinventions.com/Audiotools/Help/thejargonbehindmp3.htm
 
 -----------------------------------------------------------------------
+What are some locales?  
+
+Here is what my win2k box says...
+
+STREAMRIPPER windows 1.62-beta-2
+LOCALE is English_United States.1252
+Using locale_charset() to get system codeset.
+SystemDefaultLCID: 0411
+UserDefaultLCID: 0409
+Have iconv.
+Locale codeset: CP932
+Filesys codeset: CP932
+ID3 codeset: CP932
+Metadata codeset: CP932
+Relay codeset: CP932
+
+CP932 is shift-jis
+
+Here is what my win98 box says...
+
+-----------------------------------------------------------------------
 How to create a sjis locale
 
 localedef -v -c -i ja_JP -f SHIFT_JIS ja_JP.SJIS
@@ -822,3 +843,4 @@ the program to choke.  Standard 44100Hz stereo does seem to work.
 
 Second, it doesn't like it if you run (under wine) from a normal 
 directory.  You have to put it in ~/.wine/drive_c/windows/temp or such.
+
