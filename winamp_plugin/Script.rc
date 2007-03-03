@@ -52,15 +52,15 @@ BEGIN
     EDITTEXT        IDC_MAX_BYTES,126,43,32,15,ES_AUTOHSCROLL
     CONTROL         "&Use old way of retrieving the current track from winamp",
                     IDC_USE_OLD_PLAYLIST_RET,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,62,196,12
+                    WS_TABSTOP,7,62,195,12
     LTEXT           "Pretend to be (UserAgent)",IDC_STATIC,7,82,86,11
-    COMBOBOX        IDC_USERAGENT,104,82,99,42,CBS_DROPDOWN | CBS_SORT | 
+    COMBOBOX        IDC_USERAGENT,103,82,99,42,CBS_DROPDOWN | CBS_SORT | 
                     WS_VSCROLL | WS_TABSTOP
     EDITTEXT        IDC_PROXY,13,112,182,15,ES_AUTOHSCROLL
     EDITTEXT        IDC_LOCALHOST,15,152,181,15,ES_AUTOHSCROLL
-    GROUPBOX        "Proxy Server",IDC_STATIC,7,102,196,33
+    GROUPBOX        "Proxy Server",IDC_STATIC,7,102,195,33
     GROUPBOX        "Local Machine Name (for relay stream, i.e. localhost)",
-                    IDC_STATIC,8,140,195,33
+                    IDC_STATIC,7,140,195,33
     LTEXT           "Port:",IDC_STATIC,97,26,15,8
     LTEXT           "Megs:",IDC_STATIC,97,46,20,8
 END
@@ -129,29 +129,45 @@ BEGIN
                     BS_AUTOCHECKBOX | WS_TABSTOP,7,38,196,14
     CONTROL         "&Never overwrite files in incomplete folder",
                     IDC_KEEP_INCOMPLETE,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,114,160,14
-    CONTROL         "&Add finished tracks to playlist",
+                    WS_TABSTOP,7,111,160,14
+    CONTROL         "&Add finished tracks to winamp playlist",
                     IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,138,123,14
-    CONTROL         "Add &ID3 info to the tracks",IDC_ADD_ID3,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,126,91,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,144,123,14
+    CONTROL         "Add &ID3 V1 info to the tracks",IDC_ADD_ID3V1,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,122,91,14
     COMBOBOX        IDC_OVERWRITE_COMPLETE,14,98,87,46,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "Overwrite tracks in complete:",IDC_STATIC,7,87,130,8
-    EDITTEXT        IDC_DROP_COUNT,7,153,42,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_DROP_COUNT,7,160,42,14,ES_AUTOHSCROLL
     LTEXT           "Number of initial songs to leave in incomplete",
-                    IDC_STATIC,52,156,151,11
+                    IDC_STATIC,52,163,151,11
+    CONTROL         "Add &ID3 V2.3 info to the tracks",IDC_ADD_ID3V2,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,133,101,14
 END
 
 IDD_PROPPAGE_EXTERNAL DIALOG DISCARDABLE  0, 0, 210, 154
 STYLE WS_CHILD | WS_DISABLED | WS_CAPTION
-CAPTION "External"
+CAPTION "Ext/Codeset"
 FONT 8, "MS Sans Serif"
 BEGIN
     CONTROL         "Run &external helper program to get metadata:",
                     IDC_EXTERNAL_COMMAND_CHECK,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,7,196,14
-    EDITTEXT        IDC_EXTERNAL_COMMAND,18,24,167,14,ES_AUTOHSCROLL
+                    WS_TABSTOP,13,17,184,14
+    EDITTEXT        IDC_EXTERNAL_COMMAND,18,34,167,14,ES_AUTOHSCROLL
+    GROUPBOX        "Codeset options",IDC_STATIC,7,63,196,84
+    GROUPBOX        "External interface",IDC_STATIC,7,7,196,50
+    LTEXT           "Metadata",IDC_STATIC,21,77,30,8
+    COMBOBOX        IDC_CODESET_METADATA,60,76,136,200,CBS_DROPDOWN | 
+                    CBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Relay",IDC_STATIC,21,94,19,8
+    COMBOBOX        IDC_CODESET_RELAY,60,93,136,200,CBS_DROPDOWN | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "ID3",IDC_STATIC,21,111,11,8
+    COMBOBOX        IDC_CODESET_ID3,60,110,136,200,CBS_DROPDOWN | WS_VSCROLL | 
+                    WS_TABSTOP
+    LTEXT           "Filesys",IDC_STATIC,21,128,23,8
+    COMBOBOX        IDC_CODESET_FILESYS,60,127,136,200,CBS_DROPDOWN | 
+                    WS_VSCROLL | WS_TABSTOP
 END
 
 
@@ -174,7 +190,7 @@ BEGIN
     IDD_PROPPAGE_CON, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 203
+        RIGHTMARGIN, 202
         TOPMARGIN, 7
         BOTTOMMARGIN, 173
     END
@@ -208,7 +224,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 203
         TOPMARGIN, 7
-        BOTTOMMARGIN, 167
+        BOTTOMMARGIN, 174
     END
 
     IDD_PROPPAGE_EXTERNAL, DIALOG

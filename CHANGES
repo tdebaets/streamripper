@@ -2,6 +2,9 @@ New for 1.62-beta2
 ------------------
 * Add codeset options to windows
 * Upgrade windows iconv to 1.11
+* Add id3v1/id3v2 GUI to winamp plugin
+* Add codeset GUI to winamp plugin
+* Remove warning for E2BIG iconv conversion
 
 New for 1.62-beta1
 ------------------

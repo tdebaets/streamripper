@@ -217,6 +217,10 @@ SOURCE=..\lib\compat.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\lib\confw32.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\lib\debug.c
 # End Source File
 # Begin Source File
@@ -258,6 +262,14 @@ SOURCE=..\lib\http.h
 # Begin Source File
 
 SOURCE=..\lib\list.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\mchar.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\mchar.h
 # End Source File
 # Begin Source File
 
@@ -317,6 +329,10 @@ SOURCE=..\lib\socklib.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\lib\srconfig.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\lib\srtypes.h
 # End Source File
 # Begin Source File
@@ -334,14 +350,6 @@ SOURCE=..\lib\utf8.c
 # Begin Source File
 
 SOURCE=..\lib\utf8.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\lib\util.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\lib\util.h
 # End Source File
 # End Group
 # End Target

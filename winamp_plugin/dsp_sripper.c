@@ -29,7 +29,7 @@
 #include "shellapi.h"
 #include "dsp_sripper.h"
 #include "render.h"
-#include "../lib/util.h"	// because windows has a util.h, and gets very confused.
+#include "mchar.h"
 #include "dock.h"
 #include "filelib.h"
 #include "commctrl.h"

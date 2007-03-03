@@ -34,20 +34,25 @@
 #define IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST 1230
 #define IDC_PROXY                       1270
 #define IDC_CHECK_MAX_BYTES             1330
-#define IDC_ADD_ID3                     1340
+#define IDC_ADD_ID3V1                   1340
 #define IDC_RIP_SINGLE_CHECK            1341
 #define IDC_RIP_INDIVIDUAL_CHECK        1342
+#define IDC_ADD_ID3V2                   1343
 #define IDC_LOCALHOST                   1350
 #define IDC_KEEP_INCOMPLETE             1360
 #define IDC_USERAGENT                   1370
 #define IDC_SKIN_LIST                   1371
+#define IDC_CODESET_RELAY               1371
 #define IDC_USE_OLD_PLAYLIST_RET        1372
+#define IDC_CODESET_ID3                 1372
 #define IDC_XS_OFFSET                   1373
+#define IDC_CODESET_FILESYS             1373
 #define IDC_OVERWRITE_COMPLETE          1374
 #define IDC_PATTERN_EDIT                1376
 #define IDC_EXTERNAL_COMMAND_CHECK      1377
 #define IDC_EXTERNAL_COMMAND            1378
 #define IDC_SKIN_PREVIEW                1378
+#define IDC_CODESET_METADATA            1379
 #define ID_MENU_STARTRIPPING            40001
 #define ID_MENU_STOPRIPPING             40003
 #define ID_MENU_OPTIONS                 40004
@@ -60,7 +65,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        123
 #define _APS_NEXT_COMMAND_VALUE         40020
-#define _APS_NEXT_CONTROL_VALUE         1379
+#define _APS_NEXT_CONTROL_VALUE         1380
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

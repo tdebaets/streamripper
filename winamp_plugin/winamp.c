@@ -24,7 +24,7 @@
 #include "ipc_pe.h"
 #include "winamp.h"
 #include "debug.h"
-#include "util.h"
+#include "mchar.h"
 
 #define DbgBox(_x_)	MessageBox(NULL, _x_, "Debug", 0)
 

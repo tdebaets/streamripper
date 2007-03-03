@@ -72,6 +72,7 @@ static void saveload_splitting_opts(HWND hWnd, BOOL saveload);
 static void saveload_external_opts(HWND hWnd, BOOL saveload);
 static HPROPSHEETPAGE create_prop_sheet_page(HINSTANCE inst, DWORD iddres, DLGPROC dlgproc);
 static void add_useragent_strings();
+static void add_codeset_strings();
 static BOOL get_skin_list();
 static void free_skin_list();
 
@@ -356,7 +357,7 @@ get_checkbox(HWND parent, int id)
 }
 
 void
-set_to_checkbox(HWND parent, int id, u_short* popt, u_short flag)
+set_to_checkbox(HWND parent, int id, u_long* popt, u_long flag)
 {
     if (get_checkbox(parent, id)) {
 	*popt |= flag;
@@ -376,6 +377,40 @@ add_useragent_strings(HWND hdlg)
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"FreeAmp/2.x");
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"XMMS/1.x");
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"UnknownPlayer/1.x");
+}
+
+void
+add_codeset_strings_1(HWND hdlg, int id)
+{
+    HWND hcombo = GetDlgItem(hdlg, id);
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"UTF-8 (Unicode)");
+    if (id == IDC_CODESET_ID3) {
+        SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"UCS2 (Unicode)");
+    }
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"ISO-8859-1 (Western Europe)");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"ISO-8859-2 (Central/East Europe)");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"ISO-8859-4 (Baltic)");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"ISO-8859-5 (Cyrillic)");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"ISO-8859-6 (Arabic)");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"ISO-8859-7 (Greek)");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"ISO-8859-8 (Hebrew)");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"ISO-8859-9 (Turkish)");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"KOI8-R (Russian)");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"KOI8-U (Ukranian)");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"GB2312 (Simp. Chinese)");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"BIG5 (Trad. Chinese)");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"EUC-JP (Japanese)");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"SHIFT_JIS (Japanese)");
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"CP949 (Korean)");
+}
+
+void
+add_codeset_strings(HWND hdlg)
+{
+    add_codeset_strings_1(hdlg, IDC_CODESET_METADATA);
+    add_codeset_strings_1(hdlg, IDC_CODESET_RELAY);
+    add_codeset_strings_1(hdlg, IDC_CODESET_ID3);
+    add_codeset_strings_1(hdlg, IDC_CODESET_FILESYS);
 }
 
 void
@@ -466,7 +501,8 @@ saveload_file_opts(HWND hWnd, BOOL saveload)
     if (saveload) {
 	get_overwrite_combo(hWnd);
 	m_guiOpt->m_add_finshed_tracks_to_playlist = get_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST);
-	set_to_checkbox(hWnd, IDC_ADD_ID3, &m_opt->flags, OPT_ADD_ID3);
+	set_to_checkbox(hWnd, IDC_ADD_ID3V1, &m_opt->flags, OPT_ADD_ID3V1);
+	set_to_checkbox(hWnd, IDC_ADD_ID3V2, &m_opt->flags, OPT_ADD_ID3V2);
 	GetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory, SR_MAX_PATH);
 	set_to_checkbox(hWnd, IDC_KEEP_INCOMPLETE, &m_opt->flags, OPT_KEEP_INCOMPLETE);
 	set_to_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, &m_opt->flags, OPT_INDIVIDUAL_TRACKS);
@@ -476,7 +512,8 @@ saveload_file_opts(HWND hWnd, BOOL saveload)
     } else {
 	set_overwrite_combo(hWnd);
 	set_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST, m_guiOpt->m_add_finshed_tracks_to_playlist);
-	set_checkbox(hWnd, IDC_ADD_ID3, OPT_FLAG_ISSET(m_opt->flags, OPT_ADD_ID3));
+	set_checkbox(hWnd, IDC_ADD_ID3V1, OPT_FLAG_ISSET(m_opt->flags, OPT_ADD_ID3V1));
+	set_checkbox(hWnd, IDC_ADD_ID3V2, OPT_FLAG_ISSET(m_opt->flags, OPT_ADD_ID3V2));
 	SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory);
 	set_checkbox(hWnd, IDC_KEEP_INCOMPLETE, OPT_FLAG_ISSET(m_opt->flags, OPT_KEEP_INCOMPLETE));
 	set_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, OPT_FLAG_ISSET(m_opt->flags, OPT_INDIVIDUAL_TRACKS));
@@ -701,6 +738,7 @@ options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
     {
     case WM_INITDIALOG:
 	add_useragent_strings(hWnd);
+	add_codeset_strings(hWnd);
 	add_overwrite_complete_strings(hWnd);
 
 	switch (confile) {
@@ -768,7 +806,8 @@ options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 	case IDC_RECONNECT:
 	case IDC_RELAY_PORT_EDIT:
 	case IDC_MAX_BYTES:
-	case IDC_ADD_ID3:
+	case IDC_ADD_ID3V1:
+	case IDC_ADD_ID3V2:
 	case IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST:
 	case IDC_PROXY:
 	case IDC_OUTPUT_DIRECTORY:
@@ -830,7 +869,9 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     char filename[MAX_INI_LINE_LEN];
     BOOL    auto_reconnect,
 	    make_relay,
-	    add_id3,
+	    add_id3_sr161,    /* For loading prefs from 1.61 and earlier */
+	    add_id3v1,
+	    add_id3v2,
 	    check_max_btyes,
 	    keep_incomplete,
 	    rip_individual_tracks,
@@ -871,8 +912,9 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     opt->max_port = opt->relay_port+1000;
     auto_reconnect = GetPrivateProfileInt(APPNAME, "auto_reconnect", TRUE, filename);
     make_relay = GetPrivateProfileInt(APPNAME, "make_relay", FALSE, filename);
-    add_id3 = GetPrivateProfileInt(APPNAME, "add_id3", TRUE, filename);
-    debug_printf ("add_id3 <- %d\n", add_id3);
+    add_id3_sr161 = GetPrivateProfileInt(APPNAME, "add_id3", TRUE, filename);
+    add_id3v1 = GetPrivateProfileInt(APPNAME, "add_id3v1", TRUE, filename);
+    add_id3v2 = GetPrivateProfileInt(APPNAME, "add_id3v2", TRUE, filename);
     check_max_btyes = GetPrivateProfileInt(APPNAME, "check_max_bytes", FALSE, filename);
     opt->maxMB_rip_size = GetPrivateProfileInt(APPNAME, "maxMB_bytes", 0, filename);
     keep_incomplete = GetPrivateProfileInt(APPNAME, "keep_incomplete", TRUE, filename);
@@ -914,7 +956,10 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     opt->flags |= OPT_SEARCH_PORTS;	// not having this caused a bad bug, must remember this.
     if (auto_reconnect) opt->flags |= OPT_AUTO_RECONNECT;
     if (make_relay) opt->flags |= OPT_MAKE_RELAY;
-    if (add_id3) opt->flags |= OPT_ADD_ID3;
+    if (add_id3_sr161) opt->flags |= OPT_ADD_ID3V1;
+    if (add_id3_sr161) opt->flags |= OPT_ADD_ID3V2;
+    if (add_id3v1) opt->flags |= OPT_ADD_ID3V1;
+    if (add_id3v2) opt->flags |= OPT_ADD_ID3V2;
     if (check_max_btyes) opt->flags |= OPT_CHECK_MAX_BYTES;
     if (keep_incomplete) opt->flags |= OPT_KEEP_INCOMPLETE;
     if (rip_individual_tracks) opt->flags |= OPT_INDIVIDUAL_TRACKS;
@@ -922,7 +967,8 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     if (use_ext_cmd) opt->flags |= OPT_EXTERNAL_CMD;
 
     debug_printf ("flags = 0x%04x\n", opt->flags);
-    debug_printf ("id3 flag = 0x%04x\n", OPT_ADD_ID3);
+    debug_printf ("id3v1 flag = 0x%04x\n", OPT_ADD_ID3V1);
+    debug_printf ("id3v2 flag = 0x%04x\n", OPT_ADD_ID3V2);
 
     /* Note, there is no way to change the rules file location (for now) */
     if (!winamp_get_path(opt->rules_file)) {
@@ -977,7 +1023,8 @@ options_save (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     fprintf(fp, "count_files=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_COUNT_FILES));
     fprintf(fp, "date_stamp=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_DATE_STAMP));
 #endif
-    fprintf(fp, "add_id3=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_ADD_ID3));
+    fprintf(fp, "add_id3v1=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_ADD_ID3V1));
+    fprintf(fp, "add_id3v2=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_ADD_ID3V2));
     fprintf(fp, "check_max_bytes=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_CHECK_MAX_BYTES));
     fprintf(fp, "maxMB_bytes=%d\n", opt->maxMB_rip_size);
     fprintf(fp, "keep_incomplete=%d\n", OPT_FLAG_ISSET(opt->flags, OPT_KEEP_INCOMPLETE));
