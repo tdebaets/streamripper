@@ -139,13 +139,14 @@ typedef struct SPLITPOINT_OPTIONSst
  * CODESET_OPTIONS are the options used to decide how to parse
  * and convert the metadata
  */
+#define MAX_CODESET_STRING 128
 typedef struct CODESET_OPTIONSst
 {
-    char* codeset_locale;
-    char* codeset_filesys;
-    char* codeset_id3;
-    char* codeset_metadata;
-    char* codeset_relay;
+    char codeset_locale[MAX_CODESET_STRING];
+    char codeset_filesys[MAX_CODESET_STRING];
+    char codeset_id3[MAX_CODESET_STRING];
+    char codeset_metadata[MAX_CODESET_STRING];
+    char codeset_relay[MAX_CODESET_STRING];
 } CODESET_OPTIONS;
 
 /* 

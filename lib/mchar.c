@@ -383,9 +383,10 @@ mchar_from_char (char c, int codeset_type)
 }
 
 const char*
-get_default_codeset (void)
+default_codeset (void)
 {
     const char* fromcode = 0;
+
 #if defined HAVE_LOCALE_CHARSET
     debug_printf ("Using locale_charset() to get system codeset.\n");
     fromcode = locale_charset ();
@@ -393,13 +394,18 @@ get_default_codeset (void)
     debug_printf ("Using nl_langinfo() to get system codeset.\n");
     fromcode = nl_langinfo (CODESET);
 #else
-    /* No way to get default codeset */
     debug_printf ("No way to get system codeset.\n");
-    fromcode = "ISO-8859-1";
 #endif
+    if (!fromcode || !fromcode[0]) {
+	debug_printf ("No default codeset, using ISO-8859-1.\n");
+	fromcode = "ISO-8859-1";
+    } else {
+	debug_printf ("Found default codeset %s\n", fromcode);
+    }
 
 #if defined (WIN32)
     {
+	/* This is just for debugging */
 	LCID lcid;
 	lcid = GetSystemDefaultLCID ();
 	debug_printf ("SystemDefaultLCID: %04x\n", lcid);
@@ -407,7 +413,6 @@ get_default_codeset (void)
 	debug_printf ("UserDefaultLCID: %04x\n", lcid);
     }
 #endif
-
 
 #if defined HAVE_ICONV
     debug_printf ("Have iconv.\n");
@@ -419,7 +424,7 @@ get_default_codeset (void)
 }
 
 void
-initialize_default_locale (CODESET_OPTIONS* cs_opt)
+set_codesets_default (CODESET_OPTIONS* cs_opt)
 {
     const char* fromcode = 0;
     setlocale (LC_ALL, "");
@@ -427,44 +432,28 @@ initialize_default_locale (CODESET_OPTIONS* cs_opt)
     debug_printf ("LOCALE is %s\n",setlocale(LC_ALL,NULL));
 
     /* Set default codesets */
-    fromcode = get_default_codeset ();
+    fromcode = default_codeset ();
     if (fromcode) {
-	m_codeset_locale = fromcode;
-	m_codeset_filesys = fromcode;
-	m_codeset_id3 = fromcode;
-	m_codeset_metadata = fromcode;
-	m_codeset_relay = fromcode;
-    } else {
-	/* GCS FIX: Is this right? */
-	m_codeset_locale = "ASCII";
-	m_codeset_filesys = 0;
-	m_codeset_id3 = 0;
-	m_codeset_metadata = 0;
-	m_codeset_relay = 0;
+	strncpy (cs_opt->codeset_locale, fromcode, MAX_CODESET_STRING);
+	strncpy (cs_opt->codeset_filesys, fromcode, MAX_CODESET_STRING);
+	strncpy (cs_opt->codeset_id3, fromcode, MAX_CODESET_STRING);
+	strncpy (cs_opt->codeset_metadata, fromcode, MAX_CODESET_STRING);
+	strncpy (cs_opt->codeset_relay, fromcode, MAX_CODESET_STRING);
     }
-
-    /* Need to set locale codeset in cs_opt here */
-    cs_opt->codeset_locale = m_codeset_locale;
 
     /* I could potentially add stuff like forcing filesys to be utf8 
        (or whatever) for osx here */
+}
 
-    /* Override from command line if requested */
-    if (cs_opt) {
-	if (cs_opt->codeset_filesys) {
-	    m_codeset_filesys = cs_opt->codeset_filesys;
-	}
-	if (cs_opt->codeset_id3) {
-	    m_codeset_id3 = cs_opt->codeset_id3;
-	}
-	if (cs_opt->codeset_metadata) {
-	    m_codeset_metadata = cs_opt->codeset_metadata;
-	}
-	if (cs_opt->codeset_relay) {
-	    m_codeset_relay = cs_opt->codeset_relay;
-	}
-    }
-
+/* This sets the global variables (ugh) */
+void
+register_codesets (CODESET_OPTIONS* cs_opt)
+{
+    m_codeset_locale = cs_opt->codeset_locale;
+    m_codeset_filesys = cs_opt->codeset_filesys;
+    m_codeset_id3 = cs_opt->codeset_id3;
+    m_codeset_metadata = cs_opt->codeset_metadata;
+    m_codeset_relay = cs_opt->codeset_relay;
     debug_printf ("Locale codeset: %s\n", m_codeset_locale);
     debug_printf ("Filesys codeset: %s\n", m_codeset_filesys);
     debug_printf ("ID3 codeset: %s\n", m_codeset_id3);

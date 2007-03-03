@@ -529,28 +529,28 @@ parse_extended_options (char* rule)
     /* codeset options */
     x = strlen("codeset-filesys=");
     if (!strncmp(rule,"codeset-filesys=",x)) {
-	m_opt.cs_opt.codeset_filesys = &rule[x];
+	strncpy (m_opt.cs_opt.codeset_filesys, &rule[x], MAX_CODESET_STRING);
 	debug_printf ("Setting filesys codeset to %s\n",
 		      m_opt.cs_opt.codeset_filesys);
 	return;
     }
     x = strlen("codeset-id3=");
     if (!strncmp(rule,"codeset-id3=",x)) {
-	m_opt.cs_opt.codeset_id3 = &rule[x];
+	strncpy (m_opt.cs_opt.codeset_id3, &rule[x], MAX_CODESET_STRING);
 	debug_printf ("Setting id3 codeset to %s\n",
 		      m_opt.cs_opt.codeset_id3);
 	return;
     }
     x = strlen("codeset-metadata=");
     if (!strncmp(rule,"codeset-metadata=",x)) {
-	m_opt.cs_opt.codeset_metadata = &rule[x];
+	strncpy (m_opt.cs_opt.codeset_metadata, &rule[x], MAX_CODESET_STRING);
 	debug_printf ("Setting metadata codeset to %s\n",
 		      m_opt.cs_opt.codeset_metadata);
 	return;
     }
     x = strlen("codeset-relay=");
     if (!strncmp(rule,"codeset-relay=",x)) {
-	m_opt.cs_opt.codeset_relay = &rule[x];
+	strncpy (m_opt.cs_opt.codeset_relay, &rule[x], MAX_CODESET_STRING);
 	debug_printf ("Setting relay codeset to %s\n",
 		      m_opt.cs_opt.codeset_relay);
 	return;

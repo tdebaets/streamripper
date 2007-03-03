@@ -30,8 +30,10 @@ char *format_byte_size(char *str, long size);
 void trim(char *str);
 void sr_strncpy(char* dst, char* src, int n);
 
-void initialize_default_locale (CODESET_OPTIONS* cs_opt);
-void set_codeset (char* codeset_type, const char* codeset);
+//void initialize_default_locale (CODESET_OPTIONS* cs_opt);
+//void set_codeset (char* codeset_type, const char* codeset);
+void set_codesets_default (CODESET_OPTIONS* cs_opt);
+void register_codesets (CODESET_OPTIONS* cs_opt);
 
 int mstring_from_string (mchar* m, int mlen, char* c, int codeset_type);
 int string_from_mstring (char* c, int clen, mchar* m, int codeset_type);

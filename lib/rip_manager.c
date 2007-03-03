@@ -641,7 +641,7 @@ RETURN_ERR:
 }
 
 error_code
-rip_manager_start(void (*status_callback)(int message, void *data), 
+rip_manager_start (void (*status_callback)(int message, void *data), 
 			     RIP_MANAGER_OPTIONS *options)
 {
     int ret = 0;
@@ -651,7 +651,7 @@ rip_manager_start(void (*status_callback)(int message, void *data),
 
     m_ripping = TRUE;
 
-    initialize_default_locale(&options->cs_opt);
+    register_codesets (&options->cs_opt);
 
     if (!options)
 	return SR_ERROR_INVALID_PARAM;
@@ -746,4 +746,5 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
 
     // Defaults for codeset
     memset (&m_opt->cs_opt, 0, sizeof(CODESET_OPTIONS));
+    set_codesets_default (&m_opt->cs_opt);
 }

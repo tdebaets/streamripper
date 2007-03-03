@@ -357,7 +357,7 @@ get_checkbox(HWND parent, int id)
 }
 
 void
-set_to_checkbox(HWND parent, int id, u_long* popt, u_long flag)
+set_from_checkbox(HWND parent, int id, u_long* popt, u_long flag)
 {
     if (get_checkbox(parent, id)) {
 	*popt |= flag;
@@ -383,9 +383,12 @@ void
 add_codeset_strings_1(HWND hdlg, int id)
 {
     HWND hcombo = GetDlgItem(hdlg, id);
+    char default_locale_string[1024];
+    _snprintf (default_locale_string, 1024, "%s (Locale)", m_opt->cs_opt.codeset_locale);
+    SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM) default_locale_string);
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"UTF-8 (Unicode)");
     if (id == IDC_CODESET_ID3) {
-        SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"UCS2 (Unicode)");
+        SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"UCS-2 (Unicode)");
     }
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"ISO-8859-1 (Western Europe)");
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"ISO-8859-2 (Central/East Europe)");
@@ -411,6 +414,40 @@ add_codeset_strings(HWND hdlg)
     add_codeset_strings_1(hdlg, IDC_CODESET_RELAY);
     add_codeset_strings_1(hdlg, IDC_CODESET_ID3);
     add_codeset_strings_1(hdlg, IDC_CODESET_FILESYS);
+}
+
+void
+parse_gui_codeset (HWND hWnd, char* new_codeset, char* default_codeset, int id)
+{
+    char *p;
+    new_codeset[0] = 0;
+    GetDlgItemText (hWnd, id, new_codeset, MAX_CODESET_STRING);
+    p = new_codeset + strlen(new_codeset);
+    /* Empty string, set to default */
+    if (p == new_codeset) {
+	strcpy (new_codeset, default_codeset);
+	return;
+    }
+    /* Strip off the " (Ukranian)" stuff from codeset string */
+    if (*(--p) == ')') {
+	p = strrchr (new_codeset, '(');
+	if (p && p != new_codeset && *(--p) == ' ') {
+	    *p = 0;
+	}
+    }
+}
+
+void
+set_codesets_from_gui (HWND hWnd)
+{
+    parse_gui_codeset (hWnd, m_opt->cs_opt.codeset_metadata, 
+			m_opt->cs_opt.codeset_locale, IDC_CODESET_METADATA);
+    parse_gui_codeset (hWnd, m_opt->cs_opt.codeset_relay, 
+			m_opt->cs_opt.codeset_locale, IDC_CODESET_RELAY);
+    parse_gui_codeset (hWnd, m_opt->cs_opt.codeset_id3, 
+			m_opt->cs_opt.codeset_locale, IDC_CODESET_ID3);
+    parse_gui_codeset (hWnd, m_opt->cs_opt.codeset_filesys, 
+			m_opt->cs_opt.codeset_locale, IDC_CODESET_FILESYS);
 }
 
 void
@@ -456,11 +493,11 @@ saveload_conn_opts(HWND hWnd, BOOL saveload)
       - use old way
     */
     if (saveload) {
-	set_to_checkbox(hWnd, IDC_RECONNECT, &m_opt->flags, OPT_AUTO_RECONNECT);
-	set_to_checkbox(hWnd, IDC_MAKE_RELAY, &m_opt->flags, OPT_MAKE_RELAY);
+	set_from_checkbox(hWnd, IDC_RECONNECT, &m_opt->flags, OPT_AUTO_RECONNECT);
+	set_from_checkbox(hWnd, IDC_MAKE_RELAY, &m_opt->flags, OPT_MAKE_RELAY);
 	m_opt->relay_port = GetDlgItemInt(hWnd, IDC_RELAY_PORT_EDIT, FALSE, FALSE);
         m_opt->max_port = m_opt->relay_port+1000;
-	set_to_checkbox(hWnd, IDC_CHECK_MAX_BYTES, &m_opt->flags, OPT_CHECK_MAX_BYTES);
+	set_from_checkbox(hWnd, IDC_CHECK_MAX_BYTES, &m_opt->flags, OPT_CHECK_MAX_BYTES);
 	m_opt->maxMB_rip_size = GetDlgItemInt(hWnd, IDC_MAX_BYTES, FALSE, FALSE);
 	GetDlgItemText(hWnd, IDC_PROXY, m_opt->proxyurl, MAX_URL_LEN);
 	GetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost, MAX_HOST_LEN);
@@ -501,12 +538,12 @@ saveload_file_opts(HWND hWnd, BOOL saveload)
     if (saveload) {
 	get_overwrite_combo(hWnd);
 	m_guiOpt->m_add_finshed_tracks_to_playlist = get_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST);
-	set_to_checkbox(hWnd, IDC_ADD_ID3V1, &m_opt->flags, OPT_ADD_ID3V1);
-	set_to_checkbox(hWnd, IDC_ADD_ID3V2, &m_opt->flags, OPT_ADD_ID3V2);
+	set_from_checkbox(hWnd, IDC_ADD_ID3V1, &m_opt->flags, OPT_ADD_ID3V1);
+	set_from_checkbox(hWnd, IDC_ADD_ID3V2, &m_opt->flags, OPT_ADD_ID3V2);
 	GetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, m_opt->output_directory, SR_MAX_PATH);
-	set_to_checkbox(hWnd, IDC_KEEP_INCOMPLETE, &m_opt->flags, OPT_KEEP_INCOMPLETE);
-	set_to_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, &m_opt->flags, OPT_INDIVIDUAL_TRACKS);
-	set_to_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, &m_opt->flags, OPT_SINGLE_FILE_OUTPUT);
+	set_from_checkbox(hWnd, IDC_KEEP_INCOMPLETE, &m_opt->flags, OPT_KEEP_INCOMPLETE);
+	set_from_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, &m_opt->flags, OPT_INDIVIDUAL_TRACKS);
+	set_from_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, &m_opt->flags, OPT_SINGLE_FILE_OUTPUT);
 	GetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, m_opt->showfile_pattern, SR_MAX_PATH);
 	m_opt->dropcount = GetDlgItemInt(hWnd, IDC_DROP_COUNT, FALSE, FALSE);
     } else {
@@ -581,14 +618,14 @@ saveload_external_opts (HWND hWnd, BOOL saveload)
       - external cmd
     */
     if (saveload) {
-	set_to_checkbox(hWnd, IDC_EXTERNAL_COMMAND_CHECK, &m_opt->flags, OPT_EXTERNAL_CMD);
+	set_from_checkbox(hWnd, IDC_EXTERNAL_COMMAND_CHECK, &m_opt->flags, OPT_EXTERNAL_CMD);
 	GetDlgItemText(hWnd, IDC_EXTERNAL_COMMAND, m_opt->ext_cmd, SR_MAX_PATH);
+	set_codesets_from_gui (hWnd);
     } else {
 	set_checkbox(hWnd, IDC_EXTERNAL_COMMAND_CHECK, OPT_FLAG_ISSET(m_opt->flags, OPT_EXTERNAL_CMD));
 	SetDlgItemText(hWnd, IDC_EXTERNAL_COMMAND, m_opt->ext_cmd);
     }
 }
-
 
 // These are wrappers for property page callbacks
 // bassicly i didn't want to copy past the entire dialog proc 
