@@ -660,10 +660,6 @@ rip_manager_start(void (*status_callback)(int message, void *data),
 
     init_error_strings();
     m_status_callback = status_callback;
-#if defined (commentout)
-    m_in.get_input_data = myrecv;
-    m_destroy_func = NULL;
-#endif
     m_bytes_ripped = 0;
 
     /* Initialize the parsing rules */

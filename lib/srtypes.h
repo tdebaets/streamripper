@@ -141,6 +141,7 @@ typedef struct SPLITPOINT_OPTIONSst
  */
 typedef struct CODESET_OPTIONSst
 {
+    char* codeset_locale;
     char* codeset_filesys;
     char* codeset_id3;
     char* codeset_metadata;

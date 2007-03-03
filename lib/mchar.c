@@ -259,6 +259,7 @@ wstring_from_string (wchar_t* w, int wlen, char* c, const char* codeset)
     return wlen_out;
 # endif
 
+    /* Currently this never happens, because now iconv is required. */
     rc = mbstowcs(w,c,wlen);
     if (rc == -1) {
 	/* Do something smart here */
@@ -435,12 +436,15 @@ initialize_default_locale (CODESET_OPTIONS* cs_opt)
 	m_codeset_relay = fromcode;
     } else {
 	/* GCS FIX: Is this right? */
-	m_codeset_locale = "";
+	m_codeset_locale = "ASCII";
 	m_codeset_filesys = 0;
 	m_codeset_id3 = 0;
 	m_codeset_metadata = 0;
 	m_codeset_relay = 0;
     }
+
+    /* Need to set locale codeset in cs_opt here */
+    cs_opt->codeset_locale = m_codeset_locale;
 
     /* I could potentially add stuff like forcing filesys to be utf8 
        (or whatever) for osx here */
