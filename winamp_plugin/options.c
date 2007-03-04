@@ -380,6 +380,25 @@ add_useragent_strings(HWND hdlg)
 }
 
 void
+set_overwrite_combo(HWND hdlg)
+{
+    HWND hcombo = GetDlgItem(hdlg, IDC_OVERWRITE_COMPLETE);
+    int combo_idx = m_opt->overwrite - 1;
+
+    LRESULT rc = SendMessage(hcombo, CB_SETCURSEL, combo_idx, 0);
+    debug_printf("Setting combo, idx=%d, rc=%d\n", combo_idx, rc);
+}
+
+void
+get_overwrite_combo(HWND hdlg)
+{
+    HWND hcombo = GetDlgItem(hdlg, IDC_OVERWRITE_COMPLETE);
+    int combo_idx = SendMessage(hcombo, CB_GETCURSEL, 0, 0);
+    debug_printf("Getting combo, idx=%d\n", combo_idx);
+    m_opt->overwrite = combo_idx + 1;
+}
+
+void
 add_codeset_strings_1(HWND hdlg, int id)
 {
     HWND hcombo = GetDlgItem(hdlg, id);
@@ -451,22 +470,16 @@ set_codesets_from_gui (HWND hWnd)
 }
 
 void
-set_overwrite_combo(HWND hdlg)
+set_gui_from_codesets (HWND hWnd)
 {
-    HWND hcombo = GetDlgItem(hdlg, IDC_OVERWRITE_COMPLETE);
-    int combo_idx = m_opt->overwrite - 1;
-
-    LRESULT rc = SendMessage(hcombo, CB_SETCURSEL, combo_idx, 0);
-    debug_printf("Setting combo, idx=%d, rc=%d\n", combo_idx, rc);
-}
-
-void
-get_overwrite_combo(HWND hdlg)
-{
-    HWND hcombo = GetDlgItem(hdlg, IDC_OVERWRITE_COMPLETE);
-    int combo_idx = SendMessage(hcombo, CB_GETCURSEL, 0, 0);
-    debug_printf("Getting combo, idx=%d\n", combo_idx);
-    m_opt->overwrite = combo_idx + 1;
+    SetDlgItemText (hWnd, IDC_CODESET_METADATA, 
+		    m_opt->cs_opt.codeset_metadata);
+    SetDlgItemText (hWnd, IDC_CODESET_RELAY, 
+		    m_opt->cs_opt.codeset_relay);
+    SetDlgItemText (hWnd, IDC_CODESET_ID3, 
+		    m_opt->cs_opt.codeset_id3);
+    SetDlgItemText (hWnd, IDC_CODESET_FILESYS, 
+		    m_opt->cs_opt.codeset_filesys);
 }
 
 void
@@ -624,6 +637,7 @@ saveload_external_opts (HWND hWnd, BOOL saveload)
     } else {
 	set_checkbox(hWnd, IDC_EXTERNAL_COMMAND_CHECK, OPT_FLAG_ISSET(m_opt->flags, OPT_EXTERNAL_CMD));
 	SetDlgItemText(hWnd, IDC_EXTERNAL_COMMAND, m_opt->ext_cmd);
+	set_gui_from_codesets (hWnd);
     }
 }
 
@@ -667,14 +681,10 @@ populate_skin_list (HWND dlg)
     if (!hlist)
 	return FALSE;
 
-    for(i = 0; i < m_skin_list_size; i++) {
+    for (i = 0; i < m_skin_list_size; i++) {
 	assert(m_pskin_list[i]);
-	debug_printf ("pop_skin_list: %d = %s\n", i,
-	    m_pskin_list[i]);
-
-	SendMessage (hlist, LB_ADDSTRING, 0, 
-		    (LPARAM)m_pskin_list[i]);
-
+	debug_printf ("pop_skin_list: %d = %s\n", i, m_pskin_list[i]);
+	SendMessage (hlist, LB_ADDSTRING, 0, (LPARAM)m_pskin_list[i]);
 	if (strcmp(m_pskin_list[i], m_guiOpt->default_skin) == 0)
 	    m_curskin = i;
     }
@@ -1025,6 +1035,12 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	}
     }
 
+    /* Get codesets */
+    GetPrivateProfileString (APPNAME, "codeset_metadata", opt->cs_opt.codeset_locale, opt->cs_opt.codeset_metadata, MAX_CODESET_STRING, filename);
+    GetPrivateProfileString (APPNAME, "codeset_relay", opt->cs_opt.codeset_locale, opt->cs_opt.codeset_relay, MAX_CODESET_STRING, filename);
+    GetPrivateProfileString (APPNAME, "codeset_id3", opt->cs_opt.codeset_locale, opt->cs_opt.codeset_id3, MAX_CODESET_STRING, filename);
+    GetPrivateProfileString (APPNAME, "codeset_filesys", opt->cs_opt.codeset_locale, opt->cs_opt.codeset_filesys, MAX_CODESET_STRING, filename);
+
     return TRUE;
 }
 
@@ -1098,6 +1114,11 @@ options_save (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	    p++;
 	}
     }
+
+    fprintf (fp, "codeset_metadata=%s\n", opt->cs_opt.codeset_metadata);
+    fprintf (fp, "codeset_relay=%s\n", opt->cs_opt.codeset_relay);
+    fprintf (fp, "codeset_id3=%s\n", opt->cs_opt.codeset_id3);
+    fprintf (fp, "codeset_filesys=%s\n", opt->cs_opt.codeset_filesys);
 
     fclose(fp);
 
