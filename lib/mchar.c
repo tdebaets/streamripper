@@ -443,12 +443,22 @@ set_codesets_default (CODESET_OPTIONS* cs_opt)
 
     /* I could potentially add stuff like forcing filesys to be utf8 
        (or whatever) for osx here */
+    
 }
 
 /* This sets the global variables (ugh) */
 void
 register_codesets (CODESET_OPTIONS* cs_opt)
 {
+    /* For ID3, force UCS-2, UCS-2LE, UCS-2BE, UTF-16LE, and UTF-16BE 
+       to be UTF-16.  This way, we get the BOM like we need.
+       This might change if we upgrade to id3v2.4, which allows 
+       UTF-8 and UTF-16 without BOM. */
+    if (!strncmp (cs_opt->codeset_id3, "UCS-2", strlen("UCS-2")) ||
+	!strncmp (cs_opt->codeset_id3, "UTF-16", strlen("UTF-16"))) {
+	strcpy (cs_opt->codeset_id3, "UTF-16");
+    }
+
     m_codeset_locale = cs_opt->codeset_locale;
     m_codeset_filesys = cs_opt->codeset_filesys;
     m_codeset_id3 = cs_opt->codeset_id3;
@@ -459,15 +469,19 @@ register_codesets (CODESET_OPTIONS* cs_opt)
     debug_printf ("ID3 codeset: %s\n", m_codeset_id3);
     debug_printf ("Metadata codeset: %s\n", m_codeset_metadata);
     debug_printf ("Relay codeset: %s\n", m_codeset_relay);
+
+
 }
 
 /* This is used to set the codeset byte for id3v2 frames */
 int
 is_id3_unicode (void)
 {
-    if (!strcmp ("UCS-2", m_codeset_id3)) {
+#if HAVE_WCHAR_SUPPORT
+    if (!strcmp ("UTF-16", m_codeset_id3)) {
 	return 1;
     }
+#endif
     return 0;
 }
 

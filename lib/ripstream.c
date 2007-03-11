@@ -700,7 +700,7 @@ start_track_mp3 (TRACK_INFO* ti)
 	id3v2frame.pad[2] = id3_charset;
 	rc = string_from_mstring (bigbuf, HEADER_SIZE, ti->artist, 
 				  CODESET_ID3);
-	framesize = htonl (rc);
+	framesize = htonl (rc+1);
 	ret = rip_manager_put_data ((char *)&(id3v2frame.id), 4);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 4;
@@ -720,7 +720,7 @@ start_track_mp3 (TRACK_INFO* ti)
 	id3v2frame.pad[2] = id3_charset;
 	rc = string_from_mstring (bigbuf, HEADER_SIZE, ti->title, 
 				  CODESET_ID3);
-	framesize = htonl (rc);
+	framesize = htonl (rc+1);
 	ret = rip_manager_put_data((char *)&(id3v2frame.id), 4);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 4;
@@ -757,7 +757,7 @@ start_track_mp3 (TRACK_INFO* ti)
 	id3v2frame.pad[2] = id3_charset;
 	rc = string_from_mstring (bigbuf, HEADER_SIZE, ti->album, 
 				  CODESET_ID3);
-	framesize = htonl (rc);
+	framesize = htonl (rc+1);
 	ret = rip_manager_put_data((char *)&(id3v2frame.id), 4);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 4;

@@ -1,9 +1,11 @@
 New for 1.62-beta2
 ------------------
-* Add codeset options to windows
-* Upgrade windows iconv to 1.11
+* Make not adding id3v2 the default
 * Add id3v1/id3v2 GUI to winamp plugin
+* Add codeset options to windows
 * Add codeset GUI to winamp plugin
+* Upgrade windows iconv to 1.11
+* Force UTF-16 for id3 when any flavor of UCS-2 or UTF-16 spec'd
 * Remove warning for E2BIG iconv conversion
 
 New for 1.62-beta1

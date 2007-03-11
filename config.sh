@@ -18,11 +18,11 @@ autoheader
 # cd ..
 
 rm -f config.cache
-./configure --without-included-tre
+./configure
 
 exit
 
-./configure
+./configure --without-included-tre
 ./configure --without-ogg
 ./configure --with-included-libmad --with-included-tre --with-included-argv
 

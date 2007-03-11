@@ -526,6 +526,24 @@ parse_extended_options (char* rule)
 	return;
     }
 
+    /* id3 options */
+    if (!strcmp(rule,"with-id3v2")) {
+	OPT_FLAG_SET(m_opt.flags,OPT_ADD_ID3V2,1);
+	return;
+    }
+    if (!strcmp(rule,"without-id3v2")) {
+	OPT_FLAG_SET(m_opt.flags,OPT_ADD_ID3V2,0);
+	return;
+    }
+    if (!strcmp(rule,"with-id3v1")) {
+	OPT_FLAG_SET(m_opt.flags,OPT_ADD_ID3V1,1);
+	return;
+    }
+    if (!strcmp(rule,"without-id3v1")) {
+	OPT_FLAG_SET(m_opt.flags,OPT_ADD_ID3V1,0);
+	return;
+    }
+
     /* codeset options */
     x = strlen("codeset-filesys=");
     if (!strncmp(rule,"codeset-filesys=",x)) {

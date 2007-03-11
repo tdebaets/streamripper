@@ -708,7 +708,7 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
     m_opt->flags = OPT_AUTO_RECONNECT | 
 	    OPT_SEPERATE_DIRS | 
 	    OPT_SEARCH_PORTS |
-	    OPT_ADD_ID3V1 |
+	    /* OPT_ADD_ID3V1 | -- removed starting 1.62-beta-2 */
 	    OPT_ADD_ID3V2 |
 	    OPT_INDIVIDUAL_TRACKS;
 
