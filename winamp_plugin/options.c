@@ -407,7 +407,7 @@ add_codeset_strings_1(HWND hdlg, int id)
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM) default_locale_string);
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"UTF-8 (Unicode)");
     if (id == IDC_CODESET_ID3) {
-        SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"UCS-2 (Unicode)");
+        SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"UTF-16 (Unicode)");
     }
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"ISO-8859-1 (Western Europe)");
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"ISO-8859-2 (Central/East Europe)");
