@@ -279,9 +279,11 @@ hook_winamp_callback (HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 {
     int i;
 
+#if defined (commentout)
     if (umsg == WM_USER || umsg == WM_COPYDATA) {
 	debug_printf ("callback: %d/0x%04x/0x%04x/0x%08x\n",hwnd,umsg,wparam,lparam);
     }
+#endif
 
     if (umsg == WM_SHOWWINDOW && wparam == FALSE) {
 	if (m_docked && m_skin_is_modern) {

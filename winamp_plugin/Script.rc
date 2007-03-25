@@ -76,7 +76,7 @@ BEGIN
     LTEXT           "Skins",IDC_STATIC,7,7,88,12
 END
 
-IDD_PROPPAGE_SPLITTING DIALOG DISCARDABLE  0, 0, 210, 154
+IDD_PROPPAGE_SPLITTING DIALOGEX 0, 0, 210, 154
 STYLE WS_CHILD | WS_DISABLED | WS_CAPTION
 CAPTION "Splitting"
 FONT 8, "MS Sans Serif"
@@ -87,16 +87,16 @@ BEGIN
     EDITTEXT        IDC_XS_SEARCH_WIN_POST,152,50,32,15,ES_AUTOHSCROLL
     EDITTEXT        IDC_XS_PADDING_PRE,48,92,32,15,ES_AUTOHSCROLL
     EDITTEXT        IDC_XS_PADDING_POST,152,92,32,15,ES_AUTOHSCROLL
-    LTEXT           "Offset:",IDC_STATIC,16,22,20,8
+    LTEXT           "Offset:",IDC_STATIC,16,22,20,8,0,WS_EX_RIGHT
     LTEXT           "All times are in milliseconds (ms)",IDC_STATIC,54,131,
                     120,8
-    LTEXT           "Pre:",IDC_STATIC,23,53,13,8
+    LTEXT           "Pre:",IDC_STATIC,23,53,13,8,0,WS_EX_RIGHT
     GROUPBOX        "Padding",IDC_STATIC,7,81,196,35
-    LTEXT           "Post:",IDC_STATIC,126,53,16,8
-    LTEXT           "Silence length:",IDC_STATIC,97,22,45,8
+    LTEXT           "Post:",IDC_STATIC,126,53,16,8,0,WS_EX_RIGHT
+    LTEXT           "Silence length:",IDC_STATIC,93,22,49,8,0,WS_EX_RIGHT
     GROUPBOX        "Search Window",IDC_STATIC,7,3,196,72
-    LTEXT           "Pre:",IDC_STATIC,23,96,13,8
-    LTEXT           "Post:",IDC_STATIC,126,96,16,8
+    LTEXT           "Pre:",IDC_STATIC,23,96,13,8,0,WS_EX_RIGHT
+    LTEXT           "Post:",IDC_STATIC,126,96,16,8,0,WS_EX_RIGHT
     LTEXT           "Disconnect and reconnect to apply changes",IDC_STATIC,
                     36,120,154,8
 END
@@ -119,7 +119,7 @@ FONT 8, "MS Sans Serif"
 BEGIN
     CONTROL         "Rip to &single file (leave name empty for automatic naming):",
                     IDC_RIP_SINGLE_CHECK,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,52,196,14
+                    WS_TABSTOP,7,52,204,14
     PUSHBUTTON      "...",IDC_BROWSE_RIPSINGLE,186,68,17,14
     EDITTEXT        IDC_OUTPUT_DIRECTORY,14,19,167,15,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BROWSE_OUTDIR,186,19,17,14
@@ -132,9 +132,9 @@ BEGIN
                     WS_TABSTOP,7,111,160,14
     CONTROL         "&Add finished tracks to winamp playlist",
                     IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,144,123,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,144,160,14
     CONTROL         "Add &ID3 V1 info to the tracks",IDC_ADD_ID3V1,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,122,91,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,122,160,14
     COMBOBOX        IDC_OVERWRITE_COMPLETE,14,98,87,46,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "Overwrite tracks in complete:",IDC_STATIC,7,87,130,8
@@ -142,7 +142,7 @@ BEGIN
     LTEXT           "Number of initial songs to leave in incomplete",
                     IDC_STATIC,52,163,151,11
     CONTROL         "Add &ID3 V2.3 info to the tracks",IDC_ADD_ID3V2,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,133,101,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,133,160,14
 END
 
 IDD_PROPPAGE_EXTERNAL DIALOG DISCARDABLE  0, 0, 210, 154

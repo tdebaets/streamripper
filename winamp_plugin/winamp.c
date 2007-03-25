@@ -67,7 +67,7 @@ get_string_from_registry (char *path, HKEY hkey, LPCTSTR subkey, LPTSTR name)
     int k = REG_SZ;
 
     debug_printf ("Trying RegOpenKeyEx: 0x%08x %s\n", hkey, subkey);
-    rc = RegOpenKeyEx(hkey, subkey, 0, KEY_QUERY_VALUE, &hkey_result);
+    rc = RegOpenKeyEx (hkey, subkey, 0, KEY_QUERY_VALUE, &hkey_result);
     if (rc != ERROR_SUCCESS) {
 	return FALSE;
     }
@@ -81,9 +81,10 @@ get_string_from_registry (char *path, HKEY hkey, LPCTSTR subkey, LPTSTR name)
     }
 
     debug_printf ("RegQueryValueEx succeeded: %d\n", type);
-    for(i = 0; strkey[i]; i++) {
+    for (i = 0; strkey[i] && i < SR_MAX_PATH-1; i++) {
 	path[i] = toupper(strkey[i]);
     }
+    path[i] = 0;
 
     RegCloseKey (hkey_result);
 

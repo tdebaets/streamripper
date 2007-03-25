@@ -15,7 +15,8 @@ sub replace_file {
     }
     close INF;
     close TMP;
-    `mv $tmp_fn $file`;
+#    `mv $tmp_fn $file`;
+    rename ($tmp_fn, $file);
 }
 
 ###############################################################

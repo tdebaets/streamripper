@@ -243,8 +243,7 @@ void print_usage()
     fprintf(stderr, "      -L file        - Create a relay playlist file\n");
     fprintf(stderr, "      -z             - Don't scan for free ports if base port is not avail\n");
     fprintf(stderr, "      -p url         - Use HTTP proxy server at <url>\n");
-    fprintf(stderr, "      -o always      - Always overwrite tracks in complete\n");
-    fprintf(stderr, "      -o never       - Never overwrite tracks in complete\n");
+    fprintf(stderr, "      -o (always|never|larger)    - When to tracks in complete\n");
     fprintf(stderr, "      -t             - Don't overwrite tracks in incomplete\n");
     fprintf(stderr, "      -c             - Don't auto-reconnect\n");
     fprintf(stderr, "      -l seconds     - Number of seconds to run, otherwise runs forever\n");

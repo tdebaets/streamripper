@@ -226,7 +226,7 @@ config ()
 void
 quit()
 {
-    options_save(&m_rmoOpt, &m_guiOpt);
+    options_save (&m_rmoOpt, &m_guiOpt);
     if (m_bRipping)
 	rip_manager_stop();
 
@@ -498,9 +498,9 @@ void
 options_button_pressed()
 {
     m_doing_options_dialog = TRUE;
-    options_dialog_show(g_plugin.hDllInstance, m_hwnd, &m_rmoOpt, &m_guiOpt);
+    options_dialog_show (g_plugin.hDllInstance, m_hwnd, &m_rmoOpt, &m_guiOpt);
 
-    render_set_button_enabled(m_relaybut, OPT_FLAG_ISSET(m_rmoOpt.flags, OPT_MAKE_RELAY)); 			
+    render_set_button_enabled (m_relaybut, OPT_FLAG_ISSET(m_rmoOpt.flags, OPT_MAKE_RELAY)); 			
     m_doing_options_dialog = FALSE;
 }
 

@@ -35,22 +35,9 @@
 #define DEFAULT_USERAGENT	"FreeAmp/2.x"
 #define NUM_PROP_PAGES		6
 #define DEFAULT_SKINFILE	"srskin.bmp"
-//#define SKIN_PREV_LEFT	158
-//#define SKIN_PREV_TOP		79
 #define SKIN_PREV_LEFT		(2*110)
 #define SKIN_PREV_TOP		(2*50)
 #define	MAX_SKINS		256
-//#define PROP_SHEET_CON		0
-//#define PROP_SHEET_FILE		1
-//#define PROP_SHEET_SKINS	2
-
-
-/**********************************************************************************
- * Public functions
- **********************************************************************************/
-void options_dialog_show(HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt);
-BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt);
-BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt);
 
 
 /**********************************************************************************
@@ -65,21 +52,21 @@ static LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 static LRESULT CALLBACK splitting_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK options_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, BOOL confile);
 static LRESULT CALLBACK external_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-static void saveload_file_opts(HWND hWnd, BOOL saveload);
-static void saveload_pat_opts(HWND hWnd, BOOL saveload);
-static void saveload_conn_opts(HWND hWnd, BOOL saveload);
-static void saveload_splitting_opts(HWND hWnd, BOOL saveload);
-static void saveload_external_opts(HWND hWnd, BOOL saveload);
+static void gui_set_file_opts(HWND hWnd, BOOL from_gui);
+static void gui_set_pat_opts(HWND hWnd, BOOL from_gui);
+static void gui_set_conn_opts(HWND hWnd, BOOL from_gui);
+static void gui_set_splitting_opts(HWND hWnd, BOOL from_gui);
+static void gui_set_external_opts(HWND hWnd, BOOL from_gui);
 static HPROPSHEETPAGE create_prop_sheet_page(HINSTANCE inst, DWORD iddres, DLGPROC dlgproc);
 static void add_useragent_strings();
 static void add_codeset_strings();
 static BOOL get_skin_list();
 static void free_skin_list();
 
+
 /**********************************************************************************
  * Private Vars
  **********************************************************************************/
-
 // This is what we need from shfolder.h, but thats not on my home system
 typedef HRESULT (__stdcall * PFNSHGETFOLDERPATHA)(HWND, int, HANDLE, DWORD, LPSTR);  
 
@@ -88,8 +75,7 @@ static GUI_OPTIONS *m_guiOpt;
 static char *m_pskin_list[MAX_SKINS];
 static int m_skin_list_size = 0;
 static int m_curskin = 0;
-//JCBUG not yet implemented (need to figure out how to get this)
-static int m_last_sheet = 0;	
+static int m_last_sheet = 0;    // not yet implemented
 
 BOOL
 get_skin_list()
@@ -157,7 +143,7 @@ free_skin_list()
 }
 
 BOOL
-get_desktop_folder(char *path)
+get_desktop_folder (char *path)
 {
     HRESULT hresult;
     static HMODULE hMod = NULL;
@@ -169,8 +155,9 @@ get_desktop_folder(char *path)
     path[0] = '\0';
 
     // Load SHFolder.dll only once
-    if (!hMod)
+    if (!hMod) {
 	hMod = LoadLibrary("SHFolder.dll");
+    }
 
     if (hMod == NULL) {
 	debug_printf ("Failed to load SHFolder.dll\n");
@@ -202,8 +189,8 @@ get_desktop_folder(char *path)
 }
 
 BOOL
-browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder, 
-		  long foldersize)
+browse_for_folder (HWND hwnd, const char *title, UINT flags, char *folder, 
+		   long foldersize)
 {
     char *strResult = NULL;
     LPITEMIDLIST lpItemIDList;
@@ -251,8 +238,8 @@ browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder,
 }
 
 BOOL
-browse_for_file(HWND hwnd, const char *title, UINT flags, 
-		     char *file_name, long file_size)
+browse_for_file (HWND hwnd, const char *title, UINT flags, 
+		 char *file_name, long file_size)
 {
     OPENFILENAME ofn;
     char szFile[SR_MAX_PATH] = "rip_to_single_file.mp3";
@@ -303,7 +290,7 @@ options_dialog_show (HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, GUI_
     m_guiOpt = guiOpt;
 
     sprintf(szCaption, "Streamripper Settings v%s", SRVERSION);
-    options_load(m_opt, m_guiOpt);
+    //options_load (m_opt, m_guiOpt);
     hPage[0] = create_prop_sheet_page(inst, IDD_PROPPAGE_CON, con_dlg);
     hPage[1] = create_prop_sheet_page(inst, IDD_PROPPAGE_FILE, file_dlg);
     hPage[2] = create_prop_sheet_page(inst, IDD_PROPPAGE_PATTERN, pat_dlg);
@@ -493,7 +480,7 @@ add_overwrite_complete_strings(HWND hdlg)
 }
 
 void
-saveload_conn_opts(HWND hWnd, BOOL saveload)
+gui_set_conn_opts(HWND hWnd, BOOL from_gui)
 {
     /*
       - reconnect
@@ -505,9 +492,10 @@ saveload_conn_opts(HWND hWnd, BOOL saveload)
       - useragent
       - use old way
     */
-    if (saveload) {
+    if (from_gui) {
 	set_from_checkbox(hWnd, IDC_RECONNECT, &m_opt->flags, OPT_AUTO_RECONNECT);
 	set_from_checkbox(hWnd, IDC_MAKE_RELAY, &m_opt->flags, OPT_MAKE_RELAY);
+	debug_printf ("from_gui: make_relay=%d\n", OPT_FLAG_ISSET(m_opt->flags, OPT_MAKE_RELAY));
 	m_opt->relay_port = GetDlgItemInt(hWnd, IDC_RELAY_PORT_EDIT, FALSE, FALSE);
         m_opt->max_port = m_opt->relay_port+1000;
 	set_from_checkbox(hWnd, IDC_CHECK_MAX_BYTES, &m_opt->flags, OPT_CHECK_MAX_BYTES);
@@ -516,10 +504,10 @@ saveload_conn_opts(HWND hWnd, BOOL saveload)
 	GetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost, MAX_HOST_LEN);
 	GetDlgItemText(hWnd, IDC_USERAGENT, m_opt->useragent, MAX_USERAGENT_STR);
 	m_guiOpt->use_old_playlist_ret = get_checkbox(hWnd, IDC_USE_OLD_PLAYLIST_RET);
-	debug_printf ("setting: use_old_playlist_ret=%d\n", m_guiOpt->use_old_playlist_ret);
     } else {
 	set_checkbox(hWnd, IDC_RECONNECT, OPT_FLAG_ISSET(m_opt->flags, OPT_AUTO_RECONNECT));
 	set_checkbox(hWnd, IDC_MAKE_RELAY, OPT_FLAG_ISSET(m_opt->flags, OPT_MAKE_RELAY));
+	debug_printf ("to_gui: make_relay=%d\n", OPT_FLAG_ISSET(m_opt->flags, OPT_MAKE_RELAY));
 	SetDlgItemInt(hWnd, IDC_RELAY_PORT_EDIT, m_opt->relay_port, FALSE);
 	set_checkbox(hWnd, IDC_CHECK_MAX_BYTES, OPT_FLAG_ISSET(m_opt->flags, OPT_CHECK_MAX_BYTES));
 	SetDlgItemInt(hWnd, IDC_MAX_BYTES, m_opt->maxMB_rip_size, FALSE);
@@ -529,12 +517,11 @@ saveload_conn_opts(HWND hWnd, BOOL saveload)
 	    strcpy(m_opt->useragent, DEFAULT_USERAGENT);
 	SetDlgItemText(hWnd, IDC_USERAGENT, m_opt->useragent);
 	set_checkbox(hWnd, IDC_USE_OLD_PLAYLIST_RET, m_guiOpt->use_old_playlist_ret);
-	debug_printf ("getting: use_old_playlist_ret=%d\n", m_guiOpt->use_old_playlist_ret);
     }
 }
 
 void
-saveload_file_opts(HWND hWnd, BOOL saveload)
+gui_set_file_opts(HWND hWnd, BOOL from_gui)
 {
     /*
       - seperate dir
@@ -548,7 +535,7 @@ saveload_file_opts(HWND hWnd, BOOL saveload)
       - rip single file check
       - rip single file filename
     */
-    if (saveload) {
+    if (from_gui) {
 	get_overwrite_combo(hWnd);
 	m_guiOpt->m_add_finshed_tracks_to_playlist = get_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST);
 	set_from_checkbox(hWnd, IDC_ADD_ID3V1, &m_opt->flags, OPT_ADD_ID3V1);
@@ -574,7 +561,7 @@ saveload_file_opts(HWND hWnd, BOOL saveload)
 }
 
 void
-saveload_pat_opts(HWND hWnd, BOOL saveload)
+gui_set_pat_opts(HWND hWnd, BOOL from_gui)
 {
     /*
       - seperate dir
@@ -588,7 +575,7 @@ saveload_pat_opts(HWND hWnd, BOOL saveload)
       - rip single file check
       - rip single file filename
     */
-    if (saveload) {
+    if (from_gui) {
 	GetDlgItemText(hWnd, IDC_PATTERN_EDIT, m_opt->output_pattern, SR_MAX_PATH);
     } else {
 	SetDlgItemText(hWnd, IDC_PATTERN_EDIT, m_opt->output_pattern);
@@ -596,7 +583,7 @@ saveload_pat_opts(HWND hWnd, BOOL saveload)
 }
 
 void
-saveload_splitting_opts(HWND hWnd, BOOL saveload)
+gui_set_splitting_opts(HWND hWnd, BOOL from_gui)
 {
     /*
       - skew
@@ -606,7 +593,7 @@ saveload_splitting_opts(HWND hWnd, BOOL saveload)
       - padding_pre
       - padding_post
     */
-    if (saveload) {
+    if (from_gui) {
 	m_opt->sp_opt.xs_offset = GetDlgItemInt(hWnd, IDC_XS_OFFSET, FALSE, TRUE);
 	m_opt->sp_opt.xs_silence_length = GetDlgItemInt(hWnd, IDC_XS_SILENCE_LENGTH, FALSE, FALSE);
 	m_opt->sp_opt.xs_search_window_1 = GetDlgItemInt(hWnd, IDC_XS_SEARCH_WIN_PRE, FALSE, TRUE);
@@ -624,13 +611,13 @@ saveload_splitting_opts(HWND hWnd, BOOL saveload)
 }
 
 void
-saveload_external_opts (HWND hWnd, BOOL saveload)
+gui_set_external_opts (HWND hWnd, BOOL from_gui)
 {
     /*
       - external check
       - external cmd
     */
-    if (saveload) {
+    if (from_gui) {
 	set_from_checkbox(hWnd, IDC_EXTERNAL_COMMAND_CHECK, &m_opt->flags, OPT_EXTERNAL_CMD);
 	GetDlgItemText(hWnd, IDC_EXTERNAL_COMMAND, m_opt->ext_cmd, SR_MAX_PATH);
 	set_codesets_from_gui (hWnd);
@@ -790,19 +777,19 @@ options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 
 	switch (confile) {
 	case 1:
-	    saveload_conn_opts(hWnd, FALSE);
+	    gui_set_conn_opts(hWnd, FALSE);
 	    break;
 	case 2:
-	    saveload_file_opts(hWnd, FALSE);
+	    gui_set_file_opts(hWnd, FALSE);
 	    break;
 	case 3:
-	    saveload_pat_opts(hWnd, FALSE);
+	    gui_set_pat_opts(hWnd, FALSE);
 	    break;
 	case 4:
-	    saveload_splitting_opts(hWnd, FALSE);
+	    gui_set_splitting_opts(hWnd, FALSE);
 	    break;
 	case 5:
-	    saveload_external_opts(hWnd, FALSE);
+	    gui_set_external_opts(hWnd, FALSE);
 	    break;
 	}
 	PropSheet_UnChanged(GetParent(hWnd), hWnd);
@@ -887,19 +874,19 @@ options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int confile)
 	    case PSN_APPLY:
 		switch (confile) {
 		case 1:
-		    saveload_conn_opts (hWnd, TRUE);
+		    gui_set_conn_opts (hWnd, TRUE);
 		    break;
 		case 2:
-		    saveload_file_opts (hWnd, TRUE);
+		    gui_set_file_opts (hWnd, TRUE);
 		    break;
 		case 3:
-		    saveload_pat_opts (hWnd, TRUE);
+		    gui_set_pat_opts (hWnd, TRUE);
 		    break;
 		case 4:
-		    saveload_splitting_opts (hWnd, TRUE);
+		    gui_set_splitting_opts (hWnd, TRUE);
 		    break;
 		case 5:
-		    saveload_external_opts (hWnd, TRUE);
+		    gui_set_external_opts (hWnd, TRUE);
 		    break;
 		}
 	    }
@@ -936,7 +923,8 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
 	return FALSE;
     }
 
-    strcat(filename, "Plugins\\sripper.ini");
+    strcat (filename, "Plugins\\sripper.ini");
+    debug_printf ("Loading filename is %s\n", filename);
 
     GetPrivateProfileString(APPNAME, "url", "", opt->url, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "proxy", "", opt->proxyurl, MAX_INI_LINE_LEN, filename);
@@ -959,7 +947,9 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     opt->max_port = opt->relay_port+1000;
     auto_reconnect = GetPrivateProfileInt(APPNAME, "auto_reconnect", TRUE, filename);
     make_relay = GetPrivateProfileInt(APPNAME, "make_relay", FALSE, filename);
-    add_id3_sr161 = GetPrivateProfileInt(APPNAME, "add_id3", TRUE, filename);
+    debug_printf ("GetPrivateProfileInt (make_relay) =? %d\n",
+	GetPrivateProfileInt(APPNAME, "make_relay", 2, filename));
+    add_id3_sr161 = GetPrivateProfileInt(APPNAME, "add_id3", FALSE, filename);
     add_id3v1 = GetPrivateProfileInt(APPNAME, "add_id3v1", TRUE, filename);
     add_id3v2 = GetPrivateProfileInt(APPNAME, "add_id3v2", TRUE, filename);
     check_max_btyes = GetPrivateProfileInt(APPNAME, "check_max_bytes", FALSE, filename);
@@ -991,13 +981,11 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     guiOpt->oldpos.y = GetPrivateProfileInt(APPNAME, "window_y", 0, filename);
     guiOpt->m_enabled = GetPrivateProfileInt(APPNAME, "enabled", 1, filename);
     guiOpt->use_old_playlist_ret = GetPrivateProfileInt(APPNAME, "use_old_playlist_ret", 0, filename);
-    debug_printf ("loading: use_old_playlist_ret=%d\n", guiOpt->use_old_playlist_ret);
 
     if (guiOpt->oldpos.x < 0 || guiOpt->oldpos.y < 0)
 	guiOpt->oldpos.x = guiOpt->oldpos.y = 0;
 
     opt->overwrite = string_to_overwrite_opt (overwrite_string);
-    debug_printf ("Got overwrite enum: %d\n", opt->overwrite);
 
     opt->flags = 0;
     opt->flags |= OPT_SEARCH_PORTS;	// not having this caused a bad bug, must remember this.
@@ -1013,9 +1001,10 @@ options_load (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     if (rip_single_file) opt->flags |= OPT_SINGLE_FILE_OUTPUT;
     if (use_ext_cmd) opt->flags |= OPT_EXTERNAL_CMD;
 
-    debug_printf ("flags = 0x%04x\n", opt->flags);
-    debug_printf ("id3v1 flag = 0x%04x\n", OPT_ADD_ID3V1);
-    debug_printf ("id3v2 flag = 0x%04x\n", OPT_ADD_ID3V2);
+    debug_printf ("loading: flags = 0x%04x\n", opt->flags);
+    debug_printf ("make_relay = %d\n", OPT_FLAG_ISSET (opt->flags, OPT_MAKE_RELAY));
+    debug_printf ("id3v1 flag = %d\n", OPT_FLAG_ISSET (opt->flags, OPT_ADD_ID3V1));
+    debug_printf ("id3v2 flag = %d\n", OPT_FLAG_ISSET (opt->flags, OPT_ADD_ID3V2));
 
     /* Note, there is no way to change the rules file location (for now) */
     if (!winamp_get_path(opt->rules_file)) {
@@ -1059,6 +1048,8 @@ options_save (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     if (!fp)
 	return FALSE;
 
+    debug_printf ("Saving filename is %s\n", filename);
+
     fprintf(fp, "[%s]\n", APPNAME);
     fprintf(fp, "url=%s\n", opt->url);
     fprintf(fp, "proxy=%s\n", opt->proxyurl);
@@ -1086,6 +1077,11 @@ options_save (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     fprintf(fp, "rip_single_path=%s\n", opt->showfile_pattern);
     fprintf(fp, "dropcount=%d\n", opt->dropcount);
 
+    debug_printf ("saving: flags = 0x%04x\n", opt->flags);
+    debug_printf ("make_relay = %d\n", OPT_FLAG_ISSET (opt->flags, OPT_MAKE_RELAY));
+    debug_printf ("id3v1 flag = %d\n", OPT_FLAG_ISSET (opt->flags, OPT_ADD_ID3V1));
+    debug_printf ("id3v2 flag = %d\n", OPT_FLAG_ISSET (opt->flags, OPT_ADD_ID3V2));
+
     fprintf(fp, "output_pattern=%s\n", opt->output_pattern);
 
     fprintf(fp, "xs_offset=%d\n", opt->sp_opt.xs_offset);
@@ -1104,7 +1100,6 @@ options_save (RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt)
     fprintf(fp, "window_y=%d\n", guiOpt->oldpos.y);
     fprintf(fp, "enabled=%d\n", guiOpt->m_enabled);
     fprintf(fp, "default_skin=%s\n", guiOpt->default_skin);
-    debug_printf ("writing: use_old_playlist_ret=%d\n", guiOpt->use_old_playlist_ret);
     fprintf(fp, "use_old_playlist_ret=%d\n", guiOpt->use_old_playlist_ret);
 
     /* Save history */
