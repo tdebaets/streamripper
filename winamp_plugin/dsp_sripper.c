@@ -284,7 +284,7 @@ url_is_relay (char* url)
 {
     char relay_url[SR_MAX_PATH];
     compose_relay_url (relay_url, m_guiOpt.localhost, 
-			rip_mananger_get_relay_port(),
+			m_rmoOpt.relay_port, 
 			rip_manager_get_content_type());
     debug_printf ("Comparing %s vs rly %s\n", url, relay_url);
     return (!strcmp(relay_url, url));
@@ -515,7 +515,7 @@ void
 relay_pressed()
 {
     winamp_add_relay_to_playlist (m_guiOpt.localhost, 
-	rip_mananger_get_relay_port(),
+	m_rmoOpt.relay_port, 
 	rip_manager_get_content_type());
 }
 
@@ -547,6 +547,8 @@ insert_riplist (char* url, int pos)
 {
     int i;
     int oldpos;
+
+    debug_printf ("Insert riplist (0)\n");
 
     /* Don't add if it's the relay stream */
     if (url_is_relay (url)) return;

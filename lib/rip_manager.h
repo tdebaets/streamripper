@@ -139,7 +139,8 @@ typedef struct RIP_MANAGER_OPTIONSst
                                         //  rely .pls file
     char relay_ip[SR_MAX_PATH];		// optional, ip to bind relaying 
                                         //  socket to
-    int relay_port;			// port to use for the relay server
+    u_short relay_port;			// port to use for the relay server
+					//  GCS 3/30/07 change to u_short
     u_short max_port;			// highest port the relay server 
                                         //  can look if it needs to search
     int max_connections;                // max number of connections 
@@ -171,13 +172,13 @@ typedef struct ERROR_INFOst
 
 /* Public functions */
 char *rip_manager_get_error_str(int code);
-u_short rip_mananger_get_relay_port();	
+//u_short rip_mananger_get_relay_port();	
 void set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt);
 error_code rip_manager_start (void (*status_callback)(int message, void *data), 
 			     RIP_MANAGER_OPTIONS *options);
 void rip_manager_stop();
 error_code rip_manager_start_track (TRACK_INFO* ti, int track_count);
-error_code rip_manager_end_track(TRACK_INFO* ti);
+error_code rip_manager_end_track(RIP_MANAGER_OPTIONS* rmo, TRACK_INFO* ti);
 error_code rip_manager_put_data(char *buf, int size);
 error_code rip_manager_put_raw_data(char *buf, int size);
 

@@ -41,9 +41,9 @@
  * Private functions
  *****************************************************************************/
 static error_code find_sep (u_long *pos1, u_long *pos2);
-static error_code end_track_mp3 (u_long pos1, u_long pos2, TRACK_INFO* ti);
 static error_code start_track_mp3 (TRACK_INFO* ti);
-static error_code end_track_ogg (TRACK_INFO* ti);
+static error_code end_track_mp3 (RIP_MANAGER_OPTIONS* rmo, u_long pos1, u_long pos2, TRACK_INFO* ti);
+static error_code end_track_ogg (RIP_MANAGER_OPTIONS* rmo, TRACK_INFO* ti);
 
 static void compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt,
 				  int bitrate, int meta_interval);
@@ -54,8 +54,8 @@ static int ripstream_recvall (char* buffer, int size);
 
 static error_code get_track_from_metadata (int size, char *newtrack);
 static error_code get_stream_data (char *data_buf, char *track_buf);
-static error_code ripstream_rip_ogg (void);
-static error_code ripstream_rip_mp3 (void);
+static error_code ripstream_rip_mp3 (RIP_MANAGER_OPTIONS* rmo);
+static error_code ripstream_rip_ogg (RIP_MANAGER_OPTIONS* rmo);
 
 /*****************************************************************************
  * Private Vars
@@ -259,17 +259,17 @@ copy_track_info (TRACK_INFO* dest, TRACK_INFO* src)
 
 /**** The main loop for ripping ****/
 error_code
-ripstream_rip (void)
+ripstream_rip (RIP_MANAGER_OPTIONS* rmo)
 {
     if (m_content_type == CONTENT_TYPE_OGG) {
-	return ripstream_rip_ogg ();
+	return ripstream_rip_ogg (rmo);
     } else {
-	return ripstream_rip_mp3 ();
+	return ripstream_rip_mp3 (rmo);
     }
 }
 
 static error_code
-ripstream_rip_ogg (void)
+ripstream_rip_ogg (RIP_MANAGER_OPTIONS* rmo)
 {
     int ret;
     int real_ret = SR_SUCCESS;
@@ -332,7 +332,7 @@ ripstream_rip_ogg (void)
 		return ret;
 	    }
 	    if (got_eos) {
-		end_track_ogg (&m_old_track);
+		end_track_ogg (rmo, &m_old_track);
 		have_track = 0;
 		break;
 	    }
@@ -371,7 +371,7 @@ ripstream_rip_ogg (void)
 }
 
 static error_code
-ripstream_rip_mp3 (void)
+ripstream_rip_mp3 (RIP_MANAGER_OPTIONS* rmo)
 {
     int ret;
     int real_ret = SR_SUCCESS;
@@ -492,7 +492,7 @@ ripstream_rip_mp3 (void)
 	}
 
 	/* Write out previous track */
-	ret = end_track_mp3 (pos1, pos2, &m_old_track);
+	ret = end_track_mp3 (rmo, pos1, pos2, &m_old_track);
 	if (ret != SR_SUCCESS)
 	    real_ret = ret;
 	m_cue_sheet_bytes += pos2;
@@ -584,7 +584,7 @@ find_sep (u_long *pos1, u_long *pos2)
 }
 
 static error_code
-end_track_mp3 (u_long pos1, u_long pos2, TRACK_INFO* ti)
+end_track_mp3 (RIP_MANAGER_OPTIONS* rmo, u_long pos1, u_long pos2, TRACK_INFO* ti)
 {
     // pos1 is end of prev track
     // pos2 is beginning of next track
@@ -637,7 +637,7 @@ end_track_mp3 (u_long pos1, u_long pos2, TRACK_INFO* ti)
     debug_printf("Current track number %d (skipping if %d or less)\n", 
 		 m_track_count, m_drop_count);
     if (m_track_count > m_drop_count)
-	if ((ret = rip_manager_end_track(ti)) != SR_SUCCESS)
+	if ((ret = rip_manager_end_track (rmo, ti)) != SR_SUCCESS)
 	    goto BAIL;
 
  BAIL:
@@ -783,13 +783,13 @@ start_track_mp3 (TRACK_INFO* ti)
 // Only save this track if we've skipped over enough cruft 
 // at the beginning of the stream
 static error_code
-end_track_ogg (TRACK_INFO* ti)
+end_track_ogg (RIP_MANAGER_OPTIONS* rmo, TRACK_INFO* ti)
 {
     error_code ret;
     debug_printf ("Current track number %d (skipping if %d or less)\n", 
 		  m_track_count, m_drop_count);
     if (m_track_count > m_drop_count) {
-	ret = rip_manager_end_track (ti);
+	ret = rip_manager_end_track (rmo, ti);
     } else {
 	ret = SR_SUCCESS;
     }

@@ -70,7 +70,7 @@ static HSOCKET			m_sock;
 static void			(*m_destroy_func)();
 #endif
 static RIP_MANAGER_INFO		m_ripinfo;		// used for UPDATE callback messages
-static RIP_MANAGER_OPTIONS	m_options;		// local copy of the options passed to rip_manager_start()
+//static RIP_MANAGER_OPTIONS	m_options;		// local copy of the options passed to rip_manager_start()
 static THREAD_HANDLE		m_hthread;		// rip thread handle
 static void			(*m_status_callback)(int message, void *data);
 static BOOL			m_ripping = FALSE;
@@ -171,11 +171,13 @@ rip_manager_get_error_str(error_code code)
     return m_error_str[-code];
 }
 
+#if defined (commentout)
 u_short
 rip_mananger_get_relay_port()
 {
-    return m_options.relay_port;
+    return rmo->relay_port;
 }
+#endif
 
 void
 post_error(int err)
@@ -249,13 +251,13 @@ rip_manager_start_track (TRACK_INFO* ti, int track_count)
  * the first track is *never* complete.
  */
 error_code
-rip_manager_end_track(TRACK_INFO* ti)
+rip_manager_end_track(RIP_MANAGER_OPTIONS* rmo, TRACK_INFO* ti)
 {
     mchar fullpath[SR_MAX_PATH];
 
     if (m_write_data) {
-        filelib_end (ti, m_options.overwrite, 
-		     GET_TRUNCATE_DUPS(m_options.flags),
+        filelib_end (ti, rmo->overwrite, 
+		     GET_TRUNCATE_DUPS(rmo->flags),
 		     fullpath);
     }
 
@@ -333,9 +335,10 @@ client_relay_header_release (char *ch)
 }
 
 void
-ripthread (void *notused)
+ripthread (void *input_arg)
 {
     error_code ret;
+    RIP_MANAGER_OPTIONS* rmo = (RIP_MANAGER_OPTIONS*) input_arg;
 
     if ((ret = start_ripping()) != SR_SUCCESS) {
 	threadlib_signal_sem(&m_started_sem);
@@ -363,11 +366,11 @@ ripthread (void *notused)
 	 * wnd locks, etc.. all i know is that this appeared to work
 	 */
         /* GCS Aug 23, 2003: m_bytes_ripped can still overflow */
-	if (m_bytes_ripped/1000000 >= (m_options.maxMB_rip_size) &&
-	    GET_CHECK_MAX_BYTES(m_options.flags)) {
-	    socklib_close(&m_sock);
-	    destroy_subsystems();
-	    post_error(SR_ERROR_MAX_BYTES_RIPPED);
+	if (m_bytes_ripped/1000000 >= (rmo->maxMB_rip_size) &&
+		GET_CHECK_MAX_BYTES (rmo->flags)) {
+	    socklib_close (&m_sock);
+	    destroy_subsystems ();
+	    post_error (SR_ERROR_MAX_BYTES_RIPPED);
 	    break;
 	}
 
@@ -386,7 +389,7 @@ ripthread (void *notused)
 		  ret == SR_ERROR_TIMEOUT || 
 		  ret == SR_ERROR_NO_TRACK_INFO || 
 		  ret == SR_ERROR_SELECT_FAILED) && 
-		 GET_AUTO_RECONNECT(m_options.flags)) {
+		 GET_AUTO_RECONNECT (rmo->flags)) {
 	    /*
 	     * Try to reconnect, if thats what the user wants
 	     */
@@ -486,49 +489,49 @@ destroy_subsystems()
     filelib_shutdown();
 }
 
-int
-create_pls_file()
+static int
+create_pls_file (RIP_MANAGER_OPTIONS* rmo)
 {
     FILE *fid;
 
-    if  ('\0' == m_options.relay_ip[0]) {
+    if  ('\0' == rmo->relay_ip[0]) {
 	fprintf(stderr, "can not determine relaying ip, pass ip to -r \n");
 	return -1;
     }
 
-    fid = fopen(m_options.pls_file, "w");
+    fid = fopen (rmo->pls_file, "w");
 
     if (NULL == fid) {
 	fprintf(stderr, "could not create playlist file '%s': %d '%s'\n",
-		m_options.pls_file, errno, strerror(errno));
+		rmo->pls_file, errno, strerror(errno));
     } else {
 	fprintf(fid, "[playlist]\n");
 	fprintf(fid, "NumberOfEntries=1\n");
-	fprintf(fid, "File1=http://%s:%d\n", m_options.relay_ip, m_options.relay_port);
+	fprintf(fid, "File1=http://%s:%d\n", rmo->relay_ip, rmo->relay_port);
 	fclose(fid);
     }
-		
+
     return 0;
 }
 
 error_code
-start_ripping()
+start_ripping (RIP_MANAGER_OPTIONS* rmo)
 {
     error_code ret;
-    char *pproxy = m_options.proxyurl[0] ? m_options.proxyurl : NULL;
+    char *pproxy = rmo->proxyurl[0] ? rmo->proxyurl : NULL;
 
     /* If proxy URL not spec'd on command line (or plugin field), 
        check the environment variable */
     if (!pproxy) {
 	char const *env_http_proxy = getenv ("http_proxy");
 	if (env_http_proxy) {
-	    strncpy(m_options.proxyurl, env_http_proxy, MAX_URL_LEN);
+	    strncpy (rmo->proxyurl, env_http_proxy, MAX_URL_LEN);
 	}
     }
 
     /* Connect to the stream */
-    ret = httplib_sc_connect(&m_sock, m_options.url, pproxy, &m_http_info, 
-			  m_options.useragent, m_options.if_name);
+    ret = httplib_sc_connect (&m_sock, rmo->url, pproxy, &m_http_info, 
+			      rmo->useragent, rmo->if_name);
     if (ret != SR_SUCCESS) {
 	goto RETURN_ERR;
     }
@@ -550,17 +553,17 @@ start_ripping()
 
     /* Initialize file writing code. */
     ret = filelib_init
-	    (GET_INDIVIDUAL_TRACKS(m_options.flags),
-	     GET_COUNT_FILES(m_options.flags),
-	     m_options.count_start,
-	     GET_KEEP_INCOMPLETE(m_options.flags),
-	     GET_SINGLE_FILE_OUTPUT(m_options.flags),
+	    (GET_INDIVIDUAL_TRACKS (rmo->flags),
+	     GET_COUNT_FILES(rmo->flags),
+	     rmo->count_start,
+	     GET_KEEP_INCOMPLETE(rmo->flags),
+	     GET_SINGLE_FILE_OUTPUT(rmo->flags),
 	     m_http_info.content_type, 
-	     m_options.output_directory,
-	     m_options.output_pattern,
-	     m_options.showfile_pattern,
-	     GET_SEPERATE_DIRS(m_options.flags),
-	     GET_DATE_STAMP(m_options.flags),
+	     rmo->output_directory,
+	     rmo->output_pattern,
+	     rmo->showfile_pattern,
+	     GET_SEPERATE_DIRS(rmo->flags),
+	     GET_DATE_STAMP(rmo->flags),
 	     m_http_info.icy_name);
     if (ret != SR_SUCCESS)
 	goto RETURN_ERR;
@@ -572,9 +575,9 @@ start_ripping()
 
     /* Start up external program to get metadata. */
     m_ripinfo.ep = 0;
-    if (GET_EXTERNAL_CMD(m_options.flags)) {
-	debug_printf ("Spawn external: %s\n", m_options.ext_cmd);
-	m_ripinfo.ep = spawn_external (m_options.ext_cmd);
+    if (GET_EXTERNAL_CMD(rmo->flags)) {
+	debug_printf ("Spawn external: %s\n", rmo->ext_cmd);
+	m_ripinfo.ep = spawn_external (rmo->ext_cmd);
 	if (m_ripinfo.ep) {
 	    debug_printf ("Spawn external succeeded\n");
 	} else {
@@ -587,16 +590,16 @@ start_ripping()
      */
     ripstream_destroy();
     ret = ripstream_init(m_sock, 
-			 GET_MAKE_RELAY(m_options.flags),
-			 m_options.timeout, 
+			 GET_MAKE_RELAY(rmo->flags),
+			 rmo->timeout, 
 			 m_http_info.icy_name,
-			 m_options.dropcount,
-			 &m_options.sp_opt,
+			 rmo->dropcount,
+			 &rmo->sp_opt,
 			 m_ripinfo.bitrate, 
 			 m_http_info.meta_interval,
 			 m_http_info.content_type, 
-			 GET_ADD_ID3V1(m_options.flags),
-			 GET_ADD_ID3V2(m_options.flags),
+			 GET_ADD_ID3V1(rmo->flags),
+			 GET_ADD_ID3V2(rmo->flags),
 			 m_ripinfo.ep);
     if (ret != SR_SUCCESS) {
 	ripstream_destroy();
@@ -610,22 +613,22 @@ start_ripping()
      * the stream we are relaying.. this just sets the header to 
      * something very simulare to what we got from the stream.
      */
-    if (GET_MAKE_RELAY (m_options.flags)) {
+    if (GET_MAKE_RELAY (rmo->flags)) {
 	int new_port = 0;
-	ret = relaylib_init(GET_SEARCH_PORTS(m_options.flags), 
-			    m_options.relay_port, m_options.max_port, 
-			    &new_port, m_options.if_name, 
-			    m_options.max_connections, m_options.relay_ip,
+	ret = relaylib_init(GET_SEARCH_PORTS(rmo->flags), 
+			    rmo->relay_port, rmo->max_port, 
+			    &new_port, rmo->if_name, 
+			    rmo->max_connections, rmo->relay_ip,
 			    m_http_info.meta_interval != NO_META_INTERVAL);
 	if (ret != SR_SUCCESS) {
 		goto RETURN_ERR;
 	}
 
-	m_options.relay_port = new_port;
+	rmo->relay_port = new_port;
 	start_relay(m_http_info.content_type);
 
-	if (0 != m_options.pls_file[0]) {
-		create_pls_file(new_port);
+	if (0 != rmo->pls_file[0]) {
+		create_pls_file (rmo);
 	}
     }
     post_status(RM_STATUS_BUFFERING);
@@ -642,7 +645,7 @@ RETURN_ERR:
 
 error_code
 rip_manager_start (void (*status_callback)(int message, void *data), 
-			     RIP_MANAGER_OPTIONS *options)
+			     RIP_MANAGER_OPTIONS *rmo)
 {
     int ret = 0;
     m_started_sem = threadlib_create_sem();
@@ -651,9 +654,9 @@ rip_manager_start (void (*status_callback)(int message, void *data),
 
     m_ripping = TRUE;
 
-    register_codesets (&options->cs_opt);
+    register_codesets (&rmo->cs_opt);
 
-    if (!options)
+    if (!rmo)
 	return SR_ERROR_INVALID_PARAM;
 
     socklib_init();
@@ -663,10 +666,12 @@ rip_manager_start (void (*status_callback)(int message, void *data),
     m_bytes_ripped = 0;
 
     /* Initialize the parsing rules */
-    init_metadata_parser (options->rules_file);
+    init_metadata_parser (rmo->rules_file);
 
+#if defined (commentout)
     /* Get a local copy of the options passed */
     memcpy(&m_options, options, sizeof(RIP_MANAGER_OPTIONS));
+#endif
 
     /* Start the ripping thread */
     m_ripping = TRUE;
@@ -701,11 +706,11 @@ overwrite_opt_to_string (enum OverwriteOpt oo)
 }
 
 void
-set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
+set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *rmo)
 {
-    m_opt->relay_port = 8000;
-    m_opt->max_port = 18000;
-    m_opt->flags = OPT_AUTO_RECONNECT | 
+    rmo->relay_port = 8000;
+    rmo->max_port = 18000;
+    rmo->flags = OPT_AUTO_RECONNECT | 
 	    OPT_SEPERATE_DIRS | 
 	    OPT_SEARCH_PORTS |
 	    /* OPT_ADD_ID3V1 | -- removed starting 1.62-beta-2 */
@@ -715,36 +720,36 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
     /* GCS FIX: What is the difference between this timeout 
        and the one used in setsockopt()? */
 #if defined (commentout)
-    m_opt->timeout = 0;
+    rmo->timeout = 0;
 #endif
-    m_opt->timeout = 15;
-    m_opt->max_connections = 1;
+    rmo->timeout = 15;
+    rmo->max_connections = 1;
 
-    strcpy(m_opt->output_directory, "./");
-    m_opt->output_pattern[0] = 0;
-    m_opt->relay_ip[0] = 0;
-    m_opt->pls_file[0] = 0;
-    m_opt->proxyurl[0] = 0;
-    m_opt->url[0] = 0;
-    m_opt->showfile_pattern[0] = 0;
-    m_opt->rules_file[0] = 0;
-    strcpy(m_opt->useragent, "sr-POSIX/" SRVERSION);
-    m_opt->overwrite = OVERWRITE_LARGER;
-    m_opt->dropcount = 0;
-    m_opt->ext_cmd[0] = 0;
+    strcpy(rmo->output_directory, "./");
+    rmo->output_pattern[0] = 0;
+    rmo->relay_ip[0] = 0;
+    rmo->pls_file[0] = 0;
+    rmo->proxyurl[0] = 0;
+    rmo->url[0] = 0;
+    rmo->showfile_pattern[0] = 0;
+    rmo->rules_file[0] = 0;
+    strcpy(rmo->useragent, "sr-POSIX/" SRVERSION);
+    rmo->overwrite = OVERWRITE_LARGER;
+    rmo->dropcount = 0;
+    rmo->ext_cmd[0] = 0;
 
     // Defaults for splitpoint
     // Times are in ms
-    m_opt->sp_opt.xs = 1;
-    m_opt->sp_opt.xs_min_volume = 1;
-    m_opt->sp_opt.xs_silence_length = 1000;
-    m_opt->sp_opt.xs_search_window_1 = 6000;
-    m_opt->sp_opt.xs_search_window_2 = 6000;
-    m_opt->sp_opt.xs_offset = 0;
-    m_opt->sp_opt.xs_padding_1 = 300;
-    m_opt->sp_opt.xs_padding_2 = 300;
+    rmo->sp_opt.xs = 1;
+    rmo->sp_opt.xs_min_volume = 1;
+    rmo->sp_opt.xs_silence_length = 1000;
+    rmo->sp_opt.xs_search_window_1 = 6000;
+    rmo->sp_opt.xs_search_window_2 = 6000;
+    rmo->sp_opt.xs_offset = 0;
+    rmo->sp_opt.xs_padding_1 = 300;
+    rmo->sp_opt.xs_padding_2 = 300;
 
     // Defaults for codeset
-    memset (&m_opt->cs_opt, 0, sizeof(CODESET_OPTIONS));
-    set_codesets_default (&m_opt->cs_opt);
+    memset (&rmo->cs_opt, 0, sizeof(CODESET_OPTIONS));
+    set_codesets_default (&rmo->cs_opt);
 }
