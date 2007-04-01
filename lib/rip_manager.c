@@ -679,10 +679,8 @@ rip_manager_start (void (*status_callback)(int message, void *data),
 
     /* Start the ripping thread */
     m_ripping = TRUE;
-    printf ("rip_manager_start RMO_URL = %s\n", rmo->url);
-    if ((ret = threadlib_beginthread(&m_hthread, ripthread, (void*) rmo)) != SR_SUCCESS)
-	return ret;
-    return SR_SUCCESS;
+    ret = threadlib_beginthread (&m_hthread, ripthread, (void*) rmo);
+    return ret;
 }
 
 /* Winamp plugin needs to get content type */

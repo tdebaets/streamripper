@@ -656,10 +656,15 @@ xmms w/ and w/o metadata
 mpg123
 mpg321
 ogg123
-bmp (http://www.sosdg.org/~larne/w/BMP_Homepage)
+bmp, bmpx (http://bmp.beep-media-player.org)
 lamip (http://fondriest.frederic.free.fr/realisations/lamip/index.html)
-RhythmBox (gnome), Amarok (KDE), or Juk(KDE)
+RhythmBox (gnome)
+Amarok (KDE)
+Juk (KDE)
+Zinf
+Audacious (http://audacious-media-player.org)
 wget -O - http://stream:8000 | madplay -
+Quod Libet (http://www.sacredchao.net/quodlibet/wiki/Download)
 
 Mostly things work, except mpg321 which seems to glitch even
 if I am connecting directly to the stream (i.e. without

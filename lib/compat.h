@@ -66,8 +66,8 @@
 // Thread Routines
 #if WIN32
 #define THANDLE	HANDLE
-#define BeginThread(_thandle_, callback, args) \
-               {_thandle_ = (THANDLE)_beginthread((void*) callback, 0, (void*) args);}
+#define BeginThread(_thandle_, callback, arg) \
+               {_thandle_ = (THANDLE)_beginthread((void*) callback, 0, (void*) arg);}
 #define WaitForThread(_thandle_)	WaitForSingleObject(_thandle_, INFINITE);
 #define DestroyThread(_thandle_)	CloseHandle(_thandle_)
 
@@ -81,8 +81,9 @@
 #elif __UNIX__
 
 #define THANDLE		pthread_t
-#define BeginThread(_thandle_, callback) pthread_create(&_thandle_, NULL, \
-                          (void *)callback, (void *)NULL)
+#define BeginThread(_thandle_, callback, arg) \
+               pthread_create(&_thandle_, NULL, \
+                          (void *)callback, (void *)arg)
 #define WaitForThread(_thandle_)	pthread_join(_thandle_, NULL)
 #define DestroyThread(_thandle_)	// is there one for unix?
 #define HSEM		sem_t
@@ -90,7 +91,7 @@
 #define	SemWait(_s_)	sem_wait(&(_s_))
 #define	SemPost(_s_)	sem_post(&(_s_))
 #define	SemDestroy(_s_)	sem_destroy(&(_s_))
-#define Sleep(x) 	usleep(1000*x)	
+#define Sleep(x) 	usleep(1000*x)
 
 #endif
 

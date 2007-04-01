@@ -30,6 +30,7 @@
 #include "threadlib.h"
 #include "debug.h"
 
+#if defined (commentout)
 #if WIN32
 	#define beginthread(thread, callback) \
 		_beginthread((void *)callback, 0, (void *)NULL)
@@ -39,15 +40,15 @@
 		pthread_create(thread, NULL, \
                           (void *)callback, (void *)NULL)
 #endif
+#endif
 
-
-/*********************************************************************************
+/******************************************************************************
  * Public functions
- *********************************************************************************/
+ *****************************************************************************/
 error_code
-threadlib_beginthread (THREAD_HANDLE *thread, void (*callback)(void *), void* args)
+threadlib_beginthread (THREAD_HANDLE *thread, void (*callback)(void *), void* arg)
 {
-    BeginThread(thread->thread_handle, callback, args);
+    BeginThread (thread->thread_handle, callback, arg);
     //if (thread->thread_handle == NULL)	// don't feel like porting this
     //	return SR_ERROR_CANT_CREATE_THREAD;
 
@@ -57,7 +58,7 @@ threadlib_beginthread (THREAD_HANDLE *thread, void (*callback)(void *), void* ar
 void
 threadlib_waitforclose(THREAD_HANDLE *thread)
 {
-	WaitForThread(thread->thread_handle);
+    WaitForThread(thread->thread_handle);
 }
 
 HSEM threadlib_create_sem()
