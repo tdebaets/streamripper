@@ -402,10 +402,10 @@ relaylib_start ()
 
     m_running = TRUE;
     // Spawn on a thread so it's non-blocking
-    if ((ret = threadlib_beginthread(&m_hthread, thread_accept)) != SR_SUCCESS)
+    if ((ret = threadlib_beginthread(&m_hthread, thread_accept, 0)) != SR_SUCCESS)
         return ret;
 
-    if ((ret = threadlib_beginthread(&m_hthread2, thread_send)) != SR_SUCCESS)
+    if ((ret = threadlib_beginthread(&m_hthread2, thread_send, 0)) != SR_SUCCESS)
         return ret;
 
     return SR_SUCCESS;

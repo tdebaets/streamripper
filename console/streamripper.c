@@ -62,7 +62,8 @@ time_t				m_stop_time = 0;
  * call as well, but i needed this for window'd apps.
  */
 
-int main(int argc, char* argv[])
+int
+main (int argc, char* argv[])
 {
     int ret;
     time_t temp_time;
@@ -105,7 +106,8 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void catch_sig(int code)
+void
+catch_sig(int code)
 {
     if (!m_dont_print)
 	fprintf(stderr, "\n");
@@ -120,7 +122,8 @@ void catch_sig(int code)
  * is for handling the pretty formating stuff otherwise it could be
  * much smaller.
  */
-void print_status()
+void
+print_status()
 {
     char status_str[128];
     char filesize_str[64];
@@ -197,7 +200,8 @@ void print_status()
  * for the most part this function just checks what kind of message we got
  * and prints out stuff to the screen.
  */
-void rip_callback(int message, void *data)
+void
+rip_callback(int message, void *data)
 {
     RIP_MANAGER_INFO *info;
     ERROR_INFO *err;
@@ -228,7 +232,8 @@ void rip_callback(int message, void *data)
     }
 }
 
-void print_usage()
+void
+print_usage()
 {
     fprintf(stderr, "Usage: streamripper URL [OPTIONS]\n");
     fprintf(stderr, "Opts: -h             - Print this listing\n");
@@ -282,7 +287,8 @@ void print_usage()
  * port of it under Win32.. there probably is one, maybe i didn't look 
  * hard enough. 
  */
-void parse_arguments(int argc, char **argv)
+void
+parse_arguments(int argc, char **argv)
 {
     int i;
     char *c;
@@ -296,7 +302,7 @@ void parse_arguments(int argc, char **argv)
     set_rip_manager_options_defaults (&m_opt);
 
     // Get URL
-    strncpy(m_opt.url, argv[1], MAX_URL_LEN);
+    strncpy (m_opt.url, argv[1], MAX_URL_LEN);
 
     // Parse arguments
     for(i = 1; i < argc; i++) {

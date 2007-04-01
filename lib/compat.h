@@ -66,8 +66,8 @@
 // Thread Routines
 #if WIN32
 #define THANDLE	HANDLE
-#define BeginThread(_thandle_, callback) \
-               {_thandle_ = (THANDLE)_beginthread((void *)callback, 0, (void *)NULL);}
+#define BeginThread(_thandle_, callback, args) \
+               {_thandle_ = (THANDLE)_beginthread((void*) callback, 0, (void*) args);}
 #define WaitForThread(_thandle_)	WaitForSingleObject(_thandle_, INFINITE);
 #define DestroyThread(_thandle_)	CloseHandle(_thandle_)
 

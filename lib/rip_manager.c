@@ -57,7 +57,7 @@
 static void			ripthread(void *bla);
 static error_code		start_relay(int content_type);
 static void			post_status(int status);
-static error_code		start_ripping();
+static error_code start_ripping (RIP_MANAGER_OPTIONS* rmo);
 static void			destroy_subsystems();
 
 
@@ -339,14 +339,17 @@ ripthread (void *input_arg)
 {
     error_code ret;
     RIP_MANAGER_OPTIONS* rmo = (RIP_MANAGER_OPTIONS*) input_arg;
+    debug_printf ("ripthread RMO_URL = %s\n", rmo->url);
 
-    if ((ret = start_ripping()) != SR_SUCCESS) {
-	threadlib_signal_sem(&m_started_sem);
+    if ((ret = start_ripping(rmo)) != SR_SUCCESS) {
+	debug_printf ("Ripthread did start_ripping()\n");
+	threadlib_signal_sem (&m_started_sem);
 	post_error(ret);
 	goto DONE;
     }
     m_status_callback(RM_STARTED, (void *)NULL);
     post_status(RM_STATUS_BUFFERING);
+    debug_printf ("Ripthread did initialization\n");
     threadlib_signal_sem(&m_started_sem);
 
     while (TRUE) {
@@ -390,12 +393,9 @@ ripthread (void *input_arg)
 		  ret == SR_ERROR_NO_TRACK_INFO || 
 		  ret == SR_ERROR_SELECT_FAILED) && 
 		 GET_AUTO_RECONNECT (rmo->flags)) {
-	    /*
-	     * Try to reconnect, if thats what the user wants
-	     */
+	    /* Try to reconnect, if thats what the user wants */
 	    post_status(RM_STATUS_RECONNECTING);
-	    while(m_ripping) {
-
+	    while (m_ripping) {
 		// Hopefully this solves a lingering bug 
 		// with auto-reconnects failing to bind to the relay port
 		// (a long with other unknown problems)
@@ -413,7 +413,7 @@ ripthread (void *input_arg)
 		relaylib_shutdown();
 		filelib_shutdown();
 		ripstream_destroy();
-		ret = start_ripping();
+		ret = start_ripping (rmo);
 		if (ret == SR_SUCCESS)
 		    break;
 
@@ -514,11 +514,13 @@ create_pls_file (RIP_MANAGER_OPTIONS* rmo)
     return 0;
 }
 
-error_code
+static error_code
 start_ripping (RIP_MANAGER_OPTIONS* rmo)
 {
     error_code ret;
+
     char *pproxy = rmo->proxyurl[0] ? rmo->proxyurl : NULL;
+    debug_printf ("start_ripping: checkpoint 1\n");
 
     /* If proxy URL not spec'd on command line (or plugin field), 
        check the environment variable */
@@ -528,6 +530,8 @@ start_ripping (RIP_MANAGER_OPTIONS* rmo)
 	    strncpy (rmo->proxyurl, env_http_proxy, MAX_URL_LEN);
 	}
     }
+
+    debug_printf ("start_ripping: checkpoint 2\n");
 
     /* Connect to the stream */
     ret = httplib_sc_connect (&m_sock, rmo->url, pproxy, &m_http_info, 
@@ -675,7 +679,8 @@ rip_manager_start (void (*status_callback)(int message, void *data),
 
     /* Start the ripping thread */
     m_ripping = TRUE;
-    if ((ret = threadlib_beginthread(&m_hthread, ripthread)) != SR_SUCCESS)
+    printf ("rip_manager_start RMO_URL = %s\n", rmo->url);
+    if ((ret = threadlib_beginthread(&m_hthread, ripthread, (void*) rmo)) != SR_SUCCESS)
 	return ret;
     return SR_SUCCESS;
 }
@@ -708,38 +713,28 @@ overwrite_opt_to_string (enum OverwriteOpt oo)
 void
 set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *rmo)
 {
+    rmo->url[0] = 0;
+    rmo->proxyurl[0] = 0;
+    strcpy(rmo->output_directory, "./");
+    rmo->output_pattern[0] = 0;
+    rmo->showfile_pattern[0] = 0;
+    rmo->if_name[0] = 0;
+    rmo->rules_file[0] = 0;
+    rmo->pls_file[0] = 0;
+    rmo->relay_ip[0] = 0;
     rmo->relay_port = 8000;
     rmo->max_port = 18000;
+    rmo->max_connections = 1;
+    rmo->maxMB_rip_size = 0;
     rmo->flags = OPT_AUTO_RECONNECT | 
 	    OPT_SEPERATE_DIRS | 
 	    OPT_SEARCH_PORTS |
 	    /* OPT_ADD_ID3V1 | -- removed starting 1.62-beta-2 */
 	    OPT_ADD_ID3V2 |
 	    OPT_INDIVIDUAL_TRACKS;
-
-    /* GCS FIX: What is the difference between this timeout 
-       and the one used in setsockopt()? */
-#if defined (commentout)
-    rmo->timeout = 0;
-#endif
-    rmo->timeout = 15;
-    rmo->max_connections = 1;
-
-    strcpy(rmo->output_directory, "./");
-    rmo->output_pattern[0] = 0;
-    rmo->relay_ip[0] = 0;
-    rmo->pls_file[0] = 0;
-    rmo->proxyurl[0] = 0;
-    rmo->url[0] = 0;
-    rmo->showfile_pattern[0] = 0;
-    rmo->rules_file[0] = 0;
     strcpy(rmo->useragent, "sr-POSIX/" SRVERSION);
-    rmo->overwrite = OVERWRITE_LARGER;
-    rmo->dropcount = 0;
-    rmo->ext_cmd[0] = 0;
 
-    // Defaults for splitpoint
-    // Times are in ms
+    // Defaults for splitpoint - times are in ms
     rmo->sp_opt.xs = 1;
     rmo->sp_opt.xs_min_volume = 1;
     rmo->sp_opt.xs_silence_length = 1000;
@@ -749,7 +744,19 @@ set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *rmo)
     rmo->sp_opt.xs_padding_1 = 300;
     rmo->sp_opt.xs_padding_2 = 300;
 
+    /* GCS FIX: What is the difference between this timeout 
+       and the one used in setsockopt()? */
+#if defined (commentout)
+    rmo->timeout = 0;
+#endif
+    rmo->timeout = 15;
+    rmo->dropcount = 0;
+
     // Defaults for codeset
     memset (&rmo->cs_opt, 0, sizeof(CODESET_OPTIONS));
     set_codesets_default (&rmo->cs_opt);
+
+    rmo->count_start = 0;
+    rmo->overwrite = OVERWRITE_LARGER;
+    rmo->ext_cmd[0] = 0;
 }

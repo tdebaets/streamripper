@@ -13,7 +13,7 @@ typedef struct THREAD_HANDLEst
 /*********************************************************************************
  * Public functions
  *********************************************************************************/
-extern error_code	threadlib_beginthread(THREAD_HANDLE *thread, void (*callback)(void *));
+error_code threadlib_beginthread (THREAD_HANDLE *thread, void (*callback)(void *), void* args);
 extern BOOL		threadlib_isrunning(THREAD_HANDLE *thread);
 extern void		threadlib_waitforclose(THREAD_HANDLE *thread);
 extern void		threadlib_endthread(THREAD_HANDLE *thread);

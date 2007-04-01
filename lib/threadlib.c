@@ -44,27 +44,18 @@
 /*********************************************************************************
  * Public functions
  *********************************************************************************/
-error_code	threadlib_beginthread(THREAD_HANDLE *thread, void (*callback)(void *));
-BOOL		threadlib_isrunning(THREAD_HANDLE *thread);
-void		threadlib_waitforclose(THREAD_HANDLE *thread);
-void		threadlib_endthread(THREAD_HANDLE *thread);
-
-HSEM		threadlib_create_sem();
-error_code	threadlib_waitfor_sem(HSEM *e);
-error_code	threadlib_signal_sem(HSEM *e);
-void		threadlib_destroy_sem(HSEM *e);
-
-
-error_code threadlib_beginthread(THREAD_HANDLE *thread, void (*callback)(void *))
+error_code
+threadlib_beginthread (THREAD_HANDLE *thread, void (*callback)(void *), void* args)
 {
-	BeginThread(thread->thread_handle, callback);
-	//if (thread->thread_handle == NULL)	// don't feel like porting this
-	//	return SR_ERROR_CANT_CREATE_THREAD;
+    BeginThread(thread->thread_handle, callback, args);
+    //if (thread->thread_handle == NULL)	// don't feel like porting this
+    //	return SR_ERROR_CANT_CREATE_THREAD;
 
-	return SR_SUCCESS;
+    return SR_SUCCESS;
 }
 
-void threadlib_waitforclose(THREAD_HANDLE *thread)
+void
+threadlib_waitforclose(THREAD_HANDLE *thread)
 {
 	WaitForThread(thread->thread_handle);
 }
@@ -83,13 +74,16 @@ error_code threadlib_waitfor_sem(HSEM *e)
 	SemWait(*e);
 	return SR_SUCCESS;
 }
-error_code threadlib_signal_sem(HSEM *e)
+
+error_code
+threadlib_signal_sem(HSEM *e)
 {
-	if (!e)
-		return SR_ERROR_INVALID_PARAM;
-	SemPost(*e);
-	return SR_SUCCESS;
+    if (!e)
+	return SR_ERROR_INVALID_PARAM;
+    SemPost(*e);
+    return SR_SUCCESS;
 }
+
 void threadlib_destroy_sem(HSEM *e)
 {
 	DestroyThread(*e);
