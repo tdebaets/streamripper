@@ -39,29 +39,15 @@
 #define SKIN_PREV_TOP		(2*50)
 #define	MAX_SKINS		256
 
-
 /**********************************************************************************
  * Private functions
  **********************************************************************************/
-static BOOL browse_for_folder(HWND hwnd, const char *title, UINT flags, char *folder, long foldersize);
-static BOOL get_desktop_folder(char *path);
 static LRESULT CALLBACK con_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK pat_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK splitting_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-static LRESULT CALLBACK options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, RIP_MANAGER_OPTIONS* rmo, int confile);
 static LRESULT CALLBACK external_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-static void gui_set_file_opts(HWND hWnd, RIP_MANAGER_OPTIONS* rmo, BOOL from_gui);
-static void gui_set_pat_opts(HWND hWnd, RIP_MANAGER_OPTIONS* rmo, BOOL from_gui);
-static void gui_set_conn_opts (HWND hWnd, RIP_MANAGER_OPTIONS* rmo, BOOL from_gui);
-static void gui_set_splitting_opts(HWND hWnd, RIP_MANAGER_OPTIONS* rmo, BOOL from_gui);
-static void gui_set_external_opts(HWND hWnd, RIP_MANAGER_OPTIONS* rmo, BOOL from_gui);
-static HPROPSHEETPAGE create_prop_sheet_page(HINSTANCE inst, DWORD iddres, DLGPROC dlgproc);
-static void add_useragent_strings();
-static void add_codeset_strings();
-static BOOL get_skin_list();
-static void free_skin_list();
 
 /**********************************************************************************
  * Private Vars
@@ -288,6 +274,7 @@ options_dialog_show (HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *rmo, GUI_
     //m_opt = opt;
     m_guiOpt = guiOpt;
 
+    debug_printf ("options_dialog_show checkpoint 1\n");
     sprintf(szCaption, "Streamripper Settings v%s", SRVERSION);
     //options_load (m_opt, m_guiOpt);
     hPage[0] = create_prop_sheet_page(inst, IDD_PROPPAGE_CON, con_dlg);
@@ -296,6 +283,7 @@ options_dialog_show (HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *rmo, GUI_
     hPage[3] = create_prop_sheet_page(inst, IDD_PROPPAGE_SKIN, skin_dlg);
     hPage[4] = create_prop_sheet_page(inst, IDD_PROPPAGE_SPLITTING, splitting_dlg);
     hPage[5] = create_prop_sheet_page(inst, IDD_PROPPAGE_EXTERNAL, external_dlg);
+    debug_printf ("options_dialog_show checkpoint 2a\n");
     memset (&psh, 0, sizeof(PROPSHEETHEADER));
     psh.dwSize = sizeof(PROPSHEETHEADER);
     psh.dwFlags = PSH_DEFAULT;
@@ -305,7 +293,9 @@ options_dialog_show (HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *rmo, GUI_
     psh.nPages = NUM_PROP_PAGES;
     psh.nStartPage = m_last_sheet;
     psh.phpage = hPage;
+    debug_printf ("options_dialog_show checkpoint 2b\n");
     ret = PropertySheet (&psh);
+    debug_printf ("options_dialog_show checkpoint 3\n");
     if (ret == -1) {
 	char s[255];
 	sprintf(s, "There was an error while attempting to load the options dialog\r\n"
@@ -322,8 +312,9 @@ options_dialog_show (HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *rmo, GUI_
 	}
 	options_save (rmo, m_guiOpt);
     }
-
+    debug_printf ("options_dialog_show checkpoint 4\n");
     free_skin_list ();
+    debug_printf ("options_dialog_show checkpoint 5\n");
 }
 
 void
@@ -627,6 +618,148 @@ gui_set_external_opts (HWND hWnd, RIP_MANAGER_OPTIONS* rmo, BOOL from_gui)
     }
 }
 
+/* confile == 1  -> con_dlg */
+/* confile == 2  -> file_dlg */
+/* confile == 3  -> pat_dlg */
+/* confile == 4  -> splitting_dlg */
+/* confile == 5  -> external_dlg */
+LRESULT CALLBACK
+options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, 
+	     RIP_MANAGER_OPTIONS* rmo, int confile)
+{
+    int wmId, wmEvent;
+
+    switch(message)
+    {
+    case WM_INITDIALOG:
+	debug_printf ("options_dlg:WM_INITDIALOG (1)\n");
+	add_useragent_strings (hWnd);
+	add_codeset_strings (hWnd, rmo);
+	add_overwrite_complete_strings (hWnd);
+	debug_printf ("options_dlg:WM_INITDIALOG (2)\n");
+
+	switch (confile) {
+	case 1:
+	    gui_set_conn_opts(hWnd, rmo, FALSE);
+	    break;
+	case 2:
+	    gui_set_file_opts(hWnd, rmo, FALSE);
+	    break;
+	case 3:
+	    gui_set_pat_opts(hWnd, rmo, FALSE);
+	    break;
+	case 4:
+	    gui_set_splitting_opts(hWnd, rmo, FALSE);
+	    break;
+	case 5:
+	    gui_set_external_opts(hWnd, rmo, FALSE);
+	    break;
+	}
+	PropSheet_UnChanged(GetParent(hWnd), hWnd);
+
+	return TRUE;
+    case WM_COMMAND:
+	debug_printf ("options_dlg:WM_COMMAND\n");
+	wmId    = LOWORD(wParam); 
+	wmEvent = HIWORD(wParam); 
+	switch(wmId)
+	{
+	case IDC_BROWSE_OUTDIR:
+	    {
+		char temp_dir[SR_MAX_PATH];
+		if (browse_for_folder(hWnd, "Select a folder", 0, temp_dir, SR_MAX_PATH))
+		{
+		    strncpy(rmo->output_directory, temp_dir, SR_MAX_PATH);
+		    SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, rmo->output_directory);
+		}
+		return TRUE;
+	    }
+	case IDC_BROWSE_RIPSINGLE:
+	    {
+		char temp_fn[SR_MAX_PATH];
+		if (browse_for_file(hWnd, "Select a file", 0, temp_fn, SR_MAX_PATH))
+		{
+		    strncpy(rmo->showfile_pattern, temp_fn, SR_MAX_PATH);
+		    SetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, rmo->showfile_pattern);
+		}
+		return TRUE;
+	    }
+	case IDC_CHECK_MAX_BYTES:
+	    {
+		BOOL isset = get_checkbox(hWnd, IDC_CHECK_MAX_BYTES);
+		HWND hwndEdit = GetDlgItem(hWnd, IDC_MAX_BYTES);
+		SendMessage(hwndEdit, EM_SETREADONLY, !isset, 0);
+		PropSheet_Changed(GetParent(hWnd), hWnd);
+		break;
+	    }
+	case IDC_MAKE_RELAY:
+	    {
+		BOOL isset = get_checkbox(hWnd, IDC_MAKE_RELAY);
+		HWND hwndEdit = GetDlgItem(hWnd, IDC_RELAY_PORT_EDIT);
+		SendMessage(hwndEdit, EM_SETREADONLY, !isset, 0);
+		PropSheet_Changed(GetParent(hWnd), hWnd);
+		break;
+	    }
+
+	case IDC_RECONNECT:
+	case IDC_RELAY_PORT_EDIT:
+	case IDC_MAX_BYTES:
+	case IDC_ADD_ID3V1:
+	case IDC_ADD_ID3V2:
+	case IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST:
+	case IDC_PROXY:
+	case IDC_OUTPUT_DIRECTORY:
+	case IDC_LOCALHOST:
+	case IDC_KEEP_INCOMPLETE:
+	case IDC_USERAGENT:
+	case IDC_USE_OLD_PLAYLIST_RET:
+	case IDC_RIP_SINGLE_CHECK:
+	case IDC_RIP_SINGLE_EDIT:
+	case IDC_XS_OFFSET:
+	case IDC_XS_SILENCE_LENGTH:
+	case IDC_XS_SEARCH_WIN_PRE:
+	case IDC_XS_SEARCH_WIN_POST:
+	case IDC_XS_PADDING_PRE:
+	case IDC_XS_PADDING_POST:
+	case IDC_OVERWRITE_COMPLETE:
+	case IDC_RIP_INDIVIDUAL_CHECK:
+	case IDC_PATTERN_EDIT:
+	case IDC_EXTERNAL_COMMAND:
+	case IDC_EXTERNAL_COMMAND_CHECK:
+	    PropSheet_Changed(GetParent(hWnd), hWnd);
+	    break;
+	}
+	break;
+    case WM_NOTIFY:
+	{
+	    NMHDR* phdr = (NMHDR*) lParam;
+	    debug_printf ("options_dlg:WM_NOTIFY\n");
+	    switch (phdr->code)
+	    {
+	    case PSN_APPLY:
+		switch (confile) {
+		case 1:
+		    gui_set_conn_opts (hWnd, rmo, TRUE);
+		    break;
+		case 2:
+		    gui_set_file_opts (hWnd, rmo, TRUE);
+		    break;
+		case 3:
+		    gui_set_pat_opts (hWnd, rmo, TRUE);
+		    break;
+		case 4:
+		    gui_set_splitting_opts (hWnd, rmo, TRUE);
+		    break;
+		case 5:
+		    gui_set_external_opts (hWnd, rmo, TRUE);
+		    break;
+		}
+	    }
+	}
+    }
+    return FALSE;
+}
+
 // These are wrappers for property page callbacks
 // bassicly i didn't want to copy past the entire dialog proc 
 // it'll dispatch the calls forward with a confile boolean which tells if
@@ -635,31 +768,36 @@ gui_set_external_opts (HWND hWnd, RIP_MANAGER_OPTIONS* rmo, BOOL from_gui)
 LRESULT CALLBACK
 con_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    RIP_MANAGER_OPTIONS* rmo = &m_rmo;
+    RIP_MANAGER_OPTIONS* rmo = &g_rmo;
+    debug_printf ("Calling options_dlg(1)\n");
     return options_dlg(hWnd, message, wParam, lParam, rmo, 1);
 }
 LRESULT CALLBACK
 file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    RIP_MANAGER_OPTIONS* rmo = &m_rmo;
+    RIP_MANAGER_OPTIONS* rmo = &g_rmo;
+    debug_printf ("Calling options_dlg(2)\n");
     return options_dlg(hWnd, message, wParam, lParam, rmo, 2);
 }
 LRESULT CALLBACK
 pat_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    RIP_MANAGER_OPTIONS* rmo = &m_rmo;
+    RIP_MANAGER_OPTIONS* rmo = &g_rmo;
+    debug_printf ("Calling options_dlg(3)\n");
     return options_dlg(hWnd, message, wParam, lParam, rmo, 3);
 }
 LRESULT CALLBACK
 splitting_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    RIP_MANAGER_OPTIONS* rmo = &m_rmo;
+    RIP_MANAGER_OPTIONS* rmo = &g_rmo;
+    debug_printf ("Calling options_dlg(4)\n");
     return options_dlg(hWnd, message, wParam, lParam, rmo, 4);
 }
 LRESULT CALLBACK
 external_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    RIP_MANAGER_OPTIONS* rmo = &m_rmo;
+    RIP_MANAGER_OPTIONS* rmo = &g_rmo;
+    debug_printf ("Calling options_dlg(5)\n");
     return options_dlg(hWnd, message, wParam, lParam, rmo, 5);
 }
 
@@ -754,145 +892,6 @@ skin_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		    assert (m_curskin >= 0 && m_curskin < m_skin_list_size);
 		    UpdateWindow (hWnd);
 		    InvalidateRect (hWnd, NULL, FALSE);
-		}
-	    }
-	}
-    }
-    return FALSE;
-}
-
-
-/* confile == 1  -> con_dlg */
-/* confile == 2  -> file_dlg */
-/* confile == 3  -> pat_dlg */
-/* confile == 4  -> splitting_dlg */
-/* confile == 5  -> external_dlg */
-LRESULT CALLBACK
-options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, 
-	     RIP_MANAGER_OPTIONS* rmo, int confile)
-{
-    int wmId, wmEvent;
-
-    switch(message)
-    {
-    case WM_INITDIALOG:
-	add_useragent_strings(hWnd);
-	add_codeset_strings(hWnd);
-	add_overwrite_complete_strings(hWnd);
-
-	switch (confile) {
-	case 1:
-	    gui_set_conn_opts(hWnd, rmo, FALSE);
-	    break;
-	case 2:
-	    gui_set_file_opts(hWnd, rmo, FALSE);
-	    break;
-	case 3:
-	    gui_set_pat_opts(hWnd, rmo, FALSE);
-	    break;
-	case 4:
-	    gui_set_splitting_opts(hWnd, rmo, FALSE);
-	    break;
-	case 5:
-	    gui_set_external_opts(hWnd, rmo, FALSE);
-	    break;
-	}
-	PropSheet_UnChanged(GetParent(hWnd), hWnd);
-
-	return TRUE;
-    case WM_COMMAND:
-	wmId    = LOWORD(wParam); 
-	wmEvent = HIWORD(wParam); 
-	switch(wmId)
-	{
-	case IDC_BROWSE_OUTDIR:
-	    {
-		char temp_dir[SR_MAX_PATH];
-		if (browse_for_folder(hWnd, "Select a folder", 0, temp_dir, SR_MAX_PATH))
-		{
-		    strncpy(rmo->output_directory, temp_dir, SR_MAX_PATH);
-		    SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, rmo->output_directory);
-		}
-		return TRUE;
-	    }
-	case IDC_BROWSE_RIPSINGLE:
-	    {
-		char temp_fn[SR_MAX_PATH];
-		if (browse_for_file(hWnd, "Select a file", 0, temp_fn, SR_MAX_PATH))
-		{
-		    strncpy(rmo->showfile_pattern, temp_fn, SR_MAX_PATH);
-		    SetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, rmo->showfile_pattern);
-		}
-		return TRUE;
-	    }
-	case IDC_CHECK_MAX_BYTES:
-	    {
-		BOOL isset = get_checkbox(hWnd, IDC_CHECK_MAX_BYTES);
-		HWND hwndEdit = GetDlgItem(hWnd, IDC_MAX_BYTES);
-		SendMessage(hwndEdit, EM_SETREADONLY, !isset, 0);
-		PropSheet_Changed(GetParent(hWnd), hWnd);
-		break;
-	    }
-	case IDC_MAKE_RELAY:
-	    {
-		BOOL isset = get_checkbox(hWnd, IDC_MAKE_RELAY);
-		HWND hwndEdit = GetDlgItem(hWnd, IDC_RELAY_PORT_EDIT);
-		SendMessage(hwndEdit, EM_SETREADONLY, !isset, 0);
-		PropSheet_Changed(GetParent(hWnd), hWnd);
-		break;
-	    }
-
-	case IDC_RECONNECT:
-	case IDC_RELAY_PORT_EDIT:
-	case IDC_MAX_BYTES:
-	case IDC_ADD_ID3V1:
-	case IDC_ADD_ID3V2:
-	case IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST:
-	case IDC_PROXY:
-	case IDC_OUTPUT_DIRECTORY:
-	case IDC_LOCALHOST:
-	case IDC_KEEP_INCOMPLETE:
-	case IDC_USERAGENT:
-	case IDC_USE_OLD_PLAYLIST_RET:
-	case IDC_RIP_SINGLE_CHECK:
-	case IDC_RIP_SINGLE_EDIT:
-	case IDC_XS_OFFSET:
-	case IDC_XS_SILENCE_LENGTH:
-	case IDC_XS_SEARCH_WIN_PRE:
-	case IDC_XS_SEARCH_WIN_POST:
-	case IDC_XS_PADDING_PRE:
-	case IDC_XS_PADDING_POST:
-	case IDC_OVERWRITE_COMPLETE:
-	case IDC_RIP_INDIVIDUAL_CHECK:
-	case IDC_PATTERN_EDIT:
-	case IDC_EXTERNAL_COMMAND:
-	case IDC_EXTERNAL_COMMAND_CHECK:
-	    PropSheet_Changed(GetParent(hWnd), hWnd);
-	    break;
-	}
-	break;
-    case WM_NOTIFY:
-	{
-	    NMHDR* phdr = (NMHDR*) lParam;
-	    switch (phdr->code)
-	    {
-	    case PSN_APPLY:
-		switch (confile) {
-		case 1:
-		    gui_set_conn_opts (hWnd, rmo, TRUE);
-		    break;
-		case 2:
-		    gui_set_file_opts (hWnd, rmo, TRUE);
-		    break;
-		case 3:
-		    gui_set_pat_opts (hWnd, rmo, TRUE);
-		    break;
-		case 4:
-		    gui_set_splitting_opts (hWnd, rmo, TRUE);
-		    break;
-		case 5:
-		    gui_set_external_opts (hWnd, rmo, TRUE);
-		    break;
 		}
 	    }
 	}

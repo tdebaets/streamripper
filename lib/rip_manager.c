@@ -621,7 +621,7 @@ start_ripping (RIP_MANAGER_OPTIONS* rmo)
      * something very simulare to what we got from the stream.
      */
     if (GET_MAKE_RELAY (rmo->flags)) {
-	int new_port = 0;
+	u_short new_port = 0;
 	ret = relaylib_init(GET_SEARCH_PORTS(rmo->flags), 
 			    rmo->relay_port, rmo->max_port, 
 			    &new_port, rmo->if_name, 

@@ -2,6 +2,7 @@ New for 1.62-beta4
 ------------------
 Sun 04-01-2007
 * Remove shadowed RIP_MANAGER_OPTIONS structure
+* Fix error in thread exit of relay stream
 
 New for 1.62-beta3
 ------------------

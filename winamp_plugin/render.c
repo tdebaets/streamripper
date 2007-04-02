@@ -592,5 +592,6 @@ internal_render_do_paint (SKINDATA skind, HDC outhdc)
 	   0,
 	   SRCCOPY);
 
+    debug_printf ("bltting complete\n");
     return TRUE;
 }

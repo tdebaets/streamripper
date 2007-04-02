@@ -265,8 +265,8 @@ catch_pipe(int code)
 #endif
 
 error_code
-relaylib_init (BOOL search_ports, int relay_port, int max_port, 
-	       int *port_used, char *if_name, int max_connections, 
+relaylib_init (BOOL search_ports, u_short relay_port, u_short max_port, 
+	       u_short *port_used, char *if_name, int max_connections, 
 	       char *relay_ip, int have_metadata)
 {
     int ret;
@@ -333,8 +333,10 @@ try_port (u_short port, char *if_name, char *relay_ip)
     struct sockaddr_in local;
 
     m_listensock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
-    if (m_listensock == SOCKET_ERROR)
+    if (m_listensock == SOCKET_ERROR) {
+	debug_printf ("try_port(%d) failed socket() call\n", port);
         return SR_ERROR_SOCK_BASE;
+    }
     make_nonblocking(m_listensock);
 
     if ('\0' == *relay_ip) {
@@ -358,6 +360,7 @@ try_port (u_short port, char *if_name, char *relay_ip)
                         
     if (bind(m_listensock, (struct sockaddr *)&local, sizeof(local)) == SOCKET_ERROR)
     {
+	debug_printf ("try_port(%d) failed bind() call\n", port);
         closesocket(m_listensock);
         m_listensock = SOCKET_ERROR;
         return SR_ERROR_CANT_BIND_ON_PORT;
@@ -365,14 +368,15 @@ try_port (u_short port, char *if_name, char *relay_ip)
         
     if (listen(m_listensock, 1) == SOCKET_ERROR)
     {
+	debug_printf ("try_port(%d) failed listen() call\n", port);
         closesocket(m_listensock);
         m_listensock = SOCKET_ERROR;
         return SR_ERROR_SOCK_BASE;
     }
 
+    debug_printf ("try_port(%d) succeeded\n", port);
     return SR_SUCCESS;
 }
-
 
 void
 relaylib_shutdown ()
@@ -429,7 +433,7 @@ thread_accept (void *notused)
 
     debug_printf("thread_accept:start\n");
 
-    while(m_running)
+    while (m_running)
     {
         fd_set fds;
         struct timeval tv;
@@ -438,6 +442,7 @@ thread_accept (void *notused)
 	//   have a connection active
         // when a connection gets dropped, or when streamripper shuts down
         //   this event will get signaled
+	debug_printf("thread_accept:waiting on m_sem_not_connected\n");
         threadlib_waitfor_sem (&m_sem_not_connected);
         if (!m_running) {
 	    debug_printf("thread_accept:exit (no longer m_running)\n");
@@ -453,6 +458,7 @@ thread_accept (void *notused)
             FD_SET (m_listensock, &fds);
             tv.tv_sec = 1;
             tv.tv_usec = 0;
+	    debug_printf("thread_accept:calling select()\n");
             ret = select (m_listensock + 1, &fds, NULL, NULL, &tv);
             if (ret == 1) {
                 unsigned long num_connected;
@@ -465,6 +471,7 @@ thread_accept (void *notused)
                     continue;
                 }
                 /* Check for connections */
+		debug_printf ("Calling accept()\n");
                 newsock = accept (m_listensock, (struct sockaddr *)&client, &iAddrSize);
                 if (newsock != SOCKET_ERROR) {
                     // Got successful accept
