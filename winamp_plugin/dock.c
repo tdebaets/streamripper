@@ -55,7 +55,6 @@ VOID dock_do_mousemove(HWND hwnd, LONG wparam, LONG lparam);
 VOID dock_do_lbuttondown(HWND hwnd, LONG wparam, LONG lparam);
 VOID dock_do_lbuttonup(HWND hwnd, LONG wparam, LONG lparam);
 VOID dock_show_window(HWND hwnd, int nCmdShow);
-BOOL dock_unhook_winamp();
 
 /*****************************************************************************
  * Private functions

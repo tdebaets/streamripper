@@ -54,7 +54,8 @@ static void stop_button_pressed();
 static void populate_history_popup (void);
 static void insert_riplist (char* url, int pos);
 
-static RIP_MANAGER_OPTIONS	m_rmoOpt;
+RIP_MANAGER_OPTIONS	m_rmo;
+
 static GUI_OPTIONS		m_guiOpt;
 static RIP_MANAGER_INFO		m_rmiInfo;
 static HWND			m_hwnd;
@@ -110,8 +111,8 @@ init ()
     }
 
     winamp_init (g_plugin.hDllInstance);
-    set_rip_manager_options_defaults (&m_rmoOpt);
-    options_load (&m_rmoOpt, &m_guiOpt);
+    set_rip_manager_options_defaults (&m_rmo);
+    options_load (&m_rmo, &m_guiOpt);
 
     if (!m_guiOpt.m_enabled)
 	return 0;
@@ -212,7 +213,7 @@ config ()
 	      g_plugin.hwndParent,
 	      EnableDlgProc);
 
-    options_save(&m_rmoOpt, &m_guiOpt);
+    options_save(&m_rmo, &m_guiOpt);
     if (m_guiOpt.m_enabled) {
 	if (!prev_enabled) {
 	    init();
@@ -226,17 +227,21 @@ config ()
 void
 quit()
 {
-    options_save (&m_rmoOpt, &m_guiOpt);
+    options_save (&m_rmo, &m_guiOpt);
     if (m_bRipping)
 	rip_manager_stop();
 
     dock_unhook_winamp();
 
+    debug_printf ("Going to render_destroy()...\n");
     render_destroy();
+    debug_printf ("Going to DestroyWindow()...\n");
     DestroyWindow(m_hwnd);
     Shell_NotifyIcon(NIM_DELETE, &m_nid);
     DestroyIcon(m_nid.hIcon);
+    debug_printf ("Going to UnregisterClass()...\n");
     UnregisterClass(m_szWindowClass, g_plugin.hDllInstance); // unregister window class
+    debug_printf ("Finished UnregisterClass()\n");
 }
 
 void
@@ -284,27 +289,24 @@ url_is_relay (char* url)
 {
     char relay_url[SR_MAX_PATH];
     compose_relay_url (relay_url, m_guiOpt.localhost, 
-			m_rmoOpt.relay_port, 
+			m_rmo.relay_port, 
 			rip_manager_get_content_type());
     debug_printf ("Comparing %s vs rly %s\n", url, relay_url);
     return (!strcmp(relay_url, url));
 }
 
 BOOL
-stream_loaded (void)
+url_is_stream (char* url)
 {
-    return (strchr(m_rmoOpt.url, ':') != 0);
+    return (strchr(url, ':') != 0);
 }
 
 void
 set_ripping_url (char* url)
 {
     if (url) {
-	strcpy(m_rmoOpt.url, url);
-    }
-    if (stream_loaded()) {
-	debug_printf ("IDR_STREAMNAME:Press start to rip %s\n", m_rmoOpt.url);
-	render_set_display_data (IDR_STREAMNAME, "Press start to rip %s", m_rmoOpt.url);
+	debug_printf ("IDR_STREAMNAME:Press start to rip %s\n", url);
+	render_set_display_data (IDR_STREAMNAME, "Press start to rip %s", url);
 	start_button_enable ();
     } else {
 	debug_printf ("IDR_STREAMNAME:No stream loaded\n");
@@ -319,20 +321,27 @@ UpdateNotRippingDisplay (HWND hwnd)
     WINAMP_INFO winfo;
 
     debug_printf ("UNRD begin\n");
-    if (winamp_get_info(&winfo, m_guiOpt.use_old_playlist_ret)) {
-        debug_printf ("UNRD got winamp stream\n");
-	if (url_is_relay (winfo.url)) {
+    if (winamp_get_info (&winfo, m_guiOpt.use_old_playlist_ret)) {
+        debug_printf ("UNRD got winamp stream: %s\n", winfo.url);
+	if (!strcmp (winfo.url, m_winamp_stream_cache)) {
+	    debug_printf ("UNRD return - cached\n");
 	    return;
 	}
-	if (stream_loaded()) {
-	    if (!strcmp (winfo.url, m_winamp_stream_cache)) {
-		return;
-	    }
-	}
 	strcpy (m_winamp_stream_cache, winfo.url);
-	debug_printf ("UNRD stream_NOT_loaded\n");
-	insert_riplist (winfo.url, 0);
-	set_ripping_url (winfo.url);
+	
+	if (!url_is_stream(winfo.url) || url_is_relay (winfo.url)) {
+	    debug_printf ("UNRD not_stream/is_relay: %d\n", m_rmo.url[0]);
+	    if (m_rmo.url[0]) {
+		set_ripping_url (m_rmo.url);
+	    } else {
+		set_ripping_url (0);
+	    }
+	} else {
+	    debug_printf ("UNRD setting m_rmo.url: %s\n", m_rmo.url);
+	    strcpy(m_rmo.url, winfo.url);
+	    insert_riplist (winfo.url, 0);
+	    set_ripping_url (winfo.url);
+	}
     }
 }
 
@@ -456,7 +465,7 @@ start_button_pressed()
 {
     int ret;
     debug_printf("start\n");
-    insert_riplist (m_rmoOpt.url, 0);
+    insert_riplist (m_rmo.url, 0);
 
     assert(!m_bRipping);
     render_clear_all_data();
@@ -464,7 +473,7 @@ start_button_pressed()
     render_set_display_data(IDR_STREAMNAME, "Connecting...");
     start_button_disable();
 
-    if ((ret = rip_manager_start(RipCallback, &m_rmoOpt)) != SR_SUCCESS)
+    if ((ret = rip_manager_start(RipCallback, &m_rmo)) != SR_SUCCESS)
     {
 	MessageBox(m_hwnd, rip_manager_get_error_str(ret), "Failed to connect to stream", MB_ICONSTOP);
 	start_button_enable();
@@ -490,7 +499,7 @@ stop_button_pressed()
     m_bRipping = FALSE;
     start_button_enable();
     stop_button_disable();
-    set_ripping_url(0);
+    set_ripping_url(m_rmo.url);
     render_set_prog_bar(FALSE);
 }
 
@@ -498,9 +507,9 @@ void
 options_button_pressed()
 {
     m_doing_options_dialog = TRUE;
-    options_dialog_show (g_plugin.hDllInstance, m_hwnd, &m_rmoOpt, &m_guiOpt);
+    options_dialog_show (g_plugin.hDllInstance, m_hwnd, &m_rmo, &m_guiOpt);
 
-    render_set_button_enabled (m_relaybut, OPT_FLAG_ISSET(m_rmoOpt.flags, OPT_MAKE_RELAY)); 			
+    render_set_button_enabled (m_relaybut, OPT_FLAG_ISSET(m_rmo.flags, OPT_MAKE_RELAY)); 			
     m_doing_options_dialog = FALSE;
 }
 
@@ -515,7 +524,7 @@ void
 relay_pressed()
 {
     winamp_add_relay_to_playlist (m_guiOpt.localhost, 
-	m_rmoOpt.relay_port, 
+	m_rmo.relay_port, 
 	rip_manager_get_content_type());
 }
 
@@ -693,7 +702,7 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
 		{10, 24, 32, 39}
 	    };
 	    m_relaybut = render_add_button(&rt[0],&rt[1], &rt[2], &rt[3], &rt[4], relay_pressed);
-	    render_set_button_enabled(m_relaybut, OPT_FLAG_ISSET(m_rmoOpt.flags, OPT_MAKE_RELAY));
+	    render_set_button_enabled(m_relaybut, OPT_FLAG_ISSET(m_rmo.flags, OPT_MAKE_RELAY));
 	}
 
 	// Set the progress bar
@@ -766,13 +775,15 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
 	    PostMessage(hwnd, WM_MY_TRAY_NOTIFICATION, (WPARAM)NULL, WM_LBUTTONDBLCLK);
 	    break;
 	case ID_MENU_RESET_URL:
-	    set_ripping_url ("");
+	    strcpy(m_rmo.url, "");
+	    set_ripping_url (0);
 	    break;
 	default:
 	    if (wParam >= ID_MENU_HISTORY_LIST && wParam < ID_MENU_HISTORY_LIST + RIPLIST_LEN) {
 		int i = wParam - ID_MENU_HISTORY_LIST;
 		char* url = m_guiOpt.riplist[i];
 		debug_printf ("Setting URL through history list\n");
+		strcpy(m_rmo.url, url);
 		set_ripping_url (url);
 	    }
 	    break;

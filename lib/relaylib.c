@@ -84,7 +84,6 @@ static void thread_accept(void *notused);
 static error_code try_port(u_short port, char *if_name, char *relay_ip);
 static void thread_send(void *notused);
 
-
 #define BUFSIZE (1024)
 
 #define HTTP_HEADER_TIMEOUT 2
@@ -114,7 +113,6 @@ tag_compare (char *str, char *tag)
 {
     int i, a,b;
     int len;
-
 
     len = strlen(tag);
 
@@ -240,12 +238,10 @@ make_nonblocking (int sock)
 #endif
 }
 
-
 BOOL relaylib_isrunning()
 {
     return m_running;
 }
-
 
 error_code
 relaylib_set_response_header(char *http_header)
@@ -276,13 +272,21 @@ relaylib_init (BOOL search_ports, int relay_port, int max_port,
     int ret;
 #ifdef WIN32
     WSADATA wsd;
-
-    if (WSAStartup(MAKEWORD(2,2), &wsd) != 0)
-        return SR_ERROR_CANT_BIND_ON_PORT;
 #endif
 
-    if (relay_port < 1 || !port_used)
+    debug_printf ("relaylib_init()\n");
+
+#ifdef WIN32
+    if (WSAStartup(MAKEWORD(2,2), &wsd) != 0) {
+	debug_printf ("relaylib_init(): SR_ERROR_CANT_BIND_ON_PORT\n");
+        return SR_ERROR_CANT_BIND_ON_PORT;
+    }
+#endif
+
+    if (relay_port < 1 || !port_used) {
+	debug_printf ("relaylib_init(): SR_ERROR_INVALID_PARAM\n");
         return SR_ERROR_INVALID_PARAM;
+    }
 
 #ifndef WIN32
     // catch a SIGPIPE if send fails
@@ -306,13 +310,13 @@ relaylib_init (BOOL search_ports, int relay_port, int max_port,
         max_port = relay_port;
 
     for(;relay_port <= max_port; relay_port++) {
-        ret = try_port((u_short)relay_port, if_name, relay_ip);
+        ret = try_port ((u_short)relay_port, if_name, relay_ip);
         if (ret == SR_ERROR_CANT_BIND_ON_PORT)
             continue;           // Keep searching.
 
         if (ret == SR_SUCCESS) {
             *port_used = relay_port;
-            debug_printf("Relay: Listening on port %d\n", relay_port);
+            debug_printf ("Relay: Listening on port %d\n", relay_port);
             return SR_SUCCESS;
         } else {
             return ret;
@@ -334,13 +338,12 @@ try_port (u_short port, char *if_name, char *relay_ip)
     make_nonblocking(m_listensock);
 
     if ('\0' == *relay_ip) {
-	    if (read_interface(if_name,&local.sin_addr.s_addr) != 0)
-		local.sin_addr.s_addr = htonl(INADDR_ANY);
+	if (read_interface(if_name,&local.sin_addr.s_addr) != 0)
+	    local.sin_addr.s_addr = htonl(INADDR_ANY);
     } else {
-	    he = gethostbyname(relay_ip);
-	    memcpy(&local.sin_addr, he->h_addr_list[0], he->h_length);
+	he = gethostbyname(relay_ip);
+	memcpy(&local.sin_addr, he->h_addr_list[0], he->h_length);
     }
-	    
 
     local.sin_family = AF_INET;
     local.sin_port = htons(port);
@@ -423,7 +426,7 @@ thread_accept (void *notused)
     int icy_metadata;
     char* client_http_header;
 
-    debug_printf("***thread_accept:start\n");
+    debug_printf("thread_accept:start\n");
 
     while(m_running)
     {
@@ -435,8 +438,10 @@ thread_accept (void *notused)
         // when a connection gets dropped, or when streamripper shuts down
         //   this event will get signaled
         threadlib_waitfor_sem (&m_sem_not_connected);
-        if (!m_running)
+        if (!m_running) {
+	    debug_printf("thread_accept:exit (no longer m_running)\n");
             break;
+	}
 
         // Poll once per second, instead of blocking forever in 
 	// accept(), so that we can regain control if relaylib_shutdown() 

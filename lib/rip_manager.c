@@ -440,6 +440,7 @@ ripthread (void *input_arg)
  DONE:
     m_status_callback(RM_DONE, &m_ripinfo);
     m_ripping = FALSE;
+    debug_printf ("ripthread() exiting!\n");
 }
 
 
@@ -447,8 +448,10 @@ void
 rip_manager_stop()
 {
     // Make sure this function isn't getting called twice
-    if (!m_ripping)
-	    return;
+    if (!m_ripping) {
+	debug_printf ("rip_manager_stop() called while not m_ripping\n");
+	return;
+    }
     
     // Make sure the ripping started before we try to stop
     debug_printf ("Waiting for m_started_sem...\n");
@@ -711,6 +714,7 @@ overwrite_opt_to_string (enum OverwriteOpt oo)
 void
 set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *rmo)
 {
+    debug_printf ("- set_rip_manager_options_defaults -\n");
     rmo->url[0] = 0;
     rmo->proxyurl[0] = 0;
     strcpy(rmo->output_directory, "./");

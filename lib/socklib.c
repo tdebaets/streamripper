@@ -286,8 +286,10 @@ socklib_recvall (HSOCKET *socket_handle, char* buffer, int size, int timeout)
 	    tv.tv_sec = timeout;
 	    tv.tv_usec = 0;
 	    ret = select(sock + 1, &fds, NULL, NULL, &tv);
-	    if (ret == SOCKET_ERROR)
+	    if (ret == SOCKET_ERROR) {
+		/* This happens when I kill winamp while ripping */
 		return SR_ERROR_SELECT_FAILED;
+	    }
 	    if (ret != 1)
 		return SR_ERROR_TIMEOUT;
 	}

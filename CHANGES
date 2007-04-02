@@ -1,3 +1,8 @@
+New for 1.62-beta4
+------------------
+Sun 04-01-2007
+* Remove shadowed RIP_MANAGER_OPTIONS structure
+
 New for 1.62-beta3
 ------------------
 Sun 03-25-2007
