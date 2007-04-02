@@ -391,6 +391,7 @@ relaylib_shutdown ()
     memset(m_http_header, 0, MAX_HEADER_LEN);
     debug_printf("waiting for relay close\n");
     threadlib_waitforclose(&m_hthread);
+    threadlib_waitforclose(&m_hthread2);
     destroy_all_hostsocks();
     threadlib_destroy_sem(&m_sem_not_connected);
     m_initdone = FALSE;
