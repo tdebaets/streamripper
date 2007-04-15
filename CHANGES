@@ -4,6 +4,7 @@ Sun 04-01-2007
 * Remove shadowed RIP_MANAGER_OPTIONS structure
 * Fix error in thread exit of relay stream
 * Fix problem with substitution rule
+* Plugin: fix adding tracks to winamp
 
 New for 1.62-beta3
 ------------------

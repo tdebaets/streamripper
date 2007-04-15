@@ -253,16 +253,17 @@ rip_manager_start_track (TRACK_INFO* ti, int track_count)
 error_code
 rip_manager_end_track (RIP_MANAGER_OPTIONS* rmo, TRACK_INFO* ti)
 {
-    mchar fullpath[SR_MAX_PATH];
+    mchar mfullpath[SR_MAX_PATH];
+    char fullpath[SR_MAX_PATH];
 
     if (m_write_data) {
         filelib_end (ti, rmo->overwrite, 
 		     GET_TRUNCATE_DUPS(rmo->flags),
-		     fullpath);
+		     mfullpath);
     }
     post_status(0);
 
-    /* GCS FIX - Need to convert here */
+    string_from_mstring (fullpath, SR_MAX_PATH, mfullpath, CODESET_FILESYS);
     m_status_callback (RM_TRACK_DONE, (void*)fullpath);
 
     return SR_SUCCESS;
