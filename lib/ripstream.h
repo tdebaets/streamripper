@@ -1,6 +1,7 @@
 #ifndef __RIPLIB_H__
 #define __RIPLIB_H__
 
+#include "rip_manager.h"
 #include "srtypes.h"
 #include "socklib.h"
 
@@ -17,7 +18,7 @@ ripstream_init (HSOCKET sock,
 		BOOL add_id3v1,
 		BOOL add_id3v2,
 		External_Process* ep);
-error_code ripstream_rip();
+error_code ripstream_rip(RIP_MANAGER_OPTIONS* rmo);
 void ripstream_destroy();
 
 

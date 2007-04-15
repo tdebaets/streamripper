@@ -663,6 +663,7 @@ parse_and_subst_pat (mchar* newfile,
     done = 0;
 
     /* Strip artist, title, album */
+    debug_printf ("parse_and_subst_pat: stripping\n");
     if (ti) {
 	mstrncpy (stripped_artist, ti->artist, SR_MAX_PATH);
 	mstrncpy (stripped_title, ti->title, SR_MAX_PATH);
@@ -672,6 +673,7 @@ parse_and_subst_pat (mchar* newfile,
 	replace_invalid_chars (stripped_album);
     }
 
+    debug_printf ("parse_and_subst_pat: substitute pattern\n");
     while (nfi < MAX_FILEBASELEN) {
 	if (pat[opi] == 0) {
 	    done = 1;
@@ -779,6 +781,7 @@ parse_and_subst_pat (mchar* newfile,
 
     /* Pop on the extension */
     /* GCS FIX - is SR_MAX_PATH right here? */
+    debug_printf ("parse_and_subst_pat: pop on the extension\n");
     mstrncat (newfile, extension, SR_MAX_PATH);
 }
 
@@ -956,7 +959,6 @@ filelib_end (TRACK_INFO* ti,
     /* Construct filename for completed file */
     parse_and_subst_pat (newfile, ti, m_output_directory, 
 			 m_output_pattern, m_extension);
-    debug_printf ("Final output pattern:%s\n", newfile);
 
     /* Build up the output directory */
     mkdir_recursive (newfile, 0);

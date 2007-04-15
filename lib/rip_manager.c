@@ -251,7 +251,7 @@ rip_manager_start_track (TRACK_INFO* ti, int track_count)
  * the first track is *never* complete.
  */
 error_code
-rip_manager_end_track(RIP_MANAGER_OPTIONS* rmo, TRACK_INFO* ti)
+rip_manager_end_track (RIP_MANAGER_OPTIONS* rmo, TRACK_INFO* ti)
 {
     mchar fullpath[SR_MAX_PATH];
 
@@ -260,10 +260,10 @@ rip_manager_end_track(RIP_MANAGER_OPTIONS* rmo, TRACK_INFO* ti)
 		     GET_TRUNCATE_DUPS(rmo->flags),
 		     fullpath);
     }
-
     post_status(0);
+
     /* GCS FIX - Need to convert here */
-    m_status_callback(RM_TRACK_DONE, (void*)fullpath);
+    m_status_callback (RM_TRACK_DONE, (void*)fullpath);
 
     return SR_SUCCESS;
 }
@@ -353,7 +353,7 @@ ripthread (void *input_arg)
     threadlib_signal_sem(&m_started_sem);
 
     while (TRUE) {
-        ret = ripstream_rip();
+        ret = ripstream_rip(rmo);
 
 	/* If the user told us to stop, well, then we bail */
 	if (!m_ripping)

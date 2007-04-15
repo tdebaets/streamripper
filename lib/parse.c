@@ -20,9 +20,9 @@
 #include <string.h>
 #include <ctype.h>
 #include "srconfig.h"
+#include "mchar.h"
 #include "debug.h"
 #include "srtypes.h"
-#include "mchar.h"
 #include "regex.h"
 
 /*****************************************************************************
@@ -343,6 +343,7 @@ init_metadata_parser (char* rules_file)
 
 	/* Parse match string */
 	rbp = parse_escaped_string (match_buf, rbp);
+	debug_printf ("match_buf=%s\n", match_buf);
 	if (!rbp) {
 	    printf ("Warning: malformed command in rules file:\n%s\n",
 		    rule_buf);
@@ -352,6 +353,7 @@ init_metadata_parser (char* rules_file)
 	/* Parse subst string */
 	if (m_global_rule_list[ri].cmd == PARSERULE_CMD_SUBST) {
 	    rbp = parse_escaped_string (subst_buf, rbp);
+	    debug_printf ("subst_buf=%s\n", subst_buf);
 	    if (!rbp) {
 		printf ("Warning: malformed command in rules file:\n%s\n",
 			rule_buf);
@@ -447,11 +449,6 @@ parse_metadata (TRACK_INFO* ti)
 	return;
     }
 
-    /* Convert to wchar if available */
-#if defined HAVE_WCTYPE_H && defined HAVE_REGWCOMP
-    
-#endif
-
     /* Loop through rules, if we find a matching rule, then use it */
     /* For now, only default rules supported with ascii 
        regular expressions. */
@@ -463,8 +460,10 @@ parse_metadata (TRACK_INFO* ti)
 
 	eflags = 0;
 	if (rulep->cmd == PARSERULE_CMD_MATCH) {
+	    debug_mprintf (m_("Testing match rule: ") m_S m_(" vs. ") m_S m_("\n"),
+			    query_string, rulep->match);
 	    if (rulep->flags & PARSERULE_SKIP) {
-		rc = mregexec(rulep->reg, query_string, 0, NULL, eflags);
+		rc = mregexec (rulep->reg, query_string, 0, NULL, eflags);
 		if (rc != 0) {
 		    /* Didn't match rule. */
 		    continue;
@@ -475,21 +474,19 @@ parse_metadata (TRACK_INFO* ti)
 		ti->have_track_info = 0;
 		return;
 	    } else if (rulep->flags & PARSERULE_SAVE) {
-		rc = mregexec(rulep->reg, query_string, 0, NULL, eflags);
+		rc = mregexec (rulep->reg, query_string, 0, NULL, eflags);
 		if (rc != 0) {
 		    /* Didn't match rule. */
 		    if (!save_track_matched)
 		        ti->save_track = FALSE;
-
 		    continue;
 		}
-		if (!exclude_track_matched)
-		{
+		if (!exclude_track_matched) {
 		    ti->save_track = TRUE;
 		    save_track_matched = TRUE;
 		}
 	    } else if (rulep->flags & PARSERULE_EXCLUDE) {
-		rc = mregexec(rulep->reg, query_string, 0, NULL, eflags);
+		rc = mregexec (rulep->reg, query_string, 0, NULL, eflags);
 		if (rc == 0 && !save_track_matched) {
 		    /* Rule matched => Exclude track */
 		    ti->save_track = FALSE;
@@ -497,8 +494,8 @@ parse_metadata (TRACK_INFO* ti)
 		}
 	    } else {
     		eflags = 0;
-		rc = mregexec(rulep->reg, query_string, MAX_SUBMATCHES+1, 
-			      pmatch, eflags);
+		rc = mregexec (rulep->reg, query_string, MAX_SUBMATCHES+1, 
+			       pmatch, eflags);
 		if (rc != 0) {
 		    /* Didn't match rule. */
 		    continue;
@@ -520,27 +517,33 @@ parse_metadata (TRACK_INFO* ti)
 	else if (rulep->cmd == PARSERULE_CMD_SUBST) {
 	    mchar subst_string[MAX_TRACK_LEN];
 	    int used, left;
-	    rc = mregexec(rulep->reg, query_string, 1, pmatch, eflags);
+	    debug_mprintf (m_("Testing subst rule: ") m_S m_(" vs. ") m_S m_("\n"),
+			    query_string, rulep->match);
+	    rc = mregexec (rulep->reg, query_string, 1, pmatch, eflags);
 	    if (rc != 0) {
 		/* Didn't match rule. */
 		continue;
 	    }
 	    /* Update the query string and continue. */
-	    mstrncpy (subst_string, query_string, pmatch[0].rm_so);
+	    debug_printf ("Matched at (%d,%d)\n", 
+			    pmatch[0].rm_so, pmatch[0].rm_eo);
+	    mstrncpy (subst_string, query_string, pmatch[0].rm_so + 1);
+	    debug_mprintf (m_("(1) subst_string = ") m_S m_("\n"), subst_string);
 	    used = pmatch[0].rm_so;
 	    left = MAX_TRACK_LEN - used;
-	    mstrncpy (subst_string + used, rulep->subst, left-1);
+	    mstrncpy (subst_string + used, rulep->subst, left);
+	    debug_mprintf (m_("(2) subst_string = ") m_S m_("\n"), subst_string);
 	    used += mstrlen (rulep->subst);
 	    left = MAX_TRACK_LEN - used;
-	    mstrncpy(subst_string + used, 
-		     query_string + pmatch[0].rm_eo, left);
-	    mstrncpy(query_string, subst_string, MAX_TRACK_LEN);
+	    mstrncpy (subst_string + used, 
+		      query_string + pmatch[0].rm_eo, left);
+	    debug_mprintf (m_("(3) subst_string = ") m_S m_("\n"), subst_string);
+	    mstrncpy (query_string, subst_string, MAX_TRACK_LEN);
+	    debug_mprintf (m_("(4) query_string = ") m_S m_("\n"), query_string);
 	}
     }
     debug_printf ("Fell through while parsing data...\n");
-    debug_printf ("Converting unparsed string to wide\n");
-    mstring_from_string (ti->title, MAX_TRACK_LEN, ti->raw_metadata, 
-			 CODESET_METADATA);
+    mstrncpy (ti->title, query_string, MAX_TRACK_LEN);
     ti->have_track_info = 1;
     compose_metadata (ti);
 }
