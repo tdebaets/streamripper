@@ -380,6 +380,9 @@ a) which files to remove from cvs?  (e.g. configure)
 b) get rid of installation from Makefile.am's
 c) add manifest to distro
 
+Note Apr 15, 2007:
+  - autoconf 2.60, automake 1.9.6, libtool 1.5.22.
+
 ---------------------------------------
 
 For n seconds, we need buffersize of b bytes:

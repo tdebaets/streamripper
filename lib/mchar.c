@@ -502,7 +502,7 @@ mstrdup (mchar* src)
 {
 #if defined HAVE_WCHAR_SUPPORT
     /* wstrdup/wcsdup is non-standard */
-    mchar* new_string = (mchar*) malloc (sizeof(mchar)*wcslen(src));
+    mchar* new_string = (mchar*) malloc (sizeof(mchar)*(wcslen(src) + 1));
     wcscpy (new_string, src);
     return new_string;
 #else

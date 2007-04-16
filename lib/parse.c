@@ -370,6 +370,7 @@ init_metadata_parser (char* rules_file)
 	}
 
 	/* Compile the rule */
+	debug_printf ("Compiling the rule\n");
 	mstring_from_string (w_match_buf, MAX_RULE_SIZE, match_buf, 
 			     CODESET_UTF8);
 	if (!compile_rule(&m_global_rule_list[ri], w_match_buf)) {
@@ -379,13 +380,20 @@ init_metadata_parser (char* rules_file)
 	}
 
 	/* Copy rule strings */
+	debug_printf ("Copying rule string (1)\n");
+	debug_mprintf (m_("String is ") m_S m_("\n"), w_match_buf);
 	m_global_rule_list[ri].match = mstrdup(w_match_buf);
+	debug_printf ("Copying rule string (2)\n");
 	if (m_global_rule_list[ri].cmd == PARSERULE_CMD_SUBST) {
+	    debug_printf ("Copying rule string (3)\n");
 	    mstring_from_string (w_subst_buf, MAX_RULE_SIZE, subst_buf, 
 				 CODESET_UTF8);
+	    debug_printf ("Copying rule string (4)\n");
 	    m_global_rule_list[ri].subst = mstrdup(w_subst_buf);
+	    debug_printf ("Copying rule string (5)\n");
 	}
 
+	debug_printf ("End of loop\n");
 	ri++;
     }
     /* Add null rule to the end */
