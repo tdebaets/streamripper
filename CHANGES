@@ -1,6 +1,7 @@
 New for 1.62-beta5
 ------------------
 * Fix problem with -q flag
+* Fix problem where pre-padding could be truncated
 
 New for 1.62-beta4
 ------------------

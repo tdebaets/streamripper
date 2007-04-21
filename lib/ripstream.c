@@ -567,11 +567,11 @@ find_sep (u_long *pos1, u_long *pos2)
 	debug_printf ("PEEK OK\n");
 
 	/* Find silence point */
-	/* GCS FIX: This doesn't yet consider sw vs rw */
-	ret = findsep_silence (buf, bufsize,
+	ret = findsep_silence (buf, 
+			       bufsize, 
 			       m_rw_start_to_sw_start,
 			       m_sp_opt->xs_search_window_1 
-			       + m_sp_opt->xs_search_window_2,
+				+ m_sp_opt->xs_search_window_2,
 			       m_sp_opt->xs_silence_length,
 			       m_sp_opt->xs_padding_1,
 			       m_sp_opt->xs_padding_2,
@@ -840,12 +840,62 @@ bytes_to_secs (unsigned int bytes)
     return secs;
 }
 
+/* --------------------------------------------------------------------------
+   Buffering for silence splitting & padding
+
+   We may flush the circular buffer as soon as anything that 
+   needs to go into the next song has passed.   For simplicity, 
+   we also buffer up to the latest point that can go into the 
+   next song.  This is called the "required window."
+
+   The entire required window is decoded, even though 
+   we don't need the volume.  We simply mark the frame boundaries
+   so we don't chop any frames.
+
+   The circular buffer is a bit bigger than the required window, 
+   because it contains an integer number of blocks which fall 
+
+   Some abbreviations:
+     mic      meta inf change
+     cb	      cbuf2, aka circular buffer
+     rw	      required window
+     sw	      search window
+
+   This is the complete picture:
+
+    A---------A---------A----+----B---------B     meta intervals
+
+                                  /mic            meta-inf change (A to B)
+                             +--->|
+                             /mi                  meta-inf point
+                             |
+                   |---+-----+------+---|         search window
+                       |            |   
+                       |            |   
+                   |---+---|    |---+---|         silence length
+                       |            |
+         |-------------|            |-----|
+              prepad                postpad
+
+         |--------------------------------|       required window
+
+    |---------------------------------------|     cbuf
+
+
+                   |<-------------+               mic_to_sw_start
+                                  +---->|         mic_to_sw_end
+         |<-----------------------+               mic_to_rw_start
+                                  +------>|       mic_to_rw_end
+    |<----------------------------+               mic_to_cb_start
+                                  +-------->|     mic_to_cb_end
+
+   ------------------------------------------------------------------------*/
 static void
 compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate, 
 		      int meta_interval)
 {
     long sws, sl;
-    long mic_to_mi;
+    long mi_to_mic;
     long prepad, postpad;
     long offset;
     long mic_to_sw_start, mic_to_sw_end;
@@ -863,10 +913,10 @@ compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate,
     debug_printf ("bitrate = %d, meta_inf = %d\n", bitrate, meta_interval);
     debug_printf ("---------------------------------------------------\n");
     
-    /* mic_to_mi is the "half of a meta-inf" from the meta inf 
+    /* mi_to_mic is the "half of a meta-inf" from the meta inf 
        change to the previous (non-changed) meta inf */
-    mic_to_mi = meta_interval / 2;
-    debug_printf ("mic_to_mi: %d\n", mic_to_mi);
+    mi_to_mic = meta_interval / 2;
+    debug_printf ("mi_to_mic: %d\n", mi_to_mic);
 
     /* compute the search window size (sws) */
     sws = ms_to_bytes (sp_opt->xs_search_window_1, bitrate) 
@@ -887,9 +937,9 @@ compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate,
     debug_printf ("offset: %d\n", offset);
 
     /* compute interval from mi to search window */
-    mic_to_sw_start = - mic_to_mi + offset 
+    mic_to_sw_start = - mi_to_mic + offset 
 	    - ms_to_bytes(sp_opt->xs_search_window_1,bitrate);
-    mic_to_sw_end = - mic_to_mi + offset 
+    mic_to_sw_end = - mi_to_mic + offset 
 	    + ms_to_bytes(sp_opt->xs_search_window_2,bitrate);
     debug_printf ("mic_to_sw_start: %d\n", mic_to_sw_start);
     debug_printf ("mic_to_sw_end: %d\n", mic_to_sw_end);
@@ -915,8 +965,6 @@ compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate,
     if (mic_to_cb_end < 0) {
 	mic_to_cb_end = 0;
     }
-    debug_printf ("mic_to_cb_start: %d\n", mic_to_cb_start);
-    debug_printf ("mic_to_cb_end: %d\n", mic_to_cb_end);
 
     /* Convert to chunks & compute cbuf size */
     mic_to_cb_end = (mic_to_cb_end + (meta_interval-1)) / meta_interval;
@@ -926,6 +974,8 @@ compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate,
     if (m_cbuf2_size < 3) {
 	m_cbuf2_size = 3;
     }
+    debug_printf ("mic_to_cb_start: %d\n", mic_to_cb_start * meta_interval);
+    debug_printf ("mic_to_cb_end: %d\n", mic_to_cb_end * meta_interval);
     debug_printf ("CBUF2 (BLOCKS): %d:%d -> %d\n", mic_to_cb_start,
 		  mic_to_cb_end, m_cbuf2_size);
 
@@ -933,8 +983,7 @@ compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate,
     m_mic_to_cb_end = mic_to_cb_end;
     m_rw_start_to_cb_end = mic_to_cb_end * meta_interval - mic_to_rw_start;
     m_rw_end_to_cb_end = mic_to_cb_end * meta_interval - mic_to_rw_end;
-    m_rw_start_to_sw_start = sp_opt->xs_padding_1 
-	    - (sp_opt->xs_search_window_1 + sp_opt->xs_search_window_2);
+    m_rw_start_to_sw_start = sp_opt->xs_padding_1 - sp_opt->xs_silence_length / 2;
     if (m_rw_start_to_sw_start < 0) {
 	m_rw_start_to_sw_start = 0;
     }

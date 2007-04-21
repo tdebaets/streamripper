@@ -54,7 +54,6 @@ typedef struct SILENCETRACKERst
 {
     long insilencecount;
     double silencevol;
-    //    long silencestart;
     unsigned long silstart_samp;
     BOOL foundsil;
 } SILENCETRACKER;
@@ -175,7 +174,13 @@ findsep_silence (const u_char* mpgbuf,
     assert(ds.mpgsize != 0);
     silstart = ds.pcmpos/2;
     for(i = 0; i < NUM_SILTRACKERS; i++) {
-	debug_printf("i=%d, start=%d\n", i, ds.siltrackers[i].silstart_samp);
+	debug_printf("SILT: %2d/%8g, pcm=%4d, found=%d, insil=%d\n", 
+	    i,
+	    ds.siltrackers[i].silencevol,
+	    ds.siltrackers[i].silstart_samp,
+	    ds.siltrackers[i].foundsil,
+	    ds.siltrackers[i].insilencecount
+	    );
 	if (ds.siltrackers[i].foundsil) {
 	    debug_printf("found!\n");
 	    silstart = ds.siltrackers[i].silstart_samp;
@@ -229,7 +234,7 @@ apply_padding (DECODE_STRUCT* ds,
 	    + (ds->silence_samples/2) 
 	    - padding2 * (ds->samplerate/1000);
 
-    debug_printf ("Applying padding\n");
+    debug_printf ("Applying padding: p1,p2 = (%d,%d), pos1s,pos2s = (%d,%d)\n", padding1, padding2, pos1s, pos2s);
 
     /* GCS FIX: Need to check for pos == null */
     /* GCS FIX: Watch out for -1, might have mem error! */
@@ -248,8 +253,9 @@ apply_padding (DECODE_STRUCT* ds,
 	    *pos2 = pos->m_framepos - ds->mpgbuf;
 	}
     }
-    debug_printf ("pos1, pos2 = %d,%d (%02x%02x)\n",
+    debug_printf ("pos1, pos2 = %d,%d (%d) (%02x%02x)\n",
 		  *pos1, *pos2, 
+		  *pos1 - *pos2, 
 		  ds->mpgbuf[*pos2], 
 		  ds->mpgbuf[*pos2+1]);
 }
@@ -406,13 +412,13 @@ output (void *data, struct mad_header const *header,
     fl->m_samples = nsamples;
     fl->m_pcmpos = ds->pcmpos;
 
-#if defined (commentout)
     if (ds->pcmpos > ds->len_to_sw_start_samp
 	&& ds->pcmpos < ds->len_to_sw_end_samp) {
-	debug_printf ("*\n");
+	debug_printf ("* %d\n", ds->pcmpos);
     } else {
-	debug_printf ("-\n");
+	debug_printf ("- %d\n", ds->pcmpos);
     }
+#if defined (commentout)
 #endif
 
     while(nsamples--) {

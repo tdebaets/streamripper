@@ -418,35 +418,6 @@ For n seconds, we need buffersize of b bytes:
 	      prepad    postpad
 
 
-We may flush the circular buffer as soon as the earliest
-point that needs to go into the next song has passed.
-For simplicity, we also buffer up to the latest point 
-that can go into the next song.  This interval looks 
-like this for the silence splitting case.
-
-
-			|
-	      |---+-----+-----+---| search window
-		  |           |   
-		  |           |
-	      |---+---|   |---+---|
-		  |           |
-    |-------------|           |---------|
-	  prepad                postpad
-
-
-    |-----------------------------------|
-  this window must be cbuffered ("required_window")
-
-In fact, the entire required window need to be decoded, 
-because we don't want to chop any frames.
-
-The circular buffer is actually extended a bit so that 
-it contains an integer number of blocks which fall 
-along meta-inf boundaries.
-
-The below obsolete section is mostly right, but we want 
-to include the entire core chunk.
 
 ---------------------------------------
 http://www.hydrogenaudio.org/index.php?showtopic=12633&
