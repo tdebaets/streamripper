@@ -1167,31 +1167,15 @@ get_next_sequence_number (mchar* fn_base)
     /* Get fn prefix from fn_base */
     fn_prefix[0] = 0;
     mstrcpy (fn_prefix, &fn_base[edi+1]);
+    debug_mprintf (m_("GET SEQ NO: dir_name = ") m_S m_("\n"), dir_name);
+    debug_mprintf (m_("GET SEQ NO: fn_prefix = ") m_S m_("\n"), fn_prefix);
 
-#if defined (WIN32)
-    /* GCS FIX - does this still work with mchar? */
-    /* Look through directory for a filenames that match prefix */
-    rc = string_from_mstring (dname, SR_MAX_PATH, dir_name, CODESET_FILESYS);
-    if ((dp = opendir (dname)) == 0) {
-	return 0;
-    }
-    seq = 0;
-    while ((de = readdir (dp)) != 0) {
-	if (strncmp(de->d_name, fnp, strlen(fnp)) == 0) {
-	    if (isdigit(de->d_name[strlen(fnp)])) {
-		int this_seq = atoi(&de->d_name[strlen(fnp)]);
-		if (seq <= this_seq) {
-		    seq = this_seq + 1;
-		}
-	    }
-	}
-    }
-    closedir (dp);
-    return seq;
-#else
-    /* Look through directory for a filenames that match prefix */
     rc = string_from_mstring (dname, SR_MAX_PATH, dir_name, CODESET_FILESYS);
     rc = string_from_mstring (fnp, SR_MAX_PATH, fn_prefix, CODESET_FILESYS);
+    debug_printf ("GET SEQ NO: dname = %s\n", dname);
+    debug_printf ("GET SEQ NO: fnp = %s\n", fnp);
+
+    /* Look through directory for a filenames that match prefix */
     if ((dp = opendir (dname)) == 0) {
 	return 0;
     }
@@ -1208,7 +1192,6 @@ get_next_sequence_number (mchar* fn_base)
     }
     closedir (dp);
     return seq;
-#endif
 }
 
 /* GCS FIX: This should only strip "." at beginning of path */
