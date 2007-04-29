@@ -1140,6 +1140,8 @@ trim_mp3_suffix (mchar *filename)
     }
 }
 
+/* GCS FIX: This may not work with filesystem charsets where 0-9 are 
+   not ascii compatible? */
 static int
 get_next_sequence_number (mchar* fn_base)
 {
@@ -1161,7 +1163,7 @@ get_next_sequence_number (mchar* fn_base)
 	}
 	di++;
     }
-    mstrncpy (dir_name, fn_base, edi+1);
+    mstrncpy (dir_name, fn_base, SR_MAX_PATH);
     dir_name[edi] = 0;
 
     /* Get fn prefix from fn_base */
