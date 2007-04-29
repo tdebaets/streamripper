@@ -1161,7 +1161,7 @@ get_next_sequence_number (mchar* fn_base)
 	}
 	di++;
     }
-    mstrncpy (dir_name, fn_base, edi);
+    mstrncpy (dir_name, fn_base, edi+1);
     dir_name[edi] = 0;
 
     /* Get fn prefix from fn_base */
@@ -1181,8 +1181,12 @@ get_next_sequence_number (mchar* fn_base)
     }
     seq = 0;
     while ((de = readdir (dp)) != 0) {
+	debug_printf ("GET SEQ NO: (%s)\n", de->d_name);
+	debug_printf ("GET SEQ NO: Checking prefix\n");
 	if (strncmp(de->d_name, fnp, strlen(fnp)) == 0) {
+	    debug_printf ("GET SEQ NO: Checking digit\n");
 	    if (isdigit(de->d_name[strlen(fnp)])) {
+		debug_printf ("GET SEQ NO: Converting digit\n");
 		int this_seq = atoi(&de->d_name[strlen(fnp)]);
 		if (seq <= this_seq) {
 		    seq = this_seq + 1;
