@@ -1169,13 +1169,9 @@ get_next_sequence_number (mchar* fn_base)
     /* Get fn prefix from fn_base */
     fn_prefix[0] = 0;
     mstrcpy (fn_prefix, &fn_base[edi+1]);
-    debug_mprintf (m_("GET SEQ NO: dir_name = ") m_S m_("\n"), dir_name);
-    debug_mprintf (m_("GET SEQ NO: fn_prefix = ") m_S m_("\n"), fn_prefix);
 
     rc = string_from_mstring (dname, SR_MAX_PATH, dir_name, CODESET_FILESYS);
     rc = string_from_mstring (fnp, SR_MAX_PATH, fn_prefix, CODESET_FILESYS);
-    debug_printf ("GET SEQ NO: dname = %s\n", dname);
-    debug_printf ("GET SEQ NO: fnp = %s\n", fnp);
 
     /* Look through directory for a filenames that match prefix */
     if ((dp = opendir (dname)) == 0) {
@@ -1183,12 +1179,8 @@ get_next_sequence_number (mchar* fn_base)
     }
     seq = 0;
     while ((de = readdir (dp)) != 0) {
-	debug_printf ("GET SEQ NO: (%s)\n", de->d_name);
-	debug_printf ("GET SEQ NO: Checking prefix\n");
 	if (strncmp(de->d_name, fnp, strlen(fnp)) == 0) {
-	    debug_printf ("GET SEQ NO: Checking digit\n");
 	    if (isdigit(de->d_name[strlen(fnp)])) {
-		debug_printf ("GET SEQ NO: Converting digit\n");
 		int this_seq = atoi(&de->d_name[strlen(fnp)]);
 		if (seq <= this_seq) {
 		    seq = this_seq + 1;
