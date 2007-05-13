@@ -689,12 +689,12 @@ start_track_mp3 (TRACK_INFO* ti)
 	    if (ret != SR_SUCCESS) return ret;
 	}
 
-	// ID3V2 is only defined for ISO-8859-1 and UCS-2
-	// If user specifies another codeset, we will use it, and 
-	// report ISO-8859-1 in the encoding field
+	/* ID3 V2.3 is only defined for ISO-8859-1 and UCS-2
+	   If user specifies another codeset, we will use it, and 
+	   report ISO-8859-1 in the encoding field */
 	id3_charset = is_id3_unicode();
 
-	// Write ID3V2 TPE1 frame (Lead performer)
+	/* Write ID3V2 TPE1 frame (Lead performer) */
 	memset(&id3v2frame, '\000', sizeof(id3v2frame));
 	strncpy(id3v2frame.id, "TPE1", 4);
 	id3v2frame.pad[2] = id3_charset;
@@ -714,7 +714,7 @@ start_track_mp3 (TRACK_INFO* ti)
 	if (ret != SR_SUCCESS) return ret;
 	sent += rc;
 
-	// Write ID3V2 TIT2 frame (Title)
+	/* Write ID3V2 TIT2 frame (Title) */
 	memset(&id3v2frame, '\000', sizeof(id3v2frame));
 	strncpy(id3v2frame.id, "TIT2", 4);
 	id3v2frame.pad[2] = id3_charset;
@@ -734,7 +734,7 @@ start_track_mp3 (TRACK_INFO* ti)
 	if (ret != SR_SUCCESS) return ret;
 	sent += rc;
 
-	// Write ID3V2 TENC frame (Encoded by)
+	/* Write ID3V2 TENC frame (Encoded by) */
 	memset(&id3v2frame, '\000', sizeof(id3v2frame));
 	strncpy(id3v2frame.id, "TENC", 4);
 	framesize = htonl(strlen(comment)+1);
@@ -751,7 +751,7 @@ start_track_mp3 (TRACK_INFO* ti)
 	if (ret != SR_SUCCESS) return ret;
 	sent += strlen (comment);
 
-	// Write ID3V2 TALB frame (Album)
+	/* Write ID3V2 TALB frame (Album) */
 	memset(&id3v2frame, '\000', sizeof(id3v2frame));
 	strncpy(id3v2frame.id, "TALB", 4);
 	id3v2frame.pad[2] = id3_charset;
@@ -771,7 +771,11 @@ start_track_mp3 (TRACK_INFO* ti)
 	if (ret != SR_SUCCESS) return ret;
 	sent += rc;
 
-	ret = rip_manager_put_data(bigbuf, 1600-sent);
+	/* Zero out padding */
+	memset(bigbuf, '\000', sizeof(bigbuf));
+
+	/* Pad up to header_size */
+	ret = rip_manager_put_data(bigbuf, HEADER_SIZE-sent);
 	if (ret != SR_SUCCESS) return ret;
     }
     m_track_count ++;
