@@ -1,21 +1,21 @@
-New for 1.62-beta7
-------------------
+New for 1.62-beta-7
+-------------------
 Sun May 13 15:48:13 EDT 2007
 * Zero out id3v2 padding
 
-New for 1.62-beta6
-------------------
+New for 1.62-beta-6
+-------------------
 Sun Apr 29 11:54:36 EDT 2007
 * Really fix problem with -q flag
 
-New for 1.62-beta5
-------------------
+New for 1.62-beta-5
+-------------------
 Sat Apr 28 14:34:54 EDT 2007
 * Fix problem with -q flag
 * Fix problem where pre-padding could be truncated
 
-New for 1.62-beta4
-------------------
+New for 1.62-beta-4
+-------------------
 Sun 04-15-2007
 * Remove shadowed RIP_MANAGER_OPTIONS structure
 * Fix error in thread exit of relay stream
@@ -23,8 +23,8 @@ Sun 04-15-2007
 * Fix problem executing substitution rule
 * Plugin: fix adding tracks to winamp
 
-New for 1.62-beta3
-------------------
+New for 1.62-beta-3
+-------------------
 Sun 03-25-2007
 * Plugin: Various GUI fixes
 * Plugin: Fix memory error during registry parsing
@@ -32,8 +32,8 @@ Sun 03-25-2007
   options dialogs created
 * Plugin: Fix problem with id3 checkboxes always being set
 
-New for 1.62-beta2
-------------------
+New for 1.62-beta-2
+-------------------
 Sat Mar 10 21:14:13 EST 2007
 * Make not adding id3v1 the default
 * Add id3v1/id3v2 GUI to winamp plugin
@@ -43,8 +43,8 @@ Sat Mar 10 21:14:13 EST 2007
 * Force UTF-16 for id3 when any flavor of UCS-2 or UTF-16 spec'd
 * Remove warning for E2BIG iconv conversion
 
-New for 1.62-beta1
-------------------
+New for 1.62-beta-1
+-------------------
 Sun Feb 11 17:07:31 EST 2007
 * New codeset options - codesets for metadata, id3, filesystem and 
   relay are independently selectable
