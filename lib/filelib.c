@@ -610,22 +610,23 @@ filelib_write_cue (TRACK_INFO* ti, int secs)
 {
     static int track_no = 1;
     int rc;
-    char buf[MAX_TRACK_LEN];
+    char buf1[MAX_TRACK_LEN];
+    char buf2[MAX_TRACK_LEN];
 
     if (!m_do_show) return SR_SUCCESS;
     if (!m_cue_file) return SR_SUCCESS;
 
-    rc = snprintf (buf, MAX_TRACK_LEN, "  TRACK %02d AUDIO\n", track_no++);
-    filelib_write (m_cue_file, buf, rc);
-    string_from_mstring (buf, MAX_TRACK_LEN, ti->title, CODESET_ID3);
-    rc = snprintf (buf, MAX_TRACK_LEN, "    TITLE \"%s\"\n", buf);
-    filelib_write (m_cue_file, buf, rc);
-    string_from_mstring (buf, MAX_TRACK_LEN, ti->artist, CODESET_ID3);
-    rc = snprintf (buf, MAX_TRACK_LEN, "    PERFORMER \"%s\"\n", buf);
-    filelib_write (m_cue_file, buf, rc);
-    rc = snprintf (buf, MAX_TRACK_LEN, "    INDEX 01 %02d:%02d:00\n", 
+    rc = snprintf (buf2, MAX_TRACK_LEN, "  TRACK %02d AUDIO\n", track_no++);
+    filelib_write (m_cue_file, buf2, rc);
+    string_from_mstring (buf1, MAX_TRACK_LEN, ti->title, CODESET_ID3);
+    rc = snprintf (buf2, MAX_TRACK_LEN, "    TITLE \"%s\"\n", buf1);
+    filelib_write (m_cue_file, buf2, rc);
+    string_from_mstring (buf1, MAX_TRACK_LEN, ti->artist, CODESET_ID3);
+    rc = snprintf (buf2, MAX_TRACK_LEN, "    PERFORMER \"%s\"\n", buf1);
+    filelib_write (m_cue_file, buf2, rc);
+    rc = snprintf (buf2, MAX_TRACK_LEN, "    INDEX 01 %02d:%02d:00\n", 
 		   secs / 60, secs % 60);
-    filelib_write (m_cue_file, buf, rc);
+    filelib_write (m_cue_file, buf2, rc);
 
     return SR_SUCCESS;
 }
