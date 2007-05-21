@@ -150,6 +150,7 @@ Section "Installer Section"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper.Plugin" "UninstallString" "$INSTDIR\streamripper_uninstall.exe"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper.Plugin" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper.Plugin" "NoRepair" 1
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper.Plugin" "EstimatedSize" 1800
 
   SetOutPath $INSTDIR
   ;; File "c:\program files\winamp\winamp.exe.manifest"

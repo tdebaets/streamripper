@@ -305,8 +305,14 @@ mstring_from_string (mchar* m, int mlen, char* c, int codeset_type)
     case CODESET_FILESYS:
 	return wstring_from_string (m, mlen, c, m_codeset_filesys);
 	break;
+    case CODESET_ID3:
+	return wstring_from_string (m, mlen, c, m_codeset_id3);
+	break;
     case CODESET_METADATA:
 	return wstring_from_string (m, mlen, c, m_codeset_metadata);
+	break;
+    case CODESET_RELAY:
+	return wstring_from_string (m, mlen, c, m_codeset_relay);
 	break;
     default:
 	printf ("Program error.  Bad codeset m->c (%d)\n", codeset_type);
@@ -340,6 +346,9 @@ string_from_mstring (char* c, int clen, mchar* m, int codeset_type)
     case CODESET_ID3:
 	return string_from_wstring (c, clen, m, m_codeset_id3);
 	break;
+    case CODESET_METADATA:
+	return string_from_wstring (c, clen, m, m_codeset_metadata);
+	break;
     case CODESET_RELAY:
 	return string_from_wstring (c, clen, m, m_codeset_relay);
 	break;
@@ -369,6 +378,9 @@ mchar_from_char (char c, int codeset_type)
 	break;
     case CODESET_ID3:
 	return wchar_from_char (c, m_codeset_id3);
+	break;
+    case CODESET_METADATA:
+	return wchar_from_char (c, m_codeset_metadata);
 	break;
     case CODESET_RELAY:
 	return wchar_from_char (c, m_codeset_relay);
