@@ -10,59 +10,23 @@ if SUBDIR_TRE
 MAYBE_LIBTRE = tre-0.7.2
 endif
 
-SUBDIRS = $(MAYBE_LIBMAD) $(MAYBE_LIBTRE)
+SUBDIRS = $(MAYBE_LIBMAD) $(MAYBE_LIBTRE) lib
 
 bin_PROGRAMS = streamripper
+if WANT_CSTREAMRIPPER
+    bin_PROGRAMS += cstreamripper
+endif
 
-EXTRA_PROGRAMS = streamripper ictest
+EXTRA_PROGRAMS = streamripper ictest cstreamripper
 
 ictest_SOURCES = \
 	lib/ictest.c
 
 streamripper_SOURCES = \
-	console/streamripper.c \
-	lib/cbuf2.c \
-	lib/charset.c \
-	lib/debug.c \
-	lib/external.c \
-	lib/filelib.c \
-	lib/findsep.c \
-	lib/http.c \
-	lib/iconvert.c \
-	lib/mchar.c \
-	lib/mpeg.c \
-	lib/parse.c \
-	lib/relaylib.c \
-	lib/rip_manager.c \
-	lib/ripaac.c \
-	lib/ripogg.c \
-	lib/ripstream.c \
-	lib/socklib.c \
-	lib/threadlib.c \
-	lib/utf8.c \
-	lib/cbuf2.h \
-	lib/charmaps.h \
-	lib/charset.h \
-	lib/compat.h \
-	lib/debug.h \
-	lib/external.h \
-	lib/filelib.h \
-	lib/findsep.h \
-	lib/http.h \
-	lib/list.h \
-	lib/mchar.h \
-	lib/mpeg.h \
-	lib/parse.h \
-	lib/relaylib.h \
-	lib/rip_manager.h \
-	lib/ripogg.h \
-	lib/ripstream.h \
-	lib/socklib.h \
-	lib/srconfig.h \
-	lib/threadlib.h \
-	lib/srtypes.h \
-	lib/uce_dirent.h \
-	lib/utf8.h
+	console/streamripper.c
+
+cstreamripper_SOURCES = \
+	console/cstreamripper.c
 
 if USE_INCLUDED_ARGV
 streamripper_SOURCES += lib/argv.c
@@ -348,10 +312,24 @@ EXTRA_DIST = \
 
 DIST_SUBDIRS = 
 
-streamripper_LDADD = @LIBMAD@ @LIBREGEX@ @THREADLIBS@ \
+streamripper_LDADD = \
+	lib/libstreamripper.a \
+	@FAAD_LIBS@ \
+	@LIBMAD@ \
+	@LIBREGEX@ \
+	@THREADLIBS@ \
 	@LTLIBICONV@ @LIBCHARSET@ \
 	@LIBIBERTY_LIBS@ \
-	@OGG_LIBS@ @VORBIS_LIBS@ \
-	@FAAD_LIBS@
+	@OGG_LIBS@ @VORBIS_LIBS@
+
+cstreamripper_LDADD = \
+	lib/libstreamripper.a \
+	@FAAD_LIBS@ \
+	@LIBMAD@ \
+	@LIBREGEX@ \
+	@THREADLIBS@ \
+	@LTLIBICONV@ @LIBCHARSET@ \
+	@LIBIBERTY_LIBS@ \
+	@OGG_LIBS@ @VORBIS_LIBS@
 
 ACLOCAL_AMFLAGS = -I m4

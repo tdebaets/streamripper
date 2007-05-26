@@ -24,8 +24,13 @@ sub replace_file {
 ###############################################################
 $old_version = shift;
 $new_version = shift;
+
 if (!$new_version) {
-    die "Usage: upgrade_version.pl old_version new_version\n";
+    $_ = `grep AC_INIT configure.ac`;
+    chomp;
+    $_ =~ s/^.*,//;
+    $_ =~ s/\).*$//;
+    die "Usage: upgrade_version.pl old_version new_version\nold_verion=$_\n";
 }
 
 @files = (

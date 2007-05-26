@@ -9,10 +9,10 @@
 ;
 
 ; The name of the installer
-Name "Streamripper for Winamp 2.x/5.x v1.62.0"
+Name "Streamripper for Winamp 2.x/5.x v1.62.1"
 
 ; The file to write
-OutFile "srwa5-1.62.0.exe"
+OutFile "srwa5-1.62.1.exe"
 
 ; License page
 ; LicenseText "This installer will install the Nullsoft Tiny Visualization 2000 Plug-in for Winamp. Please read the license below."
@@ -146,7 +146,7 @@ Section "Installer Section"
   File srskin_XP.bmp
 
   WriteUninstaller $INSTDIR\streamripper_uninstall.exe
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper.Plugin" "DisplayName" "Streamripper Plugin 1.62.0 (Remove only)"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper.Plugin" "DisplayName" "Streamripper Plugin 1.62.1 (Remove only)"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper.Plugin" "UninstallString" "$INSTDIR\streamripper_uninstall.exe"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper.Plugin" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper.Plugin" "NoRepair" 1

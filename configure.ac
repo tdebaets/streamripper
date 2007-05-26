@@ -10,7 +10,7 @@ dnl   AC_CHECK_LIB:   prepends the library to LIBS
 dnl   AC_CHECK_FUNC:  defines a shell variable
 
 AC_PREREQ(2.59)
-AC_INIT(streamripper,1.62.0)
+AC_INIT(streamripper,1.62.1)
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([lib/config.h])
@@ -23,6 +23,7 @@ if test -n "$GCC"; then
 fi
 
 AC_PROG_INSTALL
+AC_PROG_RANLIB
 
 dnl Checks for libraries.
 dnl Replace `main' with a function in -lm:
@@ -299,7 +300,11 @@ AC_TYPE_SIGNAL
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(mkdir socket strerror strstr)
 
-AC_OUTPUT(Makefile)
+dnl If curses installed, make cstreamripper
+MP_WITH_CURSES
+AM_CONDITIONAL([WANT_CSTREAMRIPPER],[test x$CURSES_LIB != x])
+
+AC_OUTPUT(lib/Makefile Makefile)
 
 cat <<EOF
 * Streamripper configuration
