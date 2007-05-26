@@ -300,12 +300,64 @@ tre070_manifest = \
 man_MANS = \
 	streamripper.1
 
+lib_manifest = \
+	lib/Makefile.am \
+	lib/Makefile.in \
+	lib/config.h.in \
+	lib/argv.c \
+	lib/cbuf2.c \
+	lib/cbuf2.h \
+	lib/charmaps.h \
+	lib/charset.c \
+	lib/charset.h \
+	lib/compat.h \
+	lib/config.h \
+	lib/confw32.h \
+	lib/debug.c \
+	lib/debug.h \
+	lib/external.c \
+	lib/external.h \
+	lib/filelib.c \
+	lib/filelib.h \
+	lib/findsep.c \
+	lib/findsep.h \
+	lib/http.c \
+	lib/http.h \
+	lib/iconvert.c \
+	lib/ictest.c \
+	lib/list.h \
+	lib/mchar.c \
+	lib/mchar.h \
+	lib/mpeg.c \
+	lib/mpeg.h \
+	lib/parse.c \
+	lib/parse.h \
+	lib/relaylib.c \
+	lib/relaylib.h \
+	lib/rip_manager.c \
+	lib/rip_manager.h \
+	lib/ripaac.c \
+	lib/ripogg.c \
+	lib/ripogg.h \
+	lib/ripstream.c \
+	lib/ripstream.h \
+	lib/socklib.c \
+	lib/socklib.h \
+	lib/srconfig.h \
+	lib/srtypes.h \
+	lib/threadlib.c \
+	lib/threadlib.h \
+	lib/uce_dirent.h \
+	lib/utf8.c \
+	lib/utf8.h
+
 EXTRA_DIST = \
 	config.rpath \
 	CHANGES \
 	parse_rules.txt \
 	fake_external_metadata.pl \
 	fetch_external_metadata.pl \
+	$(lib_manifest) \
 	$(libmad_manifest) \
 	$(tre_manifest) \
 	$(man_MANS)
