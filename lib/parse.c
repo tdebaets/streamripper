@@ -25,6 +25,8 @@
 #include "srtypes.h"
 #include "regex.h"
 
+/* GCS FIX: figure out function prototypes for regwcomp, regwexec */
+
 /*****************************************************************************
  * Private global variables
  *****************************************************************************/
