@@ -23,7 +23,8 @@ ictest_SOURCES = \
 	lib/ictest.c
 
 streamripper_SOURCES = \
-	console/streamripper.c
+	console/streamripper.c \
+	console/sr_curses.c
 
 cstreamripper_SOURCES = \
 	console/cstreamripper.c
@@ -372,7 +373,8 @@ streamripper_LDADD = \
 	@THREADLIBS@ \
 	@LTLIBICONV@ @LIBCHARSET@ \
 	@LIBIBERTY_LIBS@ \
-	@OGG_LIBS@ @VORBIS_LIBS@
+	@OGG_LIBS@ @VORBIS_LIBS@ \
+        @CDK_LIBS@
 
 cstreamripper_LDADD = \
 	lib/libstreamripper.a \
@@ -382,6 +384,7 @@ cstreamripper_LDADD = \
 	@THREADLIBS@ \
 	@LTLIBICONV@ @LIBCHARSET@ \
 	@LIBIBERTY_LIBS@ \
-	@OGG_LIBS@ @VORBIS_LIBS@
+	@OGG_LIBS@ @VORBIS_LIBS@ \
+        @CDK_LIBS@
 
 ACLOCAL_AMFLAGS = -I m4

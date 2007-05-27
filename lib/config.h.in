@@ -1,10 +1,10 @@
 /* lib/config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define to 1 if you have cdk libraries installed */
+#undef HAVE_CDK
+
 /* Whether the system has connect() */
 #undef HAVE_CONNECT
-
-/* Define to 1 if you have curses.h */
-#undef HAVE_CURSES_H
 
 /* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.
    */
@@ -63,9 +63,6 @@
 
 /* Define to 1 if you have the `mkdir' function. */
 #undef HAVE_MKDIR
-
-/* Define to 1 if you have ncurses.h */
-#undef HAVE_NCURSES_H
 
 /* Define to 1 if you have the <ndir.h> header file, and it defines `DIR'. */
 #undef HAVE_NDIR_H

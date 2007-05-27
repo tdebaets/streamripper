@@ -35,7 +35,6 @@ AC_ARG_WITH(included-libmad,
  [  --with-included-libmad use the libmad library included with streamripper],
   force_use_included_libmad=$withval,
   force_use_included_libmad=no)
-dnl AC_MSG_RESULT($force_use_included_libmad)
 
 AC_ARG_WITH(included-tre,
   [  --with-included-tre use the tre library included with streamripper])
@@ -44,7 +43,9 @@ AC_ARG_WITH(included-argv,
   [  --with-included-argv use argv.c included with streamripper],
   force_use_included_argv=$withval,
   force_use_included_argv=no)
-dnl AC_MSG_RESULT($force_use_included_argv)
+
+AC_ARG_WITH(included-cdk,
+  [  --with-included-cdk use the cdk library included with streamripper])
 
 CPPFLAGS="-Ilib -D__UNIX__"
 AC_SUBST(CPPFLAGS)
@@ -216,12 +217,32 @@ AC_CHECK_LIB(faad,NeAACDecDecode2,[
         AC_DEFINE(HAVE_FAAD,0,[Define to 1 if you have faad2 libraries installed]))
 AC_SUBST(FAAD_LIBS)
 
+dnl -------- Tests for using included cdk ------
+CDK_LIBS=""
+use_included_cdk=no
+use_cdk=no
+if test "$with_included_cdk" = "yes"; then
+  use_included_cdk=yes
+  use_cdk=yes
+  CDK_LIBS="-lcdk -lncurses"
+  AC_DEFINE(HAVE_CDK,1,[Define to 1 if you have cdk libraries installed])
+else
+  dnl  LDFLAGS="$LDFLAGS -L/usr/local/lib"
+  dnl  INCLUDES="$INCLUDES -I/usr/local/include"
+  AC_CHECK_LIB(cdk,initCDKScreen,[
+    use_cdk=yes
+    CDK_LIBS="-lcdk -lncurses"
+    AC_DEFINE(HAVE_CDK,1,[Define to 1 if you have cdk libraries installed])
+  ],[],[-lncurses])
+fi
+AC_SUBST(CDK_LIBS)
+AM_CONDITIONAL([WANT_CSTREAMRIPPER],[test x$use_cdk != xno])
+
 dnl -------- Tests for using ogg/vorbis ------
 AC_SUBST(VORBIS_CFLAGS)
 AC_SUBST(VORBIS_LIBS)
 AC_SUBST(OGG_CFLAGS)
 AC_SUBST(OGG_LIBS)
-dnl -------- (coming soon) ------
 sr_have_ogg=no
 XIPH_PATH_OGG([
   XIPH_PATH_VORBIS([
@@ -236,11 +257,12 @@ XIPH_PATH_OGG([
   AC_DEFINE(HAVE_OGG_VORBIS,0,[Define to 1 if you have both the ogg and vorbis libraries installed])
   )
 
-dnl Check for semaphore library
+dnl -------- Check for semaphore library ------
 AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(sem, sem_init,))
 dnl Solaris needs this: -lrt
 AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(rt, sem_init,))
 
+dnl -------- Check for integer sizes ------
 dnl uint32_t vs. u_int32_t
 dnl ISO C 99 requires uint32_t, but u_int32_t is more common(?)
 AC_CHECK_HEADERS(stdint.h)
@@ -300,10 +322,6 @@ AC_TYPE_SIGNAL
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(mkdir socket strerror strstr)
 
-dnl If curses installed, make cstreamripper
-MP_WITH_CURSES
-AM_CONDITIONAL([WANT_CSTREAMRIPPER],[test x$CURSES_LIB != x])
-
 AC_OUTPUT(lib/Makefile Makefile)
 
 cat <<EOF
@@ -312,5 +330,6 @@ cat <<EOF
   Wide character support?            $have_wchar
   Using included TRE library?        $use_included_tre
   Using included MAD library?        $use_included_libmad
+  Using included CDK library?        $use_included_cdk
   Ogg/vorbis support?                $sr_have_ogg
 EOF

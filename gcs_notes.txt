@@ -1,8 +1,5 @@
-Greg's notes
------------------------------------------
-
+-----------------------------------------------------------------------
 HTTP HEADERS
-~~~~~~~~~~~~
 
 http://141.211.232.136:8000/wcbn-lo.ogg
 ===============================
@@ -132,7 +129,6 @@ Connection: close
 Content-Length: 44000000
 ---------------
 
-
 Shoutcast vs streamripper headers
 =================================
 ICY 200 OK
@@ -145,7 +141,7 @@ content-type:audio/mpeg
 icy-pub:1
 icy-metaint:8192
 icy-br:32
----------
+
 HTTP/1.0 200 OK
 Server:SHOUTcast/Linux v1.9.4
 icy-name:[relay stream] [JAPANESE R&B, HIPHOP, JROCK, JPOP & NEW RELEASES] SeiyaUsagi.Net Radio wo kiite kudasai!: SeiyaUsagi.Net Radio
@@ -153,11 +149,15 @@ icy-url:http://www.seiyausagi.net
 icy-br:32
 icy-metaint:8192
 Content-Type: audio/mpeg
----------
+
+* More problems
+
+Bitrate = 0 stuff:
+http://www.mperia.com:8000/content/1569.mp3
 
 
+-----------------------------------------------------------------------
 * New filename output stuff
-~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Pattern specifiers you can use:
 
@@ -210,10 +210,8 @@ absolute   missing      Concatinate: dir/default_pat
 relative   missing      Concatinate: pwd/dir/default_pat
 missing    missing      Use: pwd/default_pat
 
-
-
+-----------------------------------------------------------------------
 * How to upgrade the version number
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1)  configure.ac
 2)  lib/rip_manager.h
@@ -221,8 +219,9 @@ missing    missing      Use: pwd/default_pat
 4)  makedist_win.bat
 5)  streamripper.1.asc
 
+-----------------------------------------------------------------------
 * Generated files
-~~~~~~~~~~~~~~~~~
+
 I deleted the automatically generated files from CVS.  The people 
 who download from CVS should be advanced enough to figure out 
 how to build.  Just in case, I included a config.sh file to show 
@@ -235,12 +234,7 @@ CVS: 	Makefile.in configure libmad/Makefile.in
 CVS: 	libmad-0.15.1b/Makefile.in libmad-0.15.1b/mad.h 
 CVS: 	libmad-0.15.1b/msvc++/Makefile.in 
 
-
-* More problems
-~~~~~~~~~~~~~~~
-Bitrate = 0 stuff:
-http://www.mperia.com:8000/content/1569.mp3
-
+-----------------------------------------------------------------------
 * MP3 utilities
 ~~~~~~~~~~~~~~~
 MP3TRIM
@@ -262,8 +256,9 @@ mp3_check
 ~~~~~~~~~
 (unix command line/see freshmeat)
 
+-----------------------------------------------------------------------
 * The dependencies for version 1.54
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Dump of file gen_sripper.dll
 
 File Type: DLL
@@ -289,7 +284,7 @@ File Type: EXECUTABLE IMAGE
     WS2_32.dll
 
 * The dependencies for version 1.60 plugin, 1.60.5 console
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Dump of file gen_sripper.dll
 
 File Type: DLL
@@ -315,21 +310,21 @@ File Type: EXECUTABLE IMAGE
     WS2_32.dll
 
 * As of 1.61.1, I'm switching to MSVCRT.DLL linking (-MD)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
------------------------------------------
+
+-----------------------------------------------------------------------
 How to tag a new version (e.g. for version 1.60)
 
   cvs rtag -r HEAD sripper-1_60 sripper_1x
 
------------------------------------------
+-----------------------------------------------------------------------
 Autoconf versions
 
 Recently (Mon Feb 21 15:23:32 EST 2005) upgraded to:
 
   - autoconf 2.59, automake 1.9.2, libtool 1.5.10.
 
------------------------------------------
+-----------------------------------------------------------------------
 How to revise libmad
 
 First, match the auto* versions used by libmad.  For libmad-0.15.1b, 
@@ -356,7 +351,7 @@ Finally, in the top level Makefile.am, replace the define for
 libmad_manifest with the latest list of original files from the 
 libmad distro.
 
------------------------------------------
+-----------------------------------------------------------------------
 How to revise libtre
 
 Check to make sure my versions work.  Here is what I use for tre-0.7.0:
@@ -383,8 +378,7 @@ c) add manifest to distro
 Note Apr 15, 2007:
   - autoconf 2.60, automake 1.9.6, libtool 1.5.22.
 
----------------------------------------
-
+-----------------------------------------------------------------------
 For n seconds, we need buffersize of b bytes:
 	b = bitrate * 1000 * n
 
@@ -419,7 +413,9 @@ For n seconds, we need buffersize of b bytes:
 
 
 
----------------------------------------
+-----------------------------------------------------------------------
+Computing bps
+
 http://www.hydrogenaudio.org/index.php?showtopic=12633&
 --
 (1) The equation:
@@ -507,7 +503,6 @@ bash-3.00$ xterm
 bash-3.00$ export LANG=ja_JP.UTF-8
 bash-3.00$ xterm
 
-
 -----------------------------------------------------------------------
 How do strings pass through the program?
 
@@ -531,9 +526,7 @@ For Mac OSX 10.3
 -----------------------------------------------------------------------
 How to build libiconv on windows
 
-
 STEP 1: Make changes to config.h.msvc
--------------------------------------
 
 #define      EILSEQ          42
 #undef ENABLE_RELOCATABLE
@@ -543,7 +536,6 @@ STEP 1: Make changes to config.h.msvc
 
 
 STEP 2: Build dll's
--------------------
 
 copy /y config.h.msvc config.h
 copy /y config.h libcharset
@@ -557,7 +549,6 @@ erase libcharset\lib\*.obj
 nmake -f Makefile.msvc NO_NLS=1 MFLAGS=-MD
 
 step 3: gather files
---------------------
 
 mkdir iconv-win32-1.11
 copy /y libcharset\include\localcharset.h iconv-win32-1.11
@@ -595,7 +586,6 @@ fi
 ])
 
 -----------------------------------------------------------------------
-
 Other MP3 libraries
 
 mpglib
@@ -614,7 +604,6 @@ roy@mesmer ~ $ ssh cf.sourceforge.net -l codewhacker
 
 (PUTTY)
 C:\gsharp\my_putty_key\3>plink -v -i cf.ppk -l gregsharp -2 cf-shell.sf.net ls
-
 
 -----------------------------------------------------------------------
 Clients (windows)
@@ -643,7 +632,6 @@ Quod Libet (http://www.sacredchao.net/quodlibet/wiki/Download)
 Mostly things work, except mpg321 which seems to glitch even
 if I am connecting directly to the stream (i.e. without
 using streamripper).
-
 
 -----------------------------------------------------------------------
 Other OS's
@@ -704,8 +692,8 @@ http://www.mukulcast.com/ (?)
 
 A japanese one
 http://live.ladio.livedoor.com/
------------------------------------------------------------------------
 
+-----------------------------------------------------------------------
 Improving winamp plugin.  Implement some combination of these.
 
 Type A
@@ -721,7 +709,6 @@ Type C
 a) Internal caching of recent streams (not releated to winamp)
 
 -----------------------------------------------------------------------
-
 AAC goop. Ugh (:P), but here we go...
 
 
@@ -836,3 +823,11 @@ the program to choke.  Standard 44100Hz stereo does seem to work.
 Second, it doesn't like it if you run (under wine) from a normal 
 directory.  You have to put it in ~/.wine/drive_c/windows/temp or such.
 
+-----------------------------------------------------------------------
+* Multirip/main loop
+
+GUI thread
+  Rip thread
+    Accept thread for relay
+    Send thread for relay
+    External process
