@@ -828,10 +828,13 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
 	dock_do_lbuttonup(hwnd, wParam, lParam);
 	render_do_lbuttonup(hwnd, wParam, lParam);
 	{
+	    BOOL rc;
 	    RECT rt;
-	    GetWindowRect(hwnd, &rt);
-	    m_guiOpt.oldpos.x = rt.left;
-	    m_guiOpt.oldpos.y = rt.top;
+	    rc = GetWindowRect(hwnd, &rt);
+	    if (rc) {
+		m_guiOpt.oldpos.x = rt.left;
+		m_guiOpt.oldpos.y = rt.top;
+	    }
 	}
 	break;
 	
