@@ -58,7 +58,7 @@ libstreamripper_a_LIBADD =
 am_libstreamripper_a_OBJECTS = cbuf2.$(OBJEXT) charset.$(OBJEXT) \
 	debug.$(OBJEXT) external.$(OBJEXT) filelib.$(OBJEXT) \
 	findsep.$(OBJEXT) http.$(OBJEXT) iconvert.$(OBJEXT) \
-	mchar.$(OBJEXT) mpeg.$(OBJEXT) parse.$(OBJEXT) \
+	mchar.$(OBJEXT) mpeg.$(OBJEXT) parse.$(OBJEXT) prefs.$(OBJEXT) \
 	relaylib.$(OBJEXT) rip_manager.$(OBJEXT) ripaac.$(OBJEXT) \
 	ripogg.$(OBJEXT) ripstream.$(OBJEXT) socklib.$(OBJEXT) \
 	threadlib.$(OBJEXT) utf8.$(OBJEXT)
@@ -199,6 +199,7 @@ libstreamripper_a_SOURCES = \
 	mchar.c \
 	mpeg.c \
 	parse.c \
+	prefs.c \
 	relaylib.c \
 	rip_manager.c \
 	ripaac.c \
@@ -220,6 +221,7 @@ libstreamripper_a_SOURCES = \
 	mchar.h \
 	mpeg.h \
 	parse.h \
+	prefs.h \
 	relaylib.h \
 	rip_manager.h \
 	ripogg.h \
@@ -307,6 +309,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mchar.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpeg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prefs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/relaylib.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rip_manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ripaac.Po@am__quote@

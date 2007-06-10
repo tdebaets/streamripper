@@ -333,6 +333,8 @@ lib_manifest = \
 	lib/mpeg.h \
 	lib/parse.c \
 	lib/parse.h \
+	lib/prefs.c \
+	lib/prefs.h \
 	lib/relaylib.c \
 	lib/relaylib.h \
 	lib/rip_manager.c \
