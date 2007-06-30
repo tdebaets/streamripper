@@ -28,7 +28,11 @@
  * Private Vars
  *****************************************************************************/
 
-/* Return 0 for EOF.  Set key[0] to 0 if not a key/value pair. */
+/* Return 0 for EOF.
+   Return 1 for new section.
+   Return 2 for key/value pair.
+   Return 3 for no data (blank line/comment).
+*/
 int 
 parse_line (FILE* fp, char* section, char* key, char* value)
 {
@@ -48,6 +52,7 @@ parse_line (FILE* fp, char* section, char* key, char* value)
 	if ((p = strrchr (&linebuf[1], ']')) != 0) {
 	    *p = 0;
 	    strcpy (section, &linebuf[1]);
+	    return 1;
 	}
     }
 
@@ -59,15 +64,17 @@ parse_line (FILE* fp, char* section, char* key, char* value)
 	if (strlen(linebuf) > 0 && strlen(p) > 0) {
 	    strcpy (key, linebuf);
 	    strcpy (value, p);
+	    return 2;
 	}
     }
 
-    return 1;
+    return 3;
 }
 
 int 
 load_prefs (char* prefs_fn, GLOBAL_PREFS* gp)
 {
+    int rc;
     FILE* fp;
     char section[MAX_INI_LINE_LEN];
     char key[MAX_INI_LINE_LEN];
@@ -78,11 +85,19 @@ load_prefs (char* prefs_fn, GLOBAL_PREFS* gp)
     }
 
     strcpy (section, "global");
-    while (parse_line (fp, section, key, value)) {
-	if (!key[0]) {
-	    /* Might be new section */
-	} else {
-	    /* Change value for existing section */
+    while (1) {
+	switch (parse_line (fp, section, key, value)) {
+	case 0:
+	    return 1;
+	case 1:
+	    /* New section */
+	    break;
+	case 2:
+	    /* Key value pair */
+	    break;
+	case 3:
+	    /* No data, try next line */
+	    break;
 	}
     }
     return 1;

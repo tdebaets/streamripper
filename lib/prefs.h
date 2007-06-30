@@ -58,6 +58,15 @@ struct global_prefs
     char ext_cmd[SR_MAX_PATH];          // cmd to spawn for external metadata
 };
 
+/* Each metadata within the cbuf gets this struct */
+typedef struct PREFS_LIST_struct PREFS_LIST;
+struct PREFS_LIST_struct 
+{
+    GLOBAL_PREFS m_prefs;
+    LIST m_list;
+};
+
+
 #if defined (commentout)
 // Rip manager flags options
 #define OPT_AUTO_RECONNECT	0x00000001	// reconnect automatticly if dropped
