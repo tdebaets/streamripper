@@ -50,7 +50,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 MSVCRT.LIB kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Ws2_32.lib libmad.lib charset.lib iconv.lib tre.lib ogg.lib vorbis.lib /nologo /subsystem:console /machine:I386 /libpath:"..\libogg-1.1.3" /libpath:"..\libvorbis-1.1.2" /libpath:"..\libmad-0.15.1b\msvc++\Release" /libpath:"..\iconv-win32\static" /libpath:"..\tre-0.7.2\win32\Release"
+# ADD LINK32 MSVCRT.LIB pdcurses.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Ws2_32.lib libmad.lib tre.lib ogg.lib vorbis.lib charset.lib iconv.lib cdk.lib pdcurses.lib c:/mingw/lib/libmingwex.a /nologo /subsystem:console /machine:I386 /libpath:"..\libmad-0.15.1b\msvc++\Release" /libpath:"..\iconv-win32\static" /libpath:"..\cdk-5.0-20060507" /libpath:"..\libogg-1.1.3" /libpath:"..\libvorbis-1.1.2" /libpath:"..\tre-0.7.2\win32\Release"
 # SUBTRACT LINK32 /nodefaultlib
 
 !ELSEIF  "$(CFG)" == "cstreamripper - Win32 Debug"
@@ -75,7 +75,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Ws2_32.lib libmad.lib tre.lib ogg.lib vorbis.lib charset.lib iconv.lib cdk.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept /libpath:"..\libogg-1.1.3" /libpath:"..\libvorbis-1.1.2" /libpath:"..\libmad-0.15.1b\msvc++\Debug" /libpath:"..\iconv-win32-1.11" /libpath:"..\tre-0.7.2\win32\Release"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Ws2_32.lib libmad.lib tre.lib ogg.lib vorbis.lib charset.lib iconv.lib cdk.lib pdcurses.lib c:/mingw/lib/libmingwex.a /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept /libpath:"..\libmad-0.15.1b\msvc++\Debug" /libpath:"..\iconv-win32-1.11" /libpath:"..\cdk-5.0-20060507" /libpath:"..\libogg-1.1.3" /libpath:"..\libvorbis-1.1.2" /libpath:"..\tre-0.7.2\win32\Release"
 
 !ENDIF 
 
