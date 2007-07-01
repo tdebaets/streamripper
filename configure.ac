@@ -32,17 +32,13 @@ AC_CHECK_LIB(m, main)
 dnl Configure options
 
 AC_ARG_WITH(included-libmad,
- [  --with-included-libmad use the libmad library included with streamripper],
-  force_use_included_libmad=$withval,
-  force_use_included_libmad=no)
+ [  --with-included-libmad use the libmad library included with streamripper])
 
 AC_ARG_WITH(included-tre,
   [  --with-included-tre use the tre library included with streamripper])
 
 AC_ARG_WITH(included-argv,
-  [  --with-included-argv use argv.c included with streamripper],
-  force_use_included_argv=$withval,
-  force_use_included_argv=no)
+  [  --with-included-argv use argv.c included with streamripper])
 
 AC_ARG_WITH(included-cdk,
   [  --with-included-cdk use the cdk library included with streamripper])
@@ -72,7 +68,7 @@ dnl -------- Tests for using included libmad ------
 LIBMAD=""
 AC_SUBST(LIBMAD)
 use_included_libmad=yes
-if test "$force_use_included_libmad" = no; then
+if test "x$with_included_libmad" != xyes; then
   sr_save_CPPFLAGS="$CPPFLAGS"
   CPPFLAGS="-Ilib -D__UNIX__"
   AC_SUBST(CPPFLAGS)
@@ -194,7 +190,7 @@ fi
 
 dnl -------- Tests for using libiberty or argv.c
 use_included_argv=yes
-if test "$force_use_included_argv" = no; then
+if test "x$with_included_argv" != xyes; then
   AC_CHECK_LIB(iberty, buildargv,
     use_included_argv=no,
     use_included_argv=yes)

@@ -63,7 +63,7 @@ typedef struct PREFS_LIST_struct PREFS_LIST;
 struct PREFS_LIST_struct 
 {
     GLOBAL_PREFS m_prefs;
-    LIST m_list;
+//    LIST m_list;
 };
 
 
