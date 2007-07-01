@@ -1,24 +1,24 @@
-# Microsoft Developer Studio Project File - Name="consoleWin32" - Package Owner=<4>
+# Microsoft Developer Studio Project File - Name="streamripper" - Package Owner=<4>
 # Microsoft Developer Studio Generated Build File, Format Version 6.00
 # ** DO NOT EDIT **
 
 # TARGTYPE "Win32 (x86) Console Application" 0x0103
 
-CFG=consoleWin32 - Win32 Debug
+CFG=streamripper - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "consoleWin32.mak".
+!MESSAGE NMAKE /f "streamripper.mak".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "consoleWin32.mak" CFG="consoleWin32 - Win32 Debug"
+!MESSAGE NMAKE /f "streamripper.mak" CFG="streamripper - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "consoleWin32 - Win32 Release" (based on "Win32 (x86) Console Application")
-!MESSAGE "consoleWin32 - Win32 Debug" (based on "Win32 (x86) Console Application")
+!MESSAGE "streamripper - Win32 Release" (based on "Win32 (x86) Console Application")
+!MESSAGE "streamripper - Win32 Debug" (based on "Win32 (x86) Console Application")
 !MESSAGE 
 
 # Begin Project
@@ -28,7 +28,7 @@ CFG=consoleWin32 - Win32 Debug
 CPP=cl.exe
 RSC=rc.exe
 
-!IF  "$(CFG)" == "consoleWin32 - Win32 Release"
+!IF  "$(CFG)" == "streamripper - Win32 Release"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
@@ -50,10 +50,10 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 MSVCRT.LIB kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Ws2_32.lib libmad.lib charset.lib iconv.lib tre.lib ogg.lib vorbis.lib /nologo /subsystem:console /machine:I386 /out:"Release/sripper.exe" /libpath:"..\libogg-1.1.3" /libpath:"..\libvorbis-1.1.2" /libpath:"..\libmad-0.15.1b\msvc++\Release" /libpath:"..\iconv-win32\static" /libpath:"..\tre-0.7.2\win32\Release"
+# ADD LINK32 MSVCRT.LIB kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Ws2_32.lib libmad.lib charset.lib iconv.lib tre.lib ogg.lib vorbis.lib /nologo /subsystem:console /machine:I386 /out:"Release/streamripper.exe" /libpath:"..\libogg-1.1.3" /libpath:"..\libvorbis-1.1.2" /libpath:"..\libmad-0.15.1b\msvc++\Release" /libpath:"..\iconv-win32\static" /libpath:"..\tre-0.7.2\win32\Release"
 # SUBTRACT LINK32 /nodefaultlib
 
-!ELSEIF  "$(CFG)" == "consoleWin32 - Win32 Debug"
+!ELSEIF  "$(CFG)" == "streamripper - Win32 Debug"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 1
@@ -75,14 +75,14 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Ws2_32.lib libmad.lib tre.lib ogg.lib vorbis.lib charset.lib iconv.lib /nologo /subsystem:console /debug /machine:I386 /out:"Debug/sripper.exe" /pdbtype:sept /libpath:"..\libogg-1.1.3" /libpath:"..\libvorbis-1.1.2" /libpath:"..\libmad-0.15.1b\msvc++\Debug" /libpath:"..\iconv-win32-1.11" /libpath:"..\tre-0.7.2\win32\Release"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Ws2_32.lib libmad.lib tre.lib ogg.lib vorbis.lib charset.lib iconv.lib /nologo /subsystem:console /debug /machine:I386 /out:"Debug/streamripper.exe" /pdbtype:sept /libpath:"..\libogg-1.1.3" /libpath:"..\libvorbis-1.1.2" /libpath:"..\libmad-0.15.1b\msvc++\Debug" /libpath:"..\iconv-win32-1.11" /libpath:"..\tre-0.7.2\win32\Release"
 
 !ENDIF 
 
 # Begin Target
 
-# Name "consoleWin32 - Win32 Release"
-# Name "consoleWin32 - Win32 Debug"
+# Name "streamripper - Win32 Release"
+# Name "streamripper - Win32 Debug"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
