@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////
 #include "srconfig.h"
 #if WIN32
+/* Warning: Not allowed to mix windows.h & cdk.h */
 #include <windows.h>
 #else
 #include <sys/types.h>
@@ -183,7 +184,6 @@ typedef struct TRACK_INFOst
     char composed_metadata[MAX_METADATA_LEN+1];      /* For relay stream */
     BOOL save_track;
 } TRACK_INFO;
-
 
 #ifndef WIN32
 typedef int SOCKET;
