@@ -7,17 +7,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined (WIN32)
+#include <cdk.h>
+#else
 #include <cdk/cdk.h>
+#endif
+
 /* GCS FIX: need to set HAVE_XCURSES as needed */
 #ifdef HAVE_XCURSES
 char *XCursesProgramName = "scroll_ex";
 #endif
 
-#include "srtypes.h"
-#include "rip_manager.h"
-#include "mchar.h"
-#include "filelib.h"
-#include "debug.h"
+//#include "srtypes.h"
+//#include "rip_manager.h"
+//#include "mchar.h"
+//#include "filelib.h"
+//#include "debug.h"
 
 int
 main (int argc, char* argv[])
@@ -37,7 +42,8 @@ main (int argc, char* argv[])
     CDKparseParams (argc, argv, &params, "cs:t:" CDK_CLI_PARAMS);
 
     /* GCS FIX: Only set if not defined by env */
-    ESCDELAY = 50;
+    /* GCS FIX: This constant is only defined for ncurses */
+    //ESCDELAY = 50;
 
     /* Set up CDK. */
     cursesWin = initscr ();
@@ -95,19 +101,22 @@ main (int argc, char* argv[])
 	while (1) {
 	    int p = getch();
 	    if (p == ERR) {
-		usleep (100);
+		/* GCS FIX usleep() only defined for unix */
+		//usleep (100);
 	    } else if (p == 'q') {
 		break;
 	    } else if (p == 'j') {
 		if (++pos >= count) pos = count-1;
 		setCDKScrollPosition (scrollList, pos);
 		drawCDKScroll (scrollList, 1);
-		usleep (10);
+		/* GCS FIX usleep() only defined for unix */
+		//usleep (10);
 	    } else if (p == 'k') {
 		if (--pos < 0) pos = 0;
 		setCDKScrollPosition (scrollList, pos);
 		drawCDKScroll (scrollList, 1);
-		usleep (10);
+		/* GCS FIX usleep() only defined for unix */
+		//usleep (10);
 	    }
 	}
     }
