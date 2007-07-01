@@ -1,0 +1,14 @@
+/* 
+ * $Id$
+ */
+
+#ifndef CDK_CONFIG_H
+#define CDK_CONFIG_H 1
+
+@DEFS@
+
+#if !defined(HAVE_LSTAT) && !defined(lstat)
+#define lstat(f,b) stat(f,b)
+#endif
+
+#endif /* CDK_CONFIG_H */
