@@ -379,6 +379,31 @@ Note Apr 15, 2007:
   - autoconf 2.60, automake 1.9.6, libtool 1.5.22.
 
 -----------------------------------------------------------------------
+How to compile curses
+
+* I'm trying to use pdcurses, and compile under MSYS/MinGW, with 
+  binary distro of pdcurses
+
+1) Copy curses header files to /mingw/include, and libraries to 
+   /mingw/lib.
+2) Be sure to rename pdcurses.lib to curses.lib (but don't rename 
+   the dll).
+3) Configure the cdk package.
+4) Comment out <pwd.h> and <grp.h> in include/cdk.h
+5) Edit these files, and workaround missing defines and functions
+     include/cdk.h
+     fselect.c
+6) Build
+7) Comment out <cdk_config.h> in cdk.h
+8) Comment out <unistd.h>, <dirent.h> in cdk.h
+9) Comment out mode2Filetype, mode2Char, Beep in cdk_util.h
+10) Commentout DELETE in curdefs.h
+11) Commentout boolean in cdk.h
+
+RMK: Can't comment out boolean, because it is required by fn protos
+
+
+-----------------------------------------------------------------------
 For n seconds, we need buffersize of b bytes:
 	b = bitrate * 1000 * n
 
@@ -391,7 +416,7 @@ For n seconds, we need buffersize of b bytes:
 	      xs_offset |
 			|
 			|
-	      |---------|---------|
+,	      |---------|---------|
 		prepad    postpad
 
 
