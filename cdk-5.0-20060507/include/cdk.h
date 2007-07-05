@@ -79,9 +79,12 @@ extern "C" {
 #include <dirent.h>
 #include <time.h>
 #include <errno.h>
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
+#ifdef HAVE_GRP_H
 #include <grp.h>
-
+#endif
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif

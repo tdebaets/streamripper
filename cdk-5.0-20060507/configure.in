@@ -66,6 +66,8 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(\
 limits.h \
 unistd.h \
+pwd.h \
+grp.h \
 )
 
 dnl
@@ -75,6 +77,7 @@ AC_TYPE_MODE_T
 AC_STRUCT_TM
 CF_CURSES_CHTYPE
 CF_GETOPT_HEADER
+
 
 dnl
 dnl Checks for library functions.
