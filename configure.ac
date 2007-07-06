@@ -231,6 +231,9 @@ else
     AC_DEFINE(HAVE_CDK,1,[Define to 1 if you have cdk libraries installed])
   ],[],[-lncurses])
 fi
+if test "x$use_included_cdk" = "xyes"; then
+  AC_CONFIG_SUBDIRS(cdk-5.0-20060507)
+fi
 AC_SUBST(CDK_LIBS)
 AM_CONDITIONAL([WANT_CSTREAMRIPPER],[test x$use_cdk != xno])
 
