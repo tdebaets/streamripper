@@ -6,6 +6,10 @@
 char *XCursesProgramName="cdklabel";
 #endif
 
+#if !defined (HAVE_SLEEP) && defined (_WIN32)  /* Mingw */
+#define sleep(x) _sleep(x*1000)
+#endif
+
 /*
  * Declare file local variables.
  */

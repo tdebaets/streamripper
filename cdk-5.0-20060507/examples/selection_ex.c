@@ -25,7 +25,9 @@ int main (int argc, char **argv)
    char *choices[]		= {"   ", "-->"};
    char **item = 0;
    char temp[256], *mesg[200];
+#if defined (HAVE_PWD_H)
    struct passwd *ent;
+#endif
    unsigned x, y;
    unsigned used = 0;
    unsigned count = 0;
@@ -36,11 +38,13 @@ int main (int argc, char **argv)
 
    /* Use the account names to create a list. */
    count = 0;
+#if defined (HAVE_PWD_H)
    while ((ent = getpwent ()) != 0)
    {
       used = CDKallocStrings(&item, ent->pw_name, count++, used);
    }
    endpwent();
+#endif
    count--;
 
    /* Set up CDK. */

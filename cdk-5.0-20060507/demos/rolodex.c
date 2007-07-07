@@ -86,7 +86,11 @@ int main(void)
    }
 
    /* Make the rolodex directory. */
+#if defined (__MINGW32__)
+   mkdir (GDBMDir);
+#else
    mkdir (GDBMDir, 0755);
+#endif
 
    /* Open the rolodex RC file. */
    groupCount = readRCFile (GRCFile, groupList);
@@ -1509,7 +1513,11 @@ void printGroupNumbers (CDKSCREEN *screen, SRolodex *groupList, int groupCount)
 int printGroup (SRolodex groupRecord, char *filename, char *printer)
 {
    /* Declare local variables. */
+#if defined (__MINGW32__)
+   int uid = 0;
+#else
    uid_t uid = getuid();
+#endif
    char tempFilename[256], command[256];
    SPhoneData phoneData;
    SPhoneRecord *phoneRecord;

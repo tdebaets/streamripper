@@ -87,6 +87,8 @@ getcwd \
 mktime \
 strdup \
 strerror \
+getlogin \
+sleep \
 )
 
 CF_FUNC_LSTAT

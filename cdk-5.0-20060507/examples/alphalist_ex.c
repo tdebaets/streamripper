@@ -32,15 +32,19 @@ static int undoSize;
  */
 static int getUserList (char ***list)
 {
+#if defined (HAVE_PWD_H)
    struct passwd *ent;
+#endif
    int x = 0;
    unsigned used = 0;
 
+#if defined (HAVE_PWD_H)
    while ((ent = getpwent ()) != 0)
    {
       used = CDKallocStrings (list, ent->pw_name, x++, used);
    }
    endpwent ();
+#endif
    return x;
 }
 

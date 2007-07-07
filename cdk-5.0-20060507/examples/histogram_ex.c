@@ -6,6 +6,10 @@
 char *XCursesProgramName = "histogram_ex";
 #endif
 
+#if !defined (HAVE_SLEEP) && defined (_WIN32)  /* Mingw */
+#define sleep(x) _sleep(x*1000)
+#endif
+
 int main(int argc, char **argv)
 {
    /* Declare vars. */

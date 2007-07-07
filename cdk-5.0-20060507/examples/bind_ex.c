@@ -54,7 +54,7 @@ int main(int argc, char **argv)
    char		*buttons[40];
    char		*message[40];
    char		*info[5];
-   char		*loginName;
+   char		*loginName = 0;
    char		temp[256];
    int		selection;
    time_t	clck;
@@ -118,7 +118,9 @@ int main(int argc, char **argv)
       {
 	 /* Get the users login name. */
 	 info[0] = "<C>     </U>Login Name<!U>     ";
+#if defined (HAVE_GETLOGIN)
 	 loginName = getlogin ();
+#endif
 	 if (loginName == (char *)0)
 	 {
 	    strcpy (temp, "<C></R>Unknown");
