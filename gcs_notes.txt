@@ -414,6 +414,17 @@ How to compile cdk
 
 1) CFLAGS=-I/d/sripper_1x/pdcurses-win32-3.2 LDFLAGS=-L/d/sripper_1x/pdcurses-win32-3.2 ./configure
 
+* Additional changes after patch sent to Tim Dickey
+
+1) Guards in cdk.h
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_DIRENT_H
+#include <dirent.h>
+#endif
+
+
 Old notes:
 
 1) Copy curses header files to /mingw/include, and libraries to 
