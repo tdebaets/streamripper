@@ -379,10 +379,42 @@ Note Apr 15, 2007:
   - autoconf 2.60, automake 1.9.6, libtool 1.5.22.
 
 -----------------------------------------------------------------------
-How to compile curses
+MinGW problems
 
-* I'm trying to use pdcurses, and compile under MSYS/MinGW, with 
-  binary distro of pdcurses
+Seems that 1.0.11 doesn't play well with windows 98.  
+
+1.0.11-2004.04.03
+-----------------
+1) Rxvt fails when run from the batch file, though it works 
+   from the command line.
+
+snapshot
+--------
+1) The snapshot has a .bat file with unix EOL
+2) Rxvt fails (flashes then closes) from either batch file or 
+   command line.
+3) sh fails.  For example:
+
+C:\msys\1.0>bin\sh
+SH-2.04$ ls
+ - Cannot openSH-2.04$
+SH-2.04$
+
+
+There are good doc on installing msys here:
+
+http://www.swig.org/Doc1.3/Windows.html
+http://mldonkey.sourceforge.net/Windows
+
+-----------------------------------------------------------------------
+How to compile cdk
+
+* Using binary distro of pdcurses, and compile under MSYS/MinGW.
+  Use full path for CFLAGS/LDFLAGS, or else examples don't build.
+
+1) CFLAGS=-I/d/sripper_1x/pdcurses-win32-3.2 LDFLAGS=-L/d/sripper_1x/pdcurses-win32-3.2 ./configure
+
+Old notes:
 
 1) Copy curses header files to /mingw/include, and libraries to 
    /mingw/lib.
@@ -416,7 +448,7 @@ For n seconds, we need buffersize of b bytes:
 	      xs_offset |
 			|
 			|
-,	      |---------|---------|
+	      |---------|---------|
 		prepad    postpad
 
 
