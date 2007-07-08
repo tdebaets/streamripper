@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-AM_CPPFLAGS = @CPPFLAGS@ @OGG_CFLAGS@ @VORBIS_CFLAGS@
+AM_CPPFLAGS = @CPPFLAGS@ @OGG_CFLAGS@ @VORBIS_CFLAGS@ @GLIB_CFLAGS@
 
 if SUBDIR_LIBMAD
 MAYBE_LIBMAD = libmad-0.15.1b
@@ -10,7 +10,11 @@ if SUBDIR_TRE
 MAYBE_LIBTRE = tre-0.7.2
 endif
 
-SUBDIRS = $(MAYBE_LIBMAD) $(MAYBE_LIBTRE) lib
+if SUBDIR_CDK
+MAYBE_CDK = cdk-5.0-20060507
+endif
+
+SUBDIRS = $(MAYBE_LIBMAD) $(MAYBE_LIBTRE) $(MAYBE_CDK) lib
 
 bin_PROGRAMS = streamripper
 if WANT_CSTREAMRIPPER
@@ -376,7 +380,8 @@ streamripper_LDADD = \
 	@LTLIBICONV@ @LIBCHARSET@ \
 	@LIBIBERTY_LIBS@ \
 	@OGG_LIBS@ @VORBIS_LIBS@ \
-        @CDK_LIBS@
+        @CDK_LIBS@ \
+	@GLIB_LIBS@
 
 cstreamripper_LDADD = \
 	lib/libstreamripper.a \
@@ -387,6 +392,7 @@ cstreamripper_LDADD = \
 	@LTLIBICONV@ @LIBCHARSET@ \
 	@LIBIBERTY_LIBS@ \
 	@OGG_LIBS@ @VORBIS_LIBS@ \
-        @CDK_LIBS@
+        @CDK_LIBS@ \
+	@GLIB_LIBS@
 
 ACLOCAL_AMFLAGS = -I m4

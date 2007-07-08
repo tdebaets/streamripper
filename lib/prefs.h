@@ -17,9 +17,12 @@
 #ifndef __PREFS_H__
 #define __PREFS_H__
 
-typedef struct global_prefs GLOBAL_PREFS;
-struct global_prefs
+#include <glib.h>
+
+typedef struct prefs PREFS;
+struct prefs
 {
+    char label[MAX_URL_LEN];		// logical name for this stream
     char url[MAX_URL_LEN];		// url of the stream to connect to
     char proxyurl[MAX_URL_LEN];		// url of a http proxy server, 
                                         //  '\0' otherwise
@@ -62,8 +65,8 @@ struct global_prefs
 typedef struct PREFS_LIST_struct PREFS_LIST;
 struct PREFS_LIST_struct 
 {
-    GLOBAL_PREFS m_prefs;
-//    LIST m_list;
+    PREFS m_global_prefs;
+    GQueue m_list;
 };
 
 

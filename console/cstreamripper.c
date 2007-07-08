@@ -52,7 +52,9 @@ main (int argc, char* argv[])
 
     /* GCS FIX: Only set if not defined by env */
     /* GCS FIX: This constant is only defined for ncurses */
-    //ESCDELAY = 50;
+#if defined (NCURSES_VERSION)
+    ESCDELAY = 50;
+#endif
 
     /* Set up CDK. */
     cursesWin = initscr ();

@@ -72,25 +72,48 @@ parse_line (FILE* fp, char* section, char* key, char* value)
 }
 
 int 
-load_prefs (char* prefs_fn, GLOBAL_PREFS* gp)
+load_prefs (char* prefs_fn, PREFS_LIST* prefs)
 {
     int rc;
     FILE* fp;
     char section[MAX_INI_LINE_LEN];
     char key[MAX_INI_LINE_LEN];
     char value[MAX_INI_LINE_LEN];
+    GList *i;
+    PREFS *cur;
 
     if ((fp = fopen (prefs_fn, "r")) == 0) {
         return 0;
     }
 
-    strcpy (section, "global");
+    /* Initialize linked list */
+    prefs->m_list.head = 0;
+    prefs->m_list.tail = 0;
+    prefs->m_list.length = 0;
+
+    strcpy (section, "global");  /* If there is no section, it is global */
     while (1) {
 	switch (parse_line (fp, section, key, value)) {
 	case 0:
-	    return 1;
+	    /* End of file */
+	    fclose (fp);
+	    return 0;
 	case 1:
-	    /* New section */
+	    /* New section heading */
+	    /* GCS FIX: check for global */
+	    cur = 0;
+	    for (i = prefs->m_list.head; i; g_slist_next (i)) {
+		PREFS* p = (PREFS*) i->data;
+		if (!strcmp (p->label, section)) {
+		    cur = p;
+		    break;
+		}
+	    }
+	    if (!cur) {
+		PREFS* cur = (PREFS*) g_memdup (&prefs->m_global_prefs, 
+						(sizeof (PREFS)));
+		g_queue_push_tail (&prefs->m_list, cur);
+	    }
 	    break;
 	case 2:
 	    /* Key value pair */
@@ -100,5 +123,5 @@ load_prefs (char* prefs_fn, GLOBAL_PREFS* gp)
 	    break;
 	}
     }
-    return 1;
+    return 0;
 }

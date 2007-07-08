@@ -29,6 +29,9 @@ dnl Checks for libraries.
 dnl Replace `main' with a function in -lm:
 AC_CHECK_LIB(m, main)
 
+dnl AM_PATH_GLIB_2_0([MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND [, MODULES]]]])
+AM_PATH_GLIB_2_0(2.0.0,,[AC_MSG_ERROR([glib 2.10 or newer is required])])
+
 dnl Configure options
 
 AC_ARG_WITH(included-libmad,
@@ -231,9 +234,7 @@ else
     AC_DEFINE(HAVE_CDK,1,[Define to 1 if you have cdk libraries installed])
   ],[],[-lncurses])
 fi
-if test "x$use_included_cdk" = "xyes"; then
-  AC_CONFIG_SUBDIRS(cdk-5.0-20060507)
-fi
+AM_CONDITIONAL(SUBDIR_CDK, test "x$use_included_cdk" = "xyes")
 AC_SUBST(CDK_LIBS)
 AM_CONDITIONAL([WANT_CSTREAMRIPPER],[test x$use_cdk != xno])
 
