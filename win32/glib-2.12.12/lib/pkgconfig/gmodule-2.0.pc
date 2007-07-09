@@ -1,0 +1,13 @@
+prefix=c:/devel/target/55b4580e3e7d91e6fc957079ff551c00
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+gmodule_supported=true
+
+Name: GModule
+Description: Dynamic module loader for GLib
+Requires: glib-2.0
+Version: 2.12.12
+Libs: -L${libdir}  -lgmodule-2.0 
+Cflags:
