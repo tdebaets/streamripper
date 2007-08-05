@@ -36,7 +36,6 @@ libmad_manifest = \
 	libmad-0.15.1b/README \
 	libmad-0.15.1b/configure.ac \
 	libmad-0.15.1b/aclocal.m4 \
-	libmad-0.15.1b/mad.h \
 	libmad-0.15.1b/Makefile.am \
 	libmad-0.15.1b/Makefile.in \
 	libmad-0.15.1b/config.h.in \
