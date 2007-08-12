@@ -1,6 +1,11 @@
-New for 1.62.2
+New for 1.70
 --------------
 * Plugin: fix problem where geometry sometimes gets located outside screen
+
+New for 1.62.2
+--------------
+Sun Aug 12 17:02:22 EDT 2007
+* Fix buffer overflow in http header parsing
 
 New for 1.62.1
 --------------
