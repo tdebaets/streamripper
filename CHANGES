@@ -1,3 +1,8 @@
+New for 1.62.2
+--------------
+Sun Aug 12 17:02:22 EDT 2007
+* Fix buffer overflow in http header parsing
+
 New for 1.62.1
 --------------
 Sat May 26 15:33:12 EDT 2007
