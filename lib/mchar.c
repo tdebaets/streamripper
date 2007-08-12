@@ -91,7 +91,7 @@ subnstr_until(const char *str, char *until, char *newstr, int maxlen)
     const char *p = str;
     int len = 0;
 
-    for(len = 0; strncmp(p, until, strlen(until)) != 0 && len < maxlen; p++)
+    for(len = 0; strncmp(p, until, strlen(until)) != 0 && len < maxlen-1; p++)
     {
 	newstr[len] = *p;
 	len++;
