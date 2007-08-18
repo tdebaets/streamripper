@@ -301,8 +301,6 @@ AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(mkdir socket strerror strstr)
 
 dnl If curses installed, make cstreamripper
-MP_WITH_CURSES
-AM_CONDITIONAL([WANT_CSTREAMRIPPER],[test x$CURSES_LIB != x])
 
 AC_OUTPUT(lib/Makefile Makefile)
 

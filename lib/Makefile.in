@@ -43,8 +43,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/codeset.m4 \
 	$(top_srcdir)/m4/iconv.m4 $(top_srcdir)/m4/lib-ld.m4 \
 	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
-	$(top_srcdir)/m4/mp_with_curses.m4 $(top_srcdir)/m4/ogg.m4 \
-	$(top_srcdir)/m4/sr_locale_charset.m4 \
+	$(top_srcdir)/m4/ogg.m4 $(top_srcdir)/m4/sr_locale_charset.m4 \
 	$(top_srcdir)/m4/vorbis.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -140,8 +139,6 @@ VORBISENC_LIBS = @VORBISENC_LIBS@
 VORBISFILE_LIBS = @VORBISFILE_LIBS@
 VORBIS_CFLAGS = @VORBIS_CFLAGS@
 VORBIS_LIBS = @VORBIS_LIBS@
-WANT_CSTREAMRIPPER_FALSE = @WANT_CSTREAMRIPPER_FALSE@
-WANT_CSTREAMRIPPER_TRUE = @WANT_CSTREAMRIPPER_TRUE@
 ac_ct_CC = @ac_ct_CC@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
 am__fastdepCC_TRUE = @am__fastdepCC_TRUE@

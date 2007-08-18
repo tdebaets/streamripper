@@ -13,20 +13,14 @@ endif
 SUBDIRS = $(MAYBE_LIBMAD) $(MAYBE_LIBTRE) lib
 
 bin_PROGRAMS = streamripper
-if WANT_CSTREAMRIPPER
-    bin_PROGRAMS += cstreamripper
-endif
 
-EXTRA_PROGRAMS = streamripper ictest cstreamripper
+EXTRA_PROGRAMS = streamripper ictest
 
 ictest_SOURCES = \
 	lib/ictest.c
 
 streamripper_SOURCES = \
 	console/streamripper.c
-
-cstreamripper_SOURCES = \
-	console/cstreamripper.c
 
 if USE_INCLUDED_ARGV
 streamripper_SOURCES += lib/argv.c
@@ -364,16 +358,6 @@ EXTRA_DIST = \
 DIST_SUBDIRS = 
 
 streamripper_LDADD = \
-	lib/libstreamripper.a \
-	@FAAD_LIBS@ \
-	@LIBMAD@ \
-	@LIBREGEX@ \
-	@THREADLIBS@ \
-	@LTLIBICONV@ @LIBCHARSET@ \
-	@LIBIBERTY_LIBS@ \
-	@OGG_LIBS@ @VORBIS_LIBS@
-
-cstreamripper_LDADD = \
 	lib/libstreamripper.a \
 	@FAAD_LIBS@ \
 	@LIBMAD@ \
