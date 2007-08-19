@@ -36,6 +36,7 @@
 #include <math.h>
 #include <time.h>
 #include "srtypes.h"
+#include "prefs.h"
 #include "rip_manager.h"
 #include "mchar.h"
 #include "filelib.h"
@@ -80,8 +81,13 @@ main (int argc, char* argv[])
 {
     int ret;
     time_t temp_time;
+    PREFS my_prefs;
+
     signal(SIGINT, catch_sig);
     signal(SIGTERM, catch_sig);
+
+    prefs_load ("c:\\tmp\\gcs.txt");
+    prefs_get (&my_prefs, "Foobar");
 
     parse_arguments(argc, argv);
     if (!m_dont_print)
@@ -111,10 +117,7 @@ main (int argc, char* argv[])
     if (!m_dont_print) {
 	fprintf(stderr, "shutting down\n");
     }
-    /* GCS: Why? */
-#if defined (commentout)
-    m_dont_print = TRUE;
-#endif
+
     rip_manager_stop();
     return 0;
 }

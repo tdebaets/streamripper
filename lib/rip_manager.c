@@ -171,14 +171,6 @@ rip_manager_get_error_str(error_code code)
     return m_error_str[-code];
 }
 
-#if defined (commentout)
-u_short
-rip_mananger_get_relay_port()
-{
-    return rmo->relay_port;
-}
-#endif
-
 void
 post_error(int err)
 {
@@ -443,7 +435,6 @@ ripthread (void *input_arg)
     m_ripping = FALSE;
     debug_printf ("ripthread() exiting!\n");
 }
-
 
 void
 rip_manager_stop()

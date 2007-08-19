@@ -42,8 +42,9 @@ struct prefs
 					//  GCS 3/30/07 change to u_short
     u_short max_port;			// highest port the relay server 
                                         //  can look if it needs to search
-    int max_connections;                // max number of connections 
+    u_long max_connections;             // max number of connections 
                                         //  to relay stream
+					//  GCS 8/18/07 change int to u_long
     u_long maxMB_rip_size;		// max number of megabytes that 
                                         //  can by writen out before we stop
     u_long flags;			// all booleans logically OR'd 
@@ -59,14 +60,6 @@ struct prefs
     int count_start;                    // which number to start counting?
     enum OverwriteOpt overwrite;	// overwrite file in complete?
     char ext_cmd[SR_MAX_PATH];          // cmd to spawn for external metadata
-};
-
-/* Each metadata within the cbuf gets this struct */
-typedef struct PREFS_LIST_struct PREFS_LIST;
-struct PREFS_LIST_struct 
-{
-    PREFS m_global_prefs;
-    GQueue m_list;
 };
 
 
@@ -93,5 +86,9 @@ struct PREFS_LIST_struct
 #define OPT_FLAG_SET(flags, opt, val)	\
     (val ? (flags |= opt) : (flags &= (~opt)))
 #endif
+
+/* Prototypes */
+void prefs_load (char* prefs_fn);
+void prefs_get (PREFS* prefs, char* label);
 
 #endif
