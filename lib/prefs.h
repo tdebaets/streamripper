@@ -38,6 +38,8 @@ struct prefs
                                         //  rely .pls file
     char relay_ip[SR_MAX_PATH];		// optional, ip to bind relaying 
                                         //  socket to
+    char ext_cmd[SR_MAX_PATH];          // cmd to spawn for external metadata
+    char useragent[MAX_USERAGENT_STR];	// optional, use a different useragent
     u_short relay_port;			// port to use for the relay server
 					//  GCS 3/30/07 change to u_short
     u_short max_port;			// highest port the relay server 
@@ -49,17 +51,17 @@ struct prefs
                                         //  can by writen out before we stop
     u_long flags;			// all booleans logically OR'd 
                                         //  together (see above)
-    char useragent[MAX_USERAGENT_STR];	// optional, use a different useragent
-    SPLITPOINT_OPTIONS sp_opt;		// options for splitpoint rules
-    int timeout;			// timeout, in seconds, before a 
+    u_long timeout;			// timeout, in seconds, before a 
                                         //  stalled connection is forcefully 
                                         //  closed
-    int dropcount;			// number of tracks at beginning 
+					//  GCS 8/18/07 change int to u_long
+    u_long dropcount;			// number of tracks at beginning 
                                         //  of connection to always ignore
-    CODESET_OPTIONS cs_opt;             // which codeset should i use?
+					//  GCS 8/18/07 change int to u_long
     int count_start;                    // which number to start counting?
     enum OverwriteOpt overwrite;	// overwrite file in complete?
-    char ext_cmd[SR_MAX_PATH];          // cmd to spawn for external metadata
+    SPLITPOINT_OPTIONS sp_opt;		// options for splitpoint rules
+    CODESET_OPTIONS cs_opt;             // which codeset should i use?
 };
 
 
