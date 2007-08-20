@@ -235,6 +235,23 @@ CVS: 	libmad-0.15.1b/Makefile.in libmad-0.15.1b/mad.h
 CVS: 	libmad-0.15.1b/msvc++/Makefile.in 
 
 -----------------------------------------------------------------------
+* How to build streamripper 1.70
+
+1) pkg-config
+2) gettext
+3) glib
+
+CFLAGS=-I$HOME/LOCAL-td191/include LDFLAGS=-L$HOME/LOCAL-td191/lib ./configure --prefix=$HOME/LOCAL-td191
+
+-----------------------------------------------------------------------
+* Compile farms
+
+http://www.testdrive.hp.com
+http://powerdev.osuosl.org/
+http://www.blastwave.org/
+http://freeshell.org
+
+-----------------------------------------------------------------------
 * MP3 utilities
 ~~~~~~~~~~~~~~~
 MP3TRIM
