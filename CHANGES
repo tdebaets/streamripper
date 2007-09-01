@@ -1,3 +1,10 @@
+New for 1.62.3
+--------------
+Sun Aug 26 17:55:38 EDT 2007
+* Configure: Remove useless curses/cstreamripper rules
+* Configure: Fix include paths for libmad, libtre
+* Configure: Fix alloca compatibility
+
 New for 1.62.2
 --------------
 Sun Aug 12 17:02:22 EDT 2007

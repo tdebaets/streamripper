@@ -11,6 +11,9 @@ AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_INSTALL
 
+dnl GCS, Sep 1 2007
+AC_PROG_MKDIR_P
+
 tre_version_1=`echo $PACKAGE_VERSION | cut -d . -f 1`
 tre_version_2=`echo $PACKAGE_VERSION | cut -d . -f 2`
 tre_version_3=`echo $PACKAGE_VERSION | cut -d . -f 3`

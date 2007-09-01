@@ -26,10 +26,18 @@ datadir = @datadir@
 localedir = $(datadir)/locale
 gettextsrcdir = $(datadir)/gettext/po
 
+## GCS, Sep 1 2007
+datarootdir = @datarootdir@
+
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
-MKINSTALLDIRS = @MKINSTALLDIRS@
-mkinstalldirs = $(SHELL) $(MKINSTALLDIRS)
+
+## GCS, Sep 1 2007
+## MKINSTALLDIRS = @MKINSTALLDIRS@
+## mkinstalldirs = $(SHELL) $(MKINSTALLDIRS)
+MKINSTALLDIRS = @MKDIR_P@
+mkinstalldirs = @MKDIR_P@
+
 
 GMSGFMT = @GMSGFMT@
 MSGFMT = @MSGFMT@

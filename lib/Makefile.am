@@ -1,5 +1,15 @@
 ## Process this file with automake to produce Makefile.in
 
+AM_CPPFLAGS = @OGG_CFLAGS@ @VORBIS_CFLAGS@
+
+if SUBDIR_LIBMAD
+  AM_CPPFLAGS += -I@abs_top_srcdir@/libmad-0.15.1b
+endif
+
+if SUBDIR_TRE
+  AM_CPPFLAGS += -I@abs_top_srcdir@/tre-0.7.2
+endif
+
 noinst_LIBRARIES = libstreamripper.a
 
 libstreamripper_a_SOURCES = \

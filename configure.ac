@@ -10,7 +10,7 @@ dnl   AC_CHECK_LIB:   prepends the library to LIBS
 dnl   AC_CHECK_FUNC:  defines a shell variable
 
 AC_PREREQ(2.59)
-AC_INIT(streamripper,1.62.2)
+AC_INIT(streamripper,1.62.2b)
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([lib/config.h])
@@ -25,28 +25,28 @@ fi
 AC_PROG_INSTALL
 AC_PROG_RANLIB
 
+dnl test for inline
+AC_C_INLINE
+
 dnl Checks for libraries.
 dnl Replace `main' with a function in -lm:
 AC_CHECK_LIB(m, main)
 
+dnl Yummy alloca()
+AC_FUNC_ALLOCA
+
 dnl Configure options
 
 AC_ARG_WITH(included-libmad,
- [  --with-included-libmad use the libmad library included with streamripper],
-  force_use_included_libmad=$withval,
-  force_use_included_libmad=no)
-dnl AC_MSG_RESULT($force_use_included_libmad)
+ [  --with-included-libmad use the libmad library included with streamripper])
 
 AC_ARG_WITH(included-tre,
   [  --with-included-tre use the tre library included with streamripper])
 
 AC_ARG_WITH(included-argv,
-  [  --with-included-argv use argv.c included with streamripper],
-  force_use_included_argv=$withval,
-  force_use_included_argv=no)
-dnl AC_MSG_RESULT($force_use_included_argv)
+  [  --with-included-argv use argv.c included with streamripper])
 
-CPPFLAGS="-Ilib -D__UNIX__"
+CPPFLAGS="-D__UNIX__"
 AC_SUBST(CPPFLAGS)
 
 dnl -------- Tests for threading library ----------
@@ -71,7 +71,7 @@ dnl -------- Tests for using included libmad ------
 LIBMAD=""
 AC_SUBST(LIBMAD)
 use_included_libmad=yes
-if test "$force_use_included_libmad" = no; then
+if test "x$with_included_libmad" != xyes; then
   sr_save_CPPFLAGS="$CPPFLAGS"
   CPPFLAGS="-Ilib -D__UNIX__"
   AC_SUBST(CPPFLAGS)
@@ -85,8 +85,6 @@ AM_CONDITIONAL(SUBDIR_LIBMAD, test "$use_included_libmad" = yes)
 if test "$use_included_libmad" = yes; then
   LIBMAD="libmad-0.15.1b/.libs/libmad.a"
   AC_SUBST(LIBMAD)
-  CPPFLAGS="-Ilibmad-0.15.1b $CPPFLAGS"
-  AC_SUBST(CPPFLAGS)
   AC_CONFIG_SUBDIRS(libmad-0.15.1b)
 else
   LIBMAD=-lmad
@@ -181,8 +179,6 @@ AM_CONDITIONAL(SUBDIR_TRE, test "$use_included_tre" = yes)
 if test "$use_included_tre" = "yes"; then
   LIBREGEX="tre-0.7.2/lib/.libs/libtre.a"
   AC_SUBST(LIBREGEX)
-  CPPFLAGS="-Itre-0.7.2/lib $CPPFLAGS"
-  AC_SUBST(CPPFLAGS)
   AC_CONFIG_SUBDIRS(tre-0.7.2)
 fi
 
@@ -193,7 +189,7 @@ fi
 
 dnl -------- Tests for using libiberty or argv.c
 use_included_argv=yes
-if test "$force_use_included_argv" = no; then
+if test "x$with_included_argv" != xyes; then
   AC_CHECK_LIB(iberty, buildargv,
     use_included_argv=no,
     use_included_argv=yes)
@@ -299,8 +295,6 @@ dnl Checks for library functions.
 AC_TYPE_SIGNAL
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(mkdir socket strerror strstr)
-
-dnl If curses installed, make cstreamripper
 
 AC_OUTPUT(lib/Makefile Makefile)
 
