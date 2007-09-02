@@ -246,10 +246,13 @@ CFLAGS=-I$HOME/LOCAL-td191/include LDFLAGS=-L$HOME/LOCAL-td191/lib ./configure -
 -----------------------------------------------------------------------
 * Compile farms
 
-http://www.testdrive.hp.com
-http://powerdev.osuosl.org/
-http://www.blastwave.org/
-http://freeshell.org
+http://www.testdrive.hp.com	hpux, freebsd
+http://powerdev.osuosl.org	linux
+http://www.blastwave.org	solaris
+http://freeshell.org		netbsd
+
+For HP-UX, I'm testing on this one:
+td191.testdrive.hp.com
 
 -----------------------------------------------------------------------
 * MP3 utilities
@@ -394,6 +397,17 @@ c) add manifest to distro
 
 Note Apr 15, 2007:
   - autoconf 2.60, automake 1.9.6, libtool 1.5.22.
+
+Note Sep 1, 2007
+Found that make install failed for libtre
+Add to configure.ac: 
+  AC_PROG_MKDIR_P
+Add po/Makefile.in.in:
+  datarootdir = @datarootdir@
+  MKINSTALLDIRS = @MKDIR_P@
+  mkinstalldirs = @MKDIR_P@
+Still need to figure out how to disable "make install" for tre, 
+since we don't actually need to install it.
 
 -----------------------------------------------------------------------
 MinGW problems

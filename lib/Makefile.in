@@ -36,6 +36,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@SUBDIR_LIBMAD_TRUE@am__append_1 = -I@abs_top_srcdir@/libmad-0.15.1b
+@SUBDIR_TRE_TRUE@am__append_2 = -I@abs_top_srcdir@/tre-0.7.2
 subdir = lib
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/config.h.in
@@ -77,6 +79,7 @@ ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
+ALLOCA = @ALLOCA@
 AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
@@ -195,7 +198,8 @@ sharedstatedir = @sharedstatedir@
 subdirs = @subdirs@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
-AM_CFLAGS = @CFLAGS@ @OGG_CFLAGS@ @VORBIS_CFLAGS@ @GLIB_CFLAGS@
+AM_CPPFLAGS = @OGG_CFLAGS@ @VORBIS_CFLAGS@ @GLIB_CFLAGS@ \
+	$(am__append_1) $(am__append_2)
 noinst_LIBRARIES = libstreamripper.a
 libstreamripper_a_SOURCES = \
 	cbuf2.c \

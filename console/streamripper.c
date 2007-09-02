@@ -86,7 +86,7 @@ main (int argc, char* argv[])
     signal(SIGINT, catch_sig);
     signal(SIGTERM, catch_sig);
 
-    prefs_load ("c:\\tmp\\gcs.txt");
+    prefs_load ();
     prefs_get (&my_prefs, "Foobar");
 
     parse_arguments(argc, argv);

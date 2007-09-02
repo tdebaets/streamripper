@@ -10,7 +10,7 @@ dnl   AC_CHECK_LIB:   prepends the library to LIBS
 dnl   AC_CHECK_FUNC:  defines a shell variable
 
 AC_PREREQ(2.59)
-AC_INIT(streamripper,1.62.1)
+AC_INIT(streamripper,1.70-beta)
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([lib/config.h])
@@ -25,9 +25,15 @@ fi
 AC_PROG_INSTALL
 AC_PROG_RANLIB
 
+dnl test for inline
+AC_C_INLINE
+
 dnl Checks for libraries.
 dnl Replace `main' with a function in -lm:
 AC_CHECK_LIB(m, main)
+
+dnl Yummy alloca()
+AC_FUNC_ALLOCA
 
 dnl AM_PATH_GLIB_2_0([MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND [, MODULES]]]])
 AM_PATH_GLIB_2_0(2.0.0,,[AC_MSG_ERROR([glib 2.10 or newer is required])])
@@ -46,7 +52,7 @@ AC_ARG_WITH(included-argv,
 AC_ARG_WITH(included-cdk,
   [  --with-included-cdk use the cdk library included with streamripper])
 
-CPPFLAGS="-Ilib -D__UNIX__"
+CPPFLAGS="-D__UNIX__"
 AC_SUBST(CPPFLAGS)
 
 dnl -------- Tests for threading library ----------
@@ -85,8 +91,6 @@ AM_CONDITIONAL(SUBDIR_LIBMAD, test "$use_included_libmad" = yes)
 if test "$use_included_libmad" = yes; then
   LIBMAD="libmad-0.15.1b/.libs/libmad.a"
   AC_SUBST(LIBMAD)
-  CPPFLAGS="-Ilibmad-0.15.1b $CPPFLAGS"
-  AC_SUBST(CPPFLAGS)
   AC_CONFIG_SUBDIRS(libmad-0.15.1b)
 else
   LIBMAD=-lmad
@@ -181,8 +185,6 @@ AM_CONDITIONAL(SUBDIR_TRE, test "$use_included_tre" = yes)
 if test "$use_included_tre" = "yes"; then
   LIBREGEX="tre-0.7.2/lib/.libs/libtre.a"
   AC_SUBST(LIBREGEX)
-  CPPFLAGS="-Itre-0.7.2/lib $CPPFLAGS"
-  AC_SUBST(CPPFLAGS)
   AC_CONFIG_SUBDIRS(tre-0.7.2)
 fi
 

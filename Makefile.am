@@ -1,17 +1,19 @@
 ## Process this file with automake to produce Makefile.in
 
-AM_CPPFLAGS = @CPPFLAGS@ @OGG_CFLAGS@ @VORBIS_CFLAGS@ @GLIB_CFLAGS@
+AM_CPPFLAGS = @OGG_CFLAGS@ @VORBIS_CFLAGS@ @GLIB_CFLAGS@
 
 if SUBDIR_LIBMAD
-MAYBE_LIBMAD = libmad-0.15.1b
+  MAYBE_LIBMAD = libmad-0.15.1b
+  AM_CPPFLAGS += -I@abs_top_srcdir@/libmad-0.15.1b
 endif
 
 if SUBDIR_TRE
-MAYBE_LIBTRE = tre-0.7.2
+  MAYBE_LIBTRE = tre-0.7.2
+  AM_CPPFLAGS += -I@abs_top_srcdir@/tre-0.7.2
 endif
 
 if SUBDIR_CDK
-MAYBE_CDK = cdk-5.0-20060507
+  MAYBE_CDK = cdk-5.0-20060507
 endif
 
 SUBDIRS = $(MAYBE_LIBMAD) $(MAYBE_LIBTRE) $(MAYBE_CDK) lib

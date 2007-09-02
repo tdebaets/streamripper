@@ -35,11 +35,12 @@ static GKeyFile *g_key_file = NULL;
  * Private Vars
  *****************************************************************************/
 void
-prefs_load (char* prefs_fn)
+prefs_load (void)
 {
     gboolean rc;
     GKeyFileFlags flags;
     GError *error = NULL;
+    char* prefs_fn;
 
     if (!g_key_file) {
 	g_key_file = g_key_file_new ();
@@ -370,5 +371,6 @@ prefs_get (PREFS* prefs, char* label)
 
     printf ("Home dir is: %s\n", g_get_home_dir());
     printf ("Config dir is: %s\n", g_get_user_config_dir ());
-    exit (0);
+    printf ("Data dir is: %s\n", g_get_user_data_dir ());
+    //    exit (0);
 }
