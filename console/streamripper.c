@@ -42,20 +42,20 @@
 #include "filelib.h"
 #include "debug.h"
 
-/*******************************************************************************
+/******************************************************************************
  * Private functions
- ******************************************************************************/
+ *****************************************************************************/
 static void print_usage();
 static void print_status();
 static void catch_sig(int code);
-static void parse_arguments(int argc, char **argv);
+static void parse_arguments(PREFS* prefs, int argc, char **argv);
 static void rip_callback(int message, void *data);
 static void parse_extended_options (char* rule);
 static void verify_splitpoint_rules (void);
 
-/*******************************************************************************
- * Private Vars 
- ******************************************************************************/
+/******************************************************************************
+ * Private variables
+ *****************************************************************************/
 static char m_buffer_chars[] = {'\\', '|', '/', '-', '*'}; /* for formating */
 static RIP_MANAGER_INFO 	m_curinfo; /* from the rip_manager callback */
 static BOOL			m_started = FALSE;
@@ -81,15 +81,12 @@ main (int argc, char* argv[])
 {
     int ret;
     time_t temp_time;
-    PREFS my_prefs;
+    PREFS prefs;
 
     signal(SIGINT, catch_sig);
     signal(SIGTERM, catch_sig);
 
-    prefs_load ();
-    prefs_get (&my_prefs, "Foobar");
-
-    parse_arguments(argc, argv);
+    parse_arguments(&prefs, argc, argv);
     if (!m_dont_print)
 	fprintf(stderr, "Connecting...\n");
     if ((ret = rip_manager_start(rip_callback, &m_opt)) != SR_SUCCESS) {
@@ -248,7 +245,7 @@ rip_callback(int message, void *data)
     }
 }
 
-void
+static void
 print_usage()
 {
     fprintf(stderr, "Usage: streamripper URL [OPTIONS]\n");
@@ -303,8 +300,8 @@ print_usage()
  * port of it under Win32.. there probably is one, maybe i didn't look 
  * hard enough. 
  */
-void
-parse_arguments(int argc, char **argv)
+static void
+parse_arguments(PREFS* prefs, int argc, char **argv)
 {
     int i;
     char *c;
@@ -315,10 +312,14 @@ parse_arguments(int argc, char **argv)
     }
 
     // Set default options
-    set_rip_manager_options_defaults (&m_opt);
+    // set_rip_manager_options_defaults (&m_opt);
 
     // Get URL
     strncpy (m_opt.url, argv[1], MAX_URL_LEN);
+
+    // Load prefs (including URL-specific)
+    prefs_load ();
+    prefs_get (prefs, m_opt.url);
 
     // Parse arguments
     for(i = 1; i < argc; i++) {

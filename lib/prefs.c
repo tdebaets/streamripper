@@ -18,6 +18,7 @@
  * http://www.gtkbook.com/tutorial.php?page=keyfile
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 //#include <glib.h>
 
@@ -27,12 +28,19 @@
 #include "debug.h"
 
 /******************************************************************************
- * Private Vars
+ * Private variables
  *****************************************************************************/
-static GKeyFile *g_key_file = NULL;
+static GKeyFile *m_key_file = NULL;
 
 /******************************************************************************
- * Private Vars
+ * Private function protoypes
+ *****************************************************************************/
+void prefs_get_defaults (PREFS* prefs);
+void prefs_get_section (PREFS* prefs, char* label);
+static gchar* prefs_get_config_dir (void);
+
+/******************************************************************************
+ * Public functions
  *****************************************************************************/
 void
 prefs_load (void)
@@ -40,18 +48,53 @@ prefs_load (void)
     gboolean rc;
     GKeyFileFlags flags;
     GError *error = NULL;
-    char* prefs_fn;
+    gchar* prefs_dir;
+    gchar* prefs_fn;
 
-    if (!g_key_file) {
-	g_key_file = g_key_file_new ();
+    prefs_dir = prefs_get_config_dir ();
+    prefs_fn = g_build_filename (prefs_dir,
+				 "streamripper.ini",
+				 NULL);
+
+    if (!m_key_file) {
+	m_key_file = g_key_file_new ();
     }
     flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
-    rc = g_key_file_load_from_file (g_key_file, prefs_fn,
+    rc = g_key_file_load_from_file (m_key_file, prefs_fn,
 				    flags, &error);
-    if (!rc) {
-	/* No key file */
-	// g_error (error->message);
-    }
+
+    g_free (prefs_fn);
+    g_free (prefs_dir);
+}
+
+void
+prefs_set (PREFS* prefs, char* label)
+{
+}
+
+void
+prefs_get (PREFS* prefs, char* label)
+{
+    prefs_get_defaults (prefs);
+    prefs_get_section (prefs, "global");
+    prefs_get_section (prefs, label);
+
+    //    printf ("Home dir is: %s\n", g_get_home_dir());
+    //    printf ("Config dir is: %s\n", g_get_user_config_dir ());
+    //    printf ("Data dir is: %s\n", g_get_user_data_dir ());
+    exit (0);
+}
+
+/******************************************************************************
+ * Private functions
+ *****************************************************************************/
+/* Calling routine must free */
+static gchar* 
+prefs_get_config_dir (void)
+{
+    return g_build_filename (g_get_user_config_dir(), 
+			     "streamripper",
+			     NULL);
 }
 
 void
@@ -119,7 +162,7 @@ prefs_get_string (char* dest, gsize dest_size, char* group, char* key)
     GError *error = NULL;
     gchar *value;
     
-    value = g_key_file_get_string (g_key_file, group, key, &error);
+    value = g_key_file_get_string (m_key_file, group, key, &error);
     if (error) {
 	/* Key doesn't exist, do nothing */
 	return 0;
@@ -137,7 +180,7 @@ prefs_get_ushort (u_short *dest, char *group, char *key)
     GError *error = NULL;
     gint value;
     
-    value = g_key_file_get_integer (g_key_file, group, key, &error);
+    value = g_key_file_get_integer (m_key_file, group, key, &error);
     if (error) {
 	/* Key doesn't exist, do nothing */
 	// g_error (error->message);
@@ -157,7 +200,7 @@ prefs_get_ulong (u_long *dest, char *group, char *key)
     GError *error = NULL;
     gint value;
     
-    value = g_key_file_get_integer (g_key_file, group, key, &error);
+    value = g_key_file_get_integer (m_key_file, group, key, &error);
     if (error) {
 	/* Key doesn't exist, do nothing */
 	return 0;
@@ -176,7 +219,7 @@ prefs_get_int (int *dest, char *group, char *key)
     GError *error = NULL;
     gint value;
     
-    value = g_key_file_get_integer (g_key_file, group, key, &error);
+    value = g_key_file_get_integer (m_key_file, group, key, &error);
     if (error) {
 	/* Key doesn't exist, do nothing */
 	return;
@@ -191,7 +234,7 @@ prefs_get_bool (u_long *dest, char *group, char *key)
     GError *error = NULL;
     gint value;
     
-    value = g_key_file_get_integer (g_key_file, group, key, &error);
+    value = g_key_file_get_integer (m_key_file, group, key, &error);
     if (error) {
 	/* Key doesn't exist */
 	return 0;
@@ -282,8 +325,8 @@ prefs_get_section (PREFS* prefs, char* label)
     char overwrite_str[128];
     u_long temp;
 
-    if (!g_key_file) return;
-    if (g_key_file_has_group (g_key_file, label)) {
+    if (!m_key_file) return;
+    if (g_key_file_has_group (m_key_file, label)) {
 	group = label;
     } else {
 	/* Look at all groups for matching URL */
@@ -360,17 +403,4 @@ prefs_get_section (PREFS* prefs, char* label)
     prefs_get_string (prefs->cs_opt.codeset_relay, MAX_CODESET_STRING, group, "codeset_relay");
     prefs_get_string (prefs->cs_opt.codeset_id3, MAX_CODESET_STRING, group, "codeset_id3");
     prefs_get_string (prefs->cs_opt.codeset_filesys, MAX_CODESET_STRING, group, "codeset_filesys");
-}
-
-void
-prefs_get (PREFS* prefs, char* label)
-{
-    prefs_get_defaults (prefs);
-    prefs_get_section (prefs, "global");
-    prefs_get_section (prefs, label);
-
-    printf ("Home dir is: %s\n", g_get_home_dir());
-    printf ("Config dir is: %s\n", g_get_user_config_dir ());
-    printf ("Data dir is: %s\n", g_get_user_data_dir ());
-    //    exit (0);
 }

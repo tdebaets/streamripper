@@ -90,7 +90,7 @@ struct prefs
 #endif
 
 /* Prototypes */
-void prefs_load (char* prefs_fn);
+void prefs_load (void);
 void prefs_get (PREFS* prefs, char* label);
 
 #endif
