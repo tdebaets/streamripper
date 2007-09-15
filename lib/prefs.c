@@ -35,9 +35,11 @@ static GKeyFile *m_key_file = NULL;
 /******************************************************************************
  * Private function protoypes
  *****************************************************************************/
-void prefs_get_defaults (PREFS* prefs);
-void prefs_get_section (PREFS* prefs, char* label);
+static void prefs_get_defaults (PREFS* prefs);
+static void prefs_get_section (PREFS* prefs, char* label);
 static gchar* prefs_get_config_dir (void);
+static void prefs_copy_to_keyfile (PREFS* prefs);
+static void prefs_set_section (PREFS* prefs, char* group);
 
 /******************************************************************************
  * Public functions
@@ -62,14 +64,53 @@ prefs_load (void)
     flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
     rc = g_key_file_load_from_file (m_key_file, prefs_fn,
 				    flags, &error);
-
     g_free (prefs_fn);
     g_free (prefs_dir);
 }
 
 void
-prefs_set (PREFS* prefs, char* label)
+prefs_save (PREFS* prefs)
 {
+    FILE* fp;
+    GError *error = NULL;
+    gchar* prefs_dir;
+    gchar* prefs_fn;
+    gchar* keyfile_contents;
+    gsize keyfile_contents_len;
+
+    prefs_dir = prefs_get_config_dir ();
+    if (g_mkdir_with_parents (prefs_dir, 0755)) {
+	debug_printf ("Couldn't make config dir: %s\n", prefs_dir);
+	g_free (prefs_dir);
+	return;
+    }
+
+    prefs_fn = g_build_filename (prefs_dir,
+				 "streamripper.ini",
+				 NULL);
+    g_free (prefs_dir);
+
+    /* Insert from prefs into keyfile */
+    prefs_copy_to_keyfile (prefs);
+    
+    /* Convert entire keyfile to a string */
+    keyfile_contents = g_key_file_to_data (m_key_file, 
+					   &keyfile_contents_len, 
+					   &error);
+    if (error) {
+	debug_printf ("Error with g_key_file_to_data\n");
+	g_free (prefs_fn);
+	return;
+    }
+
+    /* Write to file */
+    fp = fopen (prefs_fn, "w");
+    if (fp) {
+	fwrite (keyfile_contents, 1, keyfile_contents_len, fp);
+	fclose (fp);
+    }
+    g_free (keyfile_contents);
+    g_free (prefs_fn);
 }
 
 void
@@ -77,12 +118,13 @@ prefs_get (PREFS* prefs, char* label)
 {
     prefs_get_defaults (prefs);
     prefs_get_section (prefs, "global");
-    prefs_get_section (prefs, label);
+    if (!strcmp (label, "global")) {
+	prefs_get_section (prefs, label);
+    }
 
     //    printf ("Home dir is: %s\n", g_get_home_dir());
     //    printf ("Config dir is: %s\n", g_get_user_config_dir ());
     //    printf ("Data dir is: %s\n", g_get_user_data_dir ());
-    exit (0);
 }
 
 /******************************************************************************
@@ -97,7 +139,23 @@ prefs_get_config_dir (void)
 			     NULL);
 }
 
-void
+static void
+prefs_copy_to_keyfile (PREFS* prefs)
+{
+    PREFS default_prefs;
+
+    prefs_get (&default_prefs, "global");
+
+    /* If there is no global section, create one */
+    if (!g_key_file_has_group (m_key_file, "global")) {
+	prefs_set_section (&default_prefs, "global");
+    }
+    
+    /* Copy prefs to keyfile */
+    prefs_set_section (prefs, &default_prefs);
+}
+
+static void
 prefs_get_defaults (PREFS* prefs)
 {
     debug_printf ("- set_rip_manager_options_defaults -\n");
@@ -156,7 +214,7 @@ prefs_get_defaults (PREFS* prefs)
 }
 
 /* Return 0 if value not found, 1 if value found */
-int
+static int
 prefs_get_string (char* dest, gsize dest_size, char* group, char* key)
 {
     GError *error = NULL;
@@ -168,13 +226,13 @@ prefs_get_string (char* dest, gsize dest_size, char* group, char* key)
 	return 0;
     }
     if (g_strlcpy (dest, value, dest_size) >= dest_size) {
-	/* Value too loing, silently truncate */
+	/* Value too long, silently truncate */
     }
     g_free (value);
     return 1;
 }
 
-void
+static void
 prefs_get_ushort (u_short *dest, char *group, char *key)
 {
     GError *error = NULL;
@@ -194,7 +252,7 @@ prefs_get_ushort (u_short *dest, char *group, char *key)
 }
 
 /* Return 0 if value not found, 1 if value found */
-int
+static int
 prefs_get_ulong (u_long *dest, char *group, char *key)
 {
     GError *error = NULL;
@@ -213,7 +271,7 @@ prefs_get_ulong (u_long *dest, char *group, char *key)
     return 1;
 }
 
-void
+static void
 prefs_get_int (int *dest, char *group, char *key)
 {
     GError *error = NULL;
@@ -228,7 +286,7 @@ prefs_get_int (int *dest, char *group, char *key)
 }
 
 /* Return 0 if value not found, 1 if value found */
-int
+static int
 prefs_get_bool (u_long *dest, char *group, char *key)
 {
     GError *error = NULL;
@@ -243,82 +301,7 @@ prefs_get_bool (u_long *dest, char *group, char *key)
     return 1;
 }
 
-#if defined (commentout)
-BOOL
-options_load (RIP_MANAGER_OPTIONS *rmo, GUI_OPTIONS *guiOpt)
-{
-    int i, p;
-    char desktop_path[MAX_INI_LINE_LEN];
-    char filename[MAX_INI_LINE_LEN];
-    BOOL    auto_reconnect,
-	    make_relay,
-	    add_id3_sr161,    /* For loading prefs from 1.61 and earlier */
-	    add_id3v1,
-	    add_id3v2,
-	    check_max_btyes,
-	    keep_incomplete,
-	    rip_individual_tracks,
-	    rip_single_file,
-	    use_ext_cmd;
-    char overwrite_string[MAX_INI_LINE_LEN];
-
-    if (!get_desktop_folder(desktop_path)) {
-	debug_printf ("get_desktop_folder() failed\n");
-	desktop_path[0] = '\0';
-    }
-
-    if (!winamp_get_path(filename)) {
-	debug_printf ("winamp_get_path failed #2\n");
-	return FALSE;
-    }
-
-    strcat (filename, "Plugins\\sripper.ini");
-    debug_printf ("Loading filename is %s\n", filename);
-
-    /* PLUGIN SPECIFIC STUFF */
-    GetPrivateProfileString(APPNAME, "localhost", "localhost", guiOpt->localhost, MAX_INI_LINE_LEN, filename);
-    GetPrivateProfileString(APPNAME, "default_skin", DEFAULT_SKINFILE, guiOpt->default_skin, MAX_INI_LINE_LEN, filename);
-    if (guiOpt->default_skin[0] == 0) {
-        strcpy(guiOpt->default_skin, DEFAULT_SKINFILE);
-    }
-    guiOpt->m_add_finshed_tracks_to_playlist = GetPrivateProfileInt(APPNAME, "add_tracks_to_playlist", FALSE, filename);
-    guiOpt->m_start_minimized = GetPrivateProfileInt(APPNAME, "start_minimized", FALSE, filename);
-    guiOpt->oldpos.x = GetPrivateProfileInt(APPNAME, "window_x", 0, filename);
-    guiOpt->oldpos.y = GetPrivateProfileInt(APPNAME, "window_y", 0, filename);
-    guiOpt->m_enabled = GetPrivateProfileInt(APPNAME, "enabled", 1, filename);
-    guiOpt->use_old_playlist_ret = GetPrivateProfileInt(APPNAME, "use_old_playlist_ret", 0, filename);
-    if (guiOpt->oldpos.x < 0 || guiOpt->oldpos.y < 0)
-	guiOpt->oldpos.x = guiOpt->oldpos.y = 0;
-
-    /* UNDECIDED */
-    rmo->max_port = rmo->relay_port+1000;
-    debug_printf ("Got PPS: %s\n", overwrite_string);
-    rmo->flags |= OPT_SEARCH_PORTS;	// not having this caused a bad bug, must remember this.
-
-    /* Note, there is no way to change the rules file location (for now) */
-    if (!winamp_get_path(rmo->rules_file)) {
-	debug_printf ("winamp_get_path failed #3\n");
-	return FALSE;
-    }
-    strcat (rmo->rules_file, "Plugins\\parse_rules.txt");
-    debug_printf ("RULES: %s\n", rmo->rules_file);
-
-    /* Get history */
-    for (i = 0, p = 0; i < RIPLIST_LEN; i++) {
-	char profile_name[128];
-	sprintf (profile_name, "riplist%d", i);
-	GetPrivateProfileString (APPNAME, profile_name, "", guiOpt->riplist[p], MAX_INI_LINE_LEN, filename);
-	if (guiOpt->riplist[p][0]) {
-	    p++;
-	}
-    }
-
-
-    return TRUE;
-}
-#endif
-
-void
+static void
 prefs_get_section (PREFS* prefs, char* label)
 {
     char* group = 0;
@@ -403,4 +386,67 @@ prefs_get_section (PREFS* prefs, char* label)
     prefs_get_string (prefs->cs_opt.codeset_relay, MAX_CODESET_STRING, group, "codeset_relay");
     prefs_get_string (prefs->cs_opt.codeset_id3, MAX_CODESET_STRING, group, "codeset_id3");
     prefs_get_string (prefs->cs_opt.codeset_filesys, MAX_CODESET_STRING, group, "codeset_filesys");
+}
+
+static void
+prefs_set_section (PREFS* prefs, char* group)
+{
+    if (!m_key_file) return;
+
+    g_key_file_set_string (m_key_file, group, "url", prefs->url);
+    g_key_file_set_string (m_key_file, group, "proxy", prefs->proxyurl);
+    g_key_file_set_string (m_key_file, group, "output_dir", prefs->output_directory);
+    g_key_file_set_string (m_key_file, group, "output_pattern", prefs->output_pattern);
+    g_key_file_set_string (m_key_file, group, "showfile_pattern", prefs->showfile_pattern);
+    g_key_file_set_string (m_key_file, group, "if_name", prefs->if_name);
+    g_key_file_set_string (m_key_file, group, "rules_file", prefs->rules_file);
+    g_key_file_set_string (m_key_file, group, "pls_file", prefs->pls_file);
+    g_key_file_set_string (m_key_file, group, "relay_ip", prefs->relay_ip);
+    g_key_file_set_string (m_key_file, group, "useragent", prefs->useragent);
+    g_key_file_set_string (m_key_file, group, "ext_cmd", prefs->ext_cmd);
+
+    g_key_file_set_integer (m_key_file, group, "relay_port", prefs->relay_port);
+    g_key_file_set_integer (m_key_file, group, "max_port", prefs->max_port);
+    g_key_file_set_integer (m_key_file, group, "max_connections", prefs->max_connections);
+    g_key_file_set_integer (m_key_file, group, "maxMB_bytes", prefs->maxMB_rip_size);
+    g_key_file_set_integer (m_key_file, group, "maxMB_bytes", prefs->maxMB_rip_size);
+    g_key_file_set_integer (m_key_file, group, "dropcount", prefs->dropcount);
+
+    /* Overwrite */
+    g_key_file_set_string (m_key_file, group, "over_write_complete", 
+			   overwrite_opt_to_string(prefs->overwrite));
+
+    /* Flags */
+    g_key_file_set_integer (m_key_file, group, "auto_reconnect",
+			    OPT_FLAG_ISSET (prefs->flags, OPT_AUTO_RECONNECT));
+    g_key_file_set_integer (m_key_file, group, "make_relay",
+			    OPT_FLAG_ISSET (prefs->flags, OPT_MAKE_RELAY));
+    g_key_file_set_integer (m_key_file, group, "add_id3v1",
+			    OPT_FLAG_ISSET (prefs->flags, OPT_ADD_ID3V1));
+    g_key_file_set_integer (m_key_file, group, "add_id3v2",
+			    OPT_FLAG_ISSET (prefs->flags, OPT_ADD_ID3V2));
+    g_key_file_set_integer (m_key_file, group, "check_max_bytes",
+			    OPT_FLAG_ISSET (prefs->flags, OPT_CHECK_MAX_BYTES));
+    g_key_file_set_integer (m_key_file, group, "keep_incomplete",
+			    OPT_FLAG_ISSET (prefs->flags, OPT_KEEP_INCOMPLETE));
+    g_key_file_set_integer (m_key_file, group, "rip_individual_tracks",
+			    OPT_FLAG_ISSET (prefs->flags, OPT_INDIVIDUAL_TRACKS));
+    g_key_file_set_integer (m_key_file, group, "rip_single_file",
+			    OPT_FLAG_ISSET (prefs->flags, OPT_SINGLE_FILE_OUTPUT));
+    g_key_file_set_integer (m_key_file, group, "use_ext_cmd",
+			    OPT_FLAG_ISSET (prefs->flags, OPT_EXTERNAL_CMD));
+
+    /* Splitpoint options */
+    g_key_file_set_integer (m_key_file, group, "xs_offset", prefs->sp_opt.xs_offset);
+    g_key_file_set_integer (m_key_file, group, "xs_silence_length", prefs->sp_opt.xs_silence_length);
+    g_key_file_set_integer (m_key_file, group, "xs_search_window_1", prefs->sp_opt.xs_search_window_1);
+    g_key_file_set_integer (m_key_file, group, "xs_search_window_2", prefs->sp_opt.xs_search_window_2);
+    g_key_file_set_integer (m_key_file, group, "xs_padding_1", prefs->sp_opt.xs_padding_1);
+    g_key_file_set_integer (m_key_file, group, "xs_padding_2", prefs->sp_opt.xs_padding_2);
+
+    /* Codesets */
+    g_key_file_set_string (m_key_file, group, "codeset_metadata", prefs->cs_opt.codeset_metadata);
+    g_key_file_set_string (m_key_file, group, "codeset_relay", prefs->cs_opt.codeset_relay);
+    g_key_file_set_string (m_key_file, group, "codeset_id3", prefs->cs_opt.codeset_id3);
+    g_key_file_set_string (m_key_file, group, "codeset_filesys", prefs->cs_opt.codeset_filesys);
 }

@@ -35,8 +35,7 @@ AC_CHECK_LIB(m, main)
 dnl Yummy alloca()
 AC_FUNC_ALLOCA
 
-dnl AM_PATH_GLIB_2_0([MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND [, MODULES]]]])
-AM_PATH_GLIB_2_0(2.0.0,,[AC_MSG_ERROR([glib 2.10 or newer is required])])
+AM_PATH_GLIB_2_0(2.8.0,,[AC_MSG_ERROR([glib 2.8 or newer is required])])
 
 dnl Configure options
 

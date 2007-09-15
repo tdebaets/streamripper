@@ -36,8 +36,8 @@
 #include <math.h>
 #include <time.h>
 #include "srtypes.h"
-#include "prefs.h"
 #include "rip_manager.h"
+#include "prefs.h"
 #include "mchar.h"
 #include "filelib.h"
 #include "debug.h"
@@ -61,8 +61,8 @@ static RIP_MANAGER_INFO 	m_curinfo; /* from the rip_manager callback */
 static BOOL			m_started = FALSE;
 static BOOL			m_alldone = FALSE;
 static BOOL			m_got_sig = FALSE;
-static BOOL 			m_dont_print = FALSE;
-RIP_MANAGER_OPTIONS 		m_opt;
+static BOOL			m_dont_print = FALSE;
+static PREFS			m_opt;
 time_t				m_stop_time = 0;
 
 /* main()
@@ -485,6 +485,10 @@ parse_arguments(PREFS* prefs, int argc, char **argv)
 	fprintf(stderr, "*** The first parameter MUST be the URL\n\n");
 	exit(2);
     }
+
+    /* Save prefs (as URL-specific) */
+    printf ("Saving prefs?\n");
+    prefs_save (prefs);
 }
 
 static void

@@ -785,12 +785,17 @@ peercast (relay-to-shoutcast)
 www.tuner2.com (aac)
 live365
 
+mostly non-shoutcast
+http://www.radio-locator.com/cgi-bin/home
+http://www.wwitv.com/portal.htm?http://www.wwitv.com/television/index.html
+
 A couple of korean ones
 inlive.co.kr (?)
 http://www.mukulcast.com/ (?)
 
 A japanese one
 http://live.ladio.livedoor.com/
+
 
 -----------------------------------------------------------------------
 Improving winamp plugin.  Implement some combination of these.

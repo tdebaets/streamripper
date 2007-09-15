@@ -91,6 +91,7 @@ struct prefs
 
 /* Prototypes */
 void prefs_load (void);
+void prefs_save (PREFS* prefs);
 void prefs_get (PREFS* prefs, char* label);
 
 #endif
