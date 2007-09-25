@@ -30,6 +30,7 @@
 /******************************************************************************
  * Private variables
  *****************************************************************************/
+#define DEFAULT_USER_AGENT ("streamripper/" SRVERSION)
 static GKeyFile *m_key_file = NULL;
 
 /******************************************************************************
@@ -39,7 +40,8 @@ static void prefs_get_defaults (PREFS* prefs);
 static void prefs_get_section (PREFS* prefs, char* label);
 static gchar* prefs_get_config_dir (void);
 static void prefs_copy_to_keyfile (PREFS* prefs);
-static void prefs_set_section (PREFS* prefs, char* group);
+static void prefs_set_section (PREFS* prefs, PREFS* default_prefs, 
+			       char* group);
 
 /******************************************************************************
  * Public functions
@@ -148,11 +150,11 @@ prefs_copy_to_keyfile (PREFS* prefs)
 
     /* If there is no global section, create one */
     if (!g_key_file_has_group (m_key_file, "global")) {
-	prefs_set_section (&default_prefs, "global");
+	prefs_set_section (&default_prefs, 0, "global");
     }
     
     /* Copy prefs to keyfile */
-    prefs_set_section (prefs, &default_prefs);
+    prefs_set_section (prefs, &default_prefs, prefs->url);
 }
 
 static void
@@ -302,6 +304,18 @@ prefs_get_bool (u_long *dest, char *group, char *key)
 }
 
 static void
+prefs_set_string (char* group, char* key, char* value)
+{
+    g_key_file_set_string (m_key_file, group, key, value);
+}
+
+static void
+prefs_set_integer (char* group, char* key, gint value)
+{
+    g_key_file_set_integer (m_key_file, group, key, value);
+}
+
+static void
 prefs_get_section (PREFS* prefs, char* label)
 {
     char* group = 0;
@@ -388,65 +402,104 @@ prefs_get_section (PREFS* prefs, char* label)
     prefs_get_string (prefs->cs_opt.codeset_filesys, MAX_CODESET_STRING, group, "codeset_filesys");
 }
 
+/* gp = global preferences */
 static void
-prefs_set_section (PREFS* prefs, char* group)
+prefs_set_section (PREFS* prefs, PREFS* gp, char* group)
 {
     if (!m_key_file) return;
 
-    g_key_file_set_string (m_key_file, group, "url", prefs->url);
-    g_key_file_set_string (m_key_file, group, "proxy", prefs->proxyurl);
-    g_key_file_set_string (m_key_file, group, "output_dir", prefs->output_directory);
-    g_key_file_set_string (m_key_file, group, "output_pattern", prefs->output_pattern);
-    g_key_file_set_string (m_key_file, group, "showfile_pattern", prefs->showfile_pattern);
-    g_key_file_set_string (m_key_file, group, "if_name", prefs->if_name);
-    g_key_file_set_string (m_key_file, group, "rules_file", prefs->rules_file);
-    g_key_file_set_string (m_key_file, group, "pls_file", prefs->pls_file);
-    g_key_file_set_string (m_key_file, group, "relay_ip", prefs->relay_ip);
-    g_key_file_set_string (m_key_file, group, "useragent", prefs->useragent);
-    g_key_file_set_string (m_key_file, group, "ext_cmd", prefs->ext_cmd);
+    if (!gp || !strcmp(prefs->url, gp->url)) {
+	prefs_set_string (group, "url", prefs->url);
+    }
+    if (!gp || !strcmp(prefs->proxyurl, gp->proxyurl)) {
+	prefs_set_string (group, "proxy", prefs->proxyurl);
+    }
+    if (!gp || !strcmp(prefs->output_directory, gp->output_directory)) {
+	prefs_set_string (group, "output_dir", prefs->output_directory);
+    }
+    if (!gp || !strcmp(prefs->output_pattern, gp->output_pattern)) {
+	prefs_set_string (group, "output_pattern", prefs->output_pattern);
+    }
+    if (!gp || !strcmp(prefs->showfile_pattern, gp->showfile_pattern)) {
+	prefs_set_string (group, "showfile_pattern", prefs->showfile_pattern);
+    }
+    if (!gp || !strcmp(prefs->if_name, gp->if_name)) {
+	prefs_set_string (group, "if_name", prefs->if_name);
+    }
+    if (!gp || !strcmp(prefs->rules_file, gp->rules_file)) {
+	prefs_set_string (group, "rules_file", prefs->rules_file);
+    }
+    if (!gp || !strcmp(prefs->pls_file, gp->pls_file)) {
+	prefs_set_string (group, "pls_file", prefs->pls_file);
+    }
+    if (!gp || !strcmp(prefs->relay_ip, gp->relay_ip)) {
+	prefs_set_string (group, "relay_ip", prefs->relay_ip);
+    }
+    /* User agent is treated differently. */
+    if (!gp || !strcmp(prefs->useragent, gp->useragent)) {
+	if (strcmp(prefs->useragent, DEFAULT_USERAGENT)) {
+	    prefs_set_string (group, "useragent", prefs->useragent);
+	} else {
+	    prefs_set_string (group, "useragent", "");
+	}
+    }
+    if (!gp || !strcmp(prefs->ext_cmd, gp->ext_cmd)) {
+	prefs_set_string (group, "ext_cmd", prefs->ext_cmd);
+    }
 
-    g_key_file_set_integer (m_key_file, group, "relay_port", prefs->relay_port);
-    g_key_file_set_integer (m_key_file, group, "max_port", prefs->max_port);
-    g_key_file_set_integer (m_key_file, group, "max_connections", prefs->max_connections);
-    g_key_file_set_integer (m_key_file, group, "maxMB_bytes", prefs->maxMB_rip_size);
-    g_key_file_set_integer (m_key_file, group, "maxMB_bytes", prefs->maxMB_rip_size);
-    g_key_file_set_integer (m_key_file, group, "dropcount", prefs->dropcount);
+    prefs_set_integer (group, "relay_port", prefs->relay_port);
+    prefs_set_integer (group, "max_port", prefs->max_port);
+    prefs_set_integer (group, "max_connections", prefs->max_connections);
+    prefs_set_integer (group, "maxMB_bytes", prefs->maxMB_rip_size);
+    prefs_set_integer (group, "maxMB_bytes", prefs->maxMB_rip_size);
+    prefs_set_integer (group, "dropcount", prefs->dropcount);
 
     /* Overwrite */
-    g_key_file_set_string (m_key_file, group, "over_write_complete", 
+    g_key_file_set_string (group, "over_write_complete", 
 			   overwrite_opt_to_string(prefs->overwrite));
 
     /* Flags */
-    g_key_file_set_integer (m_key_file, group, "auto_reconnect",
+    prefs_set_integer (group, "auto_reconnect",
 			    OPT_FLAG_ISSET (prefs->flags, OPT_AUTO_RECONNECT));
-    g_key_file_set_integer (m_key_file, group, "make_relay",
+    prefs_set_integer (group, "make_relay",
 			    OPT_FLAG_ISSET (prefs->flags, OPT_MAKE_RELAY));
-    g_key_file_set_integer (m_key_file, group, "add_id3v1",
+    prefs_set_integer (group, "add_id3v1",
 			    OPT_FLAG_ISSET (prefs->flags, OPT_ADD_ID3V1));
-    g_key_file_set_integer (m_key_file, group, "add_id3v2",
+    prefs_set_integer (group, "add_id3v2",
 			    OPT_FLAG_ISSET (prefs->flags, OPT_ADD_ID3V2));
-    g_key_file_set_integer (m_key_file, group, "check_max_bytes",
+    prefs_set_integer (group, "check_max_bytes",
 			    OPT_FLAG_ISSET (prefs->flags, OPT_CHECK_MAX_BYTES));
-    g_key_file_set_integer (m_key_file, group, "keep_incomplete",
+    prefs_set_integer (group, "keep_incomplete",
 			    OPT_FLAG_ISSET (prefs->flags, OPT_KEEP_INCOMPLETE));
-    g_key_file_set_integer (m_key_file, group, "rip_individual_tracks",
+    prefs_set_integer (group, "rip_individual_tracks",
 			    OPT_FLAG_ISSET (prefs->flags, OPT_INDIVIDUAL_TRACKS));
-    g_key_file_set_integer (m_key_file, group, "rip_single_file",
+    prefs_set_integer (group, "rip_single_file",
 			    OPT_FLAG_ISSET (prefs->flags, OPT_SINGLE_FILE_OUTPUT));
-    g_key_file_set_integer (m_key_file, group, "use_ext_cmd",
+    prefs_set_integer (group, "use_ext_cmd",
 			    OPT_FLAG_ISSET (prefs->flags, OPT_EXTERNAL_CMD));
 
     /* Splitpoint options */
-    g_key_file_set_integer (m_key_file, group, "xs_offset", prefs->sp_opt.xs_offset);
-    g_key_file_set_integer (m_key_file, group, "xs_silence_length", prefs->sp_opt.xs_silence_length);
-    g_key_file_set_integer (m_key_file, group, "xs_search_window_1", prefs->sp_opt.xs_search_window_1);
-    g_key_file_set_integer (m_key_file, group, "xs_search_window_2", prefs->sp_opt.xs_search_window_2);
-    g_key_file_set_integer (m_key_file, group, "xs_padding_1", prefs->sp_opt.xs_padding_1);
-    g_key_file_set_integer (m_key_file, group, "xs_padding_2", prefs->sp_opt.xs_padding_2);
+    prefs_set_integer (group, "xs_offset", prefs->sp_opt.xs_offset);
+    prefs_set_integer (group, "xs_silence_length", 
+		       prefs->sp_opt.xs_silence_length);
+    prefs_set_integer (group, "xs_search_window_1", 
+		       prefs->sp_opt.xs_search_window_1);
+    prefs_set_integer (group, "xs_search_window_2", 
+		       prefs->sp_opt.xs_search_window_2);
+    prefs_set_integer (group, "xs_padding_1", prefs->sp_opt.xs_padding_1);
+    prefs_set_integer (group, "xs_padding_2", prefs->sp_opt.xs_padding_2);
 
     /* Codesets */
-    g_key_file_set_string (m_key_file, group, "codeset_metadata", prefs->cs_opt.codeset_metadata);
-    g_key_file_set_string (m_key_file, group, "codeset_relay", prefs->cs_opt.codeset_relay);
-    g_key_file_set_string (m_key_file, group, "codeset_id3", prefs->cs_opt.codeset_id3);
-    g_key_file_set_string (m_key_file, group, "codeset_filesys", prefs->cs_opt.codeset_filesys);
+    if (!gp || !strcmp(prefs->cs_opt.codeset_metadata, gp->cs_opt.codeset_metadata)) {
+	prefs_set_string (group, "codeset_metadata", prefs->cs_opt.codeset_metadata);
+    }
+    if (!gp || !strcmp(prefs->cs_opt.codeset_relay, gp->cs_opt.codeset_relay)) {
+	prefs_set_string (group, "codeset_relay", prefs->cs_opt.codeset_relay);
+    }
+    if (!gp || !strcmp(prefs->cs_opt.codeset_id3, gp->cs_opt.codeset_id3)) {
+	prefs_set_string (group, "codeset_id3", prefs->cs_opt.codeset_id3);
+    }
+    if (!gp || !strcmp(prefs->cs_opt.codeset_filesys, gp->cs_opt.codeset_filesys)) {
+	prefs_set_string (group, "codeset_filesys", prefs->cs_opt.codeset_filesys);
+    }
 }
