@@ -437,7 +437,7 @@ prefs_set_section (PREFS* prefs, PREFS* gp, char* group)
     }
     /* User agent is treated differently. */
     if (!gp || !strcmp(prefs->useragent, gp->useragent)) {
-	if (strcmp(prefs->useragent, DEFAULT_USERAGENT)) {
+	if (strcmp(prefs->useragent, DEFAULT_USER_AGENT)) {
 	    prefs_set_string (group, "useragent", prefs->useragent);
 	} else {
 	    prefs_set_string (group, "useragent", "");
@@ -455,7 +455,7 @@ prefs_set_section (PREFS* prefs, PREFS* gp, char* group)
     prefs_set_integer (group, "dropcount", prefs->dropcount);
 
     /* Overwrite */
-    g_key_file_set_string (group, "over_write_complete", 
+    g_key_file_set_string (m_key_file, group, "over_write_complete", 
 			   overwrite_opt_to_string(prefs->overwrite));
 
     /* Flags */
