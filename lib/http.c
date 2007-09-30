@@ -27,7 +27,7 @@
  *****************************************************************************/
 static char* make_auth_header(const char *header_name, 
 			      const char *username, const char *password);
-static error_code httplib_get_sc_header(const char* url, HSOCKET *sock, 
+static error_code http_get_sc_header(const char* url, HSOCKET *sock, 
 					SR_HTTP_HEADER *info);
 static char* b64enc(const char *buf, int size);
 
@@ -45,7 +45,7 @@ static char* b64enc(const char *buf, int size);
 /* Connect to a shoutcast type stream, leaves when it's about to 
    get the header info */
 error_code
-httplib_sc_connect (HSOCKET *sock, const char *url, const char *proxyurl, 
+http_sc_connect (HSOCKET *sock, const char *url, const char *proxyurl, 
 		 SR_HTTP_HEADER *info, char *useragent, char *if_name)
 {
     char headbuf[MAX_HEADER_LEN];
@@ -54,41 +54,41 @@ httplib_sc_connect (HSOCKET *sock, const char *url, const char *proxyurl,
 
     while (1) {
 	debug_printf ("***** URL = %s *****\n", url);
-	debug_printf("inet_sc_connect(): calling httplib_parse_url\n");
+	debug_printf("http_sc_connect(): calling http_parse_url\n");
 	if (proxyurl) {
-	    if ((ret = httplib_parse_url(proxyurl, &url_info)) != SR_SUCCESS) {
+	    if ((ret = http_parse_url(proxyurl, &url_info)) != SR_SUCCESS) {
 		return ret;
 	    }
-	} else if ((ret = httplib_parse_url(url, &url_info)) != SR_SUCCESS) {
+	} else if ((ret = http_parse_url(url, &url_info)) != SR_SUCCESS) {
 	    return ret;
 	}
 
-	debug_printf("inet_sc_connect(): calling sockinit\n");
+	debug_printf("http_sc_connect(): calling socklib_init\n");
 	if ((ret = socklib_init()) != SR_SUCCESS)
 	    return ret;
 
-	debug_printf("inet_sc_connect(): calling sock_open: host=%s, port=%d\n",
+	debug_printf("http_sc_connect(): calling socklib_open: host=%s, port=%d\n",
 	    url_info.host, url_info.port);
 	if ((ret = socklib_open(sock, url_info.host, url_info.port, if_name)) != SR_SUCCESS)
 	    return ret;
 
-	debug_printf("inet_sc_connect(): calling httplib_construct_sc_request\n");
-	if ((ret = httplib_construct_sc_request(url, proxyurl, headbuf, useragent)) != SR_SUCCESS)
+	debug_printf("http_sc_connect(): calling http_construct_sc_request\n");
+	if ((ret = http_construct_sc_request(url, proxyurl, headbuf, useragent)) != SR_SUCCESS)
 	    return ret;
 
-	debug_printf("inet_sc_connect(): calling socklib_sendall\n");
+	debug_printf("http_sc_connect(): calling socklib_sendall\n");
 	if ((ret = socklib_sendall(sock, headbuf, strlen(headbuf))) < 0)
 	    return ret;
 
-	debug_printf("inet_sc_connect(): calling get_sc_header\n");
-	if ((ret = httplib_get_sc_header(url, sock, info)) != SR_SUCCESS)
+	debug_printf("http_sc_connect(): calling http_get_sc_header\n");
+	if ((ret = http_get_sc_header(url, sock, info)) != SR_SUCCESS)
 	    return ret;
 
 	if (*info->http_location) {
 	    /* RECURSIVE CASE */
 	    debug_printf ("Redirecting: %s\n", info->http_location);
 	    url = info->http_location;
-	    //inet_sc_connect(sock, info->http_location, proxyurl, info, useragent, if_name);
+	    //http_sc_connect(sock, info->http_location, proxyurl, info, useragent, if_name);
 	} else {
 	    break;
 	}
@@ -102,7 +102,7 @@ httplib_sc_connect (HSOCKET *sock, const char *url, const char *proxyurl,
  * and now http://username:password@server:4480
  */
 error_code
-httplib_parse_url(const char *url, URLINFO *urlinfo)
+http_parse_url(const char *url, URLINFO *urlinfo)
 { 
     /* see if we have a proto */
     char *s = strstr(url, "://");
@@ -132,11 +132,13 @@ httplib_parse_url(const char *url, URLINFO *urlinfo)
 
     /* search for a port seperator */
     if (strchr(url, ':') != NULL) {
+	debug_printf ("Branch 1 (%s)\n", url);
 	ret = sscanf(url, "%[^:]:%hu/%s", urlinfo->host, 
 		     (short unsigned int*)&urlinfo->port, urlinfo->path+1);
 	if (urlinfo->port < 1) return SR_ERROR_PARSE_FAILURE;
 	ret -= 1;
     } else {
+	debug_printf ("Branch 2 (%s)\n", url);
 	urlinfo->port = 80;
 	ret = sscanf(url, "%[^/]/%s", urlinfo->host, urlinfo->path+1);
     }
@@ -146,18 +148,18 @@ httplib_parse_url(const char *url, URLINFO *urlinfo)
 }
 
 error_code
-httplib_construct_sc_request(const char *url, const char* proxyurl, char *buffer, char *useragent)
+http_construct_sc_request(const char *url, const char* proxyurl, char *buffer, char *useragent)
 {
     int ret;
     URLINFO ui;
     URLINFO proxyui;
     char myurl[MAX_URL_LEN];
-    if ((ret = httplib_parse_url(url, &ui)) != SR_SUCCESS)
+    if ((ret = http_parse_url(url, &ui)) != SR_SUCCESS)
 	return ret;
 
     if (proxyurl) {
 	sprintf(myurl, "http://%s:%d%s", ui.host, ui.port, ui.path);
-	if ((ret = httplib_parse_url(proxyurl, &proxyui)) != SR_SUCCESS)
+	if ((ret = http_parse_url(proxyurl, &proxyui)) != SR_SUCCESS)
 	    return ret;
     } else {
 	strcpy(myurl, ui.path);
@@ -227,12 +229,12 @@ make_auth_header (const char *header_name, const char *username,
 
 // Here we pretend we're IE 5, hehe
 error_code
-httplib_construct_page_request (const char *url, BOOL proxyformat, char *buffer)
+http_construct_page_request (const char *url, BOOL proxyformat, char *buffer)
 {
     int ret;
     URLINFO ui;
     char myurl[MAX_URL_LEN];
-    if ((ret = httplib_parse_url(url, &ui)) != SR_SUCCESS)
+    if ((ret = http_parse_url(url, &ui)) != SR_SUCCESS)
 	return ret;
 
     if (proxyformat)
@@ -270,7 +272,7 @@ extract_header_value (char *header, char *dest, char *match, int maxlen)
 }
 
 error_code
-httplib_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
+http_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
 {
     int rc;
     char *start;
@@ -285,7 +287,7 @@ httplib_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
 
     /* Parse the url here, before doing memset, because in the 
        recursive case, it is the location referrer */
-    rc = httplib_parse_url (url, &url_info);
+    rc = http_parse_url (url, &url_info);
     if (rc != SR_SUCCESS) return rc;
 
     memset(info, 0, sizeof(SR_HTTP_HEADER));
@@ -485,7 +487,7 @@ httplib_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
  * added to the header
  */
 error_code
-httplib_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size, int icy_meta_support)
+http_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size, int icy_meta_support)
 {
     char *buf = (char *)malloc(size);
 
@@ -609,7 +611,7 @@ Length1=-1
 Version=2
 */
 error_code
-httplib_get_pls (HSOCKET *sock, SR_HTTP_HEADER *info)
+http_get_pls (HSOCKET *sock, SR_HTTP_HEADER *info)
 {
     int s, bytes;
     error_code rc;
@@ -673,7 +675,7 @@ httplib_get_pls (HSOCKET *sock, SR_HTTP_HEADER *info)
 mp3/3rd Bass/3rd bass - Al z A-B-Cee z.mp3
 */
 error_code
-httplib_get_m3u (HSOCKET *sock, SR_HTTP_HEADER *info)
+http_get_m3u (HSOCKET *sock, SR_HTTP_HEADER *info)
 {
     int bytes;
     char buf[MAX_M3U_LEN];
@@ -712,7 +714,7 @@ httplib_get_m3u (HSOCKET *sock, SR_HTTP_HEADER *info)
 }
 
 static error_code
-httplib_get_sc_header(const char* url, HSOCKET *sock, SR_HTTP_HEADER *info)
+http_get_sc_header(const char* url, HSOCKET *sock, SR_HTTP_HEADER *info)
 {
     int ret;
     char headbuf[MAX_HEADER_LEN] = {'\0'};
@@ -720,14 +722,14 @@ httplib_get_sc_header(const char* url, HSOCKET *sock, SR_HTTP_HEADER *info)
     if ((ret = socklib_read_header(sock, headbuf, MAX_HEADER_LEN, NULL)) != SR_SUCCESS)
 	return ret;
 
-    if ((ret = httplib_parse_sc_header(url, headbuf, info)) != SR_SUCCESS)
+    if ((ret = http_parse_sc_header(url, headbuf, info)) != SR_SUCCESS)
 	return ret;
 
     if (info->content_type == CONTENT_TYPE_PLS) {
-	ret = httplib_get_pls (sock, info);
+	ret = http_get_pls (sock, info);
 	if (ret != SR_SUCCESS) return ret;
     } else if (info->content_type == CONTENT_TYPE_M3U) {
-	ret = httplib_get_m3u (sock, info);
+	ret = http_get_m3u (sock, info);
 	if (ret != SR_SUCCESS) return ret;
     }
 

@@ -18,9 +18,10 @@
 #define __RIP_MANANGER_H__
 
 #include "external.h"
+#include "prefs.h"
 #include "srtypes.h"
 
-#define SRVERSION	"1.70-beta"
+#define SRVERSION	"1.63-beta"
 
 #if defined (WIN32)
 #define SRPLATFORM      "windows"
@@ -54,6 +55,7 @@
 
 typedef struct RIP_MANAGER_INFOst
 {
+    PREFS *prefs;
     char streamname[MAX_STREAMNAME_LEN];
     char server_name[MAX_SERVER_LEN];
     int	bitrate;
@@ -62,7 +64,7 @@ typedef struct RIP_MANAGER_INFOst
     u_long filesize;
     int	status;
     int track_count;
-    External_Process* ep;
+    External_Process *ep;
 } RIP_MANAGER_INFO;
 
 
@@ -122,7 +124,8 @@ typedef struct RIP_MANAGER_INFOst
 #define SET_ADD_ID3V2(flags)			(OPT_FLAG_SET(flags, OPT_ADD_ID3V2))
 #endif
 
-typedef struct RIP_MANAGER_OPTIONSst
+#if defined (commentout)
+typedef struct PREFSst
 {
     char url[MAX_URL_LEN];		// url of the stream to connect to
     char proxyurl[MAX_URL_LEN];		// url of a http proxy server, 
@@ -161,7 +164,8 @@ typedef struct RIP_MANAGER_OPTIONSst
     enum OverwriteOpt overwrite;	// overwrite file in complete?
     char ext_cmd[SR_MAX_PATH];          // cmd to spawn for external metadata
     
-} RIP_MANAGER_OPTIONS;
+} PREFS;
+#endif
 
 typedef struct ERROR_INFOst
 {
@@ -173,13 +177,15 @@ typedef struct ERROR_INFOst
 /* Public functions */
 char *rip_manager_get_error_str(int code);
 //u_short rip_mananger_get_relay_port();	
-void set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt);
-error_code rip_manager_start (void (*status_callback)(int message, void *data), 
-			     RIP_MANAGER_OPTIONS *options);
-void rip_manager_stop();
-error_code rip_manager_start_track (TRACK_INFO* ti, int track_count);
-error_code rip_manager_end_track(RIP_MANAGER_OPTIONS* rmo, TRACK_INFO* ti);
-error_code rip_manager_put_data(char *buf, int size);
+void set_rip_manager_options_defaults (PREFS *m_opt);
+void rip_manager_init (void);
+void rip_manager_stop (RIP_MANAGER_INFO *rmi);
+error_code rip_manager_start (RIP_MANAGER_INFO **rmi, 
+		   PREFS *prefs,
+		   void (*status_callback)(RIP_MANAGER_INFO* rmi, int message, void *data));
+error_code rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti, int track_count);
+error_code rip_manager_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
+error_code rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size);
 error_code rip_manager_put_raw_data(char *buf, int size);
 
 char *client_relay_header_generate (int icy_meta_support);

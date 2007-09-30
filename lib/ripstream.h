@@ -3,6 +3,7 @@
 
 #include "rip_manager.h"
 #include "srtypes.h"
+#include "prefs.h"
 #include "socklib.h"
 
 error_code
@@ -18,8 +19,7 @@ ripstream_init (HSOCKET sock,
 		BOOL add_id3v1,
 		BOOL add_id3v2,
 		External_Process* ep);
-error_code ripstream_rip(RIP_MANAGER_OPTIONS* rmo);
+error_code ripstream_rip (RIP_MANAGER_INFO* rmi);
 void ripstream_destroy();
-
 
 #endif //__RIPLIB__

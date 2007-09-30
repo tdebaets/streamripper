@@ -287,6 +287,7 @@ prefs_get_int (int *dest, char *group, char *key)
     *dest = (u_long) value;
 }
 
+#if defined (commentout)
 /* Return 0 if value not found, 1 if value found */
 static int
 prefs_get_bool (u_long *dest, char *group, char *key)
@@ -302,6 +303,7 @@ prefs_get_bool (u_long *dest, char *group, char *key)
     *dest = (value != 0);
     return 1;
 }
+#endif
 
 static void
 prefs_set_string (char* group, char* key, char* value)

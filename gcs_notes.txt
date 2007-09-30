@@ -1,4 +1,18 @@
 -----------------------------------------------------------------------
+* Multirip/main loop
+
+GUI thread
+  Rip thread
+    Accept thread for relay
+    Send thread for relay
+    External process
+
+* Data structs:
+    1) Global preferences
+    2) Stream preferences
+    3) Stream state variables (rmi)
+
+-----------------------------------------------------------------------
 HTTP HEADERS
 
 http://141.211.232.136:8000/wcbn-lo.ogg
@@ -934,11 +948,3 @@ the program to choke.  Standard 44100Hz stereo does seem to work.
 Second, it doesn't like it if you run (under wine) from a normal 
 directory.  You have to put it in ~/.wine/drive_c/windows/temp or such.
 
------------------------------------------------------------------------
-* Multirip/main loop
-
-GUI thread
-  Rip thread
-    Accept thread for relay
-    Send thread for relay
-    External process

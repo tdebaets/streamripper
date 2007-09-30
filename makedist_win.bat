@@ -1,4 +1,4 @@
-set ver=1.70-beta
+set ver=1.63-beta
 set bdir=d:\streamripper-win32-%ver%
 deltree /y %bdir%
 mkdir %bdir%

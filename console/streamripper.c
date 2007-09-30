@@ -42,27 +42,27 @@
 #include "filelib.h"
 #include "debug.h"
 
-/******************************************************************************
+/*****************************************************************************
  * Private functions
  *****************************************************************************/
 static void print_usage();
-static void print_status();
-static void catch_sig(int code);
-static void parse_arguments(PREFS* prefs, int argc, char **argv);
-static void rip_callback(int message, void *data);
-static void parse_extended_options (char* rule);
-static void verify_splitpoint_rules (void);
+static void print_status (RIP_MANAGER_INFO *rmi);
+static void catch_sig (int code);
+static void parse_arguments (PREFS *prefs, int argc, char **argv);
+static void rip_callback (RIP_MANAGER_INFO* rmi, int message, void *data);
+static void parse_extended_options (PREFS *prefs, char *rule);
+static void verify_splitpoint_rules (PREFS *prefs);
 
-/******************************************************************************
+/*****************************************************************************
  * Private variables
  *****************************************************************************/
 static char m_buffer_chars[] = {'\\', '|', '/', '-', '*'}; /* for formating */
-static RIP_MANAGER_INFO 	m_curinfo; /* from the rip_manager callback */
+//static RIP_MANAGER_INFO 	m_curinfo; /* from the rip_manager callback */
 static BOOL			m_started = FALSE;
 static BOOL			m_alldone = FALSE;
 static BOOL			m_got_sig = FALSE;
 static BOOL			m_dont_print = FALSE;
-static PREFS			m_opt;
+//static PREFS			m_opt;
 time_t				m_stop_time = 0;
 
 /* main()
@@ -77,20 +77,24 @@ time_t				m_stop_time = 0;
  */
 
 int
-main (int argc, char* argv[])
+main (int argc, char *argv[])
 {
     int ret;
     time_t temp_time;
     PREFS prefs;
+    RIP_MANAGER_INFO *rmi = 0;
 
-    signal(SIGINT, catch_sig);
-    signal(SIGTERM, catch_sig);
+    signal (SIGINT, catch_sig);
+    signal (SIGTERM, catch_sig);
 
-    parse_arguments(&prefs, argc, argv);
+    parse_arguments (&prefs, argc, argv);
+
     if (!m_dont_print)
-	fprintf(stderr, "Connecting...\n");
-    if ((ret = rip_manager_start(rip_callback, &m_opt)) != SR_SUCCESS) {
-	fprintf(stderr, "Couldn't connect to %s\n", m_opt.url);
+	fprintf (stderr, "Connecting...\n");
+
+    rip_manager_init ();
+    if ((ret = rip_manager_start (&rmi, &prefs, rip_callback)) != SR_SUCCESS) {
+	fprintf(stderr, "Couldn't connect to %s\n", prefs.url);
 	exit(1);
     }
 
@@ -99,7 +103,7 @@ main (int argc, char* argv[])
      * (i.e. rip_manager_stop) from a signal handler.. or at least not
      * in FreeBSD 3.4, i don't know about linux or NT.
      */
-    while(!m_got_sig && !m_alldone) {
+    while (!m_got_sig && !m_alldone) {
 	sleep(1);
 	time(&temp_time);
 	if (m_stop_time && (temp_time >= m_stop_time)) {
@@ -115,7 +119,7 @@ main (int argc, char* argv[])
 	fprintf(stderr, "shutting down\n");
     }
 
-    rip_manager_stop();
+    rip_manager_stop (rmi);
     return 0;
 }
 
@@ -136,8 +140,9 @@ catch_sig(int code)
  * much smaller.
  */
 void
-print_status()
+print_status (RIP_MANAGER_INFO *rmi)
 {
+    PREFS *prefs = rmi->prefs;
     char status_str[128];
     char filesize_str[64];
     static int buffering_tick = 0;
@@ -146,9 +151,9 @@ print_status()
     if (m_dont_print)
 	return;
 
-    if (printed_fullinfo && m_curinfo.filename[0]) {
+    if (printed_fullinfo && rmi->filename[0]) {
 
-	switch(m_curinfo.status)
+	switch(rmi->status)
 	{
 	case RM_STATUS_BUFFERING:
 	    buffering_tick++;
@@ -160,19 +165,19 @@ print_status()
 
 	    fprintf(stderr, "[%14s] %.50s\r",
 		    status_str,
-		    m_curinfo.filename);
+		    rmi->filename);
 	    break;
 
 	case RM_STATUS_RIPPING:
-	    if (m_curinfo.track_count < m_opt.dropcount) {
+	    if (rmi->track_count < prefs->dropcount) {
 		strcpy(status_str, "skipping...   ");
 	    } else {
 		strcpy(status_str, "ripping...    ");
 	    }
-	    format_byte_size(filesize_str, m_curinfo.filesize);
+	    format_byte_size(filesize_str, rmi->filesize);
 	    fprintf(stderr, "[%14s] %.50s [%7s]\r",
 		    status_str,
-		    m_curinfo.filename,
+		    rmi->filename,
 		    filesize_str);
 	    break;
 	case RM_STATUS_RECONNECTING:
@@ -189,15 +194,15 @@ print_status()
 		"server name: %s\n"
 		"bitrate: %d\n"
 		"meta interval: %d\n",
-		m_curinfo.streamname,
-		m_curinfo.server_name,
-		m_curinfo.bitrate,
-		m_curinfo.meta_interval);
-	if(GET_MAKE_RELAY(m_opt.flags))
+		rmi->streamname,
+		rmi->server_name,
+		rmi->bitrate,
+		rmi->meta_interval);
+	if(GET_MAKE_RELAY(prefs->flags))
 	{
 	    fprintf(stderr, "relay port: %d\n"
 		    "[%14s]\r",
-		    m_opt.relay_port,
+		    prefs->relay_port,
 		    "getting track name... ");
 	}
 
@@ -214,16 +219,13 @@ print_status()
  * and prints out stuff to the screen.
  */
 void
-rip_callback(int message, void *data)
+rip_callback (RIP_MANAGER_INFO* rmi, int message, void *data)
 {
-    RIP_MANAGER_INFO *info;
     ERROR_INFO *err;
     switch(message)
     {
     case RM_UPDATE:
-	info = (RIP_MANAGER_INFO*)data;
-	memcpy(&m_curinfo, info, sizeof(RIP_MANAGER_INFO));
-	print_status();
+	print_status (rmi);
 	break;
     case RM_ERROR:
 	err = (ERROR_INFO*)data;
@@ -315,11 +317,11 @@ parse_arguments(PREFS* prefs, int argc, char **argv)
     // set_rip_manager_options_defaults (&m_opt);
 
     // Get URL
-    strncpy (m_opt.url, argv[1], MAX_URL_LEN);
+    strncpy (prefs->url, argv[1], MAX_URL_LEN);
 
     // Load prefs (including URL-specific)
     prefs_load ();
-    prefs_get (prefs, m_opt.url);
+    prefs_get (prefs, prefs->url);
 
     // Parse arguments
     for(i = 1; i < argc; i++) {
@@ -337,31 +339,31 @@ parse_arguments(PREFS* prefs, int argc, char **argv)
 	{
 	case 'a':
 	    /* Create single file output + cue sheet */
-	    m_opt.flags |= OPT_SINGLE_FILE_OUTPUT;
-	    m_opt.showfile_pattern[0] = 0;
+	    prefs->flags |= OPT_SINGLE_FILE_OUTPUT;
+	    prefs->showfile_pattern[0] = 0;
 	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
 	    i++;
-	    strncpy (m_opt.showfile_pattern, argv[i], SR_MAX_PATH);
+	    strncpy (prefs->showfile_pattern, argv[i], SR_MAX_PATH);
 	    break;
 	case 'A':
-	    m_opt.flags ^= OPT_INDIVIDUAL_TRACKS;
+	    prefs->flags ^= OPT_INDIVIDUAL_TRACKS;
 	    break;
 	case 'c':
-	    m_opt.flags ^= OPT_AUTO_RECONNECT;
+	    prefs->flags ^= OPT_AUTO_RECONNECT;
 	    break;
 	case 'd':
 	    i++;
-	    strncpy(m_opt.output_directory, argv[i], SR_MAX_PATH);
+	    strncpy(prefs->output_directory, argv[i], SR_MAX_PATH);
 	    break;
 	case 'D':
 	    i++;
-	    strncpy(m_opt.output_pattern, argv[i], SR_MAX_PATH);
+	    strncpy(prefs->output_pattern, argv[i], SR_MAX_PATH);
 	    break;
 	case 'E':
-	    m_opt.flags |= OPT_EXTERNAL_CMD;
+	    prefs->flags |= OPT_EXTERNAL_CMD;
 	    i++;
-	    strncpy(m_opt.ext_cmd, argv[i], SR_MAX_PATH);
+	    strncpy(prefs->ext_cmd, argv[i], SR_MAX_PATH);
 	    break;
 	case 'f':
 	    i++;
@@ -373,17 +375,17 @@ parse_arguments(PREFS* prefs, int argc, char **argv)
             exit(0);
 	    break;
 	case 'i':
-	    //	    m_opt.flags ^= OPT_ADD_ID3;
-	    OPT_FLAG_SET(m_opt.flags,OPT_ADD_ID3V1,0);
-	    OPT_FLAG_SET(m_opt.flags,OPT_ADD_ID3V2,0);
+	    //	    prefs->flags ^= OPT_ADD_ID3;
+	    OPT_FLAG_SET(prefs->flags,OPT_ADD_ID3V1,0);
+	    OPT_FLAG_SET(prefs->flags,OPT_ADD_ID3V2,0);
 	    break;
 	case 'I':
 	    i++;
-	    strncpy(m_opt.if_name, argv[i], SR_MAX_PATH);
+	    strncpy(prefs->if_name, argv[i], SR_MAX_PATH);
 	    break;
 	case 'k':
 	    i++;
-	    m_opt.dropcount = atoi(argv[i]);
+	    prefs->dropcount = atoi(argv[i]);
 	    break;
 	case 'l':
 	    i++;
@@ -392,21 +394,21 @@ parse_arguments(PREFS* prefs, int argc, char **argv)
 	    break;
 	case 'L':
 	    i++;
-	    strncpy(m_opt.pls_file, argv[i], SR_MAX_PATH);
+	    strncpy(prefs->pls_file, argv[i], SR_MAX_PATH);
 	    break;
 	case 'm':
 	    i++;
-	    m_opt.timeout = atoi(argv[i]);
+	    prefs->timeout = atoi(argv[i]);
 	    break;
  	case 'M':
  	    i++;
- 	    m_opt.maxMB_rip_size = atoi(argv[i]);
- 	    m_opt.flags |= OPT_CHECK_MAX_BYTES;
+ 	    prefs->maxMB_rip_size = atoi(argv[i]);
+ 	    prefs->flags |= OPT_CHECK_MAX_BYTES;
  	    break;
 	case 'o':
 	    i++;
-	    m_opt.overwrite = string_to_overwrite_opt (argv[i]);
-	    if (m_opt.overwrite == OVERWRITE_UNKNOWN) {
+	    prefs->overwrite = string_to_overwrite_opt (argv[i]);
+	    if (prefs->overwrite == OVERWRITE_UNKNOWN) {
 		printf ("Error: -o option requires an argument\n"
 			"Please use \"-o always\" or \"-o never\"\n");
 		exit (1);
@@ -414,7 +416,7 @@ parse_arguments(PREFS* prefs, int argc, char **argv)
 	    break;
 	case 'p':
 	    i++;
-	    strncpy(m_opt.proxyurl, argv[i], MAX_URL_LEN);
+	    strncpy(prefs->proxyurl, argv[i], MAX_URL_LEN);
 	    break;
 	case 'P':
 	    i++;
@@ -422,63 +424,63 @@ parse_arguments(PREFS* prefs, int argc, char **argv)
 		    "Please use -D pattern instead.\n");
 	    exit (1);
 	case 'q':
-	    m_opt.flags ^= OPT_COUNT_FILES;
-	    m_opt.count_start = -1;     /* -1 means auto-detect */
+	    prefs->flags ^= OPT_COUNT_FILES;
+	    prefs->count_start = -1;     /* -1 means auto-detect */
 	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
 	    i++;
-	    m_opt.count_start = atoi(argv[i]);
+	    prefs->count_start = atoi(argv[i]);
 	    break;
 	case 'r':
-	    m_opt.flags ^= OPT_MAKE_RELAY;
+	    prefs->flags ^= OPT_MAKE_RELAY;
 	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
 	    i++;
 	    c = strstr(argv[i], ":");
 	    if (NULL == c) {
-	    	m_opt.relay_port = atoi(argv[i]);
+	    	prefs->relay_port = atoi(argv[i]);
 	    } else {
 	    	*c = '\0';
-		strncpy(m_opt.relay_ip, argv[i], SR_MAX_PATH);
-		m_opt.relay_port = atoi(++c);
+		strncpy(prefs->relay_ip, argv[i], SR_MAX_PATH);
+		prefs->relay_port = atoi(++c);
  	    }
 	    break;
 	case 'R':
 	    i++;
-	    m_opt.max_connections = atoi(argv[i]);
+	    prefs->max_connections = atoi(argv[i]);
 	    break;
 	case 's':
-	    m_opt.flags ^= OPT_SEPERATE_DIRS;
+	    prefs->flags ^= OPT_SEPERATE_DIRS;
 	    break;
 	case 't':
-	    m_opt.flags |= OPT_KEEP_INCOMPLETE;
+	    prefs->flags |= OPT_KEEP_INCOMPLETE;
 	    break;
 	case 'T':
-	    m_opt.flags |= OPT_TRUNCATE_DUPS;
+	    prefs->flags |= OPT_TRUNCATE_DUPS;
 	    break;
 	case 'u':
 	    i++;
-	    strncpy(m_opt.useragent, argv[i], MAX_USERAGENT_STR);
+	    strncpy(prefs->useragent, argv[i], MAX_USERAGENT_STR);
 	    break;
 	case 'v':
 	    printf("Streamripper %s\n", SRVERSION);
 	    exit(0);
 	case 'w':
 	    i++;
-	    strncpy(m_opt.rules_file, argv[i], SR_MAX_PATH);
+	    strncpy(prefs->rules_file, argv[i], SR_MAX_PATH);
 	    break;
 	case 'z':
-	    m_opt.flags ^= OPT_SEARCH_PORTS;
-	    m_opt.max_port = m_opt.relay_port+1000;
+	    prefs->flags ^= OPT_SEARCH_PORTS;
+	    prefs->max_port = prefs->relay_port+1000;
 	    break;
 	case '-':
-	    parse_extended_options(&argv[i][2]);
+	    parse_extended_options (prefs, &argv[i][2]);
 	    break;
 	}
     }
 
     /* Need to verify that splitpoint rules were sane */
-    verify_splitpoint_rules ();
+    verify_splitpoint_rules (prefs);
 
     /* Verify that first parameter is URL */
     if (argv[1][0] == '-') {
@@ -492,7 +494,7 @@ parse_arguments(PREFS* prefs, int argc, char **argv)
 }
 
 static void
-parse_extended_options (char* rule)
+parse_extended_options (PREFS* prefs, char* rule)
 {
     int x,y;
 
@@ -515,88 +517,88 @@ parse_extended_options (char* rule)
     /* Splitpoint options */
     if ((!strcmp(rule,"xs-none"))
 	|| (!strcmp(rule,"xs_none"))) {
-	m_opt.sp_opt.xs = 0;
+	prefs->sp_opt.xs = 0;
 	debug_printf ("Disable silence detection");
 	return;
     }
     if ((1==sscanf(rule,"xs-min-volume=%d",&x)) 
 	|| (1==sscanf(rule,"xs_min_volume=%d",&x))) {
-	m_opt.sp_opt.xs_min_volume = x;
+	prefs->sp_opt.xs_min_volume = x;
 	debug_printf ("Setting minimum volume to %d\n",x);
 	return;
     }
     if ((1==sscanf(rule,"xs-silence-length=%d",&x))
 	|| (1==sscanf(rule,"xs_silence_length=%d",&x))) {
-	m_opt.sp_opt.xs_silence_length = x;
+	prefs->sp_opt.xs_silence_length = x;
 	debug_printf ("Setting silence length to %d\n",x);
 	return;
     }
     if ((2==sscanf(rule,"xs-search-window=%d:%d",&x,&y))
 	|| (2==sscanf(rule,"xs_search_window=%d:%d",&x,&y))) {
-	m_opt.sp_opt.xs_search_window_1 = x;
-	m_opt.sp_opt.xs_search_window_2 = y;
+	prefs->sp_opt.xs_search_window_1 = x;
+	prefs->sp_opt.xs_search_window_2 = y;
 	debug_printf ("Setting search window to (%d:%d)\n",x,y);
 	return;
     }
     if ((1==sscanf(rule,"xs-offset=%d",&x))
 	|| (1==sscanf(rule,"xs_offset=%d",&x))) {
-	m_opt.sp_opt.xs_offset = x;
+	prefs->sp_opt.xs_offset = x;
 	debug_printf ("Setting silence offset to %d\n",x);
 	return;
     }
     if ((2==sscanf(rule,"xs-padding=%d:%d",&x,&y))
 	|| (2==sscanf(rule,"xs_padding=%d:%d",&x,&y))) {
-	m_opt.sp_opt.xs_padding_1 = x;
-	m_opt.sp_opt.xs_padding_2 = y;
+	prefs->sp_opt.xs_padding_1 = x;
+	prefs->sp_opt.xs_padding_2 = y;
 	debug_printf ("Setting file output padding to (%d:%d)\n",x,y);
 	return;
     }
 
     /* id3 options */
     if (!strcmp(rule,"with-id3v2")) {
-	OPT_FLAG_SET(m_opt.flags,OPT_ADD_ID3V2,1);
+	OPT_FLAG_SET(prefs->flags,OPT_ADD_ID3V2,1);
 	return;
     }
     if (!strcmp(rule,"without-id3v2")) {
-	OPT_FLAG_SET(m_opt.flags,OPT_ADD_ID3V2,0);
+	OPT_FLAG_SET(prefs->flags,OPT_ADD_ID3V2,0);
 	return;
     }
     if (!strcmp(rule,"with-id3v1")) {
-	OPT_FLAG_SET(m_opt.flags,OPT_ADD_ID3V1,1);
+	OPT_FLAG_SET(prefs->flags,OPT_ADD_ID3V1,1);
 	return;
     }
     if (!strcmp(rule,"without-id3v1")) {
-	OPT_FLAG_SET(m_opt.flags,OPT_ADD_ID3V1,0);
+	OPT_FLAG_SET(prefs->flags,OPT_ADD_ID3V1,0);
 	return;
     }
 
     /* codeset options */
     x = strlen("codeset-filesys=");
     if (!strncmp(rule,"codeset-filesys=",x)) {
-	strncpy (m_opt.cs_opt.codeset_filesys, &rule[x], MAX_CODESET_STRING);
+	strncpy (prefs->cs_opt.codeset_filesys, &rule[x], MAX_CODESET_STRING);
 	debug_printf ("Setting filesys codeset to %s\n",
-		      m_opt.cs_opt.codeset_filesys);
+		      prefs->cs_opt.codeset_filesys);
 	return;
     }
     x = strlen("codeset-id3=");
     if (!strncmp(rule,"codeset-id3=",x)) {
-	strncpy (m_opt.cs_opt.codeset_id3, &rule[x], MAX_CODESET_STRING);
+	strncpy (prefs->cs_opt.codeset_id3, &rule[x], MAX_CODESET_STRING);
 	debug_printf ("Setting id3 codeset to %s\n",
-		      m_opt.cs_opt.codeset_id3);
+		      prefs->cs_opt.codeset_id3);
 	return;
     }
     x = strlen("codeset-metadata=");
     if (!strncmp(rule,"codeset-metadata=",x)) {
-	strncpy (m_opt.cs_opt.codeset_metadata, &rule[x], MAX_CODESET_STRING);
+	strncpy (prefs->cs_opt.codeset_metadata, &rule[x], MAX_CODESET_STRING);
 	debug_printf ("Setting metadata codeset to %s\n",
-		      m_opt.cs_opt.codeset_metadata);
+		      prefs->cs_opt.codeset_metadata);
 	return;
     }
     x = strlen("codeset-relay=");
     if (!strncmp(rule,"codeset-relay=",x)) {
-	strncpy (m_opt.cs_opt.codeset_relay, &rule[x], MAX_CODESET_STRING);
+	strncpy (prefs->cs_opt.codeset_relay, &rule[x], MAX_CODESET_STRING);
 	debug_printf ("Setting relay codeset to %s\n",
-		      m_opt.cs_opt.codeset_relay);
+		      prefs->cs_opt.codeset_relay);
 	return;
     }
 
@@ -606,7 +608,7 @@ parse_extended_options (char* rule)
 }
 
 static void
-verify_splitpoint_rules (void)
+verify_splitpoint_rules (PREFS *prefs)
 {
 #if defined (commentout)
     /* This is still not complete, but the warning causes people to 
@@ -615,41 +617,41 @@ verify_splitpoint_rules (void)
 #endif
     
     /* xs_silence_length must be non-negative and divisible by two */
-    if (m_opt.sp_opt.xs_silence_length < 0) {
-	m_opt.sp_opt.xs_silence_length = 0;
+    if (prefs->sp_opt.xs_silence_length < 0) {
+	prefs->sp_opt.xs_silence_length = 0;
     }
-    if (m_opt.sp_opt.xs_silence_length % 2) {
-        m_opt.sp_opt.xs_silence_length ++;
+    if (prefs->sp_opt.xs_silence_length % 2) {
+        prefs->sp_opt.xs_silence_length ++;
     }
 
     /* search_window values must be non-negative */
-    if (m_opt.sp_opt.xs_search_window_1 < 0) {
-	m_opt.sp_opt.xs_search_window_1 = 0;
+    if (prefs->sp_opt.xs_search_window_1 < 0) {
+	prefs->sp_opt.xs_search_window_1 = 0;
     }
-    if (m_opt.sp_opt.xs_search_window_2 < 0) {
-	m_opt.sp_opt.xs_search_window_2 = 0;
+    if (prefs->sp_opt.xs_search_window_2 < 0) {
+	prefs->sp_opt.xs_search_window_2 = 0;
     }
 
     /* if silence_length is 0, then search window should be zero */
-    if (m_opt.sp_opt.xs_silence_length == 0) {
-	m_opt.sp_opt.xs_search_window_1 = 0;
-	m_opt.sp_opt.xs_search_window_2 = 0;
+    if (prefs->sp_opt.xs_silence_length == 0) {
+	prefs->sp_opt.xs_search_window_1 = 0;
+	prefs->sp_opt.xs_search_window_2 = 0;
     }
 
     /* search_window values must be longer than silence_length */
-    if (m_opt.sp_opt.xs_search_window_1 + m_opt.sp_opt.xs_search_window_2
-	    < m_opt.sp_opt.xs_silence_length) {
+    if (prefs->sp_opt.xs_search_window_1 + prefs->sp_opt.xs_search_window_2
+	    < prefs->sp_opt.xs_silence_length) {
 	/* if this happens, disable search */
-	m_opt.sp_opt.xs_search_window_1 = 0;
-	m_opt.sp_opt.xs_search_window_2 = 0;
-	m_opt.sp_opt.xs_silence_length = 0;
+	prefs->sp_opt.xs_search_window_1 = 0;
+	prefs->sp_opt.xs_search_window_2 = 0;
+	prefs->sp_opt.xs_silence_length = 0;
     }
 
     /* search window lengths must be at least 1/2 of silence_length */
-    if (m_opt.sp_opt.xs_search_window_1 < m_opt.sp_opt.xs_silence_length) {
-	m_opt.sp_opt.xs_search_window_1 = m_opt.sp_opt.xs_silence_length;
+    if (prefs->sp_opt.xs_search_window_1 < prefs->sp_opt.xs_silence_length) {
+	prefs->sp_opt.xs_search_window_1 = prefs->sp_opt.xs_silence_length;
     }
-    if (m_opt.sp_opt.xs_search_window_2 < m_opt.sp_opt.xs_silence_length) {
-	m_opt.sp_opt.xs_search_window_2 = m_opt.sp_opt.xs_silence_length;
+    if (prefs->sp_opt.xs_search_window_2 < prefs->sp_opt.xs_silence_length) {
+	prefs->sp_opt.xs_search_window_2 = prefs->sp_opt.xs_silence_length;
     }
 }

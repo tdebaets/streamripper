@@ -41,9 +41,10 @@
  * Private functions
  *****************************************************************************/
 static error_code find_sep (u_long *pos1, u_long *pos2);
-static error_code start_track_mp3 (TRACK_INFO* ti);
-static error_code end_track_mp3 (RIP_MANAGER_OPTIONS* rmo, u_long pos1, u_long pos2, TRACK_INFO* ti);
-static error_code end_track_ogg (RIP_MANAGER_OPTIONS* rmo, TRACK_INFO* ti);
+static error_code start_track_mp3 (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
+static error_code end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, 
+				 u_long pos2, TRACK_INFO* ti);
+static error_code end_track_ogg (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
 
 static void compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt,
 				  int bitrate, int meta_interval);
@@ -54,8 +55,8 @@ static int ripstream_recvall (char* buffer, int size);
 
 static error_code get_track_from_metadata (int size, char *newtrack);
 static error_code get_stream_data (char *data_buf, char *track_buf);
-static error_code ripstream_rip_mp3 (RIP_MANAGER_OPTIONS* rmo);
-static error_code ripstream_rip_ogg (RIP_MANAGER_OPTIONS* rmo);
+static error_code ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi);
+static error_code ripstream_rip_ogg (RIP_MANAGER_INFO* rmi);
 
 /*****************************************************************************
  * Private Vars
@@ -123,6 +124,9 @@ typedef struct ID3V2framest {
 } ID3V2frame;
 
 
+/******************************************************************************
+ * Public functions
+ *****************************************************************************/
 error_code
 ripstream_init (HSOCKET sock, 
 		int have_relay,
@@ -259,17 +263,20 @@ copy_track_info (TRACK_INFO* dest, TRACK_INFO* src)
 
 /**** The main loop for ripping ****/
 error_code
-ripstream_rip (RIP_MANAGER_OPTIONS* rmo)
+ripstream_rip (RIP_MANAGER_INFO* rmi)
 {
     if (m_content_type == CONTENT_TYPE_OGG) {
-	return ripstream_rip_ogg (rmo);
+	return ripstream_rip_ogg (rmi);
     } else {
-	return ripstream_rip_mp3 (rmo);
+	return ripstream_rip_mp3 (rmi);
     }
 }
 
+/******************************************************************************
+ * Private functions
+ *****************************************************************************/
 static error_code
-ripstream_rip_ogg (RIP_MANAGER_OPTIONS* rmo)
+ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 {
     int ret;
     int real_ret = SR_SUCCESS;
@@ -326,13 +333,13 @@ ripstream_rip_ogg (RIP_MANAGER_OPTIONS* rmo)
 	    if (amt_filled == 0) {
 		break;
 	    }
-	    ret = rip_manager_put_data (m_getbuffer, amt_filled);
+	    ret = rip_manager_put_data (rmi, m_getbuffer, amt_filled);
 	    if (ret != SR_SUCCESS) {
 		debug_printf ("rip_manager_put_data(#1): %d\n",ret);
 		return ret;
 	    }
 	    if (got_eos) {
-		end_track_ogg (rmo, &m_old_track);
+		end_track_ogg (rmi, &m_old_track);
 		have_track = 0;
 		break;
 	    }
@@ -343,7 +350,7 @@ ripstream_rip_ogg (RIP_MANAGER_OPTIONS* rmo)
 
     /* If we got a new track, then start a new file */
     if (m_current_track.have_track_info) {
-	ret = rip_manager_start_track (&m_current_track, m_track_count);
+	ret = rip_manager_start_track (rmi, &m_current_track, m_track_count);
 	if (ret != SR_SUCCESS) {
 	    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
 	    return ret;
@@ -371,7 +378,7 @@ ripstream_rip_ogg (RIP_MANAGER_OPTIONS* rmo)
 }
 
 static error_code
-ripstream_rip_mp3 (RIP_MANAGER_OPTIONS* rmo)
+ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
 {
     int ret;
     int real_ret = SR_SUCCESS;
@@ -444,7 +451,7 @@ ripstream_rip_mp3 (RIP_MANAGER_OPTIONS* rmo)
 	if (!m_current_track.have_track_info) {
 	    strcpy (m_current_track.raw_metadata, m_no_meta_name);
 	}
-	ret = rip_manager_start_track (&m_current_track, m_track_count);
+	ret = rip_manager_start_track (rmi, &m_current_track, m_track_count);
 	if (ret != SR_SUCCESS) {
 	    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
 	    return ret;
@@ -492,13 +499,13 @@ ripstream_rip_mp3 (RIP_MANAGER_OPTIONS* rmo)
 	}
 
 	/* Write out previous track */
-	ret = end_track_mp3 (rmo, pos1, pos2, &m_old_track);
+	ret = end_track_mp3 (rmi, pos1, pos2, &m_old_track);
 	if (ret != SR_SUCCESS)
 	    real_ret = ret;
 	m_cue_sheet_bytes += pos2;
 
 	/* Start next track */
-	ret = start_track_mp3 (&m_new_track);
+	ret = start_track_mp3 (rmi, &m_new_track);
 	if (ret != SR_SUCCESS)
 	    real_ret = ret;
 	m_find_silence = -1;
@@ -522,7 +529,8 @@ ripstream_rip_mp3 (RIP_MANAGER_OPTIONS* rmo)
 	if (curr_song < extract_size) {
 	    u_long curr_song_bytes = extract_size - curr_song;
 	    m_cue_sheet_bytes += curr_song_bytes;
-	    rip_manager_put_data (&m_getbuffer[curr_song], curr_song_bytes);
+	    rip_manager_put_data (rmi, &m_getbuffer[curr_song], 
+				  curr_song_bytes);
 	}
     }
 
@@ -583,11 +591,11 @@ find_sep (u_long *pos1, u_long *pos2)
     return SR_SUCCESS;
 }
 
+// pos1 is end of prev track
+// pos2 is beginning of next track
 static error_code
-end_track_mp3 (RIP_MANAGER_OPTIONS* rmo, u_long pos1, u_long pos2, TRACK_INFO* ti)
+end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, u_long pos2, TRACK_INFO* ti)
 {
-    // pos1 is end of prev track
-    // pos2 is beginning of next track
     int ret;
     u_char *buf;
 
@@ -611,7 +619,7 @@ end_track_mp3 (RIP_MANAGER_OPTIONS* rmo, u_long pos1, u_long pos2, TRACK_INFO* t
 
     // Write that out to the current file
     // GCS FIX: m_bytes_ripped is incorrect when there is padding
-    if ((ret = rip_manager_put_data(buf, pos1)) != SR_SUCCESS)
+    if ((ret = rip_manager_put_data (rmi, buf, pos1)) != SR_SUCCESS)
 	goto BAIL;
 
     /* This is id3v1 */
@@ -626,7 +634,7 @@ end_track_mp3 (RIP_MANAGER_OPTIONS* rmo, u_long pos1, u_long pos2, TRACK_INFO* t
 	string_from_mstring (id3.album, sizeof(id3.album),
 			     ti->album, CODESET_ID3);
 	id3.genre = (char) 0xFF; // see http://www.id3.org/id3v2.3.0.html#secA
-	ret = rip_manager_put_data ((char *)&id3, sizeof(id3));
+	ret = rip_manager_put_data (rmi, (char *)&id3, sizeof(id3));
 	if (ret != SR_SUCCESS) {
 	    goto BAIL;
 	}
@@ -637,7 +645,7 @@ end_track_mp3 (RIP_MANAGER_OPTIONS* rmo, u_long pos1, u_long pos2, TRACK_INFO* t
     debug_printf("Current track number %d (skipping if %d or less)\n", 
 		 m_track_count, m_drop_count);
     if (m_track_count > m_drop_count)
-	if ((ret = rip_manager_end_track (rmo, ti)) != SR_SUCCESS)
+	if ((ret = rip_manager_end_track (rmi, ti)) != SR_SUCCESS)
 	    goto BAIL;
 
  BAIL:
@@ -646,7 +654,7 @@ end_track_mp3 (RIP_MANAGER_OPTIONS* rmo, u_long pos1, u_long pos2, TRACK_INFO* t
 }
 
 static error_code
-start_track_mp3 (TRACK_INFO* ti)
+start_track_mp3 (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 {
 #define HEADER_SIZE 1600
     int ret;
@@ -654,7 +662,7 @@ start_track_mp3 (TRACK_INFO* ti)
     unsigned int secs;
 
     debug_printf ("calling rip_manager_start_track(#2)\n");
-    ret = rip_manager_start_track (ti, m_track_count);
+    ret = rip_manager_start_track (rmi, ti, m_track_count);
     if (ret != SR_SUCCESS) {
 	debug_printf ("rip_manager_start_track failed(#2): %d\n",ret);
         return ret;
@@ -681,11 +689,11 @@ start_track_mp3 (TRACK_INFO* ti)
 	memset(bigbuf, '\000', sizeof(bigbuf));
 
 	/* Write header */
-	ret = rip_manager_put_data(header1, 6);
+	ret = rip_manager_put_data (rmi, header1, 6);
 	if (ret != SR_SUCCESS) return ret;
 	for (i = 0; i < 4; i++) {
 	    char x = (header_size >> (3-i)*7) & 0x7F;
-	    ret = rip_manager_put_data((char *)&x, 1);
+	    ret = rip_manager_put_data (rmi, (char *)&x, 1);
 	    if (ret != SR_SUCCESS) return ret;
 	}
 
@@ -701,16 +709,17 @@ start_track_mp3 (TRACK_INFO* ti)
 	rc = string_from_mstring (bigbuf, HEADER_SIZE, ti->artist, 
 				  CODESET_ID3);
 	framesize = htonl (rc+1);
-	ret = rip_manager_put_data ((char *)&(id3v2frame.id), 4);
+	ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.id), 4);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 4;
-	ret = rip_manager_put_data ((char *)&(framesize), sizeof(framesize));
+	ret = rip_manager_put_data (rmi, (char *)&(framesize), 
+				    sizeof(framesize));
 	if (ret != SR_SUCCESS) return ret;
 	sent += sizeof(framesize);
-	ret = rip_manager_put_data ((char *)&(id3v2frame.pad), 3);
+	ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.pad), 3);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 3;
-	ret = rip_manager_put_data (bigbuf, rc);
+	ret = rip_manager_put_data (rmi, bigbuf, rc);
 	if (ret != SR_SUCCESS) return ret;
 	sent += rc;
 
@@ -721,16 +730,16 @@ start_track_mp3 (TRACK_INFO* ti)
 	rc = string_from_mstring (bigbuf, HEADER_SIZE, ti->title, 
 				  CODESET_ID3);
 	framesize = htonl (rc+1);
-	ret = rip_manager_put_data((char *)&(id3v2frame.id), 4);
+	ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.id), 4);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 4;
-	ret = rip_manager_put_data((char *)&(framesize), sizeof(framesize));
+	ret = rip_manager_put_data (rmi, (char *)&(framesize), sizeof(framesize));
 	if (ret != SR_SUCCESS) return ret;
 	sent += sizeof(framesize);
-	ret = rip_manager_put_data((char *)&(id3v2frame.pad), 3);
+	ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.pad), 3);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 3;
-	ret = rip_manager_put_data (bigbuf, rc);
+	ret = rip_manager_put_data (rmi, bigbuf, rc);
 	if (ret != SR_SUCCESS) return ret;
 	sent += rc;
 
@@ -738,16 +747,16 @@ start_track_mp3 (TRACK_INFO* ti)
 	memset(&id3v2frame, '\000', sizeof(id3v2frame));
 	strncpy(id3v2frame.id, "TENC", 4);
 	framesize = htonl(strlen(comment)+1);
-	ret = rip_manager_put_data((char *)&(id3v2frame.id), 4);
+	ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.id), 4);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 4;
-	ret = rip_manager_put_data((char *)&(framesize), sizeof(framesize));
+	ret = rip_manager_put_data (rmi, (char *)&(framesize), sizeof(framesize));
 	if (ret != SR_SUCCESS) return ret;
 	sent += sizeof(framesize);
-	ret = rip_manager_put_data((char *)&(id3v2frame.pad), 3);
+	ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.pad), 3);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 3;
-	ret = rip_manager_put_data(comment, strlen(comment));
+	ret = rip_manager_put_data (rmi, comment, strlen(comment));
 	if (ret != SR_SUCCESS) return ret;
 	sent += strlen (comment);
 
@@ -758,24 +767,24 @@ start_track_mp3 (TRACK_INFO* ti)
 	rc = string_from_mstring (bigbuf, HEADER_SIZE, ti->album, 
 				  CODESET_ID3);
 	framesize = htonl (rc+1);
-	ret = rip_manager_put_data((char *)&(id3v2frame.id), 4);
+	ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.id), 4);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 4;
-	ret = rip_manager_put_data((char *)&(framesize), sizeof(framesize));
+	ret = rip_manager_put_data (rmi, (char *)&(framesize), sizeof(framesize));
 	if (ret != SR_SUCCESS) return ret;
 	sent += sizeof(framesize);
-	ret = rip_manager_put_data((char *)&(id3v2frame.pad), 3);
+	ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.pad), 3);
 	if (ret != SR_SUCCESS) return ret;
 	sent += 3;
-	ret = rip_manager_put_data (bigbuf, rc);
+	ret = rip_manager_put_data (rmi, bigbuf, rc);
 	if (ret != SR_SUCCESS) return ret;
 	sent += rc;
 
 	/* Zero out padding */
-	memset(bigbuf, '\000', sizeof(bigbuf));
+	memset (bigbuf, '\000', sizeof(bigbuf));
 
 	/* Pad up to header_size */
-	ret = rip_manager_put_data(bigbuf, HEADER_SIZE-sent);
+	ret = rip_manager_put_data (rmi, bigbuf, HEADER_SIZE-sent);
 	if (ret != SR_SUCCESS) return ret;
     }
     m_track_count ++;
@@ -787,13 +796,13 @@ start_track_mp3 (TRACK_INFO* ti)
 // Only save this track if we've skipped over enough cruft 
 // at the beginning of the stream
 static error_code
-end_track_ogg (RIP_MANAGER_OPTIONS* rmo, TRACK_INFO* ti)
+end_track_ogg (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 {
     error_code ret;
     debug_printf ("Current track number %d (skipping if %d or less)\n", 
 		  m_track_count, m_drop_count);
     if (m_track_count > m_drop_count) {
-	ret = rip_manager_end_track (rmo, ti);
+	ret = rip_manager_end_track (rmi, ti);
     } else {
 	ret = SR_SUCCESS;
     }
