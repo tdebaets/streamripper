@@ -100,7 +100,7 @@ rip_manager_start (RIP_MANAGER_INFO **rmi,
 	return SR_ERROR_INVALID_PARAM;
 
     *rmi = (RIP_MANAGER_INFO*) malloc (sizeof(RIP_MANAGER_INFO));
-    memset (rmi, 0, sizeof(RIP_MANAGER_INFO));
+    memset ((*rmi), 0, sizeof(RIP_MANAGER_INFO));
     (*rmi)->prefs = prefs;
 
     m_started_sem = threadlib_create_sem();
@@ -121,7 +121,7 @@ rip_manager_start (RIP_MANAGER_INFO **rmi,
 
     /* Start the ripping thread */
     m_ripping = TRUE;
-    ret = threadlib_beginthread (&m_hthread, ripthread, (void*) rmi);
+    ret = threadlib_beginthread (&m_hthread, ripthread, (void*) (*rmi));
     return ret;
 }
 

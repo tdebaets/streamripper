@@ -87,6 +87,7 @@ main (int argc, char *argv[])
     signal (SIGINT, catch_sig);
     signal (SIGTERM, catch_sig);
 
+    printf ("Gonna parse_arguments ()\n");
     parse_arguments (&prefs, argc, argv);
 
     if (!m_dont_print)
@@ -320,6 +321,7 @@ parse_arguments(PREFS* prefs, int argc, char **argv)
     strncpy (prefs->url, argv[1], MAX_URL_LEN);
 
     // Load prefs (including URL-specific)
+    debug_printf ("Gonna prefs_load ()\n");
     prefs_load ();
     prefs_get (prefs, prefs->url);
 

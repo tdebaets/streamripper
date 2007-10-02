@@ -56,9 +56,11 @@ prefs_load (void)
     gchar* prefs_fn;
 
     prefs_dir = prefs_get_config_dir ();
+    fprintf (stderr, "prefs_dir = %s\n", prefs_dir);
     prefs_fn = g_build_filename (prefs_dir,
 				 "streamripper.ini",
 				 NULL);
+    fprintf (stderr, "prefs_fn = %s\n", prefs_fn);
 
     if (!m_key_file) {
 	m_key_file = g_key_file_new ();
@@ -154,7 +156,8 @@ prefs_copy_to_keyfile (PREFS* prefs)
     }
     
     /* Copy prefs to keyfile */
-    prefs_set_section (prefs, &default_prefs, prefs->url);
+    // Can't do this on windows -- causes glib exception (bad group name?)
+    // prefs_set_section (prefs, &default_prefs, prefs->url);
 }
 
 static void
