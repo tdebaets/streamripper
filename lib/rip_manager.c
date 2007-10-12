@@ -55,10 +55,6 @@ static void init_error_strings (void);
  *****************************************************************************/
 static SR_HTTP_HEADER		m_http_info;
 static HSOCKET			m_sock;
-#if defined (commentout)
-static void			(*m_destroy_func)();
-#endif
-//static RIP_MANAGER_INFO		m_ripinfo;		// used for UPDATE callback messages
 static THREAD_HANDLE		m_hthread;		// rip thread handle
 static void			(*m_status_callback)(RIP_MANAGER_INFO* rmi, int message, void *data);
 static BOOL			m_ripping = FALSE;
@@ -121,6 +117,7 @@ rip_manager_start (RIP_MANAGER_INFO **rmi,
 
     /* Start the ripping thread */
     m_ripping = TRUE;
+    debug_printf ("Pre ripthread: %s\n", (*rmi)->prefs->url);
     ret = threadlib_beginthread (&m_hthread, ripthread, (void*) (*rmi));
     return ret;
 }

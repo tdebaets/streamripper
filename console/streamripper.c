@@ -62,7 +62,6 @@ static BOOL			m_started = FALSE;
 static BOOL			m_alldone = FALSE;
 static BOOL			m_got_sig = FALSE;
 static BOOL			m_dont_print = FALSE;
-//static PREFS			m_opt;
 time_t				m_stop_time = 0;
 
 /* main()
@@ -93,7 +92,9 @@ main (int argc, char *argv[])
     if (!m_dont_print)
 	fprintf (stderr, "Connecting...\n");
 
+    
     rip_manager_init ();
+    printf ("Calling rip_manager_start: %s\n", prefs.url);
     if ((ret = rip_manager_start (&rmi, &prefs, rip_callback)) != SR_SUCCESS) {
 	fprintf(stderr, "Couldn't connect to %s\n", prefs.url);
 	exit(1);
@@ -319,11 +320,13 @@ parse_arguments(PREFS* prefs, int argc, char **argv)
 
     // Get URL
     strncpy (prefs->url, argv[1], MAX_URL_LEN);
+    printf ("Just did strncpy: %s\n", prefs->url);
 
     // Load prefs (including URL-specific)
     debug_printf ("Gonna prefs_load ()\n");
     prefs_load ();
     prefs_get (prefs, prefs->url);
+    
 
     // Parse arguments
     for(i = 1; i < argc; i++) {

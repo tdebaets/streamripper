@@ -164,7 +164,7 @@ static void
 prefs_get_defaults (PREFS* prefs)
 {
     debug_printf ("- set_rip_manager_options_defaults -\n");
-    prefs->url[0] = 0;
+    //    prefs->url[0] = 0;
     prefs->proxyurl[0] = 0;
     strcpy(prefs->output_directory, "./");
     /* GCS FIX: Plugin defaults to desktop */
@@ -335,7 +335,10 @@ prefs_get_section (PREFS* prefs, char* label)
 	return;
     }
 
+    /* URL is special.  TBD... */
+#if defined (commentout)
     prefs_get_string (prefs->url, MAX_URL_LEN, group, "url");
+#endif
     prefs_get_string (prefs->proxyurl, MAX_URL_LEN, group, "proxy");
     prefs_get_string (prefs->output_directory, SR_MAX_PATH, group, "output_dir");
     prefs_get_string (prefs->output_pattern, SR_MAX_PATH, group, "output_pattern");
@@ -414,7 +417,9 @@ prefs_set_section (PREFS* prefs, PREFS* gp, char* group)
     if (!m_key_file) return;
 
     if (!gp || !strcmp(prefs->url, gp->url)) {
+	printf ("Get_prefs (3): %s\n", prefs->url);
 	prefs_set_string (group, "url", prefs->url);
+	printf ("Get_prefs (4): %s\n", prefs->url);
     }
     if (!gp || !strcmp(prefs->proxyurl, gp->proxyurl)) {
 	prefs_set_string (group, "proxy", prefs->proxyurl);
