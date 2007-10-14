@@ -19,8 +19,9 @@
 
 #include <glib.h>
 
-typedef struct prefs PREFS;
-struct prefs
+typedef struct stream_prefs PREFS;
+typedef struct stream_prefs STREAM_PREFS;
+struct stream_prefs
 {
     char label[MAX_URL_LEN];		// logical name for this stream
     char url[MAX_URL_LEN];		// url of the stream to connect to
@@ -64,6 +65,13 @@ struct prefs
     CODESET_OPTIONS cs_opt;             // which codeset should i use?
 };
 
+typedef struct global_prefs GLOBAL_PREFS;
+struct global_prefs
+{
+    PREFS prefs;                        // default prefs for new streams
+    char default_url[MAX_URL_LEN];      // url of the stream to connect to
+};
+
 
 #if defined (commentout)
 // Rip manager flags options
@@ -92,6 +100,6 @@ struct prefs
 /* Prototypes */
 void prefs_load (void);
 void prefs_save (PREFS* prefs);
-void prefs_get (PREFS* prefs, char* label);
+void prefs_get_stream_prefs (STREAM_PREFS* prefs, char* label);
 
 #endif

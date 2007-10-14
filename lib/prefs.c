@@ -118,7 +118,7 @@ prefs_save (PREFS* prefs)
 }
 
 void
-prefs_get (PREFS* prefs, char* label)
+prefs_get_stream_prefs (STREAM_PREFS* prefs, char* label)
 {
     prefs_get_defaults (prefs);
     prefs_get_section (prefs, "global");
@@ -148,7 +148,7 @@ prefs_copy_to_keyfile (PREFS* prefs)
 {
     PREFS default_prefs;
 
-    prefs_get (&default_prefs, "global");
+    prefs_get_stream_prefs (&default_prefs, "global");
 
     /* If there is no global section, create one */
     if (!g_key_file_has_group (m_key_file, "global")) {
@@ -335,7 +335,7 @@ prefs_get_section (PREFS* prefs, char* label)
 	return;
     }
 
-    /* URL is special.  TBD... */
+    /* URL is special. */
 #if defined (commentout)
     prefs_get_string (prefs->url, MAX_URL_LEN, group, "url");
 #endif
