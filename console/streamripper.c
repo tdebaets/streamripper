@@ -325,7 +325,7 @@ parse_arguments(PREFS* prefs, int argc, char **argv)
     // Load prefs (including URL-specific)
     debug_printf ("Gonna prefs_load ()\n");
     prefs_load ();
-    prefs_get (prefs, prefs->url);
+    prefs_get_stream_prefs (prefs, prefs->url);
 
     // Parse arguments
     for(i = 1; i < argc; i++) {
