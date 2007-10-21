@@ -298,7 +298,9 @@ http_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
     start = (char *)strstr(header, "ICY ");
     if (!start) {
 	start = (char *)strstr(header, "HTTP/1.");
-	if (!start) return SR_ERROR_NO_RESPOSE_HEADER;
+	if (!start) {
+	    return SR_ERROR_NO_RESPOSE_HEADER;
+	}
     }
     start = strstr(start, " ") + 1;
     sscanf(start, "%i", &info->icy_code);
@@ -371,6 +373,9 @@ http_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
     else if (strstr(stempbr,"audio/x-scpls")) {
 	info->content_type = CONTENT_TYPE_PLS;
     }
+    else if (strstr(stempbr,"text/html")) {
+	return SR_ERROR_NO_RESPOSE_HEADER;
+    }
     else {
 	info->content_type = CONTENT_TYPE_UNKNOWN;
     }
@@ -436,7 +441,7 @@ http_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
 	extract_header_value(header, info->icy_genre, "x-audiocast-genre:",
 			     sizeof(info->icy_genre));
 	rc = extract_header_value(header, stempbr, "x-audiocast-bitrate:",
-			     sizeof(stempbr));
+				  sizeof(stempbr));
 	if (rc) {
 	    info->icy_bitrate = atoi(stempbr);
 	}

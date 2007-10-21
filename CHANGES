@@ -1,5 +1,7 @@
-New for 1.70
+New for 1.63-beta-1
 --------------
+* Add preference file
+* Reject connections to content-type text/html
 * Plugin: fix problem where geometry sometimes gets located outside screen
 
 New for 1.62.2

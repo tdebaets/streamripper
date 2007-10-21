@@ -86,7 +86,6 @@ main (int argc, char *argv[])
     signal (SIGINT, catch_sig);
     signal (SIGTERM, catch_sig);
 
-    printf ("Gonna parse_arguments ()\n");
     parse_arguments (&prefs, argc, argv);
 
     if (!m_dont_print)
@@ -94,7 +93,6 @@ main (int argc, char *argv[])
 
     
     rip_manager_init ();
-    printf ("Calling rip_manager_start: %s\n", prefs.url);
     if ((ret = rip_manager_start (&rmi, &prefs, rip_callback)) != SR_SUCCESS) {
 	fprintf(stderr, "Couldn't connect to %s\n", prefs.url);
 	exit(1);
@@ -305,7 +303,7 @@ print_usage()
  * hard enough. 
  */
 static void
-parse_arguments(PREFS* prefs, int argc, char **argv)
+parse_arguments (PREFS* prefs, int argc, char **argv)
 {
     int i;
     char *c;
@@ -320,19 +318,17 @@ parse_arguments(PREFS* prefs, int argc, char **argv)
 
     // Get URL
     strncpy (prefs->url, argv[1], MAX_URL_LEN);
-    printf ("Just did strncpy: %s\n", prefs->url);
 
     // Load prefs (including URL-specific)
-    debug_printf ("Gonna prefs_load ()\n");
     prefs_load ();
     prefs_get_stream_prefs (prefs, prefs->url);
 
     // Parse arguments
-    for(i = 1; i < argc; i++) {
+    for (i = 1; i < argc; i++) {
 	if (argv[i][0] != '-')
 	    continue;
 
-	c = strchr("dDEfIklLmMopRuw", argv[i][1]);
+	c = strchr ("dDEfIklLmMopRuw", argv[i][1]);
         if (c != NULL) {
             if ((i == (argc-1)) || (argv[i+1][0] == '-')) {
 		fprintf(stderr, "option %s requires an argument\n", argv[i]);

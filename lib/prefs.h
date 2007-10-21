@@ -68,8 +68,8 @@ struct stream_prefs
 typedef struct global_prefs GLOBAL_PREFS;
 struct global_prefs
 {
-    PREFS prefs;                        // default prefs for new streams
-    char default_url[MAX_URL_LEN];      // url of the stream to connect to
+    char url[MAX_URL_LEN];              // default stream
+    STREAM_PREFS stream_prefs;          // default prefs for new streams
 };
 
 
@@ -100,6 +100,7 @@ struct global_prefs
 /* Prototypes */
 void prefs_load (void);
 void prefs_save (PREFS* prefs);
-void prefs_get_stream_prefs (STREAM_PREFS* prefs, char* label);
+void prefs_get_global_prefs (GLOBAL_PREFS *global_prefs);
+void prefs_get_stream_prefs (STREAM_PREFS *prefs, char* label);
 
 #endif

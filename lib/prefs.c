@@ -42,6 +42,8 @@ static gchar* prefs_get_config_dir (void);
 static void prefs_copy_to_keyfile (PREFS* prefs);
 static void prefs_set_section (PREFS* prefs, PREFS* default_prefs, 
 			       char* group);
+static int prefs_get_string (char* dest, gsize dest_size, char* group, 
+			     char* key);
 
 /******************************************************************************
  * Public functions
@@ -56,7 +58,6 @@ prefs_load (void)
     gchar* prefs_fn;
 
     prefs_dir = prefs_get_config_dir ();
-    fprintf (stderr, "prefs_dir = %s\n", prefs_dir);
     prefs_fn = g_build_filename (prefs_dir,
 				 "streamripper.ini",
 				 NULL);
@@ -115,6 +116,14 @@ prefs_save (PREFS* prefs)
     }
     g_free (keyfile_contents);
     g_free (prefs_fn);
+}
+
+void
+prefs_get_global_prefs (GLOBAL_PREFS *global_prefs)
+{
+    memset (global_prefs, 0, sizeof(GLOBAL_PREFS));
+    prefs_get_string (global_prefs->url, MAX_URL_LEN, "global", "url");
+    prefs_get_section (&global_prefs->stream_prefs, "global");
 }
 
 void

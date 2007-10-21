@@ -182,8 +182,8 @@ init_error_strings (void)
     SET_ERR_STR("SR_ERROR_RECV_FAILED",				0x07);
     SET_ERR_STR("SR_ERROR_SEND_FAILED",				0x08);
     SET_ERR_STR("SR_ERROR_PARSE_FAILURE",			0x09);
-    SET_ERR_STR("SR_ERROR_NO_RESPOSE_HEADER",			0x0a);
-    SET_ERR_STR("Server returned an unknown error code",0x0b);
+    SET_ERR_STR("SR_ERROR_NO_RESPOSE_HEADER: Server is not a shoutcast stream",		0x0a);
+    SET_ERR_STR("Server returned an unknown error code",	0x0b);
     SET_ERR_STR("SR_ERROR_NO_META_INTERVAL",			0x0c);
     SET_ERR_STR("SR_ERROR_INVALID_PARAM",			0x0d);
     SET_ERR_STR("SR_ERROR_NO_HTTP_HEADER",			0x0e);
