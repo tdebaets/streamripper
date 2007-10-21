@@ -150,7 +150,6 @@ prefs_get_stream_prefs (STREAM_PREFS* prefs, char* label)
 	    gchar* value;
 	    if (!strcmp (label_copy, group_list[i])) {
 		group = g_strdup (group_list[i]);
-		printf ("Found matching group\n");
 		break;		/* Found matching label */
 	    }
 
@@ -159,7 +158,6 @@ prefs_get_stream_prefs (STREAM_PREFS* prefs, char* label)
 		if (!strcmp (label_copy, value)) {
 		    group = g_strdup (group_list[i]);
 		    g_free (value);
-		    printf ("Found matching url\n");
 		    break;	/* Found matching URL */
 		}
 		g_free (value);
