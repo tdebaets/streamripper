@@ -198,7 +198,7 @@ prefs_get_defaults (PREFS* prefs)
 	    /* OPT_ADD_ID3V1 | -- removed starting 1.62-beta-2 */
 	    OPT_ADD_ID3V2 |
 	    OPT_INDIVIDUAL_TRACKS;
-    strcpy(prefs->useragent, "sr-POSIX/" SRVERSION);
+    strcpy(prefs->useragent, DEFAULT_USER_AGENT);
 
     // Defaults for splitpoint - times are in ms
     prefs->sp_opt.xs = 1;
@@ -426,9 +426,7 @@ prefs_set_section (PREFS* prefs, PREFS* gp, char* group)
     if (!m_key_file) return;
 
     if (!gp || !strcmp(prefs->url, gp->url)) {
-	printf ("Get_prefs (3): %s\n", prefs->url);
 	prefs_set_string (group, "url", prefs->url);
-	printf ("Get_prefs (4): %s\n", prefs->url);
     }
     if (!gp || !strcmp(prefs->proxyurl, gp->proxyurl)) {
 	prefs_set_string (group, "proxy", prefs->proxyurl);

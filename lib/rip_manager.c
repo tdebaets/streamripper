@@ -706,6 +706,7 @@ overwrite_opt_to_string (enum OverwriteOpt oo)
     return overwrite_opt_strings[(int) oo];
 }
 
+#if defined (commentout)
 void
 set_rip_manager_options_defaults (PREFS *rmo)
 {
@@ -757,3 +758,4 @@ set_rip_manager_options_defaults (PREFS *rmo)
     rmo->overwrite = OVERWRITE_LARGER;
     rmo->ext_cmd[0] = 0;
 }
+#endif

@@ -489,7 +489,6 @@ parse_arguments (PREFS* prefs, int argc, char **argv)
     }
 
     /* Save prefs (as URL-specific) */
-    printf ("Saving prefs?\n");
     prefs_save (prefs);
 }
 
