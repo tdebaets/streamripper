@@ -20,7 +20,7 @@ SUBDIRS = $(MAYBE_LIBMAD) $(MAYBE_LIBTRE) $(MAYBE_CDK) lib
 
 bin_PROGRAMS = streamripper
 if WANT_CSTREAMRIPPER
-    bin_PROGRAMS += cstreamripper
+##    bin_PROGRAMS += cstreamripper
 endif
 
 EXTRA_PROGRAMS = streamripper ictest cstreamripper
