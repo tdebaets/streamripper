@@ -1,6 +1,8 @@
 New for 1.63-beta-1
 --------------
-* Add preference file
+Sat 10-20-2007
+* Use glib library
+* Add preference file processing
 * Reject connections to content-type text/html
 * Plugin: fix problem where geometry sometimes gets located outside screen
 
