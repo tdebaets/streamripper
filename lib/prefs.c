@@ -148,7 +148,6 @@ prefs_get_stream_prefs (STREAM_PREFS* prefs, char* label)
 	group_list = g_key_file_get_groups (m_key_file, &length);
 	for (i = 0; i < length; i++) {
 	    gchar* value;
-	    printf ("GROUP = %s\n", group_list[i]);
 	    if (!strcmp (label_copy, group_list[i])) {
 		group = g_strdup (group_list[i]);
 		printf ("Found matching group\n");
