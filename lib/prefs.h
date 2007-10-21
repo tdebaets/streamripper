@@ -99,8 +99,9 @@ struct global_prefs
 
 /* Prototypes */
 void prefs_load (void);
-void prefs_save (PREFS* prefs);
+void prefs_save (void);
 void prefs_get_global_prefs (GLOBAL_PREFS *global_prefs);
-void prefs_get_stream_prefs (STREAM_PREFS *prefs, char* label);
+void prefs_get_stream_prefs (STREAM_PREFS *prefs, char *label);
+void prefs_set_stream_prefs (STREAM_PREFS *prefs, char *label);
 
 #endif

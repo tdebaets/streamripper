@@ -313,15 +313,13 @@ parse_arguments (PREFS* prefs, int argc, char **argv)
 	exit(2);
     }
 
-    // Set default options
-    // set_rip_manager_options_defaults (&m_opt);
-
     // Get URL
     strncpy (prefs->url, argv[1], MAX_URL_LEN);
 
-    // Load prefs (including URL-specific)
+    // Load prefs
     prefs_load ();
     prefs_get_stream_prefs (prefs, prefs->url);
+    prefs_save ();
 
     // Parse arguments
     for (i = 1; i < argc; i++) {
@@ -487,9 +485,6 @@ parse_arguments (PREFS* prefs, int argc, char **argv)
 	fprintf(stderr, "*** The first parameter MUST be the URL\n\n");
 	exit(2);
     }
-
-    /* Save prefs (as URL-specific) */
-    prefs_save (prefs);
 }
 
 static void

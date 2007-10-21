@@ -36,14 +36,13 @@ static GKeyFile *m_key_file = NULL;
 /******************************************************************************
  * Private function protoypes
  *****************************************************************************/
-static void prefs_get_defaults (PREFS* prefs);
-static void prefs_get_section (PREFS* prefs, char* label);
+static void prefs_get_stream_defaults (PREFS* prefs);
 static gchar* prefs_get_config_dir (void);
 static void prefs_copy_to_keyfile (PREFS* prefs);
-static void prefs_set_section (PREFS* prefs, PREFS* default_prefs, 
-			       char* group);
-static int prefs_get_string (char* dest, gsize dest_size, char* group, 
-			     char* key);
+static void prefs_get_prefs (PREFS* prefs, char* label);
+static void prefs_set_prefs (PREFS* prefs, PREFS* default_prefs, 
+				char* group);
+static int prefs_get_string (char* dest, gsize dest_size, char* group, char* key);
 
 /******************************************************************************
  * Public functions
@@ -69,12 +68,18 @@ prefs_load (void)
     flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
     rc = g_key_file_load_from_file (m_key_file, prefs_fn,
 				    flags, &error);
+    if (!rc) {
+	GLOBAL_PREFS global_prefs;
+	memset (&global_prefs, 0, sizeof(GLOBAL_PREFS));
+	prefs_get_stream_defaults (&global_prefs.stream_prefs);
+	prefs_set_stream_prefs (&global_prefs.stream_prefs, "stream defaults");
+    }
     g_free (prefs_fn);
     g_free (prefs_dir);
 }
 
 void
-prefs_save (PREFS* prefs)
+prefs_save (void)
 {
     FILE* fp;
     GError *error = NULL;
@@ -96,7 +101,7 @@ prefs_save (PREFS* prefs)
     g_free (prefs_dir);
 
     /* Insert from prefs into keyfile */
-    prefs_copy_to_keyfile (prefs);
+    // prefs_copy_to_keyfile (prefs);
     
     /* Convert entire keyfile to a string */
     keyfile_contents = g_key_file_to_data (m_key_file, 
@@ -122,28 +127,78 @@ void
 prefs_get_global_prefs (GLOBAL_PREFS *global_prefs)
 {
     memset (global_prefs, 0, sizeof(GLOBAL_PREFS));
-    prefs_get_string (global_prefs->url, MAX_URL_LEN, "global", "url");
-    prefs_get_section (&global_prefs->stream_prefs, "global");
+    prefs_get_string (global_prefs->url, MAX_URL_LEN, "sripper", "url");
+    prefs_get_prefs (&global_prefs->stream_prefs, "stream defaults");
 }
 
 void
 prefs_get_stream_prefs (STREAM_PREFS* prefs, char* label)
 {
-    prefs_get_defaults (prefs);
-    prefs_get_section (prefs, "global");
-    if (!strcmp (label, "global")) {
-	prefs_get_section (prefs, label);
+    /* Be careful here.  The label might be prefs->url, so we don't 
+       want to overwrite it while we are loading. */
+    gchar* label_copy = strdup (label);
+    gchar* group = 0;
+
+    if (strcmp (label, "stream defaults")) {
+	int i;
+	gsize length;
+	gchar** group_list;
+
+	/* Look through groups for matching URL */
+	group_list = g_key_file_get_groups (m_key_file, &length);
+	for (i = 0; i < length; i++) {
+	    gchar* value;
+	    printf ("GROUP = %s\n", group_list[i]);
+	    if (!strcmp (label_copy, group_list[i])) {
+		group = g_strdup (group_list[i]);
+		printf ("Found matching group\n");
+		break;		/* Found matching label */
+	    }
+
+	    value = g_key_file_get_string (m_key_file, group_list[i], "url", 0);
+	    if (value) {
+		if (!strcmp (label_copy, value)) {
+		    group = g_strdup (group_list[i]);
+		    g_free (value);
+		    printf ("Found matching url\n");
+		    break;	/* Found matching URL */
+		}
+		g_free (value);
+	    }
+	}
+	g_strfreev (group_list);
     }
+
+    /* Copy info from keyfile to prefs struct */
+    prefs_get_stream_defaults (prefs);
+    prefs_get_prefs (prefs, "stream defaults");
+    if (group) {
+	prefs_get_prefs (prefs, group);
+	g_free (group);
+    } else {
+	strcpy (prefs->url, label_copy);
+    }
+    g_free (label_copy);
 
     //    printf ("Home dir is: %s\n", g_get_home_dir());
     //    printf ("Config dir is: %s\n", g_get_user_config_dir ());
     //    printf ("Data dir is: %s\n", g_get_user_data_dir ());
 }
 
+void
+prefs_set_stream_prefs (STREAM_PREFS* prefs, char* label)
+{
+    if (!label) {
+	/* GCS FIX: Here I should assign a new (unused) label */
+	return;
+    }
+    prefs_set_prefs (prefs, 0, label);
+}
+
 /******************************************************************************
  * Private functions
  *****************************************************************************/
-/* Calling routine must free */
+/* Calling routine must free returned string */
 static gchar* 
 prefs_get_config_dir (void)
 {
@@ -153,24 +208,7 @@ prefs_get_config_dir (void)
 }
 
 static void
-prefs_copy_to_keyfile (PREFS* prefs)
-{
-    PREFS default_prefs;
-
-    prefs_get_stream_prefs (&default_prefs, "global");
-
-    /* If there is no global section, create one */
-    if (!g_key_file_has_group (m_key_file, "global")) {
-	prefs_set_section (&default_prefs, 0, "global");
-    }
-    
-    /* Copy prefs to keyfile */
-    // Can't do this on windows -- causes glib exception (bad group name?)
-    // prefs_set_section (prefs, &default_prefs, prefs->url);
-}
-
-static void
-prefs_get_defaults (PREFS* prefs)
+prefs_get_stream_defaults (PREFS* prefs)
 {
     debug_printf ("- set_rip_manager_options_defaults -\n");
     //    prefs->url[0] = 0;
@@ -299,24 +337,6 @@ prefs_get_int (int *dest, char *group, char *key)
     *dest = (u_long) value;
 }
 
-#if defined (commentout)
-/* Return 0 if value not found, 1 if value found */
-static int
-prefs_get_bool (u_long *dest, char *group, char *key)
-{
-    GError *error = NULL;
-    gint value;
-    
-    value = g_key_file_get_integer (m_key_file, group, key, &error);
-    if (error) {
-	/* Key doesn't exist */
-	return 0;
-    }
-    *dest = (value != 0);
-    return 1;
-}
-#endif
-
 static void
 prefs_set_string (char* group, char* key, char* value)
 {
@@ -330,24 +350,15 @@ prefs_set_integer (char* group, char* key, gint value)
 }
 
 static void
-prefs_get_section (PREFS* prefs, char* label)
+prefs_get_prefs (PREFS* prefs, char* group)
 {
-    char* group = 0;
+//    char* group = 0;
     char overwrite_str[128];
     u_long temp;
 
     if (!m_key_file) return;
-    if (g_key_file_has_group (m_key_file, label)) {
-	group = label;
-    } else {
-	/* Look at all groups for matching URL */
-	return;
-    }
 
-    /* URL is special. */
-#if defined (commentout)
     prefs_get_string (prefs->url, MAX_URL_LEN, group, "url");
-#endif
     prefs_get_string (prefs->proxyurl, MAX_URL_LEN, group, "proxy");
     prefs_get_string (prefs->output_directory, SR_MAX_PATH, group, "output_dir");
     prefs_get_string (prefs->output_pattern, SR_MAX_PATH, group, "output_pattern");
@@ -421,7 +432,7 @@ prefs_get_section (PREFS* prefs, char* label)
 
 /* gp = global preferences */
 static void
-prefs_set_section (PREFS* prefs, PREFS* gp, char* group)
+prefs_set_prefs (PREFS* prefs, PREFS* gp, char* group)
 {
     if (!m_key_file) return;
 
