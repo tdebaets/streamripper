@@ -49,15 +49,16 @@ static int  init();
 static void config(); 
 static void quit();
 static BOOL CALLBACK WndProc(HWND hwnd,UINT umsg,WPARAM wParam,LPARAM lParam);
-static void RipCallback(int message, void *data);
+static void rip_callback (RIP_MANAGER_INFO* rmi, int message, void *data);
 static void stop_button_pressed();
 static void populate_history_popup (void);
 static void insert_riplist (char* url, int pos);
 
-RIP_MANAGER_OPTIONS	g_rmo;
+PREFS	g_rmo;
 
 static GUI_OPTIONS		m_guiOpt;
-static RIP_MANAGER_INFO		m_rmiInfo;
+//static RIP_MANAGER_INFO		m_rmiInfo;
+static RIP_MANAGER_INFO		*m_rmi = 0;
 static HWND			m_hwnd;
 static BOOL			m_bRipping = FALSE;
 static TCHAR 			m_szToopTip[] = "Streamripper For Winamp";
@@ -111,8 +112,18 @@ init ()
     }
 
     winamp_init (g_plugin.hDllInstance);
+
+#if defined (commentout)
+    prefs_load ();
+    prefs_get_stream_prefs (prefs, prefs->url);
+    prefs_save ();
     set_rip_manager_options_defaults (&g_rmo);
     options_load (&g_rmo, &m_guiOpt);
+#endif
+
+    prefs_load ();
+    prefs_get_stream_prefs (&g_rmo, "");
+    prefs_save ();
 
     if (!m_guiOpt.m_enabled)
 	return 0;
@@ -229,7 +240,7 @@ quit()
 {
     options_save (&g_rmo, &m_guiOpt);
     if (m_bRipping)
-	rip_manager_stop();
+	rip_manager_stop (m_rmi);
 
     dock_unhook_winamp();
 
@@ -351,10 +362,10 @@ UpdateRippingDisplay ()
     static int buffering_tick = 0;
     char sStatusStr[50];
 
-    if (m_rmiInfo.status == 0)
+    if (m_rmi->status == 0)
 	return;
 
-    switch(m_rmiInfo.status)
+    switch(m_rmi->status)
     {
     case RM_STATUS_BUFFERING:
 	buffering_tick++;
@@ -373,36 +384,36 @@ UpdateRippingDisplay ()
     }
     render_set_display_data(IDR_STATUS, "%s", sStatusStr);
 
-    if (!m_rmiInfo.streamname[0]) {
+    if (!m_rmi->streamname[0]) {
 	return;
     }
 
-    debug_printf ("IDR_STREAMNAME:%s\n", m_rmiInfo.streamname);
-    render_set_display_data(IDR_STREAMNAME, "%s", m_rmiInfo.streamname);
-    render_set_display_data(IDR_BITRATE, "%dkbit", m_rmiInfo.bitrate);
-    render_set_display_data(IDR_SERVERTYPE, "%s", m_rmiInfo.server_name);
+    debug_printf ("IDR_STREAMNAME:%s\n", m_rmi->streamname);
+    render_set_display_data(IDR_STREAMNAME, "%s", m_rmi->streamname);
+    render_set_display_data(IDR_BITRATE, "%dkbit", m_rmi->bitrate);
+    render_set_display_data(IDR_SERVERTYPE, "%s", m_rmi->server_name);
 
-    if ((m_rmiInfo.meta_interval == -1) && 
-	(strstr(m_rmiInfo.server_name, "Nanocaster") != NULL))
+    if ((m_rmi->meta_interval == -1) && 
+	(strstr(m_rmi->server_name, "Nanocaster") != NULL))
     {
-	render_set_display_data(IDR_METAINTERVAL, "Live365 Stream");
-    } else if(m_rmiInfo.meta_interval) {
-	render_set_display_data(IDR_METAINTERVAL, "MetaInt:%d", m_rmiInfo.meta_interval);
+	render_set_display_data (IDR_METAINTERVAL, "Live365 Stream");
+    } else if (m_rmi->meta_interval) {
+	render_set_display_data (IDR_METAINTERVAL, "MetaInt:%d", m_rmi->meta_interval);
     } else {
-	render_set_display_data(IDR_METAINTERVAL, "No track data");
+	render_set_display_data (IDR_METAINTERVAL, "No track data");
     }
 
-    if (m_rmiInfo.filename[0]) {
+    if (m_rmi->filename[0]) {
 	char strsize[50];
-	format_byte_size(strsize, m_rmiInfo.filesize);
-	render_set_display_data(IDR_FILENAME, "[%s] - %s", strsize, m_rmiInfo.filename);
+	format_byte_size(strsize, m_rmi->filesize);
+	render_set_display_data(IDR_FILENAME, "[%s] - %s", strsize, m_rmi->filename);
     } else {
 	render_set_display_data(IDR_FILENAME, "Getting track data...");
     }
 }
 
 VOID CALLBACK
-UpdateDisplay(HWND hwnd, UINT umsg, UINT_PTR idEvent,DWORD dwTime)
+UpdateDisplay(HWND hwnd, UINT umsg, UINT_PTR idEvent, DWORD dwTime)
 {
 
     if (m_bRipping)
@@ -414,20 +425,21 @@ UpdateDisplay(HWND hwnd, UINT umsg, UINT_PTR idEvent,DWORD dwTime)
 }
 
 void
-RipCallback (int message, void *data)
+rip_callback (RIP_MANAGER_INFO* rmi, int message, void *data)
 {
-    RIP_MANAGER_INFO *info;
     ERROR_INFO *err;
     switch(message)
     {
     case RM_UPDATE:
+#if defined (commentout)
 	info = (RIP_MANAGER_INFO*)data;
-	memcpy(&m_rmiInfo, info, sizeof(RIP_MANAGER_INFO));
+	memcpy (&m_rmiInfo, info, sizeof(RIP_MANAGER_INFO));
+#endif
 	break;
     case RM_ERROR:
-	err = (ERROR_INFO*)data;
+	err = (ERROR_INFO*) data;
 	debug_printf("***RipCallback: about to post error dialog");
-	MessageBox(m_hwnd, err->error_str, "Streamripper", MB_SETFOREGROUND);
+	MessageBox (m_hwnd, err->error_str, "Streamripper", MB_SETFOREGROUND);
 	debug_printf("***RipCallback: done posting error dialog");
 	break;
     case RM_DONE:
@@ -473,16 +485,17 @@ start_button_pressed()
     render_set_display_data(IDR_STREAMNAME, "Connecting...");
     start_button_disable();
 
-    if ((ret = rip_manager_start(RipCallback, &g_rmo)) != SR_SUCCESS)
-    {
-	MessageBox(m_hwnd, rip_manager_get_error_str(ret), "Failed to connect to stream", MB_ICONSTOP);
+    ret = rip_manager_start (&m_rmi, &g_rmo, rip_callback);
+    if (ret != SR_SUCCESS) {
+	MessageBox (m_hwnd, rip_manager_get_error_str (ret),
+		    "Failed to connect to stream", MB_ICONSTOP);
 	start_button_enable();
 	return;
     }
     m_bRipping = TRUE;
 
-    render_set_prog_bar(TRUE);
-    PostMessage(m_hwnd, WM_MY_TRAY_NOTIFICATION, (WPARAM)NULL, WM_LBUTTONDBLCLK);
+    render_set_prog_bar (TRUE);
+    PostMessage (m_hwnd, WM_MY_TRAY_NOTIFICATION, (WPARAM)NULL, WM_LBUTTONDBLCLK);
 }
 
 void
@@ -494,7 +507,7 @@ stop_button_pressed()
     assert(m_bRipping);
     render_clear_all_data();
 
-    rip_manager_stop();
+    rip_manager_stop (m_rmi);
 
     m_bRipping = FALSE;
     start_button_enable();

@@ -3,6 +3,7 @@
 
 #include "srtypes.h"
 #include "rip_manager.h"
+#include "prefs.h"
 #include "gen.h"
 
 #define RIPLIST_LEN 10
@@ -25,7 +26,7 @@ typedef struct GUI_OPTIONSst
 
 /* Global variable */
 extern winampGeneralPurposePlugin g_plugin;
-extern RIP_MANAGER_OPTIONS g_rmo;
+extern PREFS g_rmo;
 
 /* Public functions */
 void compose_relay_url (char* relay_url, char *host, u_short port, int content_type);
