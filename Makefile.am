@@ -29,8 +29,7 @@ ictest_SOURCES = \
 	lib/ictest.c
 
 streamripper_SOURCES = \
-	console/streamripper.c \
-	console/sr_curses.c
+	console/streamripper.c
 
 cstreamripper_SOURCES = \
 	console/cstreamripper.c
