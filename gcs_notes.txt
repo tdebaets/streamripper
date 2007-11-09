@@ -1,4 +1,16 @@
 -----------------------------------------------------------------------
+DLL Heaven/Hell
+
+Looks like Winamp doesn't let my plugin search the Plugins directory 
+for dll's.  So if I want them, I gotta dump them in the main Winamp 
+directory.
+
+Currently, I need 3 dll's:
+   libglib-2.0.0.dll
+   iconv.dll
+   intl.dll
+
+-----------------------------------------------------------------------
 * Multirip/main loop
 
 GUI thread

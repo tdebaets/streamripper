@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SR_WINAMP_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GX /O2 /I "../libogg-1.1.3" /I "../libvorbis-1.1.2" /I "../lib" /I "../libmad-0.15.1b/msvc++" /I "../iconv-win32/static" /I "../tre-0.7.2/lib" /I "../tre-0.7.2/win32" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SR_WINAMP_EXPORTS" /D "USE_LAYER_2" /D "USE_LAYER_1" /D "HAVE_MPGLIB" /D "NOANALYSIS" /FR /YX /FD /c
+# ADD CPP /nologo /MD /W3 /GX /O2 /I "..\win32\glib-2.12.12\include\glib-2.0" /I "..\win32\glib-2.12.12\lib\glib-2.0\include" /I "../libogg-1.1.3" /I "../libvorbis-1.1.2" /I "../lib" /I "../libmad-0.15.1b/msvc++" /I "../iconv-win32/static" /I "../tre-0.7.2/lib" /I "../tre-0.7.2/win32" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SR_WINAMP_EXPORTS" /D "USE_LAYER_2" /D "USE_LAYER_1" /D "HAVE_MPGLIB" /D "NOANALYSIS" /FR /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 msvcprt.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib ws2_32.lib comctl32.lib libmad.lib charset.lib iconv.lib trestatic.lib ogg_static.lib vorbis_static.lib /nologo /dll /machine:I386 /out:"c:\Program Files\Winamp\Plugins\gen_sripper.dll" /libpath:"../libogg-1.1.3" /libpath:"../libvorbis-1.1.2" /libpath:"../libmad-0.15.1b/msvc++/release" /libpath:"../iconv-win32/static" /libpath:"../tre-0.7.2/win32/Release"
+# ADD LINK32 msvcprt.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib ws2_32.lib comctl32.lib libmad.lib charset.lib iconv.lib trestatic.lib ogg_static.lib vorbis_static.lib glib-2.0.lib /nologo /dll /machine:I386 /out:"c:\Program Files\Winamp\Plugins\gen_sripper.dll" /libpath:"../libmad-0.15.1b/msvc++/release" /libpath:"../tre-0.7.2/win32/Release" /libpath:"../libogg-1.1.3" /libpath:"../libvorbis-1.1.2" /libpath:"../iconv-win32/static" /libpath:"..\win32\glib-2.12.12\lib"
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
 PostBuild_Cmds=del "C:\Program Files\Winamp\Plugins\gen_sripperd.dll"
@@ -73,7 +73,7 @@ PostBuild_Cmds=del "C:\Program Files\Winamp\Plugins\gen_sripperd.dll"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SR_WINAMP_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GX /Zi /Od /I "../libogg-1.1.3" /I "../libvorbis-1.1.2" /I "../lib" /I "../libmad-0.15.1b/msvc++" /I "../iconv-win32/static" /I "../tre-0.7.2/lib" /I "../tre-0.7.2/win32" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "HAVE_MPGLIB" /D "NOANALYSIS" /D "HAVE_MEMCPY" /D "DEBUG_TO_FILE" /D "_DEBUG_" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GX /Zi /Od /I "../libogg-1.1.3" /I "../libvorbis-1.1.2" /I "../lib" /I "../libmad-0.15.1b/msvc++" /I "..\win32\glib-2.12.12\include\glib-2.0" /I "..\win32\glib-2.12.12\lib\glib-2.0\include" /I "../iconv-win32/static" /I "../tre-0.7.2/lib" /I "../tre-0.7.2/win32" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "HAVE_MPGLIB" /D "NOANALYSIS" /D "HAVE_MEMCPY" /D "DEBUG_TO_FILE" /D "_DEBUG_" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -83,7 +83,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 msvcprt.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib ws2_32.lib comctl32.lib libmad.lib charset.lib iconv.lib trestatic.lib ogg_static.lib vorbis_static.lib /nologo /dll /debug /machine:I386 /out:"C:\Program Files\Winamp\Plugins\gen_sripperd.dll" /pdbtype:sept /libpath:"../libogg-1.1.3" /libpath:"../libvorbis-1.1.2" /libpath:"../libmad-0.15.1b/msvc++/debug" /libpath:"../iconv-win32/static" /libpath:"../tre-0.7.2/win32/debug"
+# ADD LINK32 msvcprt.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib ws2_32.lib comctl32.lib libmad.lib charset.lib iconv.lib trestatic.lib ogg_static.lib vorbis_static.lib glib-2.0.lib /nologo /dll /debug /machine:I386 /out:"C:\Program Files\Winamp\Plugins\gen_sripperd.dll" /pdbtype:sept /libpath:"../libmad-0.15.1b/msvc++/debug" /libpath:"../tre-0.7.2/win32/debug" /libpath:"../libogg-1.1.3" /libpath:"../libvorbis-1.1.2" /libpath:"../iconv-win32/static" /libpath:"..\win32\glib-2.12.12\lib"
 # SUBTRACT LINK32 /pdb:none
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
@@ -173,11 +173,11 @@ SOURCE=.\winamp.h
 # PROP Default_Filter "ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 # Begin Source File
 
-SOURCE=.\bob.ico
+SOURCE=..\..\..\sripper\winamp_plugin\bob.ico
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\..\sripper\winamp_plugin\bob.ico
+SOURCE=.\bob.ico
 # End Source File
 # Begin Source File
 
@@ -286,6 +286,14 @@ SOURCE=..\lib\parse.c
 # Begin Source File
 
 SOURCE=..\lib\parse.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\prefs.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\prefs.h
 # End Source File
 # Begin Source File
 

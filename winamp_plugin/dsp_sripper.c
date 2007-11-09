@@ -124,10 +124,13 @@ init ()
     prefs_load ();
     prefs_get_stream_prefs (&g_rmo, "");
     prefs_save ();
+    m_guiOpt.m_enabled = 1;
 
+    debug_printf ("Checking if enabled.\n");
     if (!m_guiOpt.m_enabled)
 	return 0;
 
+    debug_printf ("Was enabled.\n");
     memset (&wc,0,sizeof(wc));
     wc.lpfnWndProc = WndProc;			// our window procedure
     wc.hInstance = g_plugin.hDllInstance;	// hInstance of DLL
@@ -238,6 +241,7 @@ config ()
 void
 quit()
 {
+    debug_printf ("Quitting.\n");
     options_save (&g_rmo, &m_guiOpt);
     if (m_bRipping)
 	rip_manager_stop (m_rmi);
