@@ -264,7 +264,7 @@ create_prop_sheet_page (HINSTANCE inst, DWORD iddres, DLGPROC dlgproc)
 }
 
 void
-options_dialog_show (HINSTANCE inst, HWND parent, PREFS *rmo, GUI_OPTIONS *guiOpt)
+options_dialog_show (HINSTANCE inst, HWND parent, STREAM_PREFS *rmo, GUI_OPTIONS *guiOpt)
 {
     HPROPSHEETPAGE hPage[NUM_PROP_PAGES];	
     int ret;
@@ -357,7 +357,7 @@ add_useragent_strings(HWND hdlg)
 }
 
 static void
-set_overwrite_combo (HWND hdlg, PREFS* rmo)
+set_overwrite_combo (HWND hdlg, STREAM_PREFS* rmo)
 {
     HWND hcombo = GetDlgItem(hdlg, IDC_OVERWRITE_COMPLETE);
     int combo_idx = rmo->overwrite - 1;
@@ -367,7 +367,7 @@ set_overwrite_combo (HWND hdlg, PREFS* rmo)
 }
 
 static void
-get_overwrite_combo (HWND hdlg, PREFS* rmo)
+get_overwrite_combo (HWND hdlg, STREAM_PREFS* rmo)
 {
     HWND hcombo = GetDlgItem (hdlg, IDC_OVERWRITE_COMPLETE);
     int combo_idx = SendMessage (hcombo, CB_GETCURSEL, 0, 0);
@@ -376,7 +376,7 @@ get_overwrite_combo (HWND hdlg, PREFS* rmo)
 }
 
 static void
-add_codeset_strings_1 (HWND hdlg, PREFS* rmo, int id)
+add_codeset_strings_1 (HWND hdlg, STREAM_PREFS* rmo, int id)
 {
     HWND hcombo = GetDlgItem(hdlg, id);
     char default_locale_string[1024];
@@ -404,7 +404,7 @@ add_codeset_strings_1 (HWND hdlg, PREFS* rmo, int id)
 }
 
 static void
-add_codeset_strings (HWND hdlg, PREFS* rmo)
+add_codeset_strings (HWND hdlg, STREAM_PREFS* rmo)
 {
     add_codeset_strings_1(hdlg, rmo, IDC_CODESET_METADATA);
     add_codeset_strings_1(hdlg, rmo, IDC_CODESET_RELAY);
@@ -434,7 +434,7 @@ parse_gui_codeset (HWND hWnd, char* new_codeset, char* default_codeset, int id)
 }
 
 void
-set_codesets_from_gui (HWND hWnd, PREFS* rmo)
+set_codesets_from_gui (HWND hWnd, STREAM_PREFS* rmo)
 {
     parse_gui_codeset (hWnd, rmo->cs_opt.codeset_metadata, 
 			rmo->cs_opt.codeset_locale, IDC_CODESET_METADATA);
@@ -447,7 +447,7 @@ set_codesets_from_gui (HWND hWnd, PREFS* rmo)
 }
 
 void
-set_gui_from_codesets (HWND hWnd, PREFS* rmo)
+set_gui_from_codesets (HWND hWnd, STREAM_PREFS* rmo)
 {
     SetDlgItemText (hWnd, IDC_CODESET_METADATA, 
 		    rmo->cs_opt.codeset_metadata);
@@ -470,7 +470,7 @@ add_overwrite_complete_strings(HWND hdlg)
 }
 
 void
-gui_set_conn_opts (HWND hWnd, PREFS* rmo, BOOL from_gui)
+gui_set_conn_opts (HWND hWnd, STREAM_PREFS* rmo, BOOL from_gui)
 {
     /*
       - reconnect
@@ -511,7 +511,7 @@ gui_set_conn_opts (HWND hWnd, PREFS* rmo, BOOL from_gui)
 }
 
 void
-gui_set_file_opts(HWND hWnd, PREFS* rmo, BOOL from_gui)
+gui_set_file_opts(HWND hWnd, STREAM_PREFS* rmo, BOOL from_gui)
 {
     /*
       - seperate dir
@@ -551,7 +551,7 @@ gui_set_file_opts(HWND hWnd, PREFS* rmo, BOOL from_gui)
 }
 
 void
-gui_set_pat_opts(HWND hWnd, PREFS* rmo, BOOL from_gui)
+gui_set_pat_opts(HWND hWnd, STREAM_PREFS* rmo, BOOL from_gui)
 {
     /*
       - seperate dir
@@ -573,7 +573,7 @@ gui_set_pat_opts(HWND hWnd, PREFS* rmo, BOOL from_gui)
 }
 
 void
-gui_set_splitting_opts(HWND hWnd, PREFS* rmo, BOOL from_gui)
+gui_set_splitting_opts(HWND hWnd, STREAM_PREFS* rmo, BOOL from_gui)
 {
     /*
       - skew
@@ -601,7 +601,7 @@ gui_set_splitting_opts(HWND hWnd, PREFS* rmo, BOOL from_gui)
 }
 
 void
-gui_set_external_opts (HWND hWnd, PREFS* rmo, BOOL from_gui)
+gui_set_external_opts (HWND hWnd, STREAM_PREFS* rmo, BOOL from_gui)
 {
     /*
       - external check
@@ -625,7 +625,7 @@ gui_set_external_opts (HWND hWnd, PREFS* rmo, BOOL from_gui)
 /* confile == 5  -> external_dlg */
 LRESULT CALLBACK
 options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, 
-	     PREFS* rmo, int confile)
+	     STREAM_PREFS* rmo, int confile)
 {
     int wmId, wmEvent;
 
@@ -768,35 +768,35 @@ options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam,
 LRESULT CALLBACK
 con_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    PREFS* rmo = &g_rmo;
+    STREAM_PREFS* rmo = &g_rmo;
     debug_printf ("Calling options_dlg(1)\n");
     return options_dlg(hWnd, message, wParam, lParam, rmo, 1);
 }
 LRESULT CALLBACK
 file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    PREFS* rmo = &g_rmo;
+    STREAM_PREFS* rmo = &g_rmo;
     debug_printf ("Calling options_dlg(2)\n");
     return options_dlg(hWnd, message, wParam, lParam, rmo, 2);
 }
 LRESULT CALLBACK
 pat_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    PREFS* rmo = &g_rmo;
+    STREAM_PREFS* rmo = &g_rmo;
     debug_printf ("Calling options_dlg(3)\n");
     return options_dlg(hWnd, message, wParam, lParam, rmo, 3);
 }
 LRESULT CALLBACK
 splitting_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    PREFS* rmo = &g_rmo;
+    STREAM_PREFS* rmo = &g_rmo;
     debug_printf ("Calling options_dlg(4)\n");
     return options_dlg(hWnd, message, wParam, lParam, rmo, 4);
 }
 LRESULT CALLBACK
 external_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    PREFS* rmo = &g_rmo;
+    STREAM_PREFS* rmo = &g_rmo;
     debug_printf ("Calling options_dlg(5)\n");
     return options_dlg(hWnd, message, wParam, lParam, rmo, 5);
 }
@@ -900,7 +900,7 @@ skin_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 BOOL
-options_load (PREFS *rmo, GUI_OPTIONS *guiOpt)
+options_load (STREAM_PREFS *rmo, GUI_OPTIONS *guiOpt)
 {
     int i, p;
     char desktop_path[MAX_INI_LINE_LEN];
@@ -1038,7 +1038,7 @@ options_load (PREFS *rmo, GUI_OPTIONS *guiOpt)
 }
 
 BOOL
-options_save (PREFS *rmo, GUI_OPTIONS *guiOpt)
+options_save (STREAM_PREFS *rmo, GUI_OPTIONS *guiOpt)
 {
     int i, p;
     char filename[MAX_INI_LINE_LEN];

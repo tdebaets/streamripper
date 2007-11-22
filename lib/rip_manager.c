@@ -87,7 +87,7 @@ rip_manager_init (void)
 
 error_code
 rip_manager_start (RIP_MANAGER_INFO **rmi,
-		   PREFS *prefs,
+		   STREAM_PREFS *prefs,
 		   void (*status_callback)(RIP_MANAGER_INFO* rmi, int message, void *data))
 {
     int ret = 0;
@@ -548,7 +548,7 @@ create_pls_file (RIP_MANAGER_INFO* rmi)
 static error_code
 start_ripping (RIP_MANAGER_INFO* rmi)
 {
-    PREFS* prefs = rmi->prefs;
+    STREAM_PREFS* prefs = rmi->prefs;
     error_code ret;
 
     char *pproxy = prefs->proxyurl[0] ? prefs->proxyurl : NULL;

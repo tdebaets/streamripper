@@ -26,7 +26,7 @@ typedef struct GUI_OPTIONSst
 
 /* Global variable */
 extern winampGeneralPurposePlugin g_plugin;
-extern PREFS g_rmo;
+extern STREAM_PREFS g_rmo;
 
 /* Public functions */
 void compose_relay_url (char* relay_url, char *host, u_short port, int content_type);

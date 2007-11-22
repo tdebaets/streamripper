@@ -48,10 +48,10 @@
 static void print_usage();
 static void print_status (RIP_MANAGER_INFO *rmi);
 static void catch_sig (int code);
-static void parse_arguments (PREFS *prefs, int argc, char **argv);
+static void parse_arguments (STREAM_PREFS *prefs, int argc, char **argv);
 static void rip_callback (RIP_MANAGER_INFO* rmi, int message, void *data);
-static void parse_extended_options (PREFS *prefs, char *rule);
-static void verify_splitpoint_rules (PREFS *prefs);
+static void parse_extended_options (STREAM_PREFS *prefs, char *rule);
+static void verify_splitpoint_rules (STREAM_PREFS *prefs);
 
 /*****************************************************************************
  * Private variables
@@ -80,7 +80,7 @@ main (int argc, char *argv[])
 {
     int ret;
     time_t temp_time;
-    PREFS prefs;
+    STREAM_PREFS prefs;
     RIP_MANAGER_INFO *rmi = 0;
 
     signal (SIGINT, catch_sig);
@@ -142,7 +142,7 @@ catch_sig(int code)
 void
 print_status (RIP_MANAGER_INFO *rmi)
 {
-    PREFS *prefs = rmi->prefs;
+    STREAM_PREFS *prefs = rmi->prefs;
     char status_str[128];
     char filesize_str[64];
     static int buffering_tick = 0;
@@ -303,7 +303,7 @@ print_usage()
  * hard enough. 
  */
 static void
-parse_arguments (PREFS* prefs, int argc, char **argv)
+parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 {
     int i;
     char *c;
@@ -488,7 +488,7 @@ parse_arguments (PREFS* prefs, int argc, char **argv)
 }
 
 static void
-parse_extended_options (PREFS* prefs, char* rule)
+parse_extended_options (STREAM_PREFS* prefs, char* rule)
 {
     int x,y;
 
@@ -602,7 +602,7 @@ parse_extended_options (PREFS* prefs, char* rule)
 }
 
 static void
-verify_splitpoint_rules (PREFS *prefs)
+verify_splitpoint_rules (STREAM_PREFS *prefs)
 {
 #if defined (commentout)
     /* This is still not complete, but the warning causes people to 

@@ -19,7 +19,6 @@
 
 #include <glib.h>
 
-typedef struct stream_prefs PREFS;
 typedef struct stream_prefs STREAM_PREFS;
 struct stream_prefs
 {
@@ -65,11 +64,18 @@ struct stream_prefs
     CODESET_OPTIONS cs_opt;             // which codeset should i use?
 };
 
+typedef struct winamp_prefs WINAMP_PREFS;
+struct winamp_prefs
+{
+    int testme;
+};
+
 typedef struct global_prefs GLOBAL_PREFS;
 struct global_prefs
 {
     char url[MAX_URL_LEN];              // default stream
     STREAM_PREFS stream_prefs;          // default prefs for new streams
+    WINAMP_PREFS winamp_prefs;          // prefs for winamp plugin
 };
 
 

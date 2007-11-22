@@ -36,11 +36,11 @@ static GKeyFile *m_key_file = NULL;
 /******************************************************************************
  * Private function protoypes
  *****************************************************************************/
-static void prefs_get_stream_defaults (PREFS* prefs);
+static void prefs_get_stream_defaults (STREAM_PREFS* prefs);
 static gchar* prefs_get_config_dir (void);
-static void prefs_copy_to_keyfile (PREFS* prefs);
-static void prefs_get_prefs (PREFS* prefs, char* label);
-static void prefs_set_prefs (PREFS* prefs, PREFS* default_prefs, 
+static void prefs_copy_to_keyfile (STREAM_PREFS* prefs);
+static void prefs_get_prefs (STREAM_PREFS* prefs, char* label);
+static void prefs_set_prefs (STREAM_PREFS* prefs, STREAM_PREFS* default_prefs, 
 				char* group);
 static int prefs_get_string (char* dest, gsize dest_size, char* group, char* key);
 
@@ -140,8 +140,7 @@ prefs_get_stream_prefs (STREAM_PREFS* prefs, char* label)
     gchar* group = 0;
 
     if (strcmp (label, "stream defaults")) {
-	int i;
-	gsize length;
+	gsize i, length;
 	gchar** group_list;
 
 	/* Look through groups for matching URL */
@@ -205,7 +204,7 @@ prefs_get_config_dir (void)
 }
 
 static void
-prefs_get_stream_defaults (PREFS* prefs)
+prefs_get_stream_defaults (STREAM_PREFS* prefs)
 {
     debug_printf ("- set_rip_manager_options_defaults -\n");
     //    prefs->url[0] = 0;
@@ -347,7 +346,7 @@ prefs_set_integer (char* group, char* key, gint value)
 }
 
 static void
-prefs_get_prefs (PREFS* prefs, char* group)
+prefs_get_prefs (STREAM_PREFS* prefs, char* group)
 {
 //    char* group = 0;
     char overwrite_str[128];
@@ -429,7 +428,7 @@ prefs_get_prefs (PREFS* prefs, char* group)
 
 /* gp = global preferences */
 static void
-prefs_set_prefs (PREFS* prefs, PREFS* gp, char* group)
+prefs_set_prefs (STREAM_PREFS* prefs, STREAM_PREFS* gp, char* group)
 {
     if (!m_key_file) return;
 

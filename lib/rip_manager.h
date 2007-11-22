@@ -55,7 +55,7 @@
 
 typedef struct RIP_MANAGER_INFOst
 {
-    PREFS *prefs;
+    STREAM_PREFS *prefs;
     char streamname[MAX_STREAMNAME_LEN];
     char server_name[MAX_SERVER_LEN];
     int	bitrate;
@@ -177,11 +177,11 @@ typedef struct ERROR_INFOst
 /* Public functions */
 char *rip_manager_get_error_str(int code);
 //u_short rip_mananger_get_relay_port();	
-void set_rip_manager_options_defaults (PREFS *m_opt);
+void set_rip_manager_options_defaults (STREAM_PREFS *m_opt);
 void rip_manager_init (void);
 void rip_manager_stop (RIP_MANAGER_INFO *rmi);
 error_code rip_manager_start (RIP_MANAGER_INFO **rmi, 
-		   PREFS *prefs,
+		   STREAM_PREFS *prefs,
 		   void (*status_callback)(RIP_MANAGER_INFO* rmi, int message, void *data));
 error_code rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti, int track_count);
 error_code rip_manager_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
