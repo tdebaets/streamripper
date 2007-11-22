@@ -54,7 +54,7 @@ static void stop_button_pressed();
 static void populate_history_popup (void);
 static void insert_riplist (char* url, int pos);
 
-PREFS	g_rmo;
+STREAM_PREFS	g_rmo;
 
 static GUI_OPTIONS		m_guiOpt;
 //static RIP_MANAGER_INFO		m_rmiInfo;

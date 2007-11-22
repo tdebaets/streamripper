@@ -42,6 +42,7 @@ static char m_winamps_path[SR_MAX_PATH] = {'\0'};
 
 void winamp_test_stuff (void);
 
+#if defined (commentout)
 
 BOOL
 winamp_init ()
@@ -344,3 +345,4 @@ winamp_test_stuff (void)
     /* Try sending a user message. Will modern skin get it? */
     SendMessage(hwnd_pe,WM_WA_IPC,0x888,0x888);
 }
+#endif
