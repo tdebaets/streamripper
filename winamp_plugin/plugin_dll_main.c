@@ -13,6 +13,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * References:
+ *   Windows Handles can be passed across processes:
+ *   http://www.codeproject.com/win32/InsideWindHandles.asp?df=100&forumid=136677&exp=0&select=999258
  */
 #include <process.h>
 #include <stdio.h>
@@ -24,13 +28,17 @@
 #include "gen.h"
 #include "dsp_sripper.h"
 
-static int  init();
-static void config(); 
-static void quit();
+static int  init ();
+static void config (); 
+static void quit ();
+static void spawn_streamripper_exe (void);
 
 static TCHAR m_szToopTip[] = "Streamripper For Winamp";
 static int m_enabled;
 
+/*****************************************************************************
+ * Winamp Interface Functions
+ *****************************************************************************/
 winampGeneralPurposePlugin g_plugin = {
     GPPHDR_VER,
     m_szToopTip,
@@ -54,6 +62,9 @@ winampGetGeneralPurposePlugin ()
 int
 init ()
 {
+    MessageBox (g_plugin.hwndParent,"Hello world","Hi guys",MB_OK);
+    spawn_streamripper_exe ();
+
     /* Create a thread which will communicate with the exe */
 #if defined (commentout)
     WNDCLASS wc;
@@ -187,4 +198,56 @@ config ()
 void
 quit()
 {
+}
+
+/*****************************************************************************
+ * Private functions
+ *****************************************************************************/
+void
+spawn_streamripper_exe (void)
+{
+    /* We need to create a socket for communication, spawn the 
+	executable, and then try to connect.  */
+    char *cmd = "d:\\sripper_1x\\winamp_plugin\\debug\\winamp_163_exe.exe";
+    char *cwd = "d:\\sripper_1x";
+    STARTUPINFO startup_info;
+    PROCESS_INFORMATION piProcInfo;
+    BOOL rc;
+    DWORD creation_flags;
+
+    ZeroMemory (&startup_info, sizeof(STARTUPINFO));
+    ZeroMemory (&piProcInfo, sizeof(PROCESS_INFORMATION));
+
+    creation_flags = 0;
+    startup_info.cb = sizeof(STARTUPINFO); 
+
+    rc = CreateProcess (
+		NULL,           // executable name
+		cmd,	        // command line 
+		NULL,           // process security attributes 
+		NULL,           // primary thread security attributes 
+		TRUE,           // handles are inherited 
+		creation_flags, // creation flags 
+		NULL,           // use parent's environment 
+		cwd,            // current directory 
+		&startup_info,  // STARTUPINFO pointer
+		&piProcInfo);   // receives PROCESS_INFORMATION 
+    if (rc == 0) {
+	char buf[1023];
+	LPVOID lpMsgBuf;
+	FormatMessage( 
+	    FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+	    FORMAT_MESSAGE_FROM_SYSTEM | 
+	    FORMAT_MESSAGE_IGNORE_INSERTS,
+	    NULL,
+	    GetLastError(),
+	    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+	    (LPTSTR) &lpMsgBuf,
+	    0,
+	    NULL 
+	);
+	sprintf (buf, "RC=%d pid=%d error=%s\n", rc, piProcInfo.dwProcessId, lpMsgBuf);
+	MessageBox (g_plugin.hwndParent, buf, "Hi guys", MB_OK);
+	LocalFree( lpMsgBuf );
+    }
 }
