@@ -17,6 +17,13 @@
  * References:
  *   Windows Handles can be passed across processes:
  *   http://www.codeproject.com/win32/InsideWindHandles.asp?df=100&forumid=136677&exp=0&select=999258
+ *
+ * Local access only to named pipes:
+ *   http://www.codeproject.com/threads/ipcworkshop.asp
+ *   http://blogs.msdn.com/oldnewthing/archive/2004/03/12/88572.aspx
+ * However, win9x does not have the capability of creating named pipe
+ *   http://support.microsoft.com/kb/177696
+ *   http://www.microsoft.com/technet/archive/win98/reskit/part6/wrkc29.mspx?mfr=true
  */
 #include <process.h>
 #include <stdio.h>
@@ -31,7 +38,14 @@
 static int  init ();
 static void config (); 
 static void quit ();
+static void create_pipes (void);
+static void launch_pipe_threads (void);
 static void spawn_streamripper_exe (void);
+
+static HANDLE m_hpipe_dll_read = 0;
+static HANDLE m_hpipe_dll_write = 0;
+static HANDLE m_hpipe_exe_read = 0;
+static HANDLE m_hpipe_exe_write = 0;
 
 static TCHAR m_szToopTip[] = "Streamripper For Winamp";
 static int m_enabled;
@@ -62,7 +76,8 @@ winampGetGeneralPurposePlugin ()
 int
 init ()
 {
-    MessageBox (g_plugin.hwndParent,"Hello world","Hi guys",MB_OK);
+    create_pipes ();
+    launch_pipe_threads ();
     spawn_streamripper_exe ();
 
     /* Create a thread which will communicate with the exe */
@@ -203,11 +218,84 @@ quit()
 /*****************************************************************************
  * Private functions
  *****************************************************************************/
-void
+static void
+display_last_error (void)
+{
+    char buf[1023];
+    LPVOID lpMsgBuf;
+    FormatMessage( 
+	FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+	FORMAT_MESSAGE_FROM_SYSTEM | 
+	FORMAT_MESSAGE_IGNORE_INSERTS,
+	NULL,
+	GetLastError(),
+	MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+	(LPTSTR) &lpMsgBuf,
+	0,
+	NULL 
+    );
+    _snprintf (buf, 1023, "Error: %s\n", lpMsgBuf);
+    buf[1022] = 0;
+    MessageBox (g_plugin.hwndParent, buf, "SR DLL Error", MB_OK);
+    LocalFree( lpMsgBuf );
+}
+
+static void
+create_pipes (void)
+{
+    BOOL rc;
+    rc = CreatePipe (
+	&m_hpipe_exe_read,   // pointer to read handle
+	&m_hpipe_dll_write,  // pointer to write handle
+	NULL,                // pointer to security attributes
+	0                    // pipe size
+    );
+    if (rc == 0) {
+	display_last_error ();
+	exit (1);	     // ?
+    }
+    rc = CreatePipe (
+	&m_hpipe_dll_read,   // pointer to read handle
+	&m_hpipe_exe_write,  // pointer to write handle
+	NULL,                // pointer to security attributes
+	0                    // pipe size
+    );
+    if (rc == 0) {
+	display_last_error ();
+	exit (1);	     // ?
+    }
+}
+
+static void
+pipe_reader (void* arg)
+{
+    char msgbuf;
+    int num_read;
+    while (1) {
+	ReadFile (m_hpipe_dll_read, &msgbuf, 1, &num_read, 0);
+    }
+}
+
+static void
+pipe_writer (void* arg)
+{
+    char msgbuf;
+    int num_read;
+    while (1) {
+	ReadFile (m_hpipe_dll_read, &msgbuf, 1, &num_read, 0);
+    }
+}
+
+static void
+launch_pipe_threads (void)
+{
+    _beginthread ((void*) pipe_writer, 0, 0);
+    // ?
+}
+
+static void
 spawn_streamripper_exe (void)
 {
-    /* We need to create a socket for communication, spawn the 
-	executable, and then try to connect.  */
     char *cmd = "d:\\sripper_1x\\winamp_plugin\\debug\\winamp_163_exe.exe";
     char *cwd = "d:\\sripper_1x";
     STARTUPINFO startup_info;
@@ -221,6 +309,7 @@ spawn_streamripper_exe (void)
     creation_flags = 0;
     startup_info.cb = sizeof(STARTUPINFO); 
 
+#if defined (commentout)
     rc = CreateProcess (
 		NULL,           // executable name
 		cmd,	        // command line 
@@ -246,8 +335,10 @@ spawn_streamripper_exe (void)
 	    0,
 	    NULL 
 	);
-	sprintf (buf, "RC=%d pid=%d error=%s\n", rc, piProcInfo.dwProcessId, lpMsgBuf);
+	_snprintf (buf, 1023, "RC=%d pid=%d error=%s\n", rc, piProcInfo.dwProcessId, lpMsgBuf);
+	buf[1022] = 0;
 	MessageBox (g_plugin.hwndParent, buf, "Hi guys", MB_OK);
 	LocalFree( lpMsgBuf );
     }
+#endif
 }
