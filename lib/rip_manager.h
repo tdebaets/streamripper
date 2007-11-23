@@ -21,7 +21,7 @@
 #include "prefs.h"
 #include "srtypes.h"
 
-#define SRVERSION	"1.63-beta-1"
+#define SRVERSION	"1.63-beta-2"
 
 #if defined (WIN32)
 #define SRPLATFORM      "windows"
