@@ -213,6 +213,8 @@ config ()
 void
 quit()
 {
+    int num_written;
+    WriteFile (m_hpipe_dll_write, "q", 1, &num_written, NULL);
 }
 
 /*****************************************************************************
@@ -289,14 +291,16 @@ pipe_writer (void* arg)
 static void
 launch_pipe_threads (void)
 {
+#if defined (commentout)
     _beginthread ((void*) pipe_writer, 0, 0);
-    // ?
+#endif
 }
 
 static void
 spawn_streamripper_exe (void)
 {
-    char *cmd = "d:\\sripper_1x\\winamp_plugin\\debug\\winamp_163_exe.exe";
+    char cmd[1024];
+    char *exe = "d:\\sripper_1x\\winamp_plugin\\debug\\winamp_163_exe.exe";
     char *cwd = "d:\\sripper_1x";
     STARTUPINFO startup_info;
     PROCESS_INFORMATION piProcInfo;
@@ -308,8 +312,8 @@ spawn_streamripper_exe (void)
 
     creation_flags = 0;
     startup_info.cb = sizeof(STARTUPINFO); 
+    _snprintf (cmd, 1024, "%s %d %d %d", exe, g_plugin.hwndParent, m_hpipe_exe_read, m_hpipe_exe_write);
 
-#if defined (commentout)
     rc = CreateProcess (
 		NULL,           // executable name
 		cmd,	        // command line 
@@ -340,5 +344,6 @@ spawn_streamripper_exe (void)
 	MessageBox (g_plugin.hwndParent, buf, "Hi guys", MB_OK);
 	LocalFree( lpMsgBuf );
     }
+#if defined (commentout)
 #endif
 }

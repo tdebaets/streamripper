@@ -204,7 +204,7 @@ find_winamp_windows (void)
 	    if (!m_winamp_classic_wins[i].orig_proc) {
 		m_winamp_classic_wins[i].orig_proc = (WNDPROC) SetWindowLong (m_winamp_classic_wins[i].hwnd, GWL_WNDPROC, (LONG) hook_winamp_callback);
 		if (m_winamp_classic_wins[i].orig_proc == NULL) {
-		    debug_printf ("Hooking failure?\n");
+    		    debug_printf ("Hooking failure?\n");
 		    return FALSE;
 		}
 	    }

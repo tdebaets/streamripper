@@ -34,15 +34,13 @@
 BOOL winamp_init();			
 BOOL winamp_add_track_to_playlist(char *track);
 void winamp_add_rip_to_menu (void);
+void winamp_test_stuff (void);
 
 /*********************************************************************************
  * Private Vars
  *********************************************************************************/
 static char m_winamps_path[SR_MAX_PATH] = {'\0'};
-
-void winamp_test_stuff (void);
-
-#if defined (commentout)
+extern HWND g_winamp_hwnd;
 
 BOOL
 winamp_init ()
@@ -170,7 +168,10 @@ winamp_get_hwnd (void)
         return FindWindow("Winamp v1.x", NULL);
        But I found that it's easier and better(?) to use the 
        input from the plugin interface */
+#if defined (commentout)
     return g_plugin.hwndParent;
+#endif
+    return g_winamp_hwnd;
 }
 
 HWND
@@ -345,4 +346,3 @@ winamp_test_stuff (void)
     /* Try sending a user message. Will modern skin get it? */
     SendMessage(hwnd_pe,WM_WA_IPC,0x888,0x888);
 }
-#endif
