@@ -1084,6 +1084,9 @@ filelib_open_showfiles ()
 
     /* Write cue header here */
     /* GCS FIX: What encoding should the FILE line be? */
+    /* GCS Nov 29, 2007 - As suggested on the forum, the cue file
+       should use relative path. */
+    ERROR FIX ME
     rc = msnprintf (mcue_buf, 1024, m_("FILE \"") m_S m_("\" MP3\n"), 
 		    m_show_name);
     rc = string_from_mstring (cue_buf, 1024, mcue_buf, CODESET_FILESYS);
