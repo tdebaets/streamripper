@@ -315,7 +315,11 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 	return ret;
     }
 
-    filelib_write_show (m_getbuffer, m_buffersize);
+    ret = filelib_write_show (m_getbuffer, m_buffersize);
+    if (ret != SR_SUCCESS) {
+        debug_printf("filelib_write_show had bad return code: %d\n", ret);
+        return ret;
+    }
 
     /* If we have unwritten pages for the current track, write them */
     if (have_track) {
@@ -441,7 +445,11 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
 	return ret;
     }
 
-    filelib_write_show (m_getbuffer, m_buffersize);
+    ret = filelib_write_show (m_getbuffer, m_buffersize);
+    if (ret != SR_SUCCESS) {
+        debug_printf("filelib_write_show had bad return code: %d\n", ret);
+        return ret;
+    }
 
     /* First time through, so start a track. */
     if (m_first_time_through) {
@@ -529,8 +537,12 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
 	if (curr_song < extract_size) {
 	    u_long curr_song_bytes = extract_size - curr_song;
 	    m_cue_sheet_bytes += curr_song_bytes;
-	    rip_manager_put_data (rmi, &m_getbuffer[curr_song], 
-				  curr_song_bytes);
+	    ret = rip_manager_put_data (rmi, &m_getbuffer[curr_song], 
+					curr_song_bytes);
+            if (ret != SR_SUCCESS) {
+                debug_printf ("filelib_write_track: %d\n",ret);
+                return ret;
+            }
 	}
     }
 

@@ -333,8 +333,15 @@ rip_manager_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 error_code
 rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
 {
-    if (m_write_data)
-        filelib_write_track(buf, size);
+    int ret;
+
+    if (m_write_data) {
+        ret = filelib_write_track(buf, size);
+        if (ret != SR_SUCCESS) {
+            debug_printf ("filelib_write_track: %d\n",ret);
+            return ret;
+        }
+    }
 
     rmi->filesize += size;
     m_bytes_ripped += size;
