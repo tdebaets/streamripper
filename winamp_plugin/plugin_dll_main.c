@@ -41,6 +41,8 @@ static void quit ();
 static void create_pipes (void);
 static void launch_pipe_threads (void);
 static void spawn_streamripper_exe (void);
+BOOL hook_winamp (void);
+void write_pipe (char* msg);
 
 static HANDLE m_hpipe_dll_read = 0;
 static HANDLE m_hpipe_dll_write = 0;
@@ -76,9 +78,12 @@ winampGetGeneralPurposePlugin ()
 int
 init ()
 {
+    hook_winamp ();
     create_pipes ();
     launch_pipe_threads ();
     spawn_streamripper_exe ();
+
+    write_pipe ("Hello World");
 
     /* Create a thread which will communicate with the exe */
 #if defined (commentout)
@@ -245,10 +250,11 @@ display_last_error (void)
 static void
 create_pipes (void)
 {
+    HANDLE tmp = NULL;
     BOOL rc;
     rc = CreatePipe (
 	&m_hpipe_exe_read,   // pointer to read handle
-	&m_hpipe_dll_write,  // pointer to write handle
+	&tmp,                // pointer to write handle
 	NULL,                // pointer to security attributes
 	0                    // pipe size
     );
@@ -256,8 +262,20 @@ create_pipes (void)
 	display_last_error ();
 	exit (1);	     // ?
     }
+    DuplicateHandle (
+	GetCurrentProcess(),
+	tmp,
+	GetCurrentProcess(),
+	&m_hpipe_dll_write,
+	DUPLICATE_SAME_ACCESS,
+	FALSE,
+	DUPLICATE_SAME_ACCESS
+    );
+    CloseHandle (tmp);
+
+    tmp = NULL;
     rc = CreatePipe (
-	&m_hpipe_dll_read,   // pointer to read handle
+	&tmp,                // pointer to read handle
 	&m_hpipe_exe_write,  // pointer to write handle
 	NULL,                // pointer to security attributes
 	0                    // pipe size
@@ -266,6 +284,16 @@ create_pipes (void)
 	display_last_error ();
 	exit (1);	     // ?
     }
+    DuplicateHandle (
+	GetCurrentProcess(),
+	tmp,
+	GetCurrentProcess(),
+	&m_hpipe_dll_read,
+	DUPLICATE_SAME_ACCESS,
+	FALSE,
+	DUPLICATE_SAME_ACCESS
+    );
+    CloseHandle (tmp);
 }
 
 static void
@@ -278,14 +306,23 @@ pipe_reader (void* arg)
     }
 }
 
-static void
-pipe_writer (void* arg)
+void
+write_pipe (char* msg)
 {
-    char msgbuf;
-    int num_read;
-    while (1) {
-	ReadFile (m_hpipe_dll_read, &msgbuf, 1, &num_read, 0);
+    int i;
+    int num_written;
+    int len = strlen (msg);
+    char eom = '\x03';
+    BOOL rc;
+
+    for (i=0; i<strlen(msg); i++) {
+	rc = WriteFile (m_hpipe_dll_write, &msg[i], 1, &num_written, 0);
+	if (rc == 0) {
+	    display_last_error ();
+	    return;
+	}
     }
+    WriteFile (m_hpipe_dll_write, &eom, 1, &num_written, 0);
 }
 
 static void
@@ -312,7 +349,7 @@ spawn_streamripper_exe (void)
 
     creation_flags = 0;
     startup_info.cb = sizeof(STARTUPINFO); 
-    _snprintf (cmd, 1024, "%s %d %d %d", exe, g_plugin.hwndParent, m_hpipe_exe_read, m_hpipe_exe_write);
+    _snprintf (cmd, 1024, "%s %d %d", exe, m_hpipe_exe_read, m_hpipe_exe_write);
 
     rc = CreateProcess (
 		NULL,           // executable name
