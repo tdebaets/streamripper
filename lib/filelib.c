@@ -1093,6 +1093,8 @@ filelib_open_showfiles ()
     } else {
 	basename = m_show_name;
     }
+    debug_mprintf (m_("show_name: ") m_S m_(", basename: ") m_S m_("\n"),
+		   m_show_name, basename);
     rc = msnprintf (mcue_buf, 1024, m_("FILE \"") m_S m_("\" MP3\n"), 
 		    basename);
     rc = string_from_mstring (cue_buf, 1024, mcue_buf, CODESET_FILESYS);
