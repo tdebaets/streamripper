@@ -1,3 +1,8 @@
+New for 1.63-beta-2
+--------------
+* Cue file now uses relative path for filename
+* Add patch from nn to detect full disk condition
+
 New for 1.63-beta-1
 --------------
 Sat 10-20-2007

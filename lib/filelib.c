@@ -26,6 +26,7 @@
 #include "debug.h"
 #include <assert.h>
 #include <sys/types.h>
+#include "glib.h"
 #include "uce_dirent.h"
 
 #define TEMP_STR_LEN	(SR_MAX_PATH*2)
@@ -1069,6 +1070,7 @@ filelib_open_showfiles ()
     int rc;
     mchar mcue_buf[1024];
     char cue_buf[1024];
+    mchar* basename;
 
     parse_and_subst_pat (m_show_name, 0, m_showfile_directory, 
 			 m_showfile_pattern, m_extension);
@@ -1083,12 +1085,16 @@ filelib_open_showfiles ()
     }
 
     /* Write cue header here */
-    /* GCS FIX: What encoding should the FILE line be? */
     /* GCS Nov 29, 2007 - As suggested on the forum, the cue file
        should use relative path. */
-    ERROR FIX ME
+    basename = mstrrchr (m_show_name, PATH_SLASH);
+    if (basename) {
+	basename++;
+    } else {
+	basename = m_show_name;
+    }
     rc = msnprintf (mcue_buf, 1024, m_("FILE \"") m_S m_("\" MP3\n"), 
-		    m_show_name);
+		    basename);
     rc = string_from_mstring (cue_buf, 1024, mcue_buf, CODESET_FILESYS);
     rc = filelib_write (m_cue_file, cue_buf, rc);
     if (rc != SR_SUCCESS) {

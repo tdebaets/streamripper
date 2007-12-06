@@ -571,6 +571,16 @@ mstrchr (const mchar* ws, mchar wc)
 }
 
 mchar*
+mstrrchr (const mchar* ws, mchar wc)
+{
+#if defined HAVE_WCHAR_SUPPORT
+    return wcsrchr (ws, wc);
+#else
+    return strrchr (ws, wc);
+#endif
+}
+
+mchar*
 mstrncat (mchar* ws1, const mchar* ws2, size_t n)
 {
 #if defined HAVE_WCHAR_SUPPORT
