@@ -256,10 +256,6 @@ SOURCE=..\lib\threadlib.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\lib\types.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\lib\uce_dirent.h
 # End Source File
 # Begin Source File
