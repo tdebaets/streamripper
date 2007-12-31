@@ -22,3 +22,13 @@ libmad-0.15.1b/Makefile.in
 libmad-0.15.1b/msvc++/Makefile.in
 tre-0.7.0/win32/tre.plg
 tre-0.7.0/win32/trestatic.plg
+iconv.dll
+libglib-2.0-0.dll
+libcharset1.dll
+libgthread-2.0-0.dll
+libgobject-2.0-0.dll
+libgmodule-2.0-0.dll
+libiconv2.dll
+pdcurses.dll
+gcs_dll.txt
+diff.out
