@@ -52,6 +52,8 @@ static HANDLE m_hpipe_exe_write = 0;
 static TCHAR m_szToopTip[] = "Streamripper For Winamp";
 static int m_enabled;
 
+extern void dock_init (HWND hwnd);
+
 /*****************************************************************************
  * Winamp Interface Functions
  *****************************************************************************/
@@ -78,86 +80,13 @@ winampGetGeneralPurposePlugin ()
 int
 init ()
 {
+    dock_init (g_plugin.hwndParent);
     hook_winamp ();
     create_pipes ();
     launch_pipe_threads ();
     spawn_streamripper_exe ();
-
     write_pipe ("Hello World");
 
-    /* Create a thread which will communicate with the exe */
-#if defined (commentout)
-    WNDCLASS wc;
-    char* sr_debug_env;
-    sr_debug_env = getenv ("STREAMRIPPER_DEBUG");
-    if (sr_debug_env) {
-	debug_enable();
-	debug_set_filename (sr_debug_env);
-    }
-
-    winamp_init (g_plugin.hDllInstance);
-
-#if defined (commentout)
-    prefs_load ();
-    prefs_get_stream_prefs (prefs, prefs->url);
-    prefs_save ();
-    set_rip_manager_options_defaults (&g_rmo);
-    options_load (&g_rmo, &m_guiOpt);
-#endif
-
-    prefs_load ();
-    prefs_get_stream_prefs (&g_rmo, "");
-    prefs_save ();
-    m_guiOpt.m_enabled = 1;
-
-    debug_printf ("Checking if enabled.\n");
-    if (!m_guiOpt.m_enabled)
-	return 0;
-
-    debug_printf ("Was enabled.\n");
-    memset (&wc,0,sizeof(wc));
-    wc.lpfnWndProc = WndProc;			// our window procedure
-    wc.hInstance = g_plugin.hDllInstance;	// hInstance of DLL
-    wc.lpszClassName = m_szWindowClass;		// our window class name
-    wc.hCursor = LoadCursor (NULL, IDC_ARROW);
-
-    // Load systray popup menu
-    m_hmenu_systray = LoadMenu (g_plugin.hDllInstance, MAKEINTRESOURCE(IDR_TASKBAR_POPUP));
-    m_hmenu_systray_sub = GetSubMenu (m_hmenu_systray, 0);
-    SetMenuDefaultItem (m_hmenu_systray_sub, 0, TRUE);
-
-    if (!RegisterClass(&wc)) {
-	MessageBox (g_plugin.hwndParent,"Error registering window class","blah",MB_OK);
-	return 1;
-    }
-    m_hwnd = CreateWindow (m_szWindowClass, g_plugin.description, WS_POPUP,
-			   m_guiOpt.oldpos.x, m_guiOpt.oldpos.y, WINDOW_WIDTH, WINDOW_HEIGHT, 
-			   g_plugin.hwndParent, NULL, g_plugin.hDllInstance, NULL);
-
-    // Create a systray icon
-    memset(&m_nid, 0, sizeof(NOTIFYICONDATA));
-    m_nid.cbSize = sizeof(NOTIFYICONDATA);
-    m_nid.hIcon = LoadImage(g_plugin.hDllInstance, MAKEINTRESOURCE(IDI_SR_ICON), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
-    m_nid.hWnd = m_hwnd;
-    strcpy(m_nid.szTip, m_szToopTip);
-    m_nid.uCallbackMessage = WM_MY_TRAY_NOTIFICATION;
-    m_nid.uFlags =  NIF_MESSAGE | NIF_ICON | NIF_TIP;
-    m_nid.uID = 1;
-    Shell_NotifyIcon(NIM_ADD, &m_nid);
-
-    // Load main popup menu 
-    m_hmenu_context = LoadMenu (g_plugin.hDllInstance, MAKEINTRESOURCE(IDR_HISTORY_POPUP));
-    m_hmenu_context_sub = GetSubMenu (m_hmenu_context, 0);
-    SetMenuDefaultItem (m_hmenu_context_sub, 0, TRUE);
-
-    // Populate main popup menu
-    populate_history_popup ();
-
-    if (!m_guiOpt.m_start_minimized)
-	dock_show_window(m_hwnd, SW_SHOWNORMAL);
-    else
-	dock_show_window(m_hwnd, SW_HIDE);
-#endif	
     return 0;
 }
 
@@ -250,12 +179,20 @@ display_last_error (void)
 static void
 create_pipes (void)
 {
-    HANDLE tmp = NULL;
+    HANDLE tmp;
     BOOL rc;
+    SECURITY_ATTRIBUTES sa;
+
+    sa.bInheritHandle = TRUE;
+    sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+    sa.lpSecurityDescriptor = NULL;
+
+    /* Create a pipe that the child process (exe) will read from */
+    tmp = NULL;
     rc = CreatePipe (
 	&m_hpipe_exe_read,   // pointer to read handle
 	&tmp,                // pointer to write handle
-	NULL,                // pointer to security attributes
+	&sa,                 // pointer to security attributes
 	0                    // pipe size
     );
     if (rc == 0) {
@@ -273,11 +210,12 @@ create_pipes (void)
     );
     CloseHandle (tmp);
 
+    /* Create a pipe that the child process (exe) will write to */
     tmp = NULL;
     rc = CreatePipe (
 	&tmp,                // pointer to read handle
 	&m_hpipe_exe_write,  // pointer to write handle
-	NULL,                // pointer to security attributes
+	&sa,                 // pointer to security attributes
 	0                    // pipe size
     );
     if (rc == 0) {
@@ -347,7 +285,8 @@ spawn_streamripper_exe (void)
     ZeroMemory (&startup_info, sizeof(STARTUPINFO));
     ZeroMemory (&piProcInfo, sizeof(PROCESS_INFORMATION));
 
-    creation_flags = 0;
+    //creation_flags = 0;
+    creation_flags = CREATE_NEW_CONSOLE;
     startup_info.cb = sizeof(STARTUPINFO); 
     _snprintf (cmd, 1024, "%s %d %d", exe, m_hpipe_exe_read, m_hpipe_exe_write);
 

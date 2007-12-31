@@ -11,6 +11,23 @@ Currently, I need 3 dll's:
    intl.dll
 
 -----------------------------------------------------------------------
+Docking code
+
+dock_do_mousemove
+  
+
+-----------------------------------------------------------------------
+Original plugin organization
+
+Winamp winproc -> hook_winamp_callback
+  WM_SHOWWINDOW (window being hidden)
+    switch_docking_index()
+    dock_window()
+  WM_WINDOWPOSCHANGED
+    dock_window()
+
+
+-----------------------------------------------------------------------
 * Multirip/main loop
 
 GUI thread
