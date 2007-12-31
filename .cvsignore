@@ -20,6 +20,9 @@ winamp_plugin/Release
 libmad-0.15.1b/mad.h
 libmad-0.15.1b/Makefile.in
 libmad-0.15.1b/msvc++/Makefile.in
+libmad-0.15.1b/msvc++/libmad.opt
+libmad-0.15.1b/msvc++/libmad.ncb
+libmad-0.15.1b/msvc++/libmad.dsw
 tre-0.7.0/win32/tre.plg
 tre-0.7.0/win32/trestatic.plg
 charset.dll
