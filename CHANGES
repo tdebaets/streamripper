@@ -1,7 +1,9 @@
 New for 1.63-beta-2
 --------------
+* Winamp plugin now runs as a separate process from winamp
 * Cue file now uses relative path for filename
 * Add patch from nn to detect full disk condition
+* Add patch from nn for improved parsing of parse rules file (#1825475)
 
 New for 1.63-beta-1
 --------------

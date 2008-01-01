@@ -278,6 +278,7 @@ init_metadata_parser (char* rules_file)
 {
     FILE* fp;
     int ri;     /* Rule index */
+    int rn;     /* Number of rules allocated */
 
     if (!rules_file || !*rules_file) {
 	use_default_rules ();
@@ -290,24 +291,32 @@ init_metadata_parser (char* rules_file)
     }
 
     m_global_rule_list = 0;
-    ri = 0;
-    while (!feof(fp)) {
+    ri = rn = 0;
+    while (1) {
 	char rule_buf[MAX_RULE_SIZE];
 	char match_buf[MAX_RULE_SIZE];
 	char subst_buf[MAX_RULE_SIZE];
 	mchar w_match_buf[MAX_RULE_SIZE];
 	mchar w_subst_buf[MAX_RULE_SIZE];
 	char* rbp;
+	char* rp;
 	int got_command;
 	int rc;
 	
-	/* Allocate memory for rule */
-	m_global_rule_list = realloc (m_global_rule_list,
-				      (ri+1) * sizeof(Parse_Rule));
-	memset (&m_global_rule_list[ri], 0, sizeof(Parse_Rule));
+	/* Allocate memory for rule, if necessary. */
+	/* If there are no more rules in the file, */
+	/* this rule will become the sentinel null rule */
+	if (ri+1 != rn) {
+	    m_global_rule_list = realloc (m_global_rule_list,
+					  (ri+1) * sizeof(Parse_Rule));
+	    memset (&m_global_rule_list[ri], 0, sizeof(Parse_Rule));
+	    rn = ri+1;
+	}
+
 
 	/* Get next line from file */
-	fgets (rule_buf,2048,fp);
+	rp = fgets (rule_buf,2048,fp);
+	if (!rp) break;
 
 	/* Skip leading whitespace */
 	rbp = rule_buf;
@@ -398,10 +407,7 @@ init_metadata_parser (char* rules_file)
 	debug_printf ("End of loop\n");
 	ri++;
     }
-    /* Add null rule to the end */
-    m_global_rule_list = realloc (m_global_rule_list,
-				  (ri+1) * sizeof(Parse_Rule));
-    memset (&m_global_rule_list[ri], 0, sizeof(Parse_Rule));
+    fclose(fp);
 }
 
 void
