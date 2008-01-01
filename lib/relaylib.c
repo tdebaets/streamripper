@@ -70,6 +70,8 @@ static HSEM m_sem_not_connected;
 static char m_http_header[MAX_HEADER_LEN];
 static SOCKET m_listensock = SOCKET_ERROR;
 static BOOL m_running = FALSE;
+static BOOL m_running_accept = FALSE;
+static BOOL m_running_send = FALSE;
 static BOOL m_initdone = FALSE;
 static THREAD_HANDLE m_hthread;
 static THREAD_HANDLE m_hthread2;
@@ -100,11 +102,14 @@ destroy_all_hostsocks(void)
         ptr = g_relay_list;
         closesocket(ptr->m_sock);
         g_relay_list = ptr->m_next;
-        if (ptr->m_buffer != NULL)
+        if (ptr->m_buffer != NULL) {
             free (ptr->m_buffer);
+            ptr->m_buffer = NULL;
+        }
         free(ptr);
     }
     g_relay_list_len = 0;
+    g_relay_list = NULL;
     threadlib_signal_sem (&g_relay_list_sem);
 }
 
@@ -381,12 +386,24 @@ try_port (u_short port, char *if_name, char *relay_ip)
 void
 relaylib_shutdown ()
 {
+    int ix;
     debug_printf("relaylib_shutdown:start\n");
     if (!relaylib_isrunning()) {
         debug_printf("***relaylib_shutdown:return\n");
         return;
     }
     m_running = FALSE;
+    ix = 0;
+    while(ix<120 && (m_running_accept | m_running_send)) {
+        sleep(1);
+        ++ix;
+    }
+    if(ix==120) {
+        debug_printf ("relay threads refused to end, aborting\n");
+        fprintf (stderr,"relay threads refused to end, aborting\n");
+        exit(1);
+    }
+
     threadlib_signal_sem(&m_sem_not_connected);
     if (closesocket(m_listensock) == SOCKET_ERROR) {   
         // JCBUG, what can we do?
@@ -412,9 +429,11 @@ relaylib_start ()
     // Spawn on a thread so it's non-blocking
     if ((ret = threadlib_beginthread(&m_hthread, thread_accept, 0)) != SR_SUCCESS)
         return ret;
+    m_running_accept = TRUE;
 
     if ((ret = threadlib_beginthread(&m_hthread2, thread_send, 0)) != SR_SUCCESS)
         return ret;
+    m_running_send = TRUE;
 
     return SR_SUCCESS;
 }
@@ -453,7 +472,7 @@ thread_accept (void *notused)
 	// accept(), so that we can regain control if relaylib_shutdown() 
 	// called
         FD_ZERO (&fds);
-        while (m_listensock != SOCKET_ERROR)
+        while (m_listensock != SOCKET_ERROR && m_running)
         {
             FD_SET (m_listensock, &fds);
             tv.tv_sec = 1;
@@ -483,7 +502,7 @@ thread_accept (void *notused)
                     // Socket is new and its buffer had better have 
 		    // room to hold the entire HTTP header!
                     good = FALSE;
-                    if (header_receive (newsock, &icy_metadata) == 0) {
+                    if (header_receive (newsock, &icy_metadata) == 0 && g_cbuf2.buf != NULL) {
 			int header_len;
 			make_nonblocking (newsock);
 			client_http_header = client_relay_header_generate(icy_metadata);
@@ -517,7 +536,7 @@ thread_accept (void *notused)
                     if (!good)
                     {
                         closesocket (newsock);
-                        debug_printf ("Relay: Client %d disconnected (Unable to receive HTTP header)\n", newsock);
+                        debug_printf ("Relay: Client %d disconnected (Unable to receive HTTP header) or cbuf2.buf is NULL\n", newsock);
                     }
                 }
             }
@@ -529,7 +548,7 @@ thread_accept (void *notused)
         }
         threadlib_signal_sem (&m_sem_not_connected);     // go back to accept
     }
-
+    m_running_accept = FALSE;
     m_running = FALSE;
 }
 
@@ -621,8 +640,10 @@ relaylib_disconnect (RELAY_LIST* prev, RELAY_LIST* ptr)
     } else {
 	g_relay_list = next;
     }
-    if (ptr->m_buffer != NULL)
+    if (ptr->m_buffer != NULL) {
 	free (ptr->m_buffer);
+        ptr->m_buffer = NULL;
+    }
     free (ptr);
     g_relay_list_len --;
 }
@@ -667,4 +688,5 @@ thread_send (void *notused)
 	threadlib_signal_sem (&g_relay_list_sem);
 	Sleep (50);
     }
+    m_running_send = FALSE;
 }

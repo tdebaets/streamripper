@@ -694,7 +694,11 @@ start_track_mp3 (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 	char header1[6] = "ID3\x03\0\0";
 	ID3V2frame id3v2frame;
 	char comment[1024] = "Ripped with Streamripper";
+#ifndef WIN32
+        __uint32_t framesize = 0;
+#else
 	unsigned long int framesize = 0;
+#endif
 	int sent = 0;
 	int id3_charset;
 
