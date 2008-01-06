@@ -171,13 +171,13 @@ rip_manager_stop (RIP_MANAGER_INFO *rmi)
 static void
 init_error_strings (void)
 {
-    SET_ERR_STR("SR_SUCCESS",				0x00);
-    SET_ERR_STR("SR_ERROR_CANT_FIND_TRACK_SEPERATION",	0x01);
+    SET_ERR_STR("SR_SUCCESS",					0x00);
+    SET_ERR_STR("SR_ERROR_CANT_FIND_TRACK_SEPERATION",		0x01);
     SET_ERR_STR("SR_ERROR_DECODE_FAILURE",			0x02);
-    SET_ERR_STR("SR_ERROR_INVALID_URL",			0x03);
-    SET_ERR_STR("SR_ERROR_WIN32_INIT_FAILURE",		0x04);
+    SET_ERR_STR("SR_ERROR_INVALID_URL",				0x03);
+    SET_ERR_STR("SR_ERROR_WIN32_INIT_FAILURE",			0x04);
     SET_ERR_STR("Could not connect to the stream. Try checking that the stream is up\n"
-		"and that your proxy settings are correct.",0x05);
+		"and that your proxy settings are correct.",	0x05);
     SET_ERR_STR("SR_ERROR_CANT_RESOLVE_HOSTNAME",		0x06);
     SET_ERR_STR("SR_ERROR_RECV_FAILED",				0x07);
     SET_ERR_STR("SR_ERROR_SEND_FAILED",				0x08);
@@ -246,7 +246,8 @@ post_error (RIP_MANAGER_INFO* rmi, int err)
 {
     ERROR_INFO err_info;
     err_info.error_code = err;
-    strcpy(err_info.error_str, m_error_str[abs(err)]);
+    strcpy(err_info.error_str, m_error_str[-err]);
+    debug_printf ("post_error: %d %s\n", err_info.error_code, err_info.error_str);
     m_status_callback (rmi, RM_ERROR, &err_info);
 }
 

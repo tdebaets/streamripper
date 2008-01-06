@@ -52,6 +52,7 @@ static void stop_button_pressed();
 static void populate_history_popup (void);
 static void insert_riplist (char* url, int pos);
 static void launch_pipe_threads (void);
+static void handle_wm_app (HWND hwnd, WPARAM wParam, LPARAM lParam);
 
 STREAM_PREFS	g_rmo;
 HWND            g_winamp_hwnd;
@@ -288,8 +289,34 @@ set_ripping_url (char* url)
 }
 
 void
+add_url_from_winamp (char* url)
+{
+    debug_printf ("AUFW got winamp stream: %s\n", url);
+    if (!strcmp (url, m_winamp_stream_cache)) {
+	debug_printf ("AUFW return - cached\n");
+	return;
+    }
+    strcpy (m_winamp_stream_cache, url);
+    
+    if (!url_is_stream(url) || url_is_relay (url)) {
+	debug_printf ("AUFW not_stream/is_relay: %d\n", g_rmo.url[0]);
+	if (g_rmo.url[0]) {
+	    set_ripping_url (g_rmo.url);
+	} else {
+	    set_ripping_url (0);
+	}
+    } else {
+	debug_printf ("AUFW setting g_rmo.url: %s\n", g_rmo.url);
+	strcpy(g_rmo.url, url);
+	insert_riplist (url, 0);
+	set_ripping_url (url);
+    }
+}
+
+void
 UpdateNotRippingDisplay (HWND hwnd)
 {
+#if defined (commentout)
     WINAMP_INFO winfo;
 
     // debug_printf ("UNRD begin\n");
@@ -315,6 +342,7 @@ UpdateNotRippingDisplay (HWND hwnd)
 	    set_ripping_url (winfo.url);
 	}
     }
+#endif
 }
 
 void
@@ -399,9 +427,9 @@ rip_callback (RIP_MANAGER_INFO* rmi, int message, void *data)
 	break;
     case RM_ERROR:
 	err = (ERROR_INFO*) data;
-	debug_printf("***RipCallback: about to post error dialog");
+	debug_printf("***RipCallback: about to post error dialog: %s\n", err->error_str);
 	MessageBox (m_hwnd, err->error_str, "Streamripper", MB_SETFOREGROUND);
-	debug_printf("***RipCallback: done posting error dialog");
+	debug_printf("***RipCallback: done posting error dialog\n");
 	break;
     case RM_DONE:
 	//stop_button_pressed();
@@ -836,10 +864,25 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
 	break;
 	
     case WM_APP+0:
-	dock_update_winamp_wins (hwnd, (char*) lParam);
+	handle_wm_app (hwnd, wParam, lParam);
 	break;
     }
     return DefWindowProc (hwnd, umsg, wParam, lParam);
+}
+
+void
+handle_wm_app (HWND hwnd, WPARAM wParam, LPARAM lParam)
+{
+    switch (wParam) {
+    case 0:
+	/* Window moved */
+	dock_update_winamp_wins (hwnd, (char*) lParam);
+	break;
+    case 1:
+	/* New URL */
+	add_url_from_winamp ((char*) lParam);
+	break;
+    }
 }
 
 static void
@@ -891,7 +934,9 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	m_hpipe_exe_read = (HANDLE) NULL;
 	m_hpipe_exe_write = (HANDLE) NULL;
     }
-    //exit (0);
+
+    rip_manager_init ();
+
     init ();
 
     launch_pipe_threads ();
@@ -933,7 +978,11 @@ pipe_reader (void* arg)
 		idx = 0;
 		if (!strcmp (msgbuf, "Hello World")) {
 		    /* do nothing */
+		} else if (!strncmp (msgbuf, "url ", 4)) {
+		    /* URL from winamp */
+		    SendMessage (m_hwnd, WM_APP+0, 1, (LPARAM) &msgbuf[4]);
 		} else {
+		    /* Window moved */
 		    SendMessage (m_hwnd, WM_APP+0, 0, (LPARAM) &msgbuf);
 		}
 	    } else {

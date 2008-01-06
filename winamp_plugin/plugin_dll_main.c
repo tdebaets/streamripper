@@ -58,8 +58,6 @@ static UINT m_timer_id;
 
 void debug_popup (char* fmt, ...);
 
-//extern void dock_init (HWND hwnd);
-
 /*****************************************************************************
  * Winamp Interface Functions
  *****************************************************************************/
@@ -103,7 +101,7 @@ init ()
     dock_init (g_plugin.hwndParent);     // This function is obsolete
     hook_winamp ();
     write_pipe ("Hello World");
-    m_timer_id = SetTimer (NULL, 0, 5000, (TIMERPROC) timer_proc);
+    m_timer_id = SetTimer (NULL, 0, 500, (TIMERPROC) timer_proc);
 
     return 0;
 }
@@ -400,5 +398,10 @@ timer_proc (
 )
 {
     char url[MAX_URL_LEN];
+    char msg[4+MAX_URL_LEN];
     winamp_poll (url);
+    if (url[0]) {
+	sprintf (msg, "url %s", url);
+	write_pipe (msg);
+    }
 }
