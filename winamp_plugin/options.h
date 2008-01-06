@@ -2,7 +2,7 @@
 #define __OPTIONS_H__
 
 #include "rip_manager.h"
-#include "dsp_sripper.h"
+#include "wstreamripper.h"
 
 void options_dialog_show (HINSTANCE inst, HWND parent, STREAM_PREFS *opt, GUI_OPTIONS *guiOpt);
 BOOL options_load (STREAM_PREFS *opt, GUI_OPTIONS *guiOpt);

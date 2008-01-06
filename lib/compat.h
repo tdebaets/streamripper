@@ -76,6 +76,7 @@
 #define	SemWait(_s_)	{WaitForSingleObject(_s_, INFINITE); ResetEvent(_s_);}
 #define	SemPost(_s_)	SetEvent(_s_)
 #define	SemDestroy(_s_)	CloseHandle(_s_)
+#define sleep(x) 	Sleep(1000*x)
 
 
 #elif __UNIX__

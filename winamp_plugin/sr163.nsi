@@ -11,8 +11,8 @@
 ;General
 
   ;Name and file
-  Name "Streamripper for Winamp 2.x/5.x v1.63-beta-2"
-  OutFile "srwa5-1.63-beta-2.exe"
+  Name "Streamripper for Windows and Winamp v1.63-beta-2"
+  OutFile "streamripper-windows-bundle-1.63-beta-2.exe"
 
   ;Default installation folder
   InstallDir "$PROGRAMFILES\Streamripper"
@@ -76,21 +76,19 @@ Section "Core Libraries" sec_core
   SetOverwrite on
   File "..\fake_external_metadata.pl"
   File "..\fetch_external_metadata.pl"
-  ;ADD YOUR OWN FILES HERE...
+  File "D:\sripper_1x\tre-0.7.2\win32\Release\tre.dll"
+  File "D:\sripper_1x\libogg-1.1.3\ogg.dll"
+  File "D:\sripper_1x\libvorbis-1.1.2\vorbis.dll"
+  File "D:\sripper_1x\win32\glib-2.12.12\bin\libglib-2.0-0.dll"
+  File "D:\sripper_1x\iconv-win32\dll\iconv.dll"
+  File "D:\sripper_1x\intl.dll"
   
-  ;Store installation folder
-  WriteRegStr HKCU "Software\Modern UI Test" "" $INSTDIR
+  ;Store installation folder(s)
+  WriteRegStr HKCU "Software\Streamripper" "" $INSTDIR
   
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   
-  ;Read a value from an InstallOptions INI file
-  !insertmacro INSTALLOPTIONS_READ $IniValue "ioC.ini" "Field 2" "State"
-  
-  ;Display a messagebox if check box was checked
-  StrCmp $IniValue "1" "" +2
-    MessageBox MB_OK "You checked the check box, here is the MessageBox..."
-
 SectionEnd
 
 Section "Winamp Plugin" sec_plugin
@@ -102,7 +100,7 @@ Section "Winamp Plugin" sec_plugin
   ;ADD YOUR OWN FILES HERE...
   
   ;Store installation folder
-  WriteRegStr HKCU "Software\Modern UI Test" "" $INSTDIR
+  WriteRegStr HKCU "Software\Streamripper" "" $INSTDIR
   
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
@@ -110,15 +108,12 @@ Section "Winamp Plugin" sec_plugin
   ;Read a value from an InstallOptions INI file
   !insertmacro INSTALLOPTIONS_READ $IniValue "ioC.ini" "Field 2" "State"
   
-  ;Display a messagebox if check box was checked
-  StrCmp $IniValue "1" "" +2
-    MessageBox MB_OK "You checked the check box, here is the MessageBox..."
-
 SectionEnd
 
 Section "GUI Application" sec_gui
 
   SetOutPath "$INSTDIR"
+  File "D:\sripper_1x\winamp_plugin\release\wstreamripper.exe"
 
   SetOutPath $INSTDIR\Skins\SrSkins
   File srskin.bmp
@@ -126,22 +121,21 @@ Section "GUI Application" sec_gui
   File srskin_XP.bmp
   
   ;Store installation folder
-  WriteRegStr HKCU "Software\Modern UI Test" "" $INSTDIR
+  WriteRegStr HKCU "Software\Streamripper" "" $INSTDIR
   
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
-  
-  ;Read a value from an InstallOptions INI file
-  !insertmacro INSTALLOPTIONS_READ $IniValue "ioC.ini" "Field 2" "State"
   
 SectionEnd
 
 Section "Console Application" sec_console
 
   SetOutPath "$INSTDIR"
+
+  File "D:\sripper_1x\consoleWin32\Release\streamripper.exe"
   
   ;Store installation folder
-  WriteRegStr HKCU "Software\Modern UI Test" "" $INSTDIR
+  WriteRegStr HKCU "Software\Streamripper" "" $INSTDIR
   
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
@@ -149,20 +143,17 @@ Section "Console Application" sec_console
   ;Read a value from an InstallOptions INI file
   !insertmacro INSTALLOPTIONS_READ $IniValue "ioC.ini" "Field 2" "State"
   
-  ;Display a messagebox if check box was checked
-  StrCmp $IniValue "1" "" +2
-    MessageBox MB_OK "You checked the check box, here is the MessageBox..."
-
 SectionEnd
 
 Section "Uninstall"
-  Delete $INSTDIR\streamripper_uninstall.exe
-  Delete $INSTDIR\Plugins\gen_sripper.dll
-  Delete $INSTDIR\Plugins\SRIPPER_HOWTO.TXT
-  Delete $INSTDIR\Plugins\sripper.ini
-  Delete $INSTDIR\Plugins\parse_rules.txt
-  Delete $INSTDIR\Plugins\fake_external_metadata.pl
-  Delete $INSTDIR\Plugins\fetch_external_metadata.pl
+  Delete $INSTDIR\streamripper.exe
+  Delete $INSTDIR\wstreamripper.exe
+  Delete $INSTDIR\gen_sripper.dll
+  Delete $INSTDIR\SRIPPER_HOWTO.TXT
+  Delete $INSTDIR\sripper.ini
+  Delete $INSTDIR\parse_rules.txt
+  Delete $INSTDIR\fake_external_metadata.pl
+  Delete $INSTDIR\fetch_external_metadata.pl
   RMDir /r $INSTDIR\Skins\SrSkins
 SectionEnd
 
@@ -253,6 +244,6 @@ Section "Uninstall"
 
   RMDir "$INSTDIR"
 
-  DeleteRegKey /ifempty HKCU "Software\Modern UI Test"
+  DeleteRegKey /ifempty HKCU "Software\Streamripper"
 
 SectionEnd

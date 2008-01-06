@@ -24,7 +24,7 @@
 #include "rip_manager.h"
 #include "options.h"
 #include "resource.h"
-#include "winamp.h"
+#include "winamp_exe.h"
 #include "debug.h"
 #include "render.h"
 #include <assert.h>

@@ -1,4 +1,4 @@
-/* winamp.c
+/* winamp_exe.c
  * gets info from winamp in various hacky ass ways
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,11 +18,11 @@
 #include <windows.h>
 #include <stdio.h>
 
-#include "dsp_sripper.h"
+#include "wstreamripper.h"
 #include "srtypes.h"
 #include "wa_ipc.h"
 #include "ipc_pe.h"
-#include "winamp.h"
+#include "winamp_exe.h"
 #include "debug.h"
 #include "mchar.h"
 #include "registry.h"
@@ -35,7 +35,7 @@
 BOOL winamp_init();			
 BOOL winamp_add_track_to_playlist(char *track);
 void winamp_add_rip_to_menu (void);
-void winamp_test_stuff (void);
+//void winamp_test_stuff (void);
 
 /*********************************************************************************
  * Private Vars
@@ -49,39 +49,8 @@ winamp_init ()
     BOOL rc;
     rc = winamp_get_path (m_winamps_path);
     if (!rc) return rc;
-    winamp_test_stuff ();
+    //winamp_test_stuff ();
     return TRUE;
-}
-
-BOOL
-strip_registry_path (char* path, char* tail)
-{
-    int i = 0;
-    int tail_len = strlen(tail);
-
-    /* Skip the leading quote */
-    debug_printf ("Stripping registry path: %s\n", path);
-    if (path[0] == '\"') {
-	for (i = 1; path[i]; i++) {
-	    path[i-1] = path[i];
-	}
-	path[i-1] = path[i];
-        debug_printf ("Stripped quote mark: %s\n", path);
-    }
-
-    /* Search for, and strip, the tail */
-    i = 0;
-    while (path[i]) {
-	if (strncmp (&path[i], tail, tail_len) == 0) {
-	    path[i] = 0;
-	    debug_printf ("Found path: %s (%s)\n", path, tail);
-	    return TRUE;
-	}
-	i++;
-    }
-
-    debug_printf ("Did not find path\n");
-    return FALSE;
 }
 
 BOOL
@@ -124,6 +93,7 @@ winamp_get_path(char *path)
     return FALSE;
 }
 
+#if defined (commentout)
 HWND
 winamp_get_hwnd (void)
 {
@@ -160,13 +130,32 @@ winamp_get_hwnd_pe (void)
     }
     return hwnd_pe;
 }
+#endif
 
+BOOL
+winamp_add_relay_to_playlist (char *host, u_short port, int content_type)
+{
+    char relay_url[SR_MAX_PATH];
+    char relay_file[SR_MAX_PATH];
+    char winamp_path[SR_MAX_PATH];
+
+    sprintf (winamp_path, "%s%s", m_winamps_path, "winamp.exe");
+    compose_relay_url (relay_url, host, port, content_type);
+    sprintf (relay_file, "/add %s", relay_url);
+    ShellExecute (NULL, "open", winamp_path, relay_file, NULL, SW_SHOWNORMAL);
+
+    return TRUE;
+}
+
+/* GCS FIX: This doesn't work in the exe version */
 BOOL
 winamp_get_info (WINAMP_INFO *info, BOOL useoldway)
 {
-    HWND hwnd_winamp;
+    //HWND hwnd_winamp;
     info->url[0] = '\0';
+    info->is_running = FALSE;
 
+#if defined (commentout)
     hwnd_winamp = winamp_get_hwnd ();
 
     /* Get winamp path */
@@ -230,22 +219,7 @@ winamp_get_info (WINAMP_INFO *info, BOOL useoldway)
 	    }
 	}
     }
-
-    return TRUE;
-}
-
-BOOL
-winamp_add_relay_to_playlist (char *host, u_short port, int content_type)
-{
-    char relay_url[SR_MAX_PATH];
-    char relay_file[SR_MAX_PATH];
-    char winamp_path[SR_MAX_PATH];
-
-    sprintf (winamp_path, "%s%s", m_winamps_path, "winamp.exe");
-    compose_relay_url (relay_url, host, port, content_type);
-    sprintf (relay_file, "/add %s", relay_url);
-    ShellExecute (NULL, "open", winamp_path, relay_file, NULL, SW_SHOWNORMAL);
-
+#endif
     return TRUE;
 }
 
@@ -261,6 +235,7 @@ winamp_add_track_to_playlist (char *fullpath)
     return TRUE;
 }
 
+#if defined (commentout)
 void
 winamp_handle_pe_click (void)
 {
@@ -309,3 +284,4 @@ winamp_test_stuff (void)
     /* Try sending a user message. Will modern skin get it? */
     SendMessage(hwnd_pe,WM_WA_IPC,0x888,0x888);
 }
+#endif

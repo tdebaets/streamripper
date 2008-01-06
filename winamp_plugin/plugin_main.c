@@ -22,11 +22,11 @@
 #include "resource.h"
 #include "srtypes.h"
 #include "rip_manager.h"
-#include "winamp.h"
+#include "winamp_exe.h"
 #include "gen.h"
 #include "options.h"
 #include "shellapi.h"
-#include "dsp_sripper.h"
+#include "wstreamripper.h"
 #include "render.h"
 #include "mchar.h"
 #include "dock.h"
@@ -292,7 +292,7 @@ UpdateNotRippingDisplay (HWND hwnd)
 {
     WINAMP_INFO winfo;
 
-    //debug_printf ("UNRD begin\n");
+    // debug_printf ("UNRD begin\n");
     if (winamp_get_info (&winfo, m_guiOpt.use_old_playlist_ret)) {
         debug_printf ("UNRD got winamp stream: %s\n", winfo.url);
 	if (!strcmp (winfo.url, m_winamp_stream_cache)) {

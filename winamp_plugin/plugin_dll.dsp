@@ -113,7 +113,7 @@ SOURCE=.\Script.rc
 # End Source File
 # Begin Source File
 
-SOURCE=.\winamp_hook.c
+SOURCE=.\winamp_dll.c
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -137,6 +137,10 @@ SOURCE=.\options.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\registry.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\render.h
 # End Source File
 # Begin Source File
@@ -153,7 +157,7 @@ SOURCE=.\wa_msgids.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\winamp.h
+SOURCE=.\winamp_dll.h
 # End Source File
 # End Group
 # End Target

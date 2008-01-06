@@ -31,10 +31,10 @@
 #include <assert.h>
 #include <windows.h>
 #include "resource.h"
-#include "winamp.h"
+#include "winamp_dll.h"
 #include "gen.h"
-#include "dsp_sripper.h"
-#include "winamp_hook.h"
+//#include "dsp_sripper.h"
+#include "registry.h"
 
 static int  init ();
 static void config (); 
@@ -43,6 +43,7 @@ static void create_pipes (void);
 static void destroy_pipes (void);
 static void launch_pipe_threads (void);
 static int spawn_streamripper (void);
+static void CALLBACK timer_proc (HWND hwnd, UINT uMsg, UINT idEvent, DWORD dwTime);
 
 void write_pipe (char* msg);
 
@@ -53,6 +54,9 @@ static HANDLE m_hpipe_exe_write = 0;
 
 static TCHAR m_szToopTip[] = "Streamripper For Winamp";
 static int m_enabled;
+static UINT m_timer_id;
+
+void debug_popup (char* fmt, ...);
 
 //extern void dock_init (HWND hwnd);
 
@@ -84,19 +88,22 @@ init ()
 {
     int rc;
 
+    winamp_dll_init ();
     create_pipes ();
     launch_pipe_threads ();
     rc = spawn_streamripper ();
     if (rc == 0) {
 	/* Failure spawning streamripper */
+	m_timer_id = 0;
 	destroy_pipes ();
 	return 1;
     }
 
     /* Success spawning streamripper */
-    dock_init (g_plugin.hwndParent);  // This function is obsolete
+    dock_init (g_plugin.hwndParent);     // This function is obsolete
     hook_winamp ();
     write_pipe ("Hello World");
+    m_timer_id = SetTimer (NULL, 0, 5000, (TIMERPROC) timer_proc);
 
     return 0;
 }
@@ -144,7 +151,6 @@ config ()
 	      g_plugin.hwndParent,
 	      EnableDlgProc);
 
-//    options_save(&g_rmo, &m_guiOpt);
     if (m_enabled) {
 	if (!prev_enabled) {
 	    init();
@@ -159,7 +165,9 @@ void
 quit()
 {
     int num_written;
+
     WriteFile (m_hpipe_dll_write, "q", 1, &num_written, NULL);
+    KillTimer (NULL, m_timer_id);
     dock_unhook_winamp ();
     destroy_pipes ();
 }
@@ -252,8 +260,6 @@ destroy_pipes (void)
 {
     CloseHandle (m_hpipe_dll_read);
     CloseHandle (m_hpipe_dll_write);
-    //CloseHandle (m_hpipe_exe_read);
-    //CloseHandle (m_hpipe_exe_write);
 }
 
 static void
@@ -321,9 +327,9 @@ spawn_exe (char* cwd, char* exe)
 		cwd,            // current directory 
 		&startup_info,  // STARTUPINFO pointer
 		&piProcInfo);   // receives PROCESS_INFORMATION 
-#if defined (commentout)
     return rc;
 
+#if defined (commentout)
     if (rc == 0) {
 	char buf[1023];
 	LPVOID lpMsgBuf;
@@ -344,33 +350,14 @@ spawn_exe (char* cwd, char* exe)
 	LocalFree( lpMsgBuf );
     }
 #endif
-    {
-	char buf[1023];
-	LPVOID lpMsgBuf;
-	FormatMessage( 
-	    FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-	    FORMAT_MESSAGE_FROM_SYSTEM | 
-	    FORMAT_MESSAGE_IGNORE_INSERTS,
-	    NULL,
-	    GetLastError(),
-	    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-	    (LPTSTR) &lpMsgBuf,
-	    0,
-	    NULL 
-	);
-	_snprintf (buf, 1023, "RC=%d pid=%d error=%s\n", rc, piProcInfo.dwProcessId, lpMsgBuf);
-	buf[1022] = 0;
-	MessageBox (g_plugin.hwndParent, buf, "Hi guys", MB_OK);
-	LocalFree( lpMsgBuf );
-    }
-    return rc;
 }
 
-/* Look for streamripper in a few different places */
+/* Look for streamripper in a few different places.
+   Return 0 if failed to spawn wstreamripper. */
 static int
 spawn_streamripper (void)
 {
-    int rc;
+    int rc = 0;
     char* sr_home_env;
     char cwd[_MAX_PATH];
     char exe[_MAX_PATH];
@@ -378,7 +365,6 @@ spawn_streamripper (void)
 
     /* If environment variables set, try there */
     sr_home_env = getenv ("STREAMRIPPER_HOME");
-    //debug_printf ("STREAMRIPPER_HOME = %s\n", sr_home_env);
     if (sr_home_env) {
 	strncpy (cwd, sr_home_env, _MAX_PATH);
 	cwd[_MAX_PATH-1] = 0;
@@ -387,10 +373,32 @@ spawn_streamripper (void)
 	if (rc) return rc;
     }
 
+    /* Next, try cwd */
+    /* To be written */
+
     /* Next, try where the registry says it was installed */
-    //spawn_exe ("d:\\sripper_1x", "d:\\sripper_1x\\winamp_plugin\\Release\\plugin_exe.exe");
+    if (get_string_from_registry (cwd, HKEY_CURRENT_USER, 
+	    TEXT("Software\\Streamripper"),
+	    TEXT("")))
+    {
+	_snprintf (exe, _MAX_PATH, "%s\\%s", cwd, exe_name);
+	rc = spawn_exe (cwd, exe);
+	if (rc) return rc;
+    }
 
     /* Next, try cannonical locations */
-    rc = spawn_exe ("C:\\Program Files", "C:\\Program Files\\winamp_plugin\\Release\\plugin_exe.exe");
+    rc = spawn_exe ("C:\\Program Files\\streamripper", "C:\\Program Files\\streamripper\\wstreamripper.exe");
     return rc;
+}
+
+static void CALLBACK
+timer_proc (
+	    HWND hwnd,     // handle of window for timer messages
+	    UINT uMsg,     // WM_TIMER message
+	    UINT idEvent,  // timer identifier
+	    DWORD dwTime   // current system time
+)
+{
+    char url[MAX_URL_LEN];
+    winamp_poll (url);
 }

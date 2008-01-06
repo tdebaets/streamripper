@@ -18,11 +18,11 @@
 #include <windows.h>
 #include <stdio.h>
 
-#include "dsp_sripper.h"
+//#include "dsp_sripper.h"
 #include "srtypes.h"
 #include "wa_ipc.h"
 #include "ipc_pe.h"
-#include "winamp.h"
+//#include "winamp.h"
 #include "debug.h"
 #include "mchar.h"
 
@@ -34,7 +34,6 @@
 BOOL winamp_init();			
 BOOL winamp_add_track_to_playlist(char *track);
 void winamp_add_rip_to_menu (void);
-void winamp_test_stuff (void);
 
 /*********************************************************************************
  * Private Vars
@@ -76,3 +75,35 @@ get_string_from_registry (char *path, HKEY hkey, LPCTSTR subkey, LPTSTR name)
 
     return TRUE;
 }
+
+BOOL
+strip_registry_path (char* path, char* tail)
+{
+    int i = 0;
+    int tail_len = strlen(tail);
+
+    /* Skip the leading quote */
+    debug_printf ("Stripping registry path: %s\n", path);
+    if (path[0] == '\"') {
+	for (i = 1; path[i]; i++) {
+	    path[i-1] = path[i];
+	}
+	path[i-1] = path[i];
+        debug_printf ("Stripped quote mark: %s\n", path);
+    }
+
+    /* Search for, and strip, the tail */
+    i = 0;
+    while (path[i]) {
+	if (strncmp (&path[i], tail, tail_len) == 0) {
+	    path[i] = 0;
+	    debug_printf ("Found path: %s (%s)\n", path, tail);
+	    return TRUE;
+	}
+	i++;
+    }
+
+    debug_printf ("Did not find path\n");
+    return FALSE;
+}
+

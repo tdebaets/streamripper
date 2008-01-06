@@ -15,8 +15,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include "windows.h"
+#include <windows.h>
 #include <stdio.h>
+#include <string.h>
+#include "registry.h"
 #include "wa_ipc.h"
 #include "debug.h"
 #include "gen.h"
@@ -57,6 +59,8 @@
 static LRESULT CALLBACK	hook_winamp_callback(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam);
 static VOID dock_window();
 static void notify_dock ();
+static BOOL winamp_get_path (char *path);
+
 extern void write_pipe (char* msg);
 
 /*****************************************************************************
@@ -69,13 +73,15 @@ struct WINAMP_WINS
     WNDPROC orig_proc;
 };
 
-static HWND		m_hwnd = NULL;
+static HWND m_hwnd = NULL;
+static char m_winamp_path[SR_MAX_PATH] = {'\0'};
 static struct WINAMP_WINS m_winamp_classic_wins [WINAMP_CLASSIC_WINS];
 static struct WINAMP_WINS m_winamp_modern_wins [WINAMP_MODERN_WINS];
 static int m_num_modern_wins = 0;
 static int m_skin_is_modern = 0;
 
 extern winampGeneralPurposePlugin g_plugin;
+
 
 #define DEBUG_BUF_LEN 2048
 
@@ -155,6 +161,65 @@ debug_popup (char* fmt, ...)
     va_end (argptr);
 }
 
+void
+winamp_dll_init (void)
+{
+    if (!winamp_get_path (m_winamp_path)) {
+	m_winamp_path[0] = 0;
+    }
+}
+
+HWND
+winamp_get_hwnd (void)
+{
+    /* This used to be done like this:
+        return FindWindow("Winamp v1.x", NULL);
+       But I found that it's easier and better(?) to use the 
+       input from the plugin interface */
+    return g_plugin.hwndParent;
+}
+
+BOOL
+winamp_get_path (char *path)
+{
+    BOOL rc;
+    char* sr_winamp_home_env;
+
+
+    sr_winamp_home_env = getenv ("STREAMRIPPER_WINAMP_HOME");
+    debug_printf ("STREAMRIPPER_WINAMP_HOME = %s\n", sr_winamp_home_env);
+    if (sr_winamp_home_env) {
+	strncpy (path, sr_winamp_home_env, SR_MAX_PATH);
+	path[SR_MAX_PATH-1] = 0;
+	return TRUE;
+    }
+
+    rc = get_string_from_registry (path, HKEY_LOCAL_MACHINE, 
+	    TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Winamp"),
+	    TEXT("UninstallString"));
+    if (rc == TRUE) {
+	rc = strip_registry_path (path, "UNINSTWA.EXE");
+	if (rc == TRUE) return TRUE;
+    }
+
+    rc = get_string_from_registry (path, HKEY_CLASSES_ROOT, 
+	    "Winamp.File\\shell\\Enqueue\\command", NULL);
+    if (rc == TRUE) {
+	rc = strip_registry_path (path, "WINAMP.EXE");
+	if (rc == TRUE) return TRUE;
+    }
+
+    /* The alternative is: */
+/* SendMessage(hwnd_winamp,WM_WA_IPC,0,IPC_GETINIDIRECTORY);
+    #define IPC_GETINIDIRECTORY 335
+    (Requires winamp 5.0)
+**
+** This returns a pointer to the directory where winamp.ini can be found and is
+** useful if you want store config files but you don't want to use winamp.ini.
+*/
+
+    return FALSE;
+}
 
 BOOL CALLBACK
 EnumWindowsProc (HWND hwnd, LPARAM lparam)
@@ -484,3 +549,78 @@ notify_dock ()
     }
 }
 
+BOOL
+winamp_poll (char url[MAX_URL_LEN])
+{
+    HWND hwnd_winamp;
+    int useoldway = 0;
+
+    url[0] = 0;
+    hwnd_winamp = winamp_get_hwnd ();
+
+    /* Get winamp path */
+#if defined (commentout)
+    if (!m_winamps_path[0])
+	return FALSE;
+
+    if (!hwnd_winamp) {
+	info->is_running = FALSE;
+	return FALSE;
+    } else {
+	info->is_running = TRUE;
+    }
+#endif
+
+    if (useoldway) {
+	// Send a message to winamp to save the current playlist
+	// to a file, 'n' is the index of the currently selected item
+	int n  = SendMessage (hwnd_winamp, WM_USER, (WPARAM)NULL, 120); 
+	char m3u_path[SR_MAX_PATH];
+	char buf[4096] = {'\0'};
+	FILE *fp;
+
+	sprintf (m3u_path, "%s%s", m_winamp_path, "winamp.m3u");	
+	if ((fp = fopen (m3u_path, "r")) == NULL)
+	    return FALSE;
+
+	while(!feof(fp) && n >= 0)
+	{
+	    fgets(buf, 4096, fp);
+	    if (*buf != '#')
+		n--;
+	}
+	fclose(fp);
+	buf[strlen(buf)-1] = '\0';
+
+	// Make sure it's a URL
+	if (strncmp (buf, "http://", strlen("http://")) == 0)
+	    strcpy (url, buf);
+    } else {
+	// Much better way to get the filename
+	int get_filename = 211;
+	int get_position = 125;
+	int data = 0;
+	int pos;
+	char* fname;
+	char *purl;
+
+	pos = (int)SendMessage (hwnd_winamp, WM_USER, data, get_position);
+	fname = (char*)SendMessage (hwnd_winamp, WM_USER, pos, get_filename);
+	/* GCS: This is wrong. Winamp returns null if list is empty. */
+#if defined (commentout)
+	if (fname == NULL)
+	    return FALSE;
+	purl = strstr (fname, "http://");
+	if (purl)
+	    strncpy (info->url, purl, MAX_URL_LEN);
+#endif
+	if (fname) {
+	    purl = strstr (fname, "http://");
+	    if (purl) {
+		strncpy (url, purl, MAX_URL_LEN);
+	    }
+	}
+    }
+
+    return TRUE;
+}

@@ -19,7 +19,7 @@
 #include <time.h>
 #include <stdio.h>
 #include "render.h"
-#include "winamp.h"
+#include "winamp_exe.h"
 #include "debug.h"
 
 #define BIG_IMAGE_WIDTH		400
