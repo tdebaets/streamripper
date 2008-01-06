@@ -410,6 +410,7 @@ UpdateDisplay(HWND hwnd, UINT umsg, UINT_PTR idEvent, DWORD dwTime)
     else
 	UpdateNotRippingDisplay(hwnd);
 
+    debug_printf ("*** Invalidating rectangle %d\n", m_bRipping);
     InvalidateRect(m_hwnd, NULL, FALSE);
 }
 
@@ -437,8 +438,10 @@ rip_callback (RIP_MANAGER_INFO* rmi, int message, void *data)
 	// calling the stop button in here caused all kinds of stupid problems
 	// so, fuck it. call the clearing button shit here. 
 	//
+	debug_printf("***RipCallback: RM_DONE\n");
 	render_clear_all_data();
 	m_bRipping = FALSE;
+	set_ripping_url (m_winamp_stream_cache);
 	start_button_enable();
 	stop_button_disable();
 	render_set_prog_bar(FALSE);
@@ -866,6 +869,13 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
     case WM_APP+0:
 	handle_wm_app (hwnd, wParam, lParam);
 	break;
+    case WM_DESTROY:
+	debug_printf ("Got WM_DESTROY\n");
+	PostQuitMessage( 0 );
+	break;
+    case WM_QUIT:
+	debug_printf ("Got WM_QUIT\n");
+	break;
     }
     return DefWindowProc (hwnd, umsg, wParam, lParam);
 }
@@ -947,13 +957,21 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	    // handle the error and possibly exit
 	    break;
 	} else {
+	    if (msg.message == WM_QUIT) {
+		debug_printf ("Got a WM_QUIT in message loop\n");
+	    }
+	    if (msg.message == WM_DESTROY) {
+		debug_printf ("Got a WM_DESTROY in message loop\n");
+	    }
 	    TranslateMessage (&msg);
 	    DispatchMessage (&msg);
 	}
     }
+
+    debug_printf ("Fell through WinMain()\n");
+
     return 0;
 }
-
 
 static void
 pipe_reader (void* arg)
@@ -968,6 +986,8 @@ pipe_reader (void* arg)
 	if (rc == 0) {
 	    /* GCS FIX: How to distinguish error condition from winamp exit? */
 	    //display_last_error ();
+	    debug_printf ("Pipe read failed\n");
+	    quit ();
 	    exit (1);
 	}
 	if (num_read == 1) {

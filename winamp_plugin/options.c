@@ -937,9 +937,12 @@ options_load (STREAM_PREFS *rmo, GUI_OPTIONS *guiOpt)
 	strcpy (rmo->output_directory, desktop_path);
     }
     GetPrivateProfileString(APPNAME, "localhost", "localhost", guiOpt->localhost, MAX_INI_LINE_LEN, filename);
+    if (!guiOpt->localhost[0]) {
+	strcpy (guiOpt->localhost, "localhost");
+    }
     GetPrivateProfileString(APPNAME, "useragent", DEFAULT_USERAGENT, rmo->useragent, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "default_skin", DEFAULT_SKINFILE, guiOpt->default_skin, MAX_INI_LINE_LEN, filename);
-    if (guiOpt->default_skin[0] == 0) {
+    if (!guiOpt->default_skin[0]) {
         strcpy(guiOpt->default_skin, DEFAULT_SKINFILE);
     }
     GetPrivateProfileString(APPNAME, "rip_single_path", "", rmo->showfile_pattern, MAX_INI_LINE_LEN, filename);

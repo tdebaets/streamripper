@@ -246,7 +246,7 @@ post_error (RIP_MANAGER_INFO* rmi, int err)
 {
     ERROR_INFO err_info;
     err_info.error_code = err;
-    strcpy(err_info.error_str, m_error_str[-err]);
+    strcpy(err_info.error_str, m_error_str[abs(err)]);
     debug_printf ("post_error: %d %s\n", err_info.error_code, err_info.error_str);
     m_status_callback (rmi, RM_ERROR, &err_info);
 }
