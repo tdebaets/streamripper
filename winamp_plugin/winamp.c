@@ -25,6 +25,7 @@
 #include "winamp.h"
 #include "debug.h"
 #include "mchar.h"
+#include "registry.h"
 
 #define DbgBox(_x_)	MessageBox(NULL, _x_, "Debug", 0)
 
@@ -49,44 +50,6 @@ winamp_init ()
     rc = winamp_get_path (m_winamps_path);
     if (!rc) return rc;
     winamp_test_stuff ();
-    return TRUE;
-}
-
-// Get's winamp's path from the reg key ..
-// HKEY_CLASSES_ROOT\Applications\winamp.exe\shell\Enqueue\command
-BOOL
-get_string_from_registry (char *path, HKEY hkey, LPCTSTR subkey, LPTSTR name)
-{
-    LONG rc;
-    HKEY hkey_result;
-    DWORD size = SR_MAX_PATH;
-    char strkey[SR_MAX_PATH];
-    int i;
-    DWORD type;
-    int k = REG_SZ;
-
-    debug_printf ("Trying RegOpenKeyEx: 0x%08x %s\n", hkey, subkey);
-    rc = RegOpenKeyEx (hkey, subkey, 0, KEY_QUERY_VALUE, &hkey_result);
-    if (rc != ERROR_SUCCESS) {
-	return FALSE;
-    }
-
-    debug_printf ("Trying RegQueryValueEx: %s\n", name);
-    rc = RegQueryValueEx (hkey_result, name, NULL, &type, (LPBYTE)strkey, &size);
-    if (rc != ERROR_SUCCESS) {
-	debug_printf ("Return code = %d\n", rc);
-	RegCloseKey (hkey_result);
-	return FALSE;
-    }
-
-    debug_printf ("RegQueryValueEx succeeded: %d\n", type);
-    for (i = 0; strkey[i] && i < SR_MAX_PATH-1; i++) {
-	path[i] = toupper(strkey[i]);
-    }
-    path[i] = 0;
-
-    RegCloseKey (hkey_result);
-
     return TRUE;
 }
 

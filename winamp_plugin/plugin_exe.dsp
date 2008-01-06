@@ -104,6 +104,10 @@ SOURCE=.\plugin_main.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\registry.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\render.c
 # End Source File
 # Begin Source File
@@ -137,6 +141,10 @@ SOURCE=.\ipc_pe.h
 # Begin Source File
 
 SOURCE=.\options.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\registry.h
 # End Source File
 # Begin Source File
 
