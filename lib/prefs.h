@@ -19,6 +19,9 @@
 
 #include <glib.h>
 
+#define RIPLIST_LEN 10
+#define DEFAULT_SKINFILE	"srskin.bmp"
+
 typedef struct stream_prefs STREAM_PREFS;
 struct stream_prefs
 {
@@ -64,18 +67,26 @@ struct stream_prefs
     CODESET_OPTIONS cs_opt;             // which codeset should i use?
 };
 
-typedef struct winamp_prefs WINAMP_PREFS;
-struct winamp_prefs
+typedef struct wstreamripper_prefs WSTREAMRIPPER_PREFS;
+struct wstreamripper_prefs
 {
-    int testme;
+    int		m_add_finished_tracks_to_playlist;
+    int		m_start_minimized;
+    long	oldpos_x;
+    long	oldpos_y;
+    int		m_enabled;
+    char	localhost[MAX_HOST_LEN];	// hostname of 'localhost' 
+    char	default_skin[MAX_PATH];
+    int		use_old_playlist_ret;
+    char	riplist[RIPLIST_LEN][MAX_URL_LEN];
 };
 
 typedef struct global_prefs GLOBAL_PREFS;
 struct global_prefs
 {
-    char url[MAX_URL_LEN];              // default stream
-    STREAM_PREFS stream_prefs;          // default prefs for new streams
-    WINAMP_PREFS winamp_prefs;          // prefs for winamp plugin
+    char url[MAX_URL_LEN];                     // default stream
+    STREAM_PREFS stream_prefs;                 // default prefs for new streams
+    WSTREAMRIPPER_PREFS wstreamripper_prefs;   // prefs for winamp plugin
 };
 
 
@@ -107,7 +118,10 @@ struct global_prefs
 void prefs_load (void);
 void prefs_save (void);
 void prefs_get_global_prefs (GLOBAL_PREFS *global_prefs);
+void prefs_set_global_prefs (GLOBAL_PREFS *global_prefs);
 void prefs_get_stream_prefs (STREAM_PREFS *prefs, char *label);
 void prefs_set_stream_prefs (STREAM_PREFS *prefs, char *label);
+void prefs_get_wstreamripper_prefs (WSTREAMRIPPER_PREFS *wsr_prefs);
+void prefs_set_wstreamripper_prefs (WSTREAMRIPPER_PREFS *wsr_prefs);
 
 #endif

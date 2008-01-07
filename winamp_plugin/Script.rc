@@ -277,7 +277,9 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "&Start Ripping",              ID_MENU_STARTRIPPING
         MENUITEM "S&top Ripping",               ID_MENU_STOPRIPPING
-        MENUITEM "&Options",                    ID_MENU_OPTIONS
+        MENUITEM "O&ptions",                    ID_MENU_OPTIONS
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       ID_MENU_EXIT
     END
 END
 
@@ -285,6 +287,7 @@ IDR_HISTORY_POPUP MENU DISCARDABLE
 BEGIN
     POPUP "Menu"
     BEGIN
+        MENUITEM "E&xit",                       ID_MENU_EXIT
         MENUITEM "&Reset URL",                  ID_MENU_RESET_URL
         MENUITEM SEPARATOR
     END

@@ -6,7 +6,6 @@
 #include "prefs.h"
 #include "gen.h"
 
-#define RIPLIST_LEN 10
 
 /* COMMAND ID's 40010 through 40019 are reserved for the history list
    Make sure these are not used by other menu items or commands!  */
@@ -25,8 +24,9 @@ typedef struct GUI_OPTIONSst
 } GUI_OPTIONS;
 
 /* Global variable */
-extern winampGeneralPurposePlugin g_plugin;
 extern STREAM_PREFS g_rmo;
+extern HWND g_winamp_hwnd;
+extern WSTREAMRIPPER_PREFS g_gui_prefs;
 
 /* Public functions */
 void compose_relay_url (char* relay_url, char *host, u_short port, int content_type);

@@ -4,8 +4,8 @@
 #include "rip_manager.h"
 #include "wstreamripper.h"
 
-void options_dialog_show (HINSTANCE inst, HWND parent, STREAM_PREFS *opt, GUI_OPTIONS *guiOpt);
-BOOL options_load (STREAM_PREFS *opt, GUI_OPTIONS *guiOpt);
-BOOL options_save (STREAM_PREFS *opt, GUI_OPTIONS *guiOpt);
+void options_dialog_show (HINSTANCE inst, HWND parent);
+BOOL options_load (void);
+BOOL options_save (void);
 
 #endif //__OPTIONS_H__

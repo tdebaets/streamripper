@@ -34,7 +34,6 @@
 #define APPNAME			"sripper"
 #define DEFAULT_USERAGENT	"FreeAmp/2.x"
 #define NUM_PROP_PAGES		6
-#define DEFAULT_SKINFILE	"srskin.bmp"
 #define SKIN_PREV_LEFT		(2*110)
 #define SKIN_PREV_TOP		(2*50)
 #define	MAX_SKINS		256
@@ -55,8 +54,6 @@ static LRESULT CALLBACK external_dlg(HWND hWnd, UINT message, WPARAM wParam, LPA
 // This is what we need from shfolder.h, but thats not on my home system
 typedef HRESULT (__stdcall * PFNSHGETFOLDERPATHA)(HWND, int, HANDLE, DWORD, LPSTR);  
 
-//static RIP_MANAGER_OPTIONS *m_opt;
-static GUI_OPTIONS *m_guiOpt;
 static char *m_pskin_list[MAX_SKINS];
 static int m_skin_list_size = 0;
 static int m_curskin = 0;
@@ -264,7 +261,7 @@ create_prop_sheet_page (HINSTANCE inst, DWORD iddres, DLGPROC dlgproc)
 }
 
 void
-options_dialog_show (HINSTANCE inst, HWND parent, STREAM_PREFS *rmo, GUI_OPTIONS *guiOpt)
+options_dialog_show (HINSTANCE inst, HWND parent)
 {
     HPROPSHEETPAGE hPage[NUM_PROP_PAGES];	
     int ret;
@@ -272,7 +269,7 @@ options_dialog_show (HINSTANCE inst, HWND parent, STREAM_PREFS *rmo, GUI_OPTIONS
     PROPSHEETHEADER psh;
 
     //m_opt = opt;
-    m_guiOpt = guiOpt;
+    //m_guiOpt = guiOpt;
 
     debug_printf ("options_dialog_show checkpoint 1\n");
     sprintf(szCaption, "Streamripper Settings v%s", SRVERSION);
@@ -306,11 +303,11 @@ options_dialog_show (HINSTANCE inst, HWND parent, STREAM_PREFS *rmo, GUI_OPTIONS
     }
     if (ret) {
 	if (m_pskin_list[m_curskin]) {
-	    strcpy (m_guiOpt->default_skin, m_pskin_list[m_curskin]);
+	    strcpy (g_gui_prefs.default_skin, m_pskin_list[m_curskin]);
 	    //JCBUG font color doesn't change until restart.
-	    render_change_skin (m_guiOpt->default_skin);
+	    render_change_skin (g_gui_prefs.default_skin);
 	}
-	options_save (rmo, m_guiOpt);
+	options_save ();
     }
     debug_printf ("options_dialog_show checkpoint 4\n");
     free_skin_list ();
@@ -357,22 +354,22 @@ add_useragent_strings(HWND hdlg)
 }
 
 static void
-set_overwrite_combo (HWND hdlg, STREAM_PREFS* rmo)
+set_overwrite_combo (HWND hdlg)
 {
     HWND hcombo = GetDlgItem(hdlg, IDC_OVERWRITE_COMPLETE);
-    int combo_idx = rmo->overwrite - 1;
+    int combo_idx = g_rmo.overwrite - 1;
 
     LRESULT rc = SendMessage(hcombo, CB_SETCURSEL, combo_idx, 0);
     debug_printf("Setting combo, idx=%d, rc=%d\n", combo_idx, rc);
 }
 
 static void
-get_overwrite_combo (HWND hdlg, STREAM_PREFS* rmo)
+get_overwrite_combo (HWND hdlg)
 {
     HWND hcombo = GetDlgItem (hdlg, IDC_OVERWRITE_COMPLETE);
     int combo_idx = SendMessage (hcombo, CB_GETCURSEL, 0, 0);
     debug_printf("Getting combo, idx=%d\n", combo_idx);
-    rmo->overwrite = combo_idx + 1;
+    g_rmo.overwrite = combo_idx + 1;
 }
 
 static void
@@ -380,7 +377,7 @@ add_codeset_strings_1 (HWND hdlg, STREAM_PREFS* rmo, int id)
 {
     HWND hcombo = GetDlgItem(hdlg, id);
     char default_locale_string[1024];
-    _snprintf (default_locale_string, 1024, "%s (Locale)", rmo->cs_opt.codeset_locale);
+    _snprintf (default_locale_string, 1024, "%s (Locale)", g_rmo.cs_opt.codeset_locale);
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM) default_locale_string);
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"UTF-8 (Unicode)");
     if (id == IDC_CODESET_ID3) {
@@ -434,29 +431,29 @@ parse_gui_codeset (HWND hWnd, char* new_codeset, char* default_codeset, int id)
 }
 
 void
-set_codesets_from_gui (HWND hWnd, STREAM_PREFS* rmo)
+set_codesets_from_gui (HWND hWnd)
 {
-    parse_gui_codeset (hWnd, rmo->cs_opt.codeset_metadata, 
-			rmo->cs_opt.codeset_locale, IDC_CODESET_METADATA);
-    parse_gui_codeset (hWnd, rmo->cs_opt.codeset_relay, 
-			rmo->cs_opt.codeset_locale, IDC_CODESET_RELAY);
-    parse_gui_codeset (hWnd, rmo->cs_opt.codeset_id3, 
-			rmo->cs_opt.codeset_locale, IDC_CODESET_ID3);
-    parse_gui_codeset (hWnd, rmo->cs_opt.codeset_filesys, 
-			rmo->cs_opt.codeset_locale, IDC_CODESET_FILESYS);
+    parse_gui_codeset (hWnd, g_rmo.cs_opt.codeset_metadata, 
+			g_rmo.cs_opt.codeset_locale, IDC_CODESET_METADATA);
+    parse_gui_codeset (hWnd, g_rmo.cs_opt.codeset_relay, 
+			g_rmo.cs_opt.codeset_locale, IDC_CODESET_RELAY);
+    parse_gui_codeset (hWnd, g_rmo.cs_opt.codeset_id3, 
+			g_rmo.cs_opt.codeset_locale, IDC_CODESET_ID3);
+    parse_gui_codeset (hWnd, g_rmo.cs_opt.codeset_filesys, 
+			g_rmo.cs_opt.codeset_locale, IDC_CODESET_FILESYS);
 }
 
 void
-set_gui_from_codesets (HWND hWnd, STREAM_PREFS* rmo)
+set_gui_from_codesets (HWND hWnd)
 {
     SetDlgItemText (hWnd, IDC_CODESET_METADATA, 
-		    rmo->cs_opt.codeset_metadata);
+		    g_rmo.cs_opt.codeset_metadata);
     SetDlgItemText (hWnd, IDC_CODESET_RELAY, 
-		    rmo->cs_opt.codeset_relay);
+		    g_rmo.cs_opt.codeset_relay);
     SetDlgItemText (hWnd, IDC_CODESET_ID3, 
-		    rmo->cs_opt.codeset_id3);
+		    g_rmo.cs_opt.codeset_id3);
     SetDlgItemText (hWnd, IDC_CODESET_FILESYS, 
-		    rmo->cs_opt.codeset_filesys);
+		    g_rmo.cs_opt.codeset_filesys);
 }
 
 void
@@ -470,7 +467,7 @@ add_overwrite_complete_strings(HWND hdlg)
 }
 
 void
-gui_set_conn_opts (HWND hWnd, STREAM_PREFS* rmo, BOOL from_gui)
+gui_set_conn_opts (HWND hWnd, BOOL from_gui)
 {
     /*
       - reconnect
@@ -483,35 +480,35 @@ gui_set_conn_opts (HWND hWnd, STREAM_PREFS* rmo, BOOL from_gui)
       - use old way
     */
     if (from_gui) {
-	set_from_checkbox(hWnd, IDC_RECONNECT, &rmo->flags, OPT_AUTO_RECONNECT);
-	set_from_checkbox(hWnd, IDC_MAKE_RELAY, &rmo->flags, OPT_MAKE_RELAY);
-	debug_printf ("from_gui: make_relay=%d\n", OPT_FLAG_ISSET(rmo->flags, OPT_MAKE_RELAY));
-	rmo->relay_port = GetDlgItemInt(hWnd, IDC_RELAY_PORT_EDIT, FALSE, FALSE);
-        rmo->max_port = rmo->relay_port+1000;
-	set_from_checkbox(hWnd, IDC_CHECK_MAX_BYTES, &rmo->flags, OPT_CHECK_MAX_BYTES);
-	rmo->maxMB_rip_size = GetDlgItemInt(hWnd, IDC_MAX_BYTES, FALSE, FALSE);
-	GetDlgItemText(hWnd, IDC_PROXY, rmo->proxyurl, MAX_URL_LEN);
-	GetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost, MAX_HOST_LEN);
-	GetDlgItemText(hWnd, IDC_USERAGENT, rmo->useragent, MAX_USERAGENT_STR);
-	m_guiOpt->use_old_playlist_ret = get_checkbox(hWnd, IDC_USE_OLD_PLAYLIST_RET);
+	set_from_checkbox(hWnd, IDC_RECONNECT, &g_rmo.flags, OPT_AUTO_RECONNECT);
+	set_from_checkbox(hWnd, IDC_MAKE_RELAY, &g_rmo.flags, OPT_MAKE_RELAY);
+	debug_printf ("from_gui: make_relay=%d\n", OPT_FLAG_ISSET(g_rmo.flags, OPT_MAKE_RELAY));
+	g_rmo.relay_port = GetDlgItemInt(hWnd, IDC_RELAY_PORT_EDIT, FALSE, FALSE);
+        g_rmo.max_port = g_rmo.relay_port+1000;
+	set_from_checkbox(hWnd, IDC_CHECK_MAX_BYTES, &g_rmo.flags, OPT_CHECK_MAX_BYTES);
+	g_rmo.maxMB_rip_size = GetDlgItemInt(hWnd, IDC_MAX_BYTES, FALSE, FALSE);
+	GetDlgItemText(hWnd, IDC_PROXY, g_rmo.proxyurl, MAX_URL_LEN);
+	GetDlgItemText(hWnd, IDC_LOCALHOST, g_gui_prefs.localhost, MAX_HOST_LEN);
+	GetDlgItemText(hWnd, IDC_USERAGENT, g_rmo.useragent, MAX_USERAGENT_STR);
+	g_gui_prefs.use_old_playlist_ret = get_checkbox(hWnd, IDC_USE_OLD_PLAYLIST_RET);
     } else {
-	set_checkbox(hWnd, IDC_RECONNECT, OPT_FLAG_ISSET(rmo->flags, OPT_AUTO_RECONNECT));
-	set_checkbox(hWnd, IDC_MAKE_RELAY, OPT_FLAG_ISSET(rmo->flags, OPT_MAKE_RELAY));
-	debug_printf ("to_gui: make_relay=%d\n", OPT_FLAG_ISSET(rmo->flags, OPT_MAKE_RELAY));
-	SetDlgItemInt(hWnd, IDC_RELAY_PORT_EDIT, rmo->relay_port, FALSE);
-	set_checkbox(hWnd, IDC_CHECK_MAX_BYTES, OPT_FLAG_ISSET(rmo->flags, OPT_CHECK_MAX_BYTES));
-	SetDlgItemInt(hWnd, IDC_MAX_BYTES, rmo->maxMB_rip_size, FALSE);
-	SetDlgItemText(hWnd, IDC_PROXY, rmo->proxyurl);
-	SetDlgItemText(hWnd, IDC_LOCALHOST, m_guiOpt->localhost);
-	if (!rmo->useragent[0])
-	    strcpy(rmo->useragent, DEFAULT_USERAGENT);
-	SetDlgItemText(hWnd, IDC_USERAGENT, rmo->useragent);
-	set_checkbox(hWnd, IDC_USE_OLD_PLAYLIST_RET, m_guiOpt->use_old_playlist_ret);
+	set_checkbox(hWnd, IDC_RECONNECT, OPT_FLAG_ISSET(g_rmo.flags, OPT_AUTO_RECONNECT));
+	set_checkbox(hWnd, IDC_MAKE_RELAY, OPT_FLAG_ISSET(g_rmo.flags, OPT_MAKE_RELAY));
+	debug_printf ("to_gui: make_relay=%d\n", OPT_FLAG_ISSET(g_rmo.flags, OPT_MAKE_RELAY));
+	SetDlgItemInt(hWnd, IDC_RELAY_PORT_EDIT, g_rmo.relay_port, FALSE);
+	set_checkbox(hWnd, IDC_CHECK_MAX_BYTES, OPT_FLAG_ISSET(g_rmo.flags, OPT_CHECK_MAX_BYTES));
+	SetDlgItemInt(hWnd, IDC_MAX_BYTES, g_rmo.maxMB_rip_size, FALSE);
+	SetDlgItemText(hWnd, IDC_PROXY, g_rmo.proxyurl);
+	SetDlgItemText(hWnd, IDC_LOCALHOST, g_gui_prefs.localhost);
+	if (!g_rmo.useragent[0])
+	    strcpy(g_rmo.useragent, DEFAULT_USERAGENT);
+	SetDlgItemText(hWnd, IDC_USERAGENT, g_rmo.useragent);
+	set_checkbox(hWnd, IDC_USE_OLD_PLAYLIST_RET, g_gui_prefs.use_old_playlist_ret);
     }
 }
 
 void
-gui_set_file_opts(HWND hWnd, STREAM_PREFS* rmo, BOOL from_gui)
+gui_set_file_opts(HWND hWnd, BOOL from_gui)
 {
     /*
       - seperate dir
@@ -526,32 +523,32 @@ gui_set_file_opts(HWND hWnd, STREAM_PREFS* rmo, BOOL from_gui)
       - rip single file filename
     */
     if (from_gui) {
-	get_overwrite_combo(hWnd, rmo);
-	m_guiOpt->m_add_finshed_tracks_to_playlist = get_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST);
-	set_from_checkbox(hWnd, IDC_ADD_ID3V1, &rmo->flags, OPT_ADD_ID3V1);
-	set_from_checkbox(hWnd, IDC_ADD_ID3V2, &rmo->flags, OPT_ADD_ID3V2);
-	GetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, rmo->output_directory, SR_MAX_PATH);
-	set_from_checkbox(hWnd, IDC_KEEP_INCOMPLETE, &rmo->flags, OPT_KEEP_INCOMPLETE);
-	set_from_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, &rmo->flags, OPT_INDIVIDUAL_TRACKS);
-	set_from_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, &rmo->flags, OPT_SINGLE_FILE_OUTPUT);
-	GetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, rmo->showfile_pattern, SR_MAX_PATH);
-	rmo->dropcount = GetDlgItemInt(hWnd, IDC_DROP_COUNT, FALSE, FALSE);
+	get_overwrite_combo(hWnd);
+	g_gui_prefs.m_add_finished_tracks_to_playlist = get_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST);
+	set_from_checkbox(hWnd, IDC_ADD_ID3V1, &g_rmo.flags, OPT_ADD_ID3V1);
+	set_from_checkbox(hWnd, IDC_ADD_ID3V2, &g_rmo.flags, OPT_ADD_ID3V2);
+	GetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, g_rmo.output_directory, SR_MAX_PATH);
+	set_from_checkbox(hWnd, IDC_KEEP_INCOMPLETE, &g_rmo.flags, OPT_KEEP_INCOMPLETE);
+	set_from_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, &g_rmo.flags, OPT_INDIVIDUAL_TRACKS);
+	set_from_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, &g_rmo.flags, OPT_SINGLE_FILE_OUTPUT);
+	GetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, g_rmo.showfile_pattern, SR_MAX_PATH);
+	g_rmo.dropcount = GetDlgItemInt(hWnd, IDC_DROP_COUNT, FALSE, FALSE);
     } else {
-	set_overwrite_combo(hWnd, rmo);
-	set_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST, m_guiOpt->m_add_finshed_tracks_to_playlist);
-	set_checkbox(hWnd, IDC_ADD_ID3V1, OPT_FLAG_ISSET(rmo->flags, OPT_ADD_ID3V1));
-	set_checkbox(hWnd, IDC_ADD_ID3V2, OPT_FLAG_ISSET(rmo->flags, OPT_ADD_ID3V2));
-	SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, rmo->output_directory);
-	set_checkbox(hWnd, IDC_KEEP_INCOMPLETE, OPT_FLAG_ISSET(rmo->flags, OPT_KEEP_INCOMPLETE));
-	set_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, OPT_FLAG_ISSET(rmo->flags, OPT_INDIVIDUAL_TRACKS));
-	set_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, OPT_FLAG_ISSET(rmo->flags, OPT_SINGLE_FILE_OUTPUT));
-	SetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, rmo->showfile_pattern);
-	SetDlgItemInt(hWnd, IDC_DROP_COUNT, rmo->dropcount, FALSE);
+	set_overwrite_combo(hWnd);
+	set_checkbox(hWnd, IDC_ADD_FINSHED_TRACKS_TO_PLAYLIST, g_gui_prefs.m_add_finished_tracks_to_playlist);
+	set_checkbox(hWnd, IDC_ADD_ID3V1, OPT_FLAG_ISSET(g_rmo.flags, OPT_ADD_ID3V1));
+	set_checkbox(hWnd, IDC_ADD_ID3V2, OPT_FLAG_ISSET(g_rmo.flags, OPT_ADD_ID3V2));
+	SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, g_rmo.output_directory);
+	set_checkbox(hWnd, IDC_KEEP_INCOMPLETE, OPT_FLAG_ISSET(g_rmo.flags, OPT_KEEP_INCOMPLETE));
+	set_checkbox(hWnd, IDC_RIP_INDIVIDUAL_CHECK, OPT_FLAG_ISSET(g_rmo.flags, OPT_INDIVIDUAL_TRACKS));
+	set_checkbox(hWnd, IDC_RIP_SINGLE_CHECK, OPT_FLAG_ISSET(g_rmo.flags, OPT_SINGLE_FILE_OUTPUT));
+	SetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, g_rmo.showfile_pattern);
+	SetDlgItemInt(hWnd, IDC_DROP_COUNT, g_rmo.dropcount, FALSE);
     }
 }
 
 void
-gui_set_pat_opts(HWND hWnd, STREAM_PREFS* rmo, BOOL from_gui)
+gui_set_pat_opts(HWND hWnd, BOOL from_gui)
 {
     /*
       - seperate dir
@@ -566,14 +563,14 @@ gui_set_pat_opts(HWND hWnd, STREAM_PREFS* rmo, BOOL from_gui)
       - rip single file filename
     */
     if (from_gui) {
-	GetDlgItemText(hWnd, IDC_PATTERN_EDIT, rmo->output_pattern, SR_MAX_PATH);
+	GetDlgItemText(hWnd, IDC_PATTERN_EDIT, g_rmo.output_pattern, SR_MAX_PATH);
     } else {
-	SetDlgItemText(hWnd, IDC_PATTERN_EDIT, rmo->output_pattern);
+	SetDlgItemText(hWnd, IDC_PATTERN_EDIT, g_rmo.output_pattern);
     }
 }
 
 void
-gui_set_splitting_opts(HWND hWnd, STREAM_PREFS* rmo, BOOL from_gui)
+gui_set_splitting_opts(HWND hWnd, BOOL from_gui)
 {
     /*
       - skew
@@ -584,37 +581,37 @@ gui_set_splitting_opts(HWND hWnd, STREAM_PREFS* rmo, BOOL from_gui)
       - padding_post
     */
     if (from_gui) {
-	rmo->sp_opt.xs_offset = GetDlgItemInt(hWnd, IDC_XS_OFFSET, FALSE, TRUE);
-	rmo->sp_opt.xs_silence_length = GetDlgItemInt(hWnd, IDC_XS_SILENCE_LENGTH, FALSE, FALSE);
-	rmo->sp_opt.xs_search_window_1 = GetDlgItemInt(hWnd, IDC_XS_SEARCH_WIN_PRE, FALSE, TRUE);
-	rmo->sp_opt.xs_search_window_2 = GetDlgItemInt(hWnd, IDC_XS_SEARCH_WIN_POST, FALSE, TRUE);
-	rmo->sp_opt.xs_padding_1 = GetDlgItemInt(hWnd, IDC_XS_PADDING_PRE, FALSE, TRUE);
-	rmo->sp_opt.xs_padding_2 = GetDlgItemInt(hWnd, IDC_XS_PADDING_POST, FALSE, TRUE);
+	g_rmo.sp_opt.xs_offset = GetDlgItemInt(hWnd, IDC_XS_OFFSET, FALSE, TRUE);
+	g_rmo.sp_opt.xs_silence_length = GetDlgItemInt(hWnd, IDC_XS_SILENCE_LENGTH, FALSE, FALSE);
+	g_rmo.sp_opt.xs_search_window_1 = GetDlgItemInt(hWnd, IDC_XS_SEARCH_WIN_PRE, FALSE, TRUE);
+	g_rmo.sp_opt.xs_search_window_2 = GetDlgItemInt(hWnd, IDC_XS_SEARCH_WIN_POST, FALSE, TRUE);
+	g_rmo.sp_opt.xs_padding_1 = GetDlgItemInt(hWnd, IDC_XS_PADDING_PRE, FALSE, TRUE);
+	g_rmo.sp_opt.xs_padding_2 = GetDlgItemInt(hWnd, IDC_XS_PADDING_POST, FALSE, TRUE);
     } else {
-	SetDlgItemInt(hWnd, IDC_XS_OFFSET, rmo->sp_opt.xs_offset, TRUE);
-	SetDlgItemInt(hWnd, IDC_XS_SILENCE_LENGTH, rmo->sp_opt.xs_silence_length, FALSE);
-	SetDlgItemInt(hWnd, IDC_XS_SEARCH_WIN_PRE, rmo->sp_opt.xs_search_window_1, TRUE);
-	SetDlgItemInt(hWnd, IDC_XS_SEARCH_WIN_POST, rmo->sp_opt.xs_search_window_2, TRUE);
-	SetDlgItemInt(hWnd, IDC_XS_PADDING_PRE, rmo->sp_opt.xs_padding_1, TRUE);
-	SetDlgItemInt(hWnd, IDC_XS_PADDING_POST, rmo->sp_opt.xs_padding_2, TRUE);
+	SetDlgItemInt(hWnd, IDC_XS_OFFSET, g_rmo.sp_opt.xs_offset, TRUE);
+	SetDlgItemInt(hWnd, IDC_XS_SILENCE_LENGTH, g_rmo.sp_opt.xs_silence_length, FALSE);
+	SetDlgItemInt(hWnd, IDC_XS_SEARCH_WIN_PRE, g_rmo.sp_opt.xs_search_window_1, TRUE);
+	SetDlgItemInt(hWnd, IDC_XS_SEARCH_WIN_POST, g_rmo.sp_opt.xs_search_window_2, TRUE);
+	SetDlgItemInt(hWnd, IDC_XS_PADDING_PRE, g_rmo.sp_opt.xs_padding_1, TRUE);
+	SetDlgItemInt(hWnd, IDC_XS_PADDING_POST, g_rmo.sp_opt.xs_padding_2, TRUE);
     }
 }
 
 void
-gui_set_external_opts (HWND hWnd, STREAM_PREFS* rmo, BOOL from_gui)
+gui_set_external_opts (HWND hWnd, BOOL from_gui)
 {
     /*
       - external check
       - external cmd
     */
     if (from_gui) {
-	set_from_checkbox(hWnd, IDC_EXTERNAL_COMMAND_CHECK, &rmo->flags, OPT_EXTERNAL_CMD);
-	GetDlgItemText(hWnd, IDC_EXTERNAL_COMMAND, rmo->ext_cmd, SR_MAX_PATH);
-	set_codesets_from_gui (hWnd, rmo);
+	set_from_checkbox(hWnd, IDC_EXTERNAL_COMMAND_CHECK, &g_rmo.flags, OPT_EXTERNAL_CMD);
+	GetDlgItemText(hWnd, IDC_EXTERNAL_COMMAND, g_rmo.ext_cmd, SR_MAX_PATH);
+	set_codesets_from_gui (hWnd);
     } else {
-	set_checkbox(hWnd, IDC_EXTERNAL_COMMAND_CHECK, OPT_FLAG_ISSET(rmo->flags, OPT_EXTERNAL_CMD));
-	SetDlgItemText(hWnd, IDC_EXTERNAL_COMMAND, rmo->ext_cmd);
-	set_gui_from_codesets (hWnd, rmo);
+	set_checkbox(hWnd, IDC_EXTERNAL_COMMAND_CHECK, OPT_FLAG_ISSET(g_rmo.flags, OPT_EXTERNAL_CMD));
+	SetDlgItemText(hWnd, IDC_EXTERNAL_COMMAND, g_rmo.ext_cmd);
+	set_gui_from_codesets (hWnd);
     }
 }
 
@@ -625,7 +622,7 @@ gui_set_external_opts (HWND hWnd, STREAM_PREFS* rmo, BOOL from_gui)
 /* confile == 5  -> external_dlg */
 LRESULT CALLBACK
 options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, 
-	     STREAM_PREFS* rmo, int confile)
+	     int confile)
 {
     int wmId, wmEvent;
 
@@ -634,25 +631,25 @@ options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam,
     case WM_INITDIALOG:
 	debug_printf ("options_dlg:WM_INITDIALOG (1)\n");
 	add_useragent_strings (hWnd);
-	add_codeset_strings (hWnd, rmo);
+	add_codeset_strings (hWnd, &g_rmo);
 	add_overwrite_complete_strings (hWnd);
 	debug_printf ("options_dlg:WM_INITDIALOG (2)\n");
 
 	switch (confile) {
 	case 1:
-	    gui_set_conn_opts(hWnd, rmo, FALSE);
+	    gui_set_conn_opts(hWnd, FALSE);
 	    break;
 	case 2:
-	    gui_set_file_opts(hWnd, rmo, FALSE);
+	    gui_set_file_opts(hWnd, FALSE);
 	    break;
 	case 3:
-	    gui_set_pat_opts(hWnd, rmo, FALSE);
+	    gui_set_pat_opts(hWnd, FALSE);
 	    break;
 	case 4:
-	    gui_set_splitting_opts(hWnd, rmo, FALSE);
+	    gui_set_splitting_opts(hWnd, FALSE);
 	    break;
 	case 5:
-	    gui_set_external_opts(hWnd, rmo, FALSE);
+	    gui_set_external_opts(hWnd, FALSE);
 	    break;
 	}
 	PropSheet_UnChanged(GetParent(hWnd), hWnd);
@@ -669,8 +666,8 @@ options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam,
 		char temp_dir[SR_MAX_PATH];
 		if (browse_for_folder(hWnd, "Select a folder", 0, temp_dir, SR_MAX_PATH))
 		{
-		    strncpy(rmo->output_directory, temp_dir, SR_MAX_PATH);
-		    SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, rmo->output_directory);
+		    strncpy(g_rmo.output_directory, temp_dir, SR_MAX_PATH);
+		    SetDlgItemText(hWnd, IDC_OUTPUT_DIRECTORY, g_rmo.output_directory);
 		}
 		return TRUE;
 	    }
@@ -679,8 +676,8 @@ options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam,
 		char temp_fn[SR_MAX_PATH];
 		if (browse_for_file(hWnd, "Select a file", 0, temp_fn, SR_MAX_PATH))
 		{
-		    strncpy(rmo->showfile_pattern, temp_fn, SR_MAX_PATH);
-		    SetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, rmo->showfile_pattern);
+		    strncpy(g_rmo.showfile_pattern, temp_fn, SR_MAX_PATH);
+		    SetDlgItemText(hWnd, IDC_RIP_SINGLE_EDIT, g_rmo.showfile_pattern);
 		}
 		return TRUE;
 	    }
@@ -739,19 +736,19 @@ options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam,
 	    case PSN_APPLY:
 		switch (confile) {
 		case 1:
-		    gui_set_conn_opts (hWnd, rmo, TRUE);
+		    gui_set_conn_opts (hWnd, TRUE);
 		    break;
 		case 2:
-		    gui_set_file_opts (hWnd, rmo, TRUE);
+		    gui_set_file_opts (hWnd, TRUE);
 		    break;
 		case 3:
-		    gui_set_pat_opts (hWnd, rmo, TRUE);
+		    gui_set_pat_opts (hWnd, TRUE);
 		    break;
 		case 4:
-		    gui_set_splitting_opts (hWnd, rmo, TRUE);
+		    gui_set_splitting_opts (hWnd, TRUE);
 		    break;
 		case 5:
-		    gui_set_external_opts (hWnd, rmo, TRUE);
+		    gui_set_external_opts (hWnd, TRUE);
 		    break;
 		}
 	    }
@@ -768,37 +765,36 @@ options_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam,
 LRESULT CALLBACK
 con_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    STREAM_PREFS* rmo = &g_rmo;
     debug_printf ("Calling options_dlg(1)\n");
-    return options_dlg(hWnd, message, wParam, lParam, rmo, 1);
+    return options_dlg(hWnd, message, wParam, lParam, 1);
 }
 LRESULT CALLBACK
 file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     STREAM_PREFS* rmo = &g_rmo;
     debug_printf ("Calling options_dlg(2)\n");
-    return options_dlg(hWnd, message, wParam, lParam, rmo, 2);
+    return options_dlg(hWnd, message, wParam, lParam, 2);
 }
 LRESULT CALLBACK
 pat_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     STREAM_PREFS* rmo = &g_rmo;
     debug_printf ("Calling options_dlg(3)\n");
-    return options_dlg(hWnd, message, wParam, lParam, rmo, 3);
+    return options_dlg(hWnd, message, wParam, lParam, 3);
 }
 LRESULT CALLBACK
 splitting_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     STREAM_PREFS* rmo = &g_rmo;
     debug_printf ("Calling options_dlg(4)\n");
-    return options_dlg(hWnd, message, wParam, lParam, rmo, 4);
+    return options_dlg(hWnd, message, wParam, lParam, 4);
 }
 LRESULT CALLBACK
 external_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     STREAM_PREFS* rmo = &g_rmo;
     debug_printf ("Calling options_dlg(5)\n");
-    return options_dlg(hWnd, message, wParam, lParam, rmo, 5);
+    return options_dlg(hWnd, message, wParam, lParam, 5);
 }
 
 BOOL
@@ -814,7 +810,7 @@ populate_skin_list (HWND dlg)
 	assert(m_pskin_list[i]);
 	debug_printf ("pop_skin_list: %d = %s\n", i, m_pskin_list[i]);
 	SendMessage (hlist, LB_ADDSTRING, 0, (LPARAM)m_pskin_list[i]);
-	if (strcmp(m_pskin_list[i], m_guiOpt->default_skin) == 0)
+	if (strcmp(m_pskin_list[i], g_gui_prefs.default_skin) == 0)
 	    m_curskin = i;
     }
     SendMessage(hlist, LB_SETCURSEL, (WPARAM)m_curskin, 0);
@@ -900,7 +896,7 @@ skin_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 BOOL
-options_load (STREAM_PREFS *rmo, GUI_OPTIONS *guiOpt)
+options_load ()
 {
     int i, p;
     char desktop_path[MAX_INI_LINE_LEN];
@@ -930,28 +926,28 @@ options_load (STREAM_PREFS *rmo, GUI_OPTIONS *guiOpt)
     strcat (filename, "Plugins\\sripper.ini");
     debug_printf ("Loading filename is %s\n", filename);
 
-    GetPrivateProfileString(APPNAME, "url", "", rmo->url, MAX_INI_LINE_LEN, filename);
-    GetPrivateProfileString(APPNAME, "proxy", "", rmo->proxyurl, MAX_INI_LINE_LEN, filename);
-    GetPrivateProfileString(APPNAME, "output_dir", desktop_path, rmo->output_directory, MAX_INI_LINE_LEN, filename);
-    if (rmo->output_directory[0] == 0) {
-	strcpy (rmo->output_directory, desktop_path);
+    GetPrivateProfileString(APPNAME, "url", "", g_rmo.url, MAX_INI_LINE_LEN, filename);
+    GetPrivateProfileString(APPNAME, "proxy", "", g_rmo.proxyurl, MAX_INI_LINE_LEN, filename);
+    GetPrivateProfileString(APPNAME, "output_dir", desktop_path, g_rmo.output_directory, MAX_INI_LINE_LEN, filename);
+    if (g_rmo.output_directory[0] == 0) {
+	strcpy (g_rmo.output_directory, desktop_path);
     }
-    GetPrivateProfileString(APPNAME, "localhost", "localhost", guiOpt->localhost, MAX_INI_LINE_LEN, filename);
-    if (!guiOpt->localhost[0]) {
-	strcpy (guiOpt->localhost, "localhost");
+    GetPrivateProfileString(APPNAME, "localhost", "localhost", g_gui_prefs.localhost, MAX_INI_LINE_LEN, filename);
+    if (!g_gui_prefs.localhost[0]) {
+	strcpy (g_gui_prefs.localhost, "localhost");
     }
-    GetPrivateProfileString(APPNAME, "useragent", DEFAULT_USERAGENT, rmo->useragent, MAX_INI_LINE_LEN, filename);
-    GetPrivateProfileString(APPNAME, "default_skin", DEFAULT_SKINFILE, guiOpt->default_skin, MAX_INI_LINE_LEN, filename);
-    if (!guiOpt->default_skin[0]) {
-        strcpy(guiOpt->default_skin, DEFAULT_SKINFILE);
+    GetPrivateProfileString(APPNAME, "useragent", DEFAULT_USERAGENT, g_rmo.useragent, MAX_INI_LINE_LEN, filename);
+    GetPrivateProfileString(APPNAME, "default_skin", DEFAULT_SKINFILE, g_gui_prefs.default_skin, MAX_INI_LINE_LEN, filename);
+    if (!g_gui_prefs.default_skin[0]) {
+        strcpy(g_gui_prefs.default_skin, DEFAULT_SKINFILE);
     }
-    GetPrivateProfileString(APPNAME, "rip_single_path", "", rmo->showfile_pattern, MAX_INI_LINE_LEN, filename);
-    GetPrivateProfileString(APPNAME, "output_pattern", "%S/%A - %T", rmo->output_pattern, MAX_INI_LINE_LEN, filename);
+    GetPrivateProfileString(APPNAME, "rip_single_path", "", g_rmo.showfile_pattern, MAX_INI_LINE_LEN, filename);
+    GetPrivateProfileString(APPNAME, "output_pattern", "%S/%A - %T", g_rmo.output_pattern, MAX_INI_LINE_LEN, filename);
     GetPrivateProfileString(APPNAME, "over_write_complete", "larger", overwrite_string, MAX_INI_LINE_LEN, filename);
     debug_printf ("Got PPS: %s\n", overwrite_string);
 
-    rmo->relay_port = GetPrivateProfileInt(APPNAME, "relay_port", DEFAULT_RELAY_PORT, filename);
-    rmo->max_port = rmo->relay_port+1000;
+    g_rmo.relay_port = GetPrivateProfileInt(APPNAME, "relay_port", DEFAULT_RELAY_PORT, filename);
+    g_rmo.max_port = g_rmo.relay_port+1000;
     auto_reconnect = GetPrivateProfileInt(APPNAME, "auto_reconnect", TRUE, filename);
     make_relay = GetPrivateProfileInt(APPNAME, "make_relay", FALSE, filename);
     debug_printf ("GetPrivateProfileInt (make_relay) =? %d\n",
@@ -960,88 +956,88 @@ options_load (STREAM_PREFS *rmo, GUI_OPTIONS *guiOpt)
     add_id3v1 = GetPrivateProfileInt(APPNAME, "add_id3v1", TRUE, filename);
     add_id3v2 = GetPrivateProfileInt(APPNAME, "add_id3v2", TRUE, filename);
     check_max_btyes = GetPrivateProfileInt(APPNAME, "check_max_bytes", FALSE, filename);
-    rmo->maxMB_rip_size = GetPrivateProfileInt(APPNAME, "maxMB_bytes", 0, filename);
+    g_rmo.maxMB_rip_size = GetPrivateProfileInt(APPNAME, "maxMB_bytes", 0, filename);
     keep_incomplete = GetPrivateProfileInt(APPNAME, "keep_incomplete", TRUE, filename);
     rip_individual_tracks = GetPrivateProfileInt(APPNAME, "rip_individual_tracks", TRUE, filename);
     rip_single_file = GetPrivateProfileInt(APPNAME, "rip_single_file", FALSE, filename);
-    rmo->dropcount = GetPrivateProfileInt(APPNAME, "dropcount", FALSE, filename);
+    g_rmo.dropcount = GetPrivateProfileInt(APPNAME, "dropcount", FALSE, filename);
 
-    rmo->sp_opt.xs_offset = GetPrivateProfileInt(APPNAME, "xs_offset", 
-	rmo->sp_opt.xs_offset, filename);
-    rmo->sp_opt.xs_silence_length = GetPrivateProfileInt(APPNAME, "xs_silence_length", 
-	rmo->sp_opt.xs_silence_length, filename);
-    rmo->sp_opt.xs_search_window_1 = GetPrivateProfileInt(APPNAME, "xs_search_window_1", 
-	rmo->sp_opt.xs_search_window_1, filename);
-    rmo->sp_opt.xs_search_window_2 = GetPrivateProfileInt(APPNAME, "xs_search_window_2", 
-	rmo->sp_opt.xs_search_window_2, filename);
-    rmo->sp_opt.xs_padding_1 = GetPrivateProfileInt(APPNAME, "xs_padding_1", 
-	rmo->sp_opt.xs_padding_1, filename);
-    rmo->sp_opt.xs_padding_2 = GetPrivateProfileInt(APPNAME, "xs_padding_2", 
-	rmo->sp_opt.xs_padding_2, filename);
+    g_rmo.sp_opt.xs_offset = GetPrivateProfileInt(APPNAME, "xs_offset", 
+	g_rmo.sp_opt.xs_offset, filename);
+    g_rmo.sp_opt.xs_silence_length = GetPrivateProfileInt(APPNAME, "xs_silence_length", 
+	g_rmo.sp_opt.xs_silence_length, filename);
+    g_rmo.sp_opt.xs_search_window_1 = GetPrivateProfileInt(APPNAME, "xs_search_window_1", 
+	g_rmo.sp_opt.xs_search_window_1, filename);
+    g_rmo.sp_opt.xs_search_window_2 = GetPrivateProfileInt(APPNAME, "xs_search_window_2", 
+	g_rmo.sp_opt.xs_search_window_2, filename);
+    g_rmo.sp_opt.xs_padding_1 = GetPrivateProfileInt(APPNAME, "xs_padding_1", 
+	g_rmo.sp_opt.xs_padding_1, filename);
+    g_rmo.sp_opt.xs_padding_2 = GetPrivateProfileInt(APPNAME, "xs_padding_2", 
+	g_rmo.sp_opt.xs_padding_2, filename);
 
     use_ext_cmd = GetPrivateProfileInt(APPNAME, "use_ext_cmd", FALSE, filename);
-    GetPrivateProfileString(APPNAME, "ext_cmd", "", rmo->ext_cmd, MAX_INI_LINE_LEN, filename);
+    GetPrivateProfileString(APPNAME, "ext_cmd", "", g_rmo.ext_cmd, MAX_INI_LINE_LEN, filename);
 
-    guiOpt->m_add_finshed_tracks_to_playlist = GetPrivateProfileInt(APPNAME, "add_tracks_to_playlist", FALSE, filename);
-    guiOpt->m_start_minimized = GetPrivateProfileInt(APPNAME, "start_minimized", FALSE, filename);
-    guiOpt->oldpos.x = GetPrivateProfileInt(APPNAME, "window_x", 0, filename);
-    guiOpt->oldpos.y = GetPrivateProfileInt(APPNAME, "window_y", 0, filename);
-    guiOpt->m_enabled = GetPrivateProfileInt(APPNAME, "enabled", 1, filename);
-    guiOpt->use_old_playlist_ret = GetPrivateProfileInt(APPNAME, "use_old_playlist_ret", 0, filename);
+    g_gui_prefs.m_add_finished_tracks_to_playlist = GetPrivateProfileInt(APPNAME, "add_tracks_to_playlist", FALSE, filename);
+    g_gui_prefs.m_start_minimized = GetPrivateProfileInt(APPNAME, "start_minimized", FALSE, filename);
+    g_gui_prefs.oldpos_x = GetPrivateProfileInt(APPNAME, "window_x", 0, filename);
+    g_gui_prefs.oldpos_y = GetPrivateProfileInt(APPNAME, "window_y", 0, filename);
+    g_gui_prefs.m_enabled = GetPrivateProfileInt(APPNAME, "enabled", 1, filename);
+    g_gui_prefs.use_old_playlist_ret = GetPrivateProfileInt(APPNAME, "use_old_playlist_ret", 0, filename);
 
-    if (guiOpt->oldpos.x < 0 || guiOpt->oldpos.y < 0)
-	guiOpt->oldpos.x = guiOpt->oldpos.y = 0;
+    if (g_gui_prefs.oldpos_x < 0 || g_gui_prefs.oldpos_y < 0)
+	g_gui_prefs.oldpos_x = g_gui_prefs.oldpos_y = 0;
 
-    rmo->overwrite = string_to_overwrite_opt (overwrite_string);
+    g_rmo.overwrite = string_to_overwrite_opt (overwrite_string);
 
-    rmo->flags = 0;
-    rmo->flags |= OPT_SEARCH_PORTS;	// not having this caused a bad bug, must remember this.
-    if (auto_reconnect) rmo->flags |= OPT_AUTO_RECONNECT;
-    if (make_relay) rmo->flags |= OPT_MAKE_RELAY;
-    if (add_id3_sr161) rmo->flags |= OPT_ADD_ID3V1;
-    if (add_id3_sr161) rmo->flags |= OPT_ADD_ID3V2;
-    if (add_id3v1) rmo->flags |= OPT_ADD_ID3V1;
-    if (add_id3v2) rmo->flags |= OPT_ADD_ID3V2;
-    if (check_max_btyes) rmo->flags |= OPT_CHECK_MAX_BYTES;
-    if (keep_incomplete) rmo->flags |= OPT_KEEP_INCOMPLETE;
-    if (rip_individual_tracks) rmo->flags |= OPT_INDIVIDUAL_TRACKS;
-    if (rip_single_file) rmo->flags |= OPT_SINGLE_FILE_OUTPUT;
-    if (use_ext_cmd) rmo->flags |= OPT_EXTERNAL_CMD;
+    g_rmo.flags = 0;
+    g_rmo.flags |= OPT_SEARCH_PORTS;	// not having this caused a bad bug, must remember this.
+    if (auto_reconnect) g_rmo.flags |= OPT_AUTO_RECONNECT;
+    if (make_relay) g_rmo.flags |= OPT_MAKE_RELAY;
+    if (add_id3_sr161) g_rmo.flags |= OPT_ADD_ID3V1;
+    if (add_id3_sr161) g_rmo.flags |= OPT_ADD_ID3V2;
+    if (add_id3v1) g_rmo.flags |= OPT_ADD_ID3V1;
+    if (add_id3v2) g_rmo.flags |= OPT_ADD_ID3V2;
+    if (check_max_btyes) g_rmo.flags |= OPT_CHECK_MAX_BYTES;
+    if (keep_incomplete) g_rmo.flags |= OPT_KEEP_INCOMPLETE;
+    if (rip_individual_tracks) g_rmo.flags |= OPT_INDIVIDUAL_TRACKS;
+    if (rip_single_file) g_rmo.flags |= OPT_SINGLE_FILE_OUTPUT;
+    if (use_ext_cmd) g_rmo.flags |= OPT_EXTERNAL_CMD;
 
-    debug_printf ("loading: flags = 0x%04x\n", rmo->flags);
-    debug_printf ("make_relay = %d\n", OPT_FLAG_ISSET (rmo->flags, OPT_MAKE_RELAY));
-    debug_printf ("id3v1 flag = %d\n", OPT_FLAG_ISSET (rmo->flags, OPT_ADD_ID3V1));
-    debug_printf ("id3v2 flag = %d\n", OPT_FLAG_ISSET (rmo->flags, OPT_ADD_ID3V2));
+    debug_printf ("loading: flags = 0x%04x\n", g_rmo.flags);
+    debug_printf ("make_relay = %d\n", OPT_FLAG_ISSET (g_rmo.flags, OPT_MAKE_RELAY));
+    debug_printf ("id3v1 flag = %d\n", OPT_FLAG_ISSET (g_rmo.flags, OPT_ADD_ID3V1));
+    debug_printf ("id3v2 flag = %d\n", OPT_FLAG_ISSET (g_rmo.flags, OPT_ADD_ID3V2));
 
     /* Note, there is no way to change the rules file location (for now) */
-    if (!winamp_get_path(rmo->rules_file)) {
+    if (!winamp_get_path(g_rmo.rules_file)) {
 	debug_printf ("winamp_get_path failed #3\n");
 	return FALSE;
     }
-    strcat (rmo->rules_file, "Plugins\\parse_rules.txt");
-    debug_printf ("RULES: %s\n", rmo->rules_file);
+    strcat (g_rmo.rules_file, "Plugins\\parse_rules.txt");
+    debug_printf ("RULES: %s\n", g_rmo.rules_file);
 
     /* Get history */
     for (i = 0, p = 0; i < RIPLIST_LEN; i++) {
 	char profile_name[128];
 	sprintf (profile_name, "riplist%d", i);
-	GetPrivateProfileString (APPNAME, profile_name, "", guiOpt->riplist[p], MAX_INI_LINE_LEN, filename);
-	if (guiOpt->riplist[p][0]) {
+	GetPrivateProfileString (APPNAME, profile_name, "", g_gui_prefs.riplist[p], MAX_INI_LINE_LEN, filename);
+	if (g_gui_prefs.riplist[p][0]) {
 	    p++;
 	}
     }
 
     /* Get codesets */
-    GetPrivateProfileString (APPNAME, "codeset_metadata", rmo->cs_opt.codeset_locale, rmo->cs_opt.codeset_metadata, MAX_CODESET_STRING, filename);
-    GetPrivateProfileString (APPNAME, "codeset_relay", rmo->cs_opt.codeset_locale, rmo->cs_opt.codeset_relay, MAX_CODESET_STRING, filename);
-    GetPrivateProfileString (APPNAME, "codeset_id3", rmo->cs_opt.codeset_locale, rmo->cs_opt.codeset_id3, MAX_CODESET_STRING, filename);
-    GetPrivateProfileString (APPNAME, "codeset_filesys", rmo->cs_opt.codeset_locale, rmo->cs_opt.codeset_filesys, MAX_CODESET_STRING, filename);
+    GetPrivateProfileString (APPNAME, "codeset_metadata", g_rmo.cs_opt.codeset_locale, g_rmo.cs_opt.codeset_metadata, MAX_CODESET_STRING, filename);
+    GetPrivateProfileString (APPNAME, "codeset_relay", g_rmo.cs_opt.codeset_locale, g_rmo.cs_opt.codeset_relay, MAX_CODESET_STRING, filename);
+    GetPrivateProfileString (APPNAME, "codeset_id3", g_rmo.cs_opt.codeset_locale, g_rmo.cs_opt.codeset_id3, MAX_CODESET_STRING, filename);
+    GetPrivateProfileString (APPNAME, "codeset_filesys", g_rmo.cs_opt.codeset_locale, g_rmo.cs_opt.codeset_filesys, MAX_CODESET_STRING, filename);
 
     return TRUE;
 }
 
 BOOL
-options_save (STREAM_PREFS *rmo, GUI_OPTIONS *guiOpt)
+options_save ()
 {
     int i, p;
     char filename[MAX_INI_LINE_LEN];
@@ -1058,69 +1054,69 @@ options_save (STREAM_PREFS *rmo, GUI_OPTIONS *guiOpt)
     debug_printf ("Saving filename is %s\n", filename);
 
     fprintf(fp, "[%s]\n", APPNAME);
-    fprintf(fp, "url=%s\n", rmo->url);
-    fprintf(fp, "proxy=%s\n", rmo->proxyurl);
-    fprintf(fp, "output_dir=%s\n", rmo->output_directory);
-    fprintf(fp, "localhost=%s\n", guiOpt->localhost);
-    fprintf(fp, "useragent=%s\n", rmo->useragent);
+    fprintf(fp, "url=%s\n", g_rmo.url);
+    fprintf(fp, "proxy=%s\n", g_rmo.proxyurl);
+    fprintf(fp, "output_dir=%s\n", g_rmo.output_directory);
+    fprintf(fp, "localhost=%s\n", g_gui_prefs.localhost);
+    fprintf(fp, "useragent=%s\n", g_rmo.useragent);
 #if defined (commentout)
-    fprintf(fp, "seperate_dirs=%d\n", OPT_FLAG_ISSET(rmo->flags, OPT_SEPERATE_DIRS));
+    fprintf(fp, "seperate_dirs=%d\n", OPT_FLAG_ISSET(g_rmo.flags, OPT_SEPERATE_DIRS));
 #endif
-    fprintf(fp, "relay_port=%d\n", rmo->relay_port);
-    fprintf(fp, "auto_reconnect=%d\n", OPT_FLAG_ISSET(rmo->flags, OPT_AUTO_RECONNECT));
-    fprintf(fp, "over_write_complete=%s\n", overwrite_opt_to_string (rmo->overwrite));
-    fprintf(fp, "make_relay=%d\n", OPT_FLAG_ISSET(rmo->flags, OPT_MAKE_RELAY));
+    fprintf(fp, "relay_port=%d\n", g_rmo.relay_port);
+    fprintf(fp, "auto_reconnect=%d\n", OPT_FLAG_ISSET(g_rmo.flags, OPT_AUTO_RECONNECT));
+    fprintf(fp, "over_write_complete=%s\n", overwrite_opt_to_string (g_rmo.overwrite));
+    fprintf(fp, "make_relay=%d\n", OPT_FLAG_ISSET(g_rmo.flags, OPT_MAKE_RELAY));
 #if defined (commentout)
-    fprintf(fp, "count_files=%d\n", OPT_FLAG_ISSET(rmo->flags, OPT_COUNT_FILES));
-    fprintf(fp, "date_stamp=%d\n", OPT_FLAG_ISSET(rmo->flags, OPT_DATE_STAMP));
+    fprintf(fp, "count_files=%d\n", OPT_FLAG_ISSET(g_rmo.flags, OPT_COUNT_FILES));
+    fprintf(fp, "date_stamp=%d\n", OPT_FLAG_ISSET(g_rmo.flags, OPT_DATE_STAMP));
 #endif
-    fprintf(fp, "add_id3v1=%d\n", OPT_FLAG_ISSET(rmo->flags, OPT_ADD_ID3V1));
-    fprintf(fp, "add_id3v2=%d\n", OPT_FLAG_ISSET(rmo->flags, OPT_ADD_ID3V2));
-    fprintf(fp, "check_max_bytes=%d\n", OPT_FLAG_ISSET(rmo->flags, OPT_CHECK_MAX_BYTES));
-    fprintf(fp, "maxMB_bytes=%d\n", rmo->maxMB_rip_size);
-    fprintf(fp, "keep_incomplete=%d\n", OPT_FLAG_ISSET(rmo->flags, OPT_KEEP_INCOMPLETE));
-    fprintf(fp, "rip_individual_tracks=%d\n", OPT_FLAG_ISSET(rmo->flags, OPT_INDIVIDUAL_TRACKS));
-    fprintf(fp, "rip_single_file=%d\n", OPT_FLAG_ISSET(rmo->flags, OPT_SINGLE_FILE_OUTPUT));
-    fprintf(fp, "rip_single_path=%s\n", rmo->showfile_pattern);
-    fprintf(fp, "dropcount=%d\n", rmo->dropcount);
+    fprintf(fp, "add_id3v1=%d\n", OPT_FLAG_ISSET(g_rmo.flags, OPT_ADD_ID3V1));
+    fprintf(fp, "add_id3v2=%d\n", OPT_FLAG_ISSET(g_rmo.flags, OPT_ADD_ID3V2));
+    fprintf(fp, "check_max_bytes=%d\n", OPT_FLAG_ISSET(g_rmo.flags, OPT_CHECK_MAX_BYTES));
+    fprintf(fp, "maxMB_bytes=%d\n", g_rmo.maxMB_rip_size);
+    fprintf(fp, "keep_incomplete=%d\n", OPT_FLAG_ISSET(g_rmo.flags, OPT_KEEP_INCOMPLETE));
+    fprintf(fp, "rip_individual_tracks=%d\n", OPT_FLAG_ISSET(g_rmo.flags, OPT_INDIVIDUAL_TRACKS));
+    fprintf(fp, "rip_single_file=%d\n", OPT_FLAG_ISSET(g_rmo.flags, OPT_SINGLE_FILE_OUTPUT));
+    fprintf(fp, "rip_single_path=%s\n", g_rmo.showfile_pattern);
+    fprintf(fp, "dropcount=%d\n", g_rmo.dropcount);
 
-    debug_printf ("saving: flags = 0x%04x\n", rmo->flags);
-    debug_printf ("make_relay = %d\n", OPT_FLAG_ISSET (rmo->flags, OPT_MAKE_RELAY));
-    debug_printf ("id3v1 flag = %d\n", OPT_FLAG_ISSET (rmo->flags, OPT_ADD_ID3V1));
-    debug_printf ("id3v2 flag = %d\n", OPT_FLAG_ISSET (rmo->flags, OPT_ADD_ID3V2));
+    debug_printf ("saving: flags = 0x%04x\n", g_rmo.flags);
+    debug_printf ("make_relay = %d\n", OPT_FLAG_ISSET (g_rmo.flags, OPT_MAKE_RELAY));
+    debug_printf ("id3v1 flag = %d\n", OPT_FLAG_ISSET (g_rmo.flags, OPT_ADD_ID3V1));
+    debug_printf ("id3v2 flag = %d\n", OPT_FLAG_ISSET (g_rmo.flags, OPT_ADD_ID3V2));
 
-    fprintf(fp, "output_pattern=%s\n", rmo->output_pattern);
+    fprintf(fp, "output_pattern=%s\n", g_rmo.output_pattern);
 
-    fprintf(fp, "xs_offset=%d\n", rmo->sp_opt.xs_offset);
-    fprintf(fp, "xs_silence_length=%d\n", rmo->sp_opt.xs_silence_length);
-    fprintf(fp, "xs_search_window_1=%d\n", rmo->sp_opt.xs_search_window_1);
-    fprintf(fp, "xs_search_window_2=%d\n", rmo->sp_opt.xs_search_window_2);
-    fprintf(fp, "xs_padding_1=%d\n", rmo->sp_opt.xs_padding_1);
-    fprintf(fp, "xs_padding_2=%d\n", rmo->sp_opt.xs_padding_2);
+    fprintf(fp, "xs_offset=%d\n", g_rmo.sp_opt.xs_offset);
+    fprintf(fp, "xs_silence_length=%d\n", g_rmo.sp_opt.xs_silence_length);
+    fprintf(fp, "xs_search_window_1=%d\n", g_rmo.sp_opt.xs_search_window_1);
+    fprintf(fp, "xs_search_window_2=%d\n", g_rmo.sp_opt.xs_search_window_2);
+    fprintf(fp, "xs_padding_1=%d\n", g_rmo.sp_opt.xs_padding_1);
+    fprintf(fp, "xs_padding_2=%d\n", g_rmo.sp_opt.xs_padding_2);
 
-    fprintf(fp, "use_ext_cmd=%d\n", OPT_FLAG_ISSET(rmo->flags, OPT_EXTERNAL_CMD));
-    fprintf(fp, "ext_cmd=%s\n", rmo->ext_cmd);
+    fprintf(fp, "use_ext_cmd=%d\n", OPT_FLAG_ISSET(g_rmo.flags, OPT_EXTERNAL_CMD));
+    fprintf(fp, "ext_cmd=%s\n", g_rmo.ext_cmd);
 
-    fprintf(fp, "add_tracks_to_playlist=%d\n", guiOpt->m_add_finshed_tracks_to_playlist);
-    fprintf(fp, "start_minimized=%d\n", guiOpt->m_start_minimized);
-    fprintf(fp, "window_x=%d\n", guiOpt->oldpos.x);
-    fprintf(fp, "window_y=%d\n", guiOpt->oldpos.y);
-    fprintf(fp, "enabled=%d\n", guiOpt->m_enabled);
-    fprintf(fp, "default_skin=%s\n", guiOpt->default_skin);
-    fprintf(fp, "use_old_playlist_ret=%d\n", guiOpt->use_old_playlist_ret);
+    fprintf(fp, "add_tracks_to_playlist=%d\n", g_gui_prefs.m_add_finished_tracks_to_playlist);
+    fprintf(fp, "start_minimized=%d\n", g_gui_prefs.m_start_minimized);
+    fprintf(fp, "window_x=%d\n", g_gui_prefs.oldpos_x);
+    fprintf(fp, "window_y=%d\n", g_gui_prefs.oldpos_y);
+    fprintf(fp, "enabled=%d\n", g_gui_prefs.m_enabled);
+    fprintf(fp, "default_skin=%s\n", g_gui_prefs.default_skin);
+    fprintf(fp, "use_old_playlist_ret=%d\n", g_gui_prefs.use_old_playlist_ret);
 
     /* Save history */
     for (i = 0, p = 0; i < RIPLIST_LEN; i++) {
-	if (guiOpt->riplist[i][0]) {
-	    fprintf (fp, "riplist%d=%s\n", p, guiOpt->riplist[i]);
+	if (g_gui_prefs.riplist[i][0]) {
+	    fprintf (fp, "riplist%d=%s\n", p, g_gui_prefs.riplist[i]);
 	    p++;
 	}
     }
 
-    fprintf (fp, "codeset_metadata=%s\n", rmo->cs_opt.codeset_metadata);
-    fprintf (fp, "codeset_relay=%s\n", rmo->cs_opt.codeset_relay);
-    fprintf (fp, "codeset_id3=%s\n", rmo->cs_opt.codeset_id3);
-    fprintf (fp, "codeset_filesys=%s\n", rmo->cs_opt.codeset_filesys);
+    fprintf (fp, "codeset_metadata=%s\n", g_rmo.cs_opt.codeset_metadata);
+    fprintf (fp, "codeset_relay=%s\n", g_rmo.cs_opt.codeset_relay);
+    fprintf (fp, "codeset_id3=%s\n", g_rmo.cs_opt.codeset_id3);
+    fprintf (fp, "codeset_filesys=%s\n", g_rmo.cs_opt.codeset_filesys);
 
     fclose(fp);
 

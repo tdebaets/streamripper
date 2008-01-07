@@ -162,6 +162,10 @@ SOURCE=.\wa_msgids.h
 
 SOURCE=.\winamp_exe.h
 # End Source File
+# Begin Source File
+
+SOURCE=.\wstreamripper.h
+# End Source File
 # End Group
 # Begin Group "Resource Files"
 

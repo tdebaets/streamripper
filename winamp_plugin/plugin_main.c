@@ -54,11 +54,14 @@ static void insert_riplist (char* url, int pos);
 static void launch_pipe_threads (void);
 static void handle_wm_app (HWND hwnd, WPARAM wParam, LPARAM lParam);
 
-STREAM_PREFS	g_rmo;
-HWND            g_winamp_hwnd;
+/* True globals */
+int			g_running_standalone;
+STREAM_PREFS		g_rmo;
+HWND			g_winamp_hwnd;
+WSTREAMRIPPER_PREFS	g_gui_prefs;
 
 static HINSTANCE                m_hinstance;
-static GUI_OPTIONS		m_guiOpt;
+//static GUI_OPTIONS		m_guiOpt;
 //static RIP_MANAGER_INFO		m_rmiInfo;
 static RIP_MANAGER_INFO		*m_rmi = 0;
 static HWND			m_hwnd;
@@ -111,25 +114,20 @@ init ()
 #endif
     winamp_init (m_hinstance);
 
-#if defined (commentout)
-    prefs_load ();
-    prefs_get_stream_prefs (prefs, prefs->url);
-    prefs_save ();
-    set_rip_manager_options_defaults (&g_rmo);
-    options_load (&g_rmo, &m_guiOpt);
-#endif
-    options_load (&g_rmo, &m_guiOpt);
+    //options_load (&g_rmo, &m_guiOpt);
 
     prefs_load ();
     prefs_get_stream_prefs (&g_rmo, "");
+    prefs_get_wstreamripper_prefs (&g_gui_prefs);
     prefs_save ();
-    m_guiOpt.m_enabled = 1;
 
-    debug_printf ("Checking if enabled.\n");
-    if (!m_guiOpt.m_enabled)
-	return 0;
+    /* GCS FIX */
+    //m_guiOpt.m_enabled = 1;
+    //debug_printf ("Checking if enabled.\n");
+    //if (!m_guiOpt.m_enabled)
+    //	return 0;
+    //debug_printf ("Was enabled.\n");
 
-    debug_printf ("Was enabled.\n");
     memset (&wc,0,sizeof(wc));
     wc.lpfnWndProc = WndProc;			// our window procedure
 #if defined (commentout)
@@ -157,7 +155,7 @@ init ()
 			   g_plugin.hwndParent, NULL, g_plugin.hDllInstance, NULL);
 #endif
     m_hwnd = CreateWindow (m_szWindowClass, "Streamripper Plugin", WS_POPUP,
-			   m_guiOpt.oldpos.x, m_guiOpt.oldpos.y, WINDOW_WIDTH, WINDOW_HEIGHT, 
+			   g_gui_prefs.oldpos_x, g_gui_prefs.oldpos_y, WINDOW_WIDTH, WINDOW_HEIGHT, 
 			   NULL, NULL, m_hinstance, NULL);
 
     // Create a systray icon
@@ -185,7 +183,7 @@ init ()
     // Populate main popup menu
     populate_history_popup ();
 
-    if (!m_guiOpt.m_start_minimized)
+    if (!g_gui_prefs.m_start_minimized)
 	dock_show_window(m_hwnd, SW_SHOWNORMAL);
     else
 	dock_show_window(m_hwnd, SW_HIDE);
@@ -197,11 +195,13 @@ void
 quit()
 {
     debug_printf ("Quitting.\n");
-    options_save (&g_rmo, &m_guiOpt);
+
+    prefs_set_stream_prefs (&g_rmo, "stream defaults");
+    prefs_set_wstreamripper_prefs (&g_gui_prefs);
+    prefs_save ();
+
     if (m_bRipping)
 	rip_manager_stop (m_rmi);
-
-    // dock_unhook_winamp();
 
     debug_printf ("Going to render_destroy()...\n");
     render_destroy();
@@ -261,7 +261,7 @@ BOOL
 url_is_relay (char* url)
 {
     char relay_url[SR_MAX_PATH];
-    compose_relay_url (relay_url, m_guiOpt.localhost, 
+    compose_relay_url (relay_url, g_gui_prefs.localhost, 
 			g_rmo.relay_port, 
 			rip_manager_get_content_type());
     debug_printf ("Comparing %s vs rly %s\n", url, relay_url);
@@ -448,7 +448,7 @@ rip_callback (RIP_MANAGER_INFO* rmi, int message, void *data)
 
 	break;
     case RM_TRACK_DONE:
-	if (m_guiOpt.m_add_finshed_tracks_to_playlist)
+	if (g_gui_prefs.m_add_finished_tracks_to_playlist)
 	    winamp_add_track_to_playlist((char*)data);
 	break;
     case RM_NEW_TRACK:
@@ -514,10 +514,7 @@ options_button_pressed()
     debug_printf ("Options button pressed\n");
 
     m_doing_options_dialog = TRUE;
-#if defined (commentout)
-    options_dialog_show (g_plugin.hDllInstance, m_hwnd, &g_rmo, &m_guiOpt);
-#endif
-    options_dialog_show (m_hinstance, m_hwnd, &g_rmo, &m_guiOpt);
+    options_dialog_show (m_hinstance, m_hwnd);
 
     render_set_button_enabled (m_relaybut, OPT_FLAG_ISSET(g_rmo.flags, OPT_MAKE_RELAY)); 			
     m_doing_options_dialog = FALSE;
@@ -527,13 +524,13 @@ void
 close_button_pressed()
 {
     dock_show_window(m_hwnd, SW_HIDE);
-    m_guiOpt.m_start_minimized = TRUE;
+    g_gui_prefs.m_start_minimized = TRUE;
 }
 
 void
 relay_pressed()
 {
-    winamp_add_relay_to_playlist (m_guiOpt.localhost, 
+    winamp_add_relay_to_playlist (g_gui_prefs.localhost, 
 	g_rmo.relay_port, 
 	rip_manager_get_content_type());
 }
@@ -543,7 +540,7 @@ debug_riplist (void)
 {
     int i;
     for (i = 0; i < RIPLIST_LEN; i++) {
-	debug_printf ("riplist%d=%s\n", i, m_guiOpt.riplist[i]);
+	debug_printf ("riplist%d=%s\n", i, g_gui_prefs.riplist[i]);
     }
 }
 
@@ -553,7 +550,7 @@ find_url_in_riplist (char* url)
 {
     int i;
     for (i = 0; i < RIPLIST_LEN; i++) {
-	if (!strcmp(m_guiOpt.riplist[i],url)) {
+	if (!strcmp(g_gui_prefs.riplist[i],url)) {
 	    return i;
 	}
     }
@@ -585,9 +582,9 @@ insert_riplist (char* url, int pos)
 
     /* Shift the url to the correct position */
     for (i = oldpos; i > pos; i--) {
-	strcpy(m_guiOpt.riplist[i], m_guiOpt.riplist[i-1]);
+	strcpy(g_gui_prefs.riplist[i], g_gui_prefs.riplist[i-1]);
     }
-    strcpy(m_guiOpt.riplist[pos], url);
+    strcpy(g_gui_prefs.riplist[pos], url);
 
     debug_printf ("Insert riplist (2): %d %s\n", pos, url);
     debug_riplist ();
@@ -604,8 +601,8 @@ populate_history_popup (void)
 	RemoveMenu (m_hmenu_context_sub, ID_MENU_HISTORY_LIST+i, MF_BYCOMMAND);
     }
     for (i = 0; i < RIPLIST_LEN; i++) {
-	if (m_guiOpt.riplist[i][0]) {
-	    AppendMenu (m_hmenu_context_sub, MF_ENABLED | MF_STRING, ID_MENU_HISTORY_LIST+i, m_guiOpt.riplist[i]);
+	if (g_gui_prefs.riplist[i][0]) {
+	    AppendMenu (m_hmenu_context_sub, MF_ENABLED | MF_STRING, ID_MENU_HISTORY_LIST+i, g_gui_prefs.riplist[i]);
 	}
     }
 }
@@ -618,10 +615,7 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
     switch (umsg)
     {
     case WM_CREATE:
-#if defined (commentout)
-	if (!render_init(g_plugin.hDllInstance, hwnd, m_guiOpt.default_skin))
-#endif
-	if (!render_init(m_hinstance, hwnd, m_guiOpt.default_skin))
+	if (!render_init(m_hinstance, hwnd, g_gui_prefs.default_skin))
 	{
 	    MessageBox(hwnd, "Failed to find the skin bitmap", "Error", 0);
 	    break;
@@ -790,10 +784,15 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
 	    strcpy(g_rmo.url, "");
 	    set_ripping_url (0);
 	    break;
+	case ID_MENU_EXIT:
+	    debug_printf ("User requested exit\n");
+	    quit ();
+	    PostQuitMessage( 0 );
+	    break;
 	default:
 	    if (wParam >= ID_MENU_HISTORY_LIST && wParam < ID_MENU_HISTORY_LIST + RIPLIST_LEN) {
 		int i = wParam - ID_MENU_HISTORY_LIST;
-		char* url = m_guiOpt.riplist[i];
+		char* url = g_gui_prefs.riplist[i];
 		debug_printf ("Setting URL through history list\n");
 		strcpy(g_rmo.url, url);
 		set_ripping_url (url);
@@ -808,7 +807,7 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
 	case WM_LBUTTONDBLCLK:
 	    dock_show_window(m_hwnd, SW_NORMAL);
 	    SetForegroundWindow(hwnd);
-	    m_guiOpt.m_start_minimized = FALSE;
+	    g_gui_prefs.m_start_minimized = FALSE;
 	    break;
 
 	case WM_RBUTTONDOWN:
@@ -842,8 +841,8 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
 	    RECT rt;
 	    rc = GetWindowRect(hwnd, &rt);
 	    if (rc) {
-		m_guiOpt.oldpos.x = rt.left;
-		m_guiOpt.oldpos.y = rt.top;
+		g_gui_prefs.oldpos_x = rt.left;
+		g_gui_prefs.oldpos_y = rt.top;
 	    }
 	}
 	break;
@@ -924,6 +923,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
     int rc;
     MSG msg;
     int arg1, arg2;
+    int exit_code;
 
     m_hinstance = hInstance;
 
@@ -933,6 +933,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	char buf[1024];
 	sprintf (buf, "%d %d", arg1, arg2);
         //MessageBox (NULL, buf, "SR EXE", MB_OK);
+	g_running_standalone = 0;
 	g_winamp_hwnd = (HWND) NULL;
 	m_hpipe_exe_read = (HANDLE) arg1;
 	m_hpipe_exe_write = (HANDLE) arg2;
@@ -940,6 +941,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	char buf[1024];
 	sprintf (buf, "NUM ARG = %d", rc);
         //MessageBox (NULL, buf, "SR EXE", MB_OK);
+	g_running_standalone = 1;
 	g_winamp_hwnd = (HWND) NULL;
 	m_hpipe_exe_read = (HANDLE) NULL;
 	m_hpipe_exe_write = (HANDLE) NULL;
@@ -949,8 +951,11 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     init ();
 
-    launch_pipe_threads ();
+    if (m_hpipe_exe_read) {
+	launch_pipe_threads ();
+    }
 
+    exit_code = 0;
     while(1) {
 	rc = GetMessage (&msg, NULL, 0, 0);
 	if (rc == -1) {
@@ -959,6 +964,8 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	} else {
 	    if (msg.message == WM_QUIT) {
 		debug_printf ("Got a WM_QUIT in message loop\n");
+		exit_code = msg.wParam;
+		break;
 	    }
 	    if (msg.message == WM_DESTROY) {
 		debug_printf ("Got a WM_DESTROY in message loop\n");
@@ -970,7 +977,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     debug_printf ("Fell through WinMain()\n");
 
-    return 0;
+    return exit_code;
 }
 
 static void

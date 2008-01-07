@@ -42,7 +42,12 @@ static void prefs_copy_to_keyfile (STREAM_PREFS* prefs);
 static void prefs_get_prefs (STREAM_PREFS* prefs, char* label);
 static void prefs_set_prefs (STREAM_PREFS* prefs, STREAM_PREFS* default_prefs, 
 				char* group);
+static void prefs_get_wstreamripper_defaults (WSTREAMRIPPER_PREFS* prefs);
+
 static int prefs_get_string (char* dest, gsize dest_size, char* group, char* key);
+static void prefs_get_int (int *dest, char *group, char *key);
+static void prefs_set_string (char* group, char* key, char* value);
+static void prefs_set_integer (char* group, char* key, gint value);
 
 /******************************************************************************
  * Public functions
@@ -68,6 +73,10 @@ prefs_load (void)
     flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
     rc = g_key_file_load_from_file (m_key_file, prefs_fn,
 				    flags, &error);
+
+    /* GCS FIX - Where to do this? */
+    // prefs_get_wstreamripper_defaults (&global_prefs.wstreamripper_prefs);
+
     if (!rc) {
 	GLOBAL_PREFS global_prefs;
 	memset (&global_prefs, 0, sizeof(GLOBAL_PREFS));
@@ -129,6 +138,71 @@ prefs_get_global_prefs (GLOBAL_PREFS *global_prefs)
     memset (global_prefs, 0, sizeof(GLOBAL_PREFS));
     prefs_get_string (global_prefs->url, MAX_URL_LEN, "sripper", "url");
     prefs_get_prefs (&global_prefs->stream_prefs, "stream defaults");
+}
+
+void
+prefs_set_global_prefs (GLOBAL_PREFS *global_prefs)
+{
+    prefs_set_string ("sripper", "url", global_prefs->url);
+    prefs_set_prefs (&global_prefs->stream_prefs, 0, "stream defaults");
+}
+
+void
+prefs_get_wstreamripper_prefs (WSTREAMRIPPER_PREFS *prefs)
+{
+    int i, p;
+    char* group = "wstreamripper";
+
+    prefs_get_wstreamripper_defaults (prefs);
+
+    if (!m_key_file) return;
+
+    prefs_get_string (prefs->default_skin, MAX_PATH, group, "default_skin");
+    prefs_get_int (&prefs->m_enabled, group, "enabled");
+    prefs_get_int (&prefs->oldpos_x, group, "window_x");
+    prefs_get_int (&prefs->oldpos_y, group, "window_y");
+    prefs_get_string (prefs->localhost, MAX_PATH, group, "localhost");
+    prefs_get_int (&prefs->m_add_finished_tracks_to_playlist, group, "add_tracks_to_playlist");
+    prefs_get_int (&prefs->m_start_minimized, group, "start_minimized");
+    prefs_get_int (&prefs->use_old_playlist_ret, group, "use_old_playlist_ret");
+
+    /* Get history */
+    for (i = 0, p = 0; i < RIPLIST_LEN; i++) {
+	char profile_name[128];
+	sprintf (profile_name, "riplist%d", i);
+	prefs_get_string (prefs->riplist[p], MAX_PATH, group, profile_name);
+	if (prefs->riplist[p][0]) {
+	    p++;
+	}
+    }
+}
+
+void
+prefs_set_wstreamripper_prefs (WSTREAMRIPPER_PREFS *prefs)
+{
+    int i, p;
+    char* group = "wstreamripper";
+
+    if (!m_key_file) return;
+
+    prefs_set_string (group, "default_skin", prefs->default_skin);
+    prefs_set_integer (group, "enabled", prefs->m_enabled);
+    prefs_set_integer (group, "window_x", prefs->oldpos_x);
+    prefs_set_integer (group, "window_y", prefs->oldpos_y);
+    prefs_set_string (group, "localhost", prefs->localhost);
+    prefs_set_integer (group, "add_tracks_to_playlist", prefs->m_add_finished_tracks_to_playlist);
+    prefs_set_integer (group, "start_minimized", prefs->m_start_minimized);
+    prefs_set_integer (group, "use_old_playlist_ret", prefs->use_old_playlist_ret);
+
+    /* Set history */
+    for (i = 0, p = 0; i < RIPLIST_LEN; i++) {
+	if (prefs->riplist[i][0]) {
+	    char profile_name[128];
+	    sprintf (profile_name, "riplist%d", p);
+	    prefs_set_string (group, profile_name, prefs->riplist[i]);
+	    p++;
+	}
+    }
 }
 
 void
@@ -199,7 +273,7 @@ static gchar*
 prefs_get_config_dir (void)
 {
     return g_build_filename (g_get_user_config_dir(), 
-			     "streamripper",
+			     "streamripper", 
 			     NULL);
 }
 
@@ -259,6 +333,24 @@ prefs_get_stream_defaults (STREAM_PREFS* prefs)
     prefs->count_start = 0;
     prefs->overwrite = OVERWRITE_LARGER;
     prefs->ext_cmd[0] = 0;
+}
+
+static void
+prefs_get_wstreamripper_defaults (WSTREAMRIPPER_PREFS* prefs)
+{
+    int i;
+
+    strcpy(prefs->default_skin, DEFAULT_SKINFILE);
+    prefs->m_enabled = 1;
+    prefs->oldpos_x = 0;
+    prefs->oldpos_y = 0;
+    strcpy (prefs->localhost, "localhost");
+    prefs->m_add_finished_tracks_to_playlist = 0;
+    prefs->m_start_minimized = 0;
+    prefs->use_old_playlist_ret = 0;
+    for (i = 0; i < RIPLIST_LEN; i++) {
+	prefs->riplist[i][0] = 0;
+    }
 }
 
 /* Return 0 if value not found, 1 if value found */
