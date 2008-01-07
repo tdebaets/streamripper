@@ -160,5 +160,9 @@ SOURCE=.\wa_msgids.h
 SOURCE=.\winamp_dll.h
 # End Source File
 # End Group
+# Begin Source File
+
+SOURCE=.\sricon.ico
+# End Source File
 # End Target
 # End Project
