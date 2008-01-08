@@ -30,6 +30,7 @@
 #if defined HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <ctype.h>
 #if defined HAVE_WCHAR_SUPPORT
 #if defined HAVE_WCHAR_H
 #include <wchar.h>
@@ -129,19 +130,44 @@ char *format_byte_size(char *str, long size)
 
 void trim(char *str)
 {
-    int size = strlen(str)-1;
-    while(str[size] == 13 || str[size] == 10 || str[size] == ' ')
-    {
-	str[size] = '\0';
-	size--;
+    char *start = str;
+    char *end;
+    char *original_end;
+    char *test;
+    
+    /* skip over initial whitespace */
+    while (*start && isspace(*start)) {
+        ++start;
     }
-    size = strlen(str);
-    while(str[0] == ' ')
-    {
-	size--;
-	memmove(str, str+1, size);
+    
+    /* locate end of string */
+    end = start;
+    while (*end) {
+        ++end;
     }
-    str[size] = '\0';
+    original_end = end;
+    
+    /* backtrack over final whitespace */
+    while (end > start) {
+        test = end-1;
+        if (isspace(*test)) {
+            end = test;
+        } else {
+            break;
+        }
+    }
+    
+    /* move non-whitespace text if initial whitespace was found above. */
+    /* move is unnecessary if resulting string is empty */
+    if (start > str && start != end) {
+        memmove(str, start, end-start);
+    }
+    
+    /* null-terminate resulting string. */
+    /* this is necessary in all cases except when the string was not modified */
+    if (start > str || end < original_end) {
+        str[end-start] = '\0';
+    }
 }
 
 /* This is a little different from standard strncpy, because:
