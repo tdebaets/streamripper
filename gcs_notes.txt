@@ -1,4 +1,119 @@
 -----------------------------------------------------------------------
+cygwin version
+-----------------------------------------------------------------------
+
+libiconv
+
+./configure --prefix=/usr/local/mingw      CPPFLAGS="-mno-cygwin -mms-bitfields -Wall -I/usr/local/mingw/include"      CFLAGS="-mno-cygwin -mms-bitfields -O2 -g"      CXXFLAGS="-mno-cygwin -mms-bitfields -O2 -g"      LDFLAGS="-mno-cygwin -mms-bitfields -L/usr/local/mingw/lib" --enable-static
+
+gettext.  Exact same flags.
+
+Back to libiconv.  Not sure if this is actually necessary.  It didn't 
+work to rerun configure on the existing directory, so I deleted and 
+reran configure.
+
+Tried to build glib, but apparently it requires pkg-config.  
+pkg-config doesn't build:
+
+if /bin/sh ./libtool --mode=compile gcc -DHAVE_CONFIG_H -I. -I. -I. -DG_LOG_DOMAIN=g_log_domain_glib   -mno-cygwin -Wall -I/usr/local/mingw/include  -mno-cygwin -mms-bitfields -O2 -g -Wall  -MT garray.lo -MD -MP -MF ".deps/garray.Tpo" \
+          -c -o garray.lo `test -f 'garray.c' || echo './'`garray.c; \
+        then mv -f ".deps/garray.Tpo" ".deps/garray.Plo"; \
+        else rm -f ".deps/garray.Tpo"; exit 1; \
+        fi
+ gcc -DHAVE_CONFIG_H -I. -I. -I. -DG_LOG_DOMAIN=g_log_domain_glib -mno-cygwin -Wall -I/usr/local/mingw/include -mno-cygwin -mms-bitfields -O2 -g -Wall -MT garray.lo -MD -MP -MF .deps/garray.Tpo -c garray.c -o garray.o
+In file included from garray.c:32:
+glib.h:502: error: parse error before "gssize"
+glib.h:502: warning: type defaults to `int' in declaration of `gssize'
+glib.h:502: warning: data definition has no type or storage class
+glib.h:503: error: parse error before "gsize"
+glib.h:503: warning: type defaults to `int' in declaration of `gsize'
+glib.h:503: warning: data definition has no type or storage class
+glib.h:504: error: parse error before "GQuark"
+glib.h:504: warning: type defaults to `int' in declaration of `GQuark'
+glib.h:504: warning: data definition has no type or storage class
+
+pkg-config doesn't build on mingw either, but the error is different.
+
+1) ./configure works fine for cygwin without options
+2) Try removing -mms-bitfields, still fails
+3) Try removing -mnocygwin, works.  Hopefully -mno-cygwin isn't necessary, 
+because glib only needs the exe.
+
+./configure --prefix=/usr/local/mingw      CPPFLAGS="-Wall -I/usr/local/mingw/include"      CFLAGS="-mno-cygwin -mms-bitfields -O2 -g"      CXXFLAGS="-mno-cygwin -mms-bitfields -O2 -g"      LDFLAGS="-mno-cygwin -mms-bitfields -L/usr/local/mingw/lib" --enable-static
+
+OK, now onto glib
+
+checking size of __int64... 8
+configure: error:
+*** GLib requires a 64 bit type. You might want to consider
+*** using the GNU C compiler.
+
+Egad.
+
+1) Try without -mms-bitfields, same error
+2) Try plain ./configure, this fails because iconv isn't found
+3) Try without -mms-bitfields and -mno-cygwin.
+
+checking for ngettext in -lintl... no
+configure: error:
+*** You must have either have gettext support in your C library, or use the
+*** GNU gettext library. (http://www.gnu.org/software/gettext/gettext.html
+
+Here, this is failing presumably because it can't link without no-cygwin?
+Undefined references to __errno, __flsbuf in libintl.
+
+--
+Trying again.
+
+a) Slight refinement in config paths
+b) Install cygwin version of pkg-config
+c) Do the following before configuring glib, so that it can find gmsgtxt
+    PATH=/usr/local/mingw/bin:$PATH
+
+It seems the problem with 64 bit is that gcc -mno-cygwin (or another opt)? 
+makes fopen(fn,"w") use DOS EOL's.  Just plain gcc doesn't do this.
+So, the fix is to edit configure to change the "w"'s to "wb".
+
+It configures.  Next error:
+
+ gcc -DHAVE_CONFIG_H -I. -I. -I.. -I.. -DG_LOG_DOMAIN=\"GLib\" -DG_DISABLE_CAST_CHECKS -DG_DISABLE_DEPRECATED -DGLIB_COMPILATION -mno-cygwin -mms-bitfields -Wall -I/usr/local/mingw/include -mno-cygwin -mms-bitfields -O2 -g -Wall -MT gbacktrace.lo -MD -MP -MF .deps/gbacktrace.Tpo -c gbacktrace.c  -DDLL_EXPORT -DPIC -o .libs/gbacktrace.o
+gbacktrace.c: In function `g_on_error_stack_trace':
+gbacktrace.c:175: warning: implicit declaration of function `fork'
+gbacktrace.c:187: warning: implicit declaration of function `waitpid'
+gbacktrace.c: In function `stack_trace':
+gbacktrace.c:220: error: `SIGCHLD' undeclared (first use in this function)
+gbacktrace.c:220: error: (Each undeclared identifier is reported only once
+gbacktrace.c:220: error: for each function it appears in.)
+gbacktrace.c:222: warning: implicit declaration of function `pipe'
+gbacktrace.c:235: warning: passing arg 2 of `execvp' from incompatible pointer type
+gbacktrace.c:245: warning: implicit declaration of function `FD_ZERO'
+gbacktrace.c:246: warning: implicit declaration of function `FD_SET'
+gbacktrace.c:261: warning: implicit declaration of function `select'
+gbacktrace.c:261: error: `FD_SETSIZE' undeclared (first use in this function)
+gbacktrace.c:265: warning: implicit declaration of function `FD_ISSET'
+
+So, I copied over the config.h & glibconfig.h.
+
+Not bad, but still have errors.  I think it didn't actually 
+configure correctly.  It should have picked up giowin32.c instead.
+
+ gcc -DHAVE_CONFIG_H -I. -I. -I.. -I.. -DG_LOG_DOMAIN=\"GLib\" -DG_DISABLE_CAST_CHECKS -DG_DISABLE_DEPRECATED -DGLIB_COMPILATION -mno-cygwin -mms-bitfields -Wall -I/usr/local/mingw/include -mno-cygwin -mms-bitfields -O2 -g -Wall -MT giounix.lo -MD -MP -MF .deps/giounix.Tpo -c giounix.c  -DDLL_EXPORT -DPIC -o .libs/giounix.o
+giounix.c: In function `g_io_unix_set_flags':
+giounix.c:374: error: `O_NDELAY' undeclared (first use in this function)
+giounix.c:374: error: (Each undeclared identifier is reported only once
+giounix.c:374: error: for each function it appears in.)
+giounix.c:377: warning: implicit declaration of function `fcntl'
+giounix.c:377: error: `F_SETFL' undeclared (first use in this function)
+giounix.c: In function `g_io_unix_get_flags':
+giounix.c:395: error: `F_GETFL' undeclared (first use in this function)
+giounix.c:409: error: `O_NDELAY' undeclared (first use in this function)
+giounix.c: In function `g_io_channel_new_file_utf8':
+giounix.c:511: error: `S_IRGRP' undeclared (first use in this function)
+giounix.c:511: error: `S_IWGRP' undeclared (first use in this function)
+giounix.c:511: error: `S_IROTH' undeclared (first use in this function)
+giounix.c:511: error: `S_IWOTH' undeclared (first use in this function)
+
+-----------------------------------------------------------------------
 DLL Heaven/Hell
 
 Looks like Winamp doesn't let my plugin search the Plugins directory 
