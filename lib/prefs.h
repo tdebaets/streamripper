@@ -76,7 +76,7 @@ struct wstreamripper_prefs
     long	oldpos_y;
     int		m_enabled;
     char	localhost[MAX_HOST_LEN];	// hostname of 'localhost' 
-    char	default_skin[MAX_PATH];
+    char	default_skin[SR_MAX_PATH];
     int		use_old_playlist_ret;
     char	riplist[RIPLIST_LEN][MAX_URL_LEN];
 };

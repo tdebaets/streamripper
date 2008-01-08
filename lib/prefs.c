@@ -46,6 +46,7 @@ static void prefs_get_wstreamripper_defaults (WSTREAMRIPPER_PREFS* prefs);
 
 static int prefs_get_string (char* dest, gsize dest_size, char* group, char* key);
 static void prefs_get_int (int *dest, char *group, char *key);
+static void prefs_get_long (long *dest, char *group, char *key);
 static void prefs_set_string (char* group, char* key, char* value);
 static void prefs_set_integer (char* group, char* key, gint value);
 
@@ -157,11 +158,11 @@ prefs_get_wstreamripper_prefs (WSTREAMRIPPER_PREFS *prefs)
 
     if (!m_key_file) return;
 
-    prefs_get_string (prefs->default_skin, MAX_PATH, group, "default_skin");
+    prefs_get_string (prefs->default_skin, SR_MAX_PATH, group, "default_skin");
     prefs_get_int (&prefs->m_enabled, group, "enabled");
-    prefs_get_int (&prefs->oldpos_x, group, "window_x");
-    prefs_get_int (&prefs->oldpos_y, group, "window_y");
-    prefs_get_string (prefs->localhost, MAX_PATH, group, "localhost");
+    prefs_get_long (&prefs->oldpos_x, group, "window_x");
+    prefs_get_long (&prefs->oldpos_y, group, "window_y");
+    prefs_get_string (prefs->localhost, SR_MAX_PATH, group, "localhost");
     prefs_get_int (&prefs->m_add_finished_tracks_to_playlist, group, "add_tracks_to_playlist");
     prefs_get_int (&prefs->m_start_minimized, group, "start_minimized");
     prefs_get_int (&prefs->use_old_playlist_ret, group, "use_old_playlist_ret");
@@ -170,7 +171,7 @@ prefs_get_wstreamripper_prefs (WSTREAMRIPPER_PREFS *prefs)
     for (i = 0, p = 0; i < RIPLIST_LEN; i++) {
 	char profile_name[128];
 	sprintf (profile_name, "riplist%d", i);
-	prefs_get_string (prefs->riplist[p], MAX_PATH, group, profile_name);
+	prefs_get_string (prefs->riplist[p], SR_MAX_PATH, group, profile_name);
 	if (prefs->riplist[p][0]) {
 	    p++;
 	}
@@ -409,6 +410,20 @@ prefs_get_ulong (u_long *dest, char *group, char *key)
     }
     *dest = (u_long) value;
     return 1;
+}
+
+static void
+prefs_get_long (long *dest, char *group, char *key)
+{
+    GError *error = NULL;
+    gint value;
+    
+    value = g_key_file_get_integer (m_key_file, group, key, &error);
+    if (error) {
+	/* Key doesn't exist, do nothing */
+	return;
+    }
+    *dest = (long) value;
 }
 
 static void
