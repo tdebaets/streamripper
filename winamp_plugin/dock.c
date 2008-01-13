@@ -18,6 +18,7 @@
 #include "windows.h"
 #include <stdio.h>
 #include "wa_ipc.h"
+#include "wstreamripper.h"
 #include "dock.h"
 #include "debug.h"
 
@@ -314,6 +315,22 @@ debug_winamp_wins (void)
 			    m_winamp_wins[w].rect.top,
 			    m_winamp_wins[w].rect.right,
 			    m_winamp_wins[w].rect.bottom);
+	}
+    }
+}
+
+void
+dock_resize (HWND hwnd, char* buf)
+{
+    if (*buf == '0') {
+	debug_printf ("Hiding because of winamp minimize.\n");
+	ShowWindow (hwnd, SW_HIDE);
+    } else {
+	if (!g_gui_prefs.m_start_minimized) {
+	    debug_printf ("Showing because of winamp restore.\n");
+	    ShowWindow (hwnd, SW_SHOW);
+	} else {
+	    debug_printf ("Ignoring winamp window restore.\n");
 	}
     }
 }

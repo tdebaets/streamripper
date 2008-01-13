@@ -891,6 +891,10 @@ handle_wm_app (HWND hwnd, WPARAM wParam, LPARAM lParam)
 	/* New URL */
 	add_url_from_winamp ((char*) lParam);
 	break;
+    case 2:
+	/* Window minimized/restored */
+	dock_resize (hwnd, (char*) lParam);
+	break;
     }
 }
 
@@ -1008,9 +1012,15 @@ pipe_reader (void* arg)
 		} else if (!strncmp (msgbuf, "url ", 4)) {
 		    /* URL from winamp */
 		    SendMessage (m_hwnd, WM_APP+0, 1, (LPARAM) &msgbuf[4]);
-		} else {
+		} else if (!strncmp (msgbuf, "Dock ", 5)) {
 		    /* Window moved */
-		    SendMessage (m_hwnd, WM_APP+0, 0, (LPARAM) &msgbuf);
+		    SendMessage (m_hwnd, WM_APP+0, 0, (LPARAM) &msgbuf[5]);
+		} else if (!strncmp (msgbuf, "Resize ", 7)) {
+		    /* Window moved */
+		    SendMessage (m_hwnd, WM_APP+0, 2, (LPARAM) &msgbuf[7]);
+		} else {
+		    /* Unknown message */
+		    /* do nothing */
 		}
 	    } else {
 		idx ++;

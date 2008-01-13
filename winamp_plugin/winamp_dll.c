@@ -464,6 +464,14 @@ hook_winamp_callback (HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 #endif
 	notify_dock();
     }
+    if (umsg == WM_SIZE) {
+	/* Need to send minimize events */
+	if (wparam == SIZE_MINIMIZED) {
+	    write_pipe ("Resize 0");
+	} else {
+	    write_pipe ("Resize 1");
+	}
+    }
 
     //debug_printf ("callback: %d/0x%04x/0x%04x/0x%08x\n",hwnd,umsg,wparam,lparam);
     for (i = 0; i < WINAMP_CLASSIC_WINS; i++) {
@@ -508,8 +516,10 @@ notify_dock ()
     int i, rc;
     RECT rtparents[WINAMP_MODERN_WINS];
     char buf[DOCK_BUF_SIZE];
-    int bi = 0;
+    int bi;
 
+    strcpy (buf, "Dock ");
+    bi = strlen ("Dock ");
     buf[bi] = 0;
     if (m_skin_is_modern) {
 	for (i = 0; i < m_num_modern_wins; i++) {

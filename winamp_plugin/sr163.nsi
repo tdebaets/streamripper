@@ -6,6 +6,9 @@
 
   !include "MUI.nsh"
   !include "InstallOptions.nsh"
+  !include "FileFunc.nsh"
+  !insertmacro GetParent
+  !insertmacro DirState
 
 ;--------------------------------
 ;General
@@ -20,14 +23,16 @@
   ;Get installation folder from registry if available
   InstallDirRegKey HKCU "Software\Streamripper" ""
 
+
+
 ;--------------------------------
 ;Pages
 
 ;  !insertmacro MUI_PAGE_LICENSE "${NSISDIR}\Docs\Modern UI\License.txt"
-;  Page custom CustomPageA
   !insertmacro MUI_PAGE_COMPONENTS
+  Page custom CustomPage
 ;  Page custom CustomPageB
-  !insertmacro MUI_PAGE_DIRECTORY
+;  !insertmacro MUI_PAGE_DIRECTORY
 ;  Page custom CustomPageC
   !insertmacro MUI_PAGE_INSTFILES
   
@@ -53,14 +58,14 @@
   
   ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
 
-  ReserveFile "ioA.ini"
-  ReserveFile "ioB.ini"
   ReserveFile "ioC.ini"
 
 ;--------------------------------
 ;Variables
 
   Var IniValue
+  Var WADIR
+  Var WADIR_TMP
 
 ;--------------------------------
 ;Installer Sections
@@ -70,6 +75,7 @@ Section "Core Libraries" sec_core
 
   SetOutPath "$INSTDIR"
   
+  File "..\README"
   File "sripper_howto.txt"
   SetOverwrite off
   File "..\parse_rules.txt"
@@ -97,7 +103,9 @@ Section "Winamp Plugin" sec_plugin
   
   File "C:\program files\winamp\plugins\gen_sripper.dll"
 
-  ;ADD YOUR OWN FILES HERE...
+  SetOutPath "$WADIR\Plugins"
+
+  File "C:\program files\winamp\plugins\gen_sripper.dll"
   
   ;Store installation folder
   WriteRegStr HKCU "Software\Streamripper" "" $INSTDIR
@@ -113,9 +121,9 @@ SectionEnd
 Section "GUI Application" sec_gui
 
   SetOutPath "$INSTDIR"
-  File "D:\sripper_1x\winamp_plugin\release\wstreamripper.exe"
+  File "C:\Program Files\Streamripper\wstreamripper.exe"
 
-  SetOutPath $INSTDIR\Skins\SrSkins
+  SetOutPath $INSTDIR\Skins
   File srskin.bmp
   File srskin_winamp.bmp
   File srskin_XP.bmp
@@ -140,21 +148,26 @@ Section "Console Application" sec_console
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   
-  ;Read a value from an InstallOptions INI file
-  !insertmacro INSTALLOPTIONS_READ $IniValue "ioC.ini" "Field 2" "State"
-  
 SectionEnd
 
 Section "Uninstall"
+  Delete $WADIR\Plugins\gen_sripper.dll
   Delete $INSTDIR\streamripper.exe
   Delete $INSTDIR\wstreamripper.exe
   Delete $INSTDIR\gen_sripper.dll
+  Delete $INSTDIR\iconv.dll
+  Delete $INSTDIR\intl.dll
+  Delete $INSTDIR\libglib-2.0-0.dll
+  Delete $INSTDIR\ogg.dll
+  Delete $INSTDIR\tre.dll
+  Delete $INSTDIR\vorbis.dll
+  Delete $INSTDIR\README
   Delete $INSTDIR\SRIPPER_HOWTO.TXT
   Delete $INSTDIR\sripper.ini
   Delete $INSTDIR\parse_rules.txt
   Delete $INSTDIR\fake_external_metadata.pl
   Delete $INSTDIR\fetch_external_metadata.pl
-  RMDir /r $INSTDIR\Skins\SrSkins
+  RMDir /r $INSTDIR\Skins
 SectionEnd
 
 ;--------------------------------
@@ -195,26 +208,60 @@ FunctionEnd
 LangString TEXT_IO_TITLE ${LANG_ENGLISH} "InstallOptions page"
 LangString TEXT_IO_SUBTITLE ${LANG_ENGLISH} "This is a page created using the InstallOptions plug-in."
 
-;Function CustomPageA
+Function CustomPage
+
+  ;; ReadINIStr $0 "$PLUGINSDIR\test.ini" "Field 8" "State"
+  ;; WriteINIStr "$PLUGINSDIR\test.ini" "Settings" "RTL" "1"
+  ;; !insertmacro INSTALLOPTIONS_READ $IniValue "ioC.ini" "Field 2" "State"
+
+  StrCpy $WADIR $PROGRAMFILES\Winamp
+
+  ; detect winamp path from uninstall string if available
+  ; otherwise default to $PROGRAMFILES\Winamp
+  ReadRegStr $WADIR_TMP \
+                 HKLM \
+                 "Software\Microsoft\Windows\CurrentVersion\Uninstall\Winamp" \
+                 "UninstallString"
+  IfErrors WADIR_DEFAULT 0
+    StrCpy $WADIR_TMP $WADIR_TMP -1 1
+    ${GetParent} "$WADIR_TMP" $R0
+    ${DirState} "$R0" $R1
+    IntCmp $R1 -1 WADIR_DEFAULT
+      StrCpy $WADIR $R0
+WADIR_DEFAULT:
+
+  SectionGetFlags ${sec_plugin} $0
+  IntOp $0 $0 & ${SF_SELECTED}
+  IntCmp $0 ${SF_SELECTED} with_plugin
+  !insertmacro INSTALLOPTIONS_WRITE "ioC.ini" "Field 3" "Flags" "DISABLED"
+  !insertmacro INSTALLOPTIONS_WRITE "ioC.ini" "Field 4" "Flags" "DISABLED"
+  goto set_directories
+with_plugin:
+  !insertmacro INSTALLOPTIONS_WRITE "ioC.ini" "Field 3" "Flags" ""
+  !insertmacro INSTALLOPTIONS_WRITE "ioC.ini" "Field 4" "Flags" ""
+set_directories:
+  !insertmacro INSTALLOPTIONS_WRITE "ioC.ini" "Field 2" "State" $INSTDIR
+  !insertmacro INSTALLOPTIONS_WRITE "ioC.ini" "Field 4" "State" $WADIR
+  !insertmacro MUI_HEADER_TEXT "$(TEXT_IO_TITLE)" "$(TEXT_IO_SUBTITLE)"
+  !insertmacro INSTALLOPTIONS_DISPLAY "ioC.ini"
+  !insertmacro INSTALLOPTIONS_READ $INSTDIR "ioC.ini" "Field 2" "State"
+  !insertmacro INSTALLOPTIONS_READ $WADIR "ioC.ini" "Field 4" "State"
+
+FunctionEnd
+
+;Function CustomPageB
 
 ;  !insertmacro MUI_HEADER_TEXT "$(TEXT_IO_TITLE)" "$(TEXT_IO_SUBTITLE)"
-;  !insertmacro INSTALLOPTIONS_DISPLAY "ioA.ini"
+;  !insertmacro INSTALLOPTIONS_DISPLAY "ioB.ini"
 
 ;FunctionEnd
 
-Function CustomPageB
+;Function CustomPageC
 
-  !insertmacro MUI_HEADER_TEXT "$(TEXT_IO_TITLE)" "$(TEXT_IO_SUBTITLE)"
-  !insertmacro INSTALLOPTIONS_DISPLAY "ioB.ini"
+;  !insertmacro MUI_HEADER_TEXT "$(TEXT_IO_TITLE)" "$(TEXT_IO_SUBTITLE)"
+;  !insertmacro INSTALLOPTIONS_DISPLAY "ioC.ini"
 
-FunctionEnd
-
-Function CustomPageC
-
-  !insertmacro MUI_HEADER_TEXT "$(TEXT_IO_TITLE)" "$(TEXT_IO_SUBTITLE)"
-  !insertmacro INSTALLOPTIONS_DISPLAY "ioC.ini"
-
-FunctionEnd
+;FunctionEnd
 
 ;--------------------------------
 ;Descriptions

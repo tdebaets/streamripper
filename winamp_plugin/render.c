@@ -132,6 +132,7 @@ static DISPLAYDATA	m_ddinfo[IDR_NUMFIELDS];
 BOOL
 render_init(HINSTANCE hInst, HWND hWnd, LPCTSTR szBmpFile)
 {
+    debug_printf ("Render_init looking for skin: %s\n", szBmpFile);
     if (!skindata_from_file(szBmpFile, &m_offscreenskind))
 	return FALSE;
 
@@ -419,12 +420,14 @@ BOOL
 bitmapdc_from_file(const char* skinfile, BITMAPDC* bmdc)
 {
     char tempfile[SR_MAX_PATH*5];
-	
+
     memset(tempfile, 0, SR_MAX_PATH*5);
+#if defined (commentout)
     if (!winamp_get_path(tempfile)) {
 	debug_printf ("winamp_get_path failed #5\n");
 	return FALSE;
     }
+#endif
     strcat(tempfile, SKIN_PATH);
     strcat(tempfile, skinfile);
     debug_printf ("bitmapdc_from_file: %s\n", tempfile);

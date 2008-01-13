@@ -68,13 +68,16 @@ get_skin_list()
 
     m_skin_list_size = 0;
     memset(m_pskin_list, 0, sizeof(m_pskin_list));
-		
+
+#if defined (commentout)
     if (!winamp_get_path(temppath)) {
 	debug_printf ("winamp_get_path failed #1\n");
 	return FALSE;
     }
-
     debug_printf ("temppath = %s\n", temppath);
+#endif
+
+    temppath[0] = 0;
     strcat(temppath, SKIN_PATH);
     strcat(temppath, "*.bmp");
     debug_printf ("temppath = %s\n", temppath);

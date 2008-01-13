@@ -3,7 +3,8 @@
 
 #include "srtypes.h"
 
-#define SKIN_PATH "Skins\\SrSkins\\"
+//#define SKIN_PATH "Skins\\SrSkins\\"
+#define SKIN_PATH "Skins\\"
 
 typedef struct WINAMP_INFOst
 {
