@@ -165,12 +165,16 @@ Section "Uninstall"
   Delete $INSTDIR\tre.dll
   Delete $INSTDIR\vorbis.dll
   Delete $INSTDIR\README
+  Delete $INSTDIR\COPYING
+  Delete $INSTDIR\THANKS
+  Delete $INSTDIR\CHANGES
   Delete $INSTDIR\SRIPPER_HOWTO.TXT
   Delete $INSTDIR\sripper.ini
   Delete $INSTDIR\parse_rules.txt
   Delete $INSTDIR\fake_external_metadata.pl
   Delete $INSTDIR\fetch_external_metadata.pl
   RMDir /r $INSTDIR\Skins
+  RMDir $INSTDIR
 SectionEnd
 
 ;--------------------------------
