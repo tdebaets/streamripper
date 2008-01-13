@@ -66,7 +66,7 @@ prefs_load (void)
     prefs_fn = g_build_filename (prefs_dir,
 				 "streamripper.ini",
 				 NULL);
-    fprintf (stderr, "prefs_fn = %s\n", prefs_fn);
+    debug_fprintf (stderr, "prefs_fn = %s\n", prefs_fn);
 
     if (!m_key_file) {
 	m_key_file = g_key_file_new ();
