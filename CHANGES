@@ -1,11 +1,14 @@
 New for 1.63-beta-2
 --------------
+Sunday, January 13, 2008 2:28 AM
+* New installer for windows
 * Plugin: streamripper now runs as a separate process from winamp
+* Plugin: a few things probably don't work yet
 * Cue file now uses relative path for filename
 * Add patch from nn to detect full disk condition
 * Add patch from nn for improved parsing of parse rules file (#1825475)
 * Add patch from Max Mutrux fixing two problems with the relay lib
-  and a fix for id3 on 64-bit systems.
+  and a fix for id3 on 64-bit systems
 
 New for 1.63-beta-1
 --------------

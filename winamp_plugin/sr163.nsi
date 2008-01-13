@@ -76,6 +76,9 @@ Section "Core Libraries" sec_core
   SetOutPath "$INSTDIR"
   
   File "..\README"
+  File "..\COPYING"
+  File "..\CHANGES"
+  File "..\THANKS"
   File "sripper_howto.txt"
   SetOverwrite off
   File "..\parse_rules.txt"
