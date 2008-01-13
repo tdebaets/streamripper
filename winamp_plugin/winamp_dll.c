@@ -93,7 +93,8 @@ extern winampGeneralPurposePlugin g_plugin;
 
 /* Debug stuff */
 
-static int debug_on = 1;
+//static int debug_on = 1;
+static int debug_on = 0;
 static int debug_initialized = 0;
 FILE* gcsfp = 0;
 

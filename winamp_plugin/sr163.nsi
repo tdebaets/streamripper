@@ -18,11 +18,11 @@
   OutFile "streamripper-windows-bundle-1.63-beta-2.exe"
 
   ;Default installation folder
-  InstallDir "$PROGRAMFILES\Streamripper"
+  InstallDir "$PROGRAMFILES\Streamripper-1.63-beta-2"
+  ;InstallDir "$PROGRAMFILES\Streamripper"
   
   ;Get installation folder from registry if available
-  InstallDirRegKey HKCU "Software\Streamripper" ""
-
+  ; InstallDirRegKey HKCU "Software\Streamripper" ""
 
 
 ;--------------------------------
@@ -58,7 +58,7 @@
   
   ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
 
-  ReserveFile "ioC.ini"
+  ReserveFile "sr163_directories.ini"
 
 ;--------------------------------
 ;Variables
@@ -117,7 +117,7 @@ Section "Winamp Plugin" sec_plugin
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   
   ;Read a value from an InstallOptions INI file
-  !insertmacro INSTALLOPTIONS_READ $IniValue "ioC.ini" "Field 2" "State"
+  !insertmacro INSTALLOPTIONS_READ $IniValue "sr163_directories.ini" "Field 2" "State"
   
 SectionEnd
 
@@ -179,9 +179,7 @@ SectionEnd
 Function .onInit
 
   ;Extract InstallOptions INI files
-  !insertmacro INSTALLOPTIONS_EXTRACT "ioA.ini"
-  !insertmacro INSTALLOPTIONS_EXTRACT "ioB.ini"
-  !insertmacro INSTALLOPTIONS_EXTRACT "ioC.ini"
+  !insertmacro INSTALLOPTIONS_EXTRACT "sr163_directories.ini"
 
   # set section 'test' as selected and read-only
   IntOp $0 ${SF_SELECTED} | ${SF_RO}
@@ -215,7 +213,7 @@ Function CustomPage
 
   ;; ReadINIStr $0 "$PLUGINSDIR\test.ini" "Field 8" "State"
   ;; WriteINIStr "$PLUGINSDIR\test.ini" "Settings" "RTL" "1"
-  ;; !insertmacro INSTALLOPTIONS_READ $IniValue "ioC.ini" "Field 2" "State"
+  ;; !insertmacro INSTALLOPTIONS_READ $IniValue "sr163_directories.ini" "Field 2" "State"
 
   StrCpy $WADIR $PROGRAMFILES\Winamp
 
@@ -236,19 +234,19 @@ WADIR_DEFAULT:
   SectionGetFlags ${sec_plugin} $0
   IntOp $0 $0 & ${SF_SELECTED}
   IntCmp $0 ${SF_SELECTED} with_plugin
-  !insertmacro INSTALLOPTIONS_WRITE "ioC.ini" "Field 3" "Flags" "DISABLED"
-  !insertmacro INSTALLOPTIONS_WRITE "ioC.ini" "Field 4" "Flags" "DISABLED"
+  !insertmacro INSTALLOPTIONS_WRITE "sr163_directories.ini" "Field 3" "Flags" "DISABLED"
+  !insertmacro INSTALLOPTIONS_WRITE "sr163_directories.ini" "Field 4" "Flags" "DISABLED"
   goto set_directories
 with_plugin:
-  !insertmacro INSTALLOPTIONS_WRITE "ioC.ini" "Field 3" "Flags" ""
-  !insertmacro INSTALLOPTIONS_WRITE "ioC.ini" "Field 4" "Flags" ""
+  !insertmacro INSTALLOPTIONS_WRITE "sr163_directories.ini" "Field 3" "Flags" ""
+  !insertmacro INSTALLOPTIONS_WRITE "sr163_directories.ini" "Field 4" "Flags" ""
 set_directories:
-  !insertmacro INSTALLOPTIONS_WRITE "ioC.ini" "Field 2" "State" $INSTDIR
-  !insertmacro INSTALLOPTIONS_WRITE "ioC.ini" "Field 4" "State" $WADIR
+  !insertmacro INSTALLOPTIONS_WRITE "sr163_directories.ini" "Field 2" "State" $INSTDIR
+  !insertmacro INSTALLOPTIONS_WRITE "sr163_directories.ini" "Field 4" "State" $WADIR
   !insertmacro MUI_HEADER_TEXT "$(TEXT_IO_TITLE)" "$(TEXT_IO_SUBTITLE)"
-  !insertmacro INSTALLOPTIONS_DISPLAY "ioC.ini"
-  !insertmacro INSTALLOPTIONS_READ $INSTDIR "ioC.ini" "Field 2" "State"
-  !insertmacro INSTALLOPTIONS_READ $WADIR "ioC.ini" "Field 4" "State"
+  !insertmacro INSTALLOPTIONS_DISPLAY "sr163_directories.ini"
+  !insertmacro INSTALLOPTIONS_READ $INSTDIR "sr163_directories.ini" "Field 2" "State"
+  !insertmacro INSTALLOPTIONS_READ $WADIR "sr163_directories.ini" "Field 4" "State"
 
 FunctionEnd
 
@@ -262,7 +260,7 @@ FunctionEnd
 ;Function CustomPageC
 
 ;  !insertmacro MUI_HEADER_TEXT "$(TEXT_IO_TITLE)" "$(TEXT_IO_SUBTITLE)"
-;  !insertmacro INSTALLOPTIONS_DISPLAY "ioC.ini"
+;  !insertmacro INSTALLOPTIONS_DISPLAY "sr163_directories.ini"
 
 ;FunctionEnd
 
