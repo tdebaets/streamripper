@@ -46,6 +46,7 @@ static int spawn_streamripper (void);
 static void CALLBACK timer_proc (HWND hwnd, UINT uMsg, UINT idEvent, DWORD dwTime);
 
 int write_pipe (char* msg);
+int check_child_process (void);
 
 static HANDLE m_hpipe_dll_read = 0;
 static HANDLE m_hpipe_dll_write = 0;
@@ -64,6 +65,8 @@ void debug_printf (char* fmt, ...);
 
 #define SR_PIPE_SIZE	    32000
 #define SR_PIPE_OVERFLOW    31000
+
+#define SR_TIMER_PERIOD     1000    /* In ms */
 
 /*****************************************************************************
  * Winamp Interface Functions
@@ -118,7 +121,7 @@ init ()
     hook_winamp ();
 
     debug_printf ("Completed hook\n");
-    m_timer_id = SetTimer (NULL, 0, 500, (TIMERPROC) timer_proc);
+    m_timer_id = SetTimer (NULL, 0, SR_TIMER_PERIOD, (TIMERPROC) timer_proc);
 
     debug_printf ("Completed settimer\n");
     return 0;
@@ -288,12 +291,14 @@ pipe_reader (void* arg)
     }
 }
 
+#if defined (commentout)
 /* This test is needed to work around a bug (limitation?) 
    in Win32 API on Windows 98.  Even though the client has 
    crashed or closed the handle, WriteFile() hangs if 
    the buffer is full.  This function will return "1" if 
    the buffer is about to overflow, so that we don't 
-   cause winamp to hang.  */
+   cause winamp to hang.  
+*/
 int
 test_pipe (void)
 {
@@ -307,6 +312,7 @@ test_pipe (void)
     if (bytes_avail > SR_PIPE_OVERFLOW) return 1;
     return 0;
 }
+#endif
 
 /* Return 1 if error, 0 if success */
 int
@@ -318,17 +324,17 @@ write_pipe (char* msg)
     char eom = '\x03';
     BOOL rc;
 
-    rc = test_pipe ();
-    if (rc) return 1;
+    rc = check_child_process ();
+    if (!rc) return 1;
 
     for (i=0; i<strlen(msg); i++) {
 	rc = WriteFile (m_hpipe_dll_write, &msg[i], 1, &num_written, 0);
 	if (rc == 0) {
-	    display_last_error ();
+	    //display_last_error ();
 	    return 1;
 	}
 	if (num_written != 1) {
-	    display_last_error ();
+	    //display_last_error ();
 	    return 1;
 	}
     }
@@ -435,8 +441,10 @@ check_child_process (void)
     
     if (m_hprocess == INVALID_HANDLE_VALUE) return 0;
     rc = GetExitCodeProcess (m_hprocess, &exit_code);
+#if defined (commentout)
     debug_printf ("CHECK CHILD: %d %d (%d)\n", rc, exit_code, 
 		exit_code == STILL_ACTIVE);
+#endif
     return exit_code == STILL_ACTIVE;
 }
 
@@ -452,7 +460,6 @@ timer_proc (
     char msg[4+MAX_URL_LEN];
     int rc;
 
-    debug_printf ("Timer_proc\n");
     winamp_poll (url);
     if (url[0]) {
 	sprintf (msg, "url %s", url);

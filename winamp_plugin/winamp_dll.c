@@ -441,7 +441,6 @@ hook_winamp_callback (HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 	}
     }
 
-    debug_printf ("Hook_winamp_callback\n");
 #if defined (commentout)
     if (umsg == WM_USER || umsg == WM_COPYDATA) {
 	debug_printf ("callback: %d/0x%04x/0x%04x/0x%08x\n",hwnd,umsg,wparam,lparam);
@@ -489,12 +488,10 @@ hook_winamp_callback (HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 		(wpf & SWP_SHOWWINDOW)    ? "SHOWW" : "-----");
 	}
 #endif
-	debug_printf ("notify_dock\n");
 	notify_dock();
     }
     if (umsg == WM_SIZE) {
 	int rc;
-	debug_printf ("wm_size\n");
 	/* Need to send minimize events */
 	if (wparam == SIZE_MINIMIZED) {
 	    rc = write_pipe ("Resize 0");
@@ -506,7 +503,9 @@ hook_winamp_callback (HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 	}
     }
 
+#if defined (commentout)
     debug_printf ("callback: %d/0x%04x/0x%04x/0x%08x\n",hwnd,umsg,wparam,lparam);
+#endif
     for (i = 0; i < WINAMP_CLASSIC_WINS; i++) {
 	if (m_winamp_classic_wins[i].hwnd == hwnd)
 	    return CallWindowProc (m_winamp_classic_wins[i].orig_proc, hwnd, umsg, wparam, lparam); 
@@ -516,7 +515,9 @@ hook_winamp_callback (HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 	    return CallWindowProc (m_winamp_modern_wins[i].orig_proc, hwnd, umsg, wparam, lparam);
     }
 
+#if defined (commentout)
     debug_printf ("hook_callback problem: %d/0x%04x/0x%04x/0x%04x\n",hwnd,umsg,wparam,lparam);
+#endif
     return FALSE;
 }
 
