@@ -140,6 +140,10 @@ SOURCE=.\options.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\plugin_main.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\registry.h
 # End Source File
 # Begin Source File
