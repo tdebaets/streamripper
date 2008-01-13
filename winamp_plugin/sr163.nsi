@@ -15,7 +15,7 @@
 
   ;Name and file
   Name "Streamripper for Windows and Winamp v1.63-beta-2"
-  OutFile "streamripper-windows-bundle-1.63-beta-2.exe"
+  OutFile "streamripper-windows-installer-1.63-beta-2.exe"
 
   ;Default installation folder
   InstallDir "$PROGRAMFILES\Streamripper-1.63-beta-2"
