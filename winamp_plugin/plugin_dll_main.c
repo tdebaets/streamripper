@@ -38,25 +38,32 @@
 
 static int  init ();
 static void config (); 
-static void quit ();
+void quit ();
 static void create_pipes (void);
 static void destroy_pipes (void);
 static void launch_pipe_threads (void);
 static int spawn_streamripper (void);
 static void CALLBACK timer_proc (HWND hwnd, UINT uMsg, UINT idEvent, DWORD dwTime);
 
-void write_pipe (char* msg);
+int write_pipe (char* msg);
 
 static HANDLE m_hpipe_dll_read = 0;
 static HANDLE m_hpipe_dll_write = 0;
 static HANDLE m_hpipe_exe_read = 0;
 static HANDLE m_hpipe_exe_write = 0;
 
+static HANDLE m_hprocess;
+static DWORD m_process_id;
+
 static TCHAR m_szToopTip[] = "Streamripper For Winamp";
 static int m_enabled;
 static UINT m_timer_id;
 
 void debug_popup (char* fmt, ...);
+void debug_printf (char* fmt, ...);
+
+#define SR_PIPE_SIZE	    32000
+#define SR_PIPE_OVERFLOW    31000
 
 /*****************************************************************************
  * Winamp Interface Functions
@@ -86,23 +93,34 @@ init ()
 {
     int rc;
 
+    debug_printf ("Init\n");
+    m_timer_id = 0;
     winamp_dll_init ();
     create_pipes ();
     launch_pipe_threads ();
     rc = spawn_streamripper ();
     if (rc == 0) {
 	/* Failure spawning streamripper */
-	m_timer_id = 0;
 	destroy_pipes ();
 	return 1;
     }
 
-    /* Success spawning streamripper */
-    dock_init (g_plugin.hwndParent);     // This function is obsolete
+    debug_printf ("Completed spawn\n");
+    rc = write_pipe ("Hello World");
+    if (rc != 0) {
+	/* Don't know why this would happen */
+	destroy_pipes ();
+	return 1;
+    }
+
+    debug_printf ("Completed test message\n");
+    hook_init (g_plugin.hwndParent);     // This function is obsolete
     hook_winamp ();
-    write_pipe ("Hello World");
+
+    debug_printf ("Completed hook\n");
     m_timer_id = SetTimer (NULL, 0, 500, (TIMERPROC) timer_proc);
 
+    debug_printf ("Completed settimer\n");
     return 0;
 }
 
@@ -144,6 +162,7 @@ config ()
 {
     BOOL prev_enabled = m_enabled;
 
+    debug_printf ("Config\n");
     DialogBox(g_plugin.hDllInstance, 
 	      MAKEINTRESOURCE(IDD_ENABLE), 
 	      g_plugin.hwndParent,
@@ -162,11 +181,10 @@ config ()
 void
 quit()
 {
-    int num_written;
-
-    WriteFile (m_hpipe_dll_write, "q", 1, &num_written, NULL);
+    m_enabled = 0;
+    debug_printf ("Quit\n");
     KillTimer (NULL, m_timer_id);
-    dock_unhook_winamp ();
+    unhook_winamp ();
     destroy_pipes ();
 }
 
@@ -212,7 +230,7 @@ create_pipes (void)
 	&m_hpipe_exe_read,   // pointer to read handle
 	&tmp,                // pointer to write handle
 	&sa,                 // pointer to security attributes
-	0                    // pipe size
+	SR_PIPE_SIZE         // pipe size
     );
     if (rc == 0) {
 	display_last_error ();
@@ -235,7 +253,7 @@ create_pipes (void)
 	&tmp,                // pointer to read handle
 	&m_hpipe_exe_write,  // pointer to write handle
 	&sa,                 // pointer to security attributes
-	0                    // pipe size
+	SR_PIPE_SIZE         // pipe size
     );
     if (rc == 0) {
 	display_last_error ();
@@ -270,7 +288,28 @@ pipe_reader (void* arg)
     }
 }
 
-void
+/* This test is needed to work around a bug (limitation?) 
+   in Win32 API on Windows 98.  Even though the client has 
+   crashed or closed the handle, WriteFile() hangs if 
+   the buffer is full.  This function will return "1" if 
+   the buffer is about to overflow, so that we don't 
+   cause winamp to hang.  */
+int
+test_pipe (void)
+{
+    BOOL rc;
+    DWORD bytes_avail;
+
+    rc = PeekNamedPipe (m_hpipe_exe_read, NULL, 0, 
+			NULL, &bytes_avail, NULL);
+    debug_printf ("PEEK TEST (exe_read): %d %d\n", rc, bytes_avail);
+
+    if (bytes_avail > SR_PIPE_OVERFLOW) return 1;
+    return 0;
+}
+
+/* Return 1 if error, 0 if success */
+int
 write_pipe (char* msg)
 {
     unsigned int i;
@@ -279,18 +318,26 @@ write_pipe (char* msg)
     char eom = '\x03';
     BOOL rc;
 
+    rc = test_pipe ();
+    if (rc) return 1;
+
     for (i=0; i<strlen(msg); i++) {
 	rc = WriteFile (m_hpipe_dll_write, &msg[i], 1, &num_written, 0);
 	if (rc == 0) {
 	    display_last_error ();
-	    return;
+	    return 1;
 	}
 	if (num_written != 1) {
 	    display_last_error ();
-	    return;
+	    return 1;
 	}
     }
-    WriteFile (m_hpipe_dll_write, &eom, 1, &num_written, 0);
+    rc = WriteFile (m_hpipe_dll_write, &eom, 1, &num_written, 0);
+    if (rc == 0) {
+	return 1;
+    } else {
+	return 0;
+    }
 }
 
 static void
@@ -301,6 +348,7 @@ launch_pipe_threads (void)
 #endif
 }
 
+/* Return 0 for failure */
 static int
 spawn_exe (char* cwd, char* exe)
 {
@@ -329,29 +377,14 @@ spawn_exe (char* cwd, char* exe)
 		cwd,            // current directory 
 		&startup_info,  // STARTUPINFO pointer
 		&piProcInfo);   // receives PROCESS_INFORMATION 
-    return rc;
-
-#if defined (commentout)
     if (rc == 0) {
-	char buf[1023];
-	LPVOID lpMsgBuf;
-	FormatMessage( 
-	    FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-	    FORMAT_MESSAGE_FROM_SYSTEM | 
-	    FORMAT_MESSAGE_IGNORE_INSERTS,
-	    NULL,
-	    GetLastError(),
-	    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-	    (LPTSTR) &lpMsgBuf,
-	    0,
-	    NULL 
-	);
-	_snprintf (buf, 1023, "RC=%d pid=%d error=%s\n", rc, piProcInfo.dwProcessId, lpMsgBuf);
-	buf[1022] = 0;
-	MessageBox (g_plugin.hwndParent, buf, "Hi guys", MB_OK);
-	LocalFree( lpMsgBuf );
+	m_hprocess = INVALID_HANDLE_VALUE;
+	m_process_id = 0;
+    } else {
+	m_hprocess = piProcInfo.hProcess;
+	m_process_id = piProcInfo.dwProcessId;
     }
-#endif
+    return rc;
 }
 
 /* Look for streamripper in a few different places.
@@ -393,6 +426,20 @@ spawn_streamripper (void)
     return rc;
 }
 
+/* Return 1 if child process is running */
+int
+check_child_process (void)
+{
+    int rc;
+    DWORD exit_code;
+    
+    if (m_hprocess == INVALID_HANDLE_VALUE) return 0;
+    rc = GetExitCodeProcess (m_hprocess, &exit_code);
+    debug_printf ("CHECK CHILD: %d %d (%d)\n", rc, exit_code, 
+		exit_code == STILL_ACTIVE);
+    return exit_code == STILL_ACTIVE;
+}
+
 static void CALLBACK
 timer_proc (
 	    HWND hwnd,     // handle of window for timer messages
@@ -403,9 +450,12 @@ timer_proc (
 {
     char url[MAX_URL_LEN];
     char msg[4+MAX_URL_LEN];
+    int rc;
+
+    debug_printf ("Timer_proc\n");
     winamp_poll (url);
     if (url[0]) {
 	sprintf (msg, "url %s", url);
-	write_pipe (msg);
+	rc = write_pipe (msg);
     }
 }

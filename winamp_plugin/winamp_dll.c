@@ -61,7 +61,9 @@ static VOID dock_window();
 static void notify_dock ();
 static BOOL winamp_get_path (char *path);
 
-extern void write_pipe (char* msg);
+int write_pipe (char* msg);
+void quit ();
+int check_child_process (void);
 
 /*****************************************************************************
  * Private Vars
@@ -319,7 +321,7 @@ hook_winamp (void)
 	    if (!m_winamp_modern_wins[i].orig_proc) {
 		m_winamp_modern_wins[i].orig_proc = (WNDPROC) SetWindowLong (m_winamp_modern_wins[i].hwnd, GWL_WNDPROC, (LONG) hook_winamp_callback);
 		if (m_winamp_modern_wins[i].orig_proc == NULL) {
-		    //debug_printf ("Hooking failure?\n");
+		    debug_printf ("Hooking failure?\n");
 		    return FALSE;
 		}
 	    }
@@ -337,7 +339,7 @@ hook_winamp (void)
 	    if (!m_winamp_classic_wins[i].orig_proc) {
 		m_winamp_classic_wins[i].orig_proc = (WNDPROC) SetWindowLong (m_winamp_classic_wins[i].hwnd, GWL_WNDPROC, (LONG) hook_winamp_callback);
 		if (m_winamp_classic_wins[i].orig_proc == NULL) {
-    		    //debug_printf ("Hooking failure?\n");
+    		    debug_printf ("Hooking failure?\n");
 		    return FALSE;
 		}
 	    }
@@ -357,7 +359,7 @@ hook_winamp (void)
 }
 
 void
-dock_init (HWND hwnd)
+hook_init (HWND hwnd)
 {
     int i;
 
@@ -378,9 +380,6 @@ dock_init (HWND hwnd)
     //debug_printf ("parent = %d\n", m_winamp_classic_wins[0].hwnd);
     //debug_printf ("par o par = %d\n", GetParent(m_winamp_classic_wins[0].hwnd));
 
-    hook_winamp ();
-
-    return;
 }
 
 #if defined (commentout)
@@ -410,11 +409,39 @@ switch_docking_index (void)
 }
 #endif
 
+WNDPROC
+find_winamp_callback (HWND hwnd)
+{
+    int i;
+    for (i = 0; i < WINAMP_CLASSIC_WINS; i++) {
+	if (m_winamp_classic_wins[i].hwnd == hwnd)
+	    return m_winamp_classic_wins[i].orig_proc;
+    }
+    for (i = 0; i < m_num_modern_wins; i++) {
+	if (m_winamp_modern_wins[i].hwnd == hwnd)
+	    return m_winamp_modern_wins[i].orig_proc;
+    }
+    return 0;
+}
+
 LRESULT CALLBACK
 hook_winamp_callback (HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 {
-    int i;
+    int i, rc;
 
+    /* Test if the child process has exited.  If so, we need to unhook. */
+    rc = check_child_process ();
+    if (rc == 0) {
+	WNDPROC wp = find_winamp_callback (hwnd);
+	quit ();
+	if (wp) {
+	    return CallWindowProc (wp, hwnd, umsg, wparam, lparam);
+	} else {
+	    return FALSE;
+	}
+    }
+
+    debug_printf ("Hook_winamp_callback\n");
 #if defined (commentout)
     if (umsg == WM_USER || umsg == WM_COPYDATA) {
 	debug_printf ("callback: %d/0x%04x/0x%04x/0x%08x\n",hwnd,umsg,wparam,lparam);
@@ -462,44 +489,59 @@ hook_winamp_callback (HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 		(wpf & SWP_SHOWWINDOW)    ? "SHOWW" : "-----");
 	}
 #endif
+	debug_printf ("notify_dock\n");
 	notify_dock();
     }
     if (umsg == WM_SIZE) {
+	int rc;
+	debug_printf ("wm_size\n");
 	/* Need to send minimize events */
 	if (wparam == SIZE_MINIMIZED) {
-	    write_pipe ("Resize 0");
+	    rc = write_pipe ("Resize 0");
 	} else {
-	    write_pipe ("Resize 1");
+	    rc = write_pipe ("Resize 1");
+	}
+	if (rc != 0) {
+	    quit ();
 	}
     }
 
-    //debug_printf ("callback: %d/0x%04x/0x%04x/0x%08x\n",hwnd,umsg,wparam,lparam);
+    debug_printf ("callback: %d/0x%04x/0x%04x/0x%08x\n",hwnd,umsg,wparam,lparam);
     for (i = 0; i < WINAMP_CLASSIC_WINS; i++) {
 	if (m_winamp_classic_wins[i].hwnd == hwnd)
 	    return CallWindowProc (m_winamp_classic_wins[i].orig_proc, hwnd, umsg, wparam, lparam); 
     }
     for (i = 0; i < m_num_modern_wins; i++) {
 	if (m_winamp_modern_wins[i].hwnd == hwnd)
-	    return CallWindowProc (m_winamp_modern_wins[i].orig_proc, hwnd, umsg, wparam, lparam); 
+	    return CallWindowProc (m_winamp_modern_wins[i].orig_proc, hwnd, umsg, wparam, lparam);
     }
 
-    //debug_printf ("hook_callback problem: %d/0x%04x/0x%04x/0x%04x\n",hwnd,umsg,wparam,lparam);
+    debug_printf ("hook_callback problem: %d/0x%04x/0x%04x/0x%04x\n",hwnd,umsg,wparam,lparam);
     return FALSE;
 }
 
 BOOL
-dock_unhook_winamp ()
+unhook_winamp ()
 {
     int i;
 
-    //debug_printf ("Unhooking...\n");
-    for (i = 0; i < WINAMP_CLASSIC_WINS; i++)
-	if (m_winamp_classic_wins[i].orig_proc)
+    debug_printf ("Unhooking...\n");
+    for (i = 0; i < WINAMP_CLASSIC_WINS; i++) {
+	if (m_winamp_classic_wins[i].orig_proc) {
+	    debug_printf ("%d %p\n", m_winamp_classic_wins[i].hwnd, m_winamp_classic_wins[i].orig_proc);
 	    SetWindowLong (m_winamp_classic_wins[i].hwnd, GWL_WNDPROC, (LONG) m_winamp_classic_wins[i].orig_proc);
+	    m_winamp_classic_wins[i].hwnd = 0;
+	    m_winamp_classic_wins[i].orig_proc = 0;
+	}
+    }
 
-    for (i = 0; i < m_num_modern_wins; i++)
-	if (m_winamp_modern_wins[i].orig_proc)
+    for (i = 0; i < m_num_modern_wins; i++) {
+	if (m_winamp_modern_wins[i].orig_proc) {
 	    SetWindowLong (m_winamp_modern_wins[i].hwnd, GWL_WNDPROC, (LONG) m_winamp_modern_wins[i].orig_proc);
+	    m_winamp_modern_wins[i].hwnd = 0;
+	    m_winamp_modern_wins[i].orig_proc = 0;
+	}
+    }
 
 //    m_dragging = FALSE;
 //    m_docked = FALSE;
@@ -555,7 +597,10 @@ notify_dock ()
 	}
     }
     if (bi > 0) {
-	write_pipe (buf);
+	rc = write_pipe (buf);
+	if (rc != 0) {
+	    quit();
+	}
     }
 }
 

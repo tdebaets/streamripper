@@ -83,16 +83,6 @@ static char m_winamp_stream_cache[MAX_URL_LEN] = "0";
 static HANDLE m_hpipe_exe_read = NULL;
 static HANDLE m_hpipe_exe_write = NULL;
 
-#if defined (commentout)
-winampGeneralPurposePlugin g_plugin = {
-    GPPHDR_VER,
-    m_szToopTip,
-    init,
-    config,
-    quit
-};
-#endif
-
 int
 init ()
 {
@@ -195,6 +185,9 @@ quit()
     prefs_set_stream_prefs (&g_rmo, "stream defaults");
     prefs_set_wstreamripper_prefs (&g_gui_prefs);
     prefs_save ();
+
+    CloseHandle (m_hpipe_exe_read);
+    CloseHandle (m_hpipe_exe_write);
 
     if (m_bRipping)
 	rip_manager_stop (m_rmi);
@@ -749,6 +742,11 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
     case WM_APP+0:
 	handle_wm_app (hwnd, wParam, lParam);
 	break;
+    case WM_APP+1:
+	/* Exit request from thread */
+	quit ();
+	PostQuitMessage( 0 );
+	break;
     case WM_DESTROY:
 	debug_printf ("Got WM_DESTROY\n");
 	PostQuitMessage( 0 );
@@ -879,8 +877,9 @@ pipe_reader (void* arg)
 	    /* GCS FIX: How to distinguish error condition from winamp exit? */
 	    //display_last_error ();
 	    debug_printf ("Pipe read failed\n");
-	    quit ();
-	    exit (1);
+	    SendMessage (m_hwnd, WM_APP+1, 0, 0);
+	    //quit ();
+	    //exit (1);
 	}
 	if (num_read == 1) {
 	    if (msgbuf[idx] == '\x03') {
