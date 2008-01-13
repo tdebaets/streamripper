@@ -41,5 +41,12 @@ extern BOOL		render_destroy();
 BOOL render_create_preview (char* skinfile, HDC hdc, long left, long top,
 			    long width, long height);
 extern BOOL		render_change_skin(LPCTSTR szBmpFile);
+void render_start_button_enable ();
+void render_start_button_disable ();
+void render_stop_button_enable ();
+void render_stop_button_disable ();
+void render_relay_button_enable();
+void render_relay_button_disable();
+void render_create (void);
 
 #endif //__RENDER_H__

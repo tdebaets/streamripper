@@ -285,6 +285,10 @@ write_pipe (char* msg)
 	    display_last_error ();
 	    return;
 	}
+	if (num_written != 1) {
+	    display_last_error ();
+	    return;
+	}
     }
     WriteFile (m_hpipe_dll_write, &eom, 1, &num_written, 0);
 }

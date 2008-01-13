@@ -48,7 +48,6 @@ static int  init();
 static void quit();
 static BOOL CALLBACK WndProc(HWND hwnd,UINT umsg,WPARAM wParam,LPARAM lParam);
 static void rip_callback (RIP_MANAGER_INFO* rmi, int message, void *data);
-static void stop_button_pressed();
 static void populate_history_popup (void);
 static void insert_riplist (char* url, int pos);
 static void launch_pipe_threads (void);
@@ -69,9 +68,6 @@ static BOOL			m_bRipping = FALSE;
 static TCHAR 			m_szToopTip[] = "Streamripper For Winamp";
 static NOTIFYICONDATA		m_nid;
 static char			m_output_dir[MAX_FILENAME];
-static HBUTTON			m_startbut;
-static HBUTTON			m_stopbut;
-static HBUTTON			m_relaybut;
 static char			m_szWindowClass[] = "sripper";
 static HMENU			m_hmenu_systray = NULL;
 static HMENU			m_hmenu_systray_sub = NULL;
@@ -220,28 +216,28 @@ quit()
 void
 start_button_enable()
 {
-    render_set_button_enabled(m_startbut, TRUE);
+    render_start_button_enable ();
     EnableMenuItem(m_hmenu_systray_sub, ID_MENU_STARTRIPPING, MF_ENABLED);
 }
 
 void
 start_button_disable()
 {
-    render_set_button_enabled(m_startbut, FALSE);
+    render_start_button_disable ();
     EnableMenuItem(m_hmenu_systray_sub, ID_MENU_STARTRIPPING, MF_DISABLED|MF_GRAYED);
 }
 
 void
 stop_button_enable()
 {
-    render_set_button_enabled(m_stopbut, TRUE);
+    render_stop_button_enable ();
     EnableMenuItem(m_hmenu_systray_sub, ID_MENU_STOPRIPPING, MF_ENABLED);
 }
 
 void
 stop_button_disable()
 {
-    render_set_button_enabled(m_stopbut, FALSE);
+    render_stop_button_disable ();
     EnableMenuItem(m_hmenu_systray_sub, ID_MENU_STOPRIPPING, MF_DISABLED|MF_GRAYED);
 }
 
@@ -516,7 +512,11 @@ options_button_pressed()
     m_doing_options_dialog = TRUE;
     options_dialog_show (m_hinstance, m_hwnd);
 
-    render_set_button_enabled (m_relaybut, OPT_FLAG_ISSET(g_rmo.flags, OPT_MAKE_RELAY)); 			
+    if (OPT_FLAG_ISSET (g_rmo.flags, OPT_MAKE_RELAY)) {
+	render_relay_button_enable();
+    } else {
+	render_relay_button_disable();
+    }
     m_doing_options_dialog = FALSE;
 }
 
@@ -615,137 +615,18 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
     switch (umsg)
     {
     case WM_CREATE:
-	if (!render_init(m_hinstance, hwnd, g_gui_prefs.default_skin))
-	{
+	if (!render_init(m_hinstance, hwnd, g_gui_prefs.default_skin)) {
 	    MessageBox(hwnd, "Failed to find the skin bitmap", "Error", 0);
 	    break;
 	}
-	{
-	    RECT rt = {0, 0, 276, 150};	// background
-
-	    // points for the shape of the main window
-	    POINT rgn_points[] = {
-		{2,		0},
-		{273+1,	0},
-		{273+1,	1},
-		{274+1,	1},
-		{274+1,	2},
-		{275+1,	2},
-		{275+1,	147+1},
-		{274+1,	147+1},
-		{274+1,	148+1},
-		{273+1,	148+1},
-		{273+1,	149+1},
-		{2,	149+1},
-		{2,	148+1},
-		{1,	148+1},
-		{1,	147+1},
-		{0,	147+1},
-		{0,	2},
-		{1,	2},
-		{1,	1},
-		{2,	1}
-	    };
-
-	    render_set_background(&rt, rgn_points, sizeof(rgn_points)/sizeof(POINT));
+	render_create (); 
+	stop_button_disable();
+	if (OPT_FLAG_ISSET(g_rmo.flags, OPT_MAKE_RELAY)) {
+	    render_relay_button_enable ();
+	} else {
+	    render_relay_button_disable ();
 	}
 
-	// Start button
-	{
-	    RECT rt[] = {
-		{277, 1, 325, 21},		// Noraml
-		{327, 1, 375, 21},		// Pressed
-		{277, 67, 325, 87},		// Over
-		{327, 67, 375, 87},		// Grayed
-		{12, 123, 60, 143}		// Dest
-	    };
-	    m_startbut = render_add_button(&rt[0],&rt[1], &rt[2], &rt[3], &rt[4], start_button_pressed);
-	}
-
-	// Stop button
-	{
-	    RECT rt[] = {
-		{277, 23, 325, 43},
-		{327, 23, 375, 43},
-		{277, 89, 325, 109},
-		{327, 89, 375, 109},
-		{68, 123, 116, 143} // dest
-	    };
-	    m_stopbut = render_add_button(&rt[0],&rt[1], &rt[2], &rt[3], &rt[4], stop_button_pressed);
-	    stop_button_disable();
-	}
-
-	// Options button
-	{
-	    RECT rt[] = {
-		{277, 45, 325, 65},
-		{327, 45, 375, 65},
-		{277, 111, 325, 131},
-		{327, 111, 375, 131},
-		{215, 123, 263, 143} // dest
-	    };
-	    render_add_button(&rt[0],&rt[1], &rt[2], &rt[3], &rt[4], options_button_pressed);
-	}
-
-	// Min  button
-	{
-	    RECT rt[] = {
-		{373, 133, 378, 139},
-		{387, 133, 392, 139},	//pressed
-		{380, 133, 385, 139},	//over
-		{373, 133, 378, 139},	//gray
-		{261, 4, 266, 10}
-	    };
-	    render_add_button(&rt[0],&rt[1], &rt[2], &rt[3], &rt[4], close_button_pressed);
-	}
-			
-	// Relay button
-	{
-	    RECT rt[] = { 
-		{277, 133, 299, 148},	// normal
-		{325, 133, 347, 148},	// pressed
-		{301, 133, 323, 148},
-		{349, 133, 371, 148},   // Grayed
-		{10, 24, 32, 39}
-	    };
-	    m_relaybut = render_add_button(&rt[0],&rt[1], &rt[2], &rt[3], &rt[4], relay_pressed);
-	    render_set_button_enabled(m_relaybut, OPT_FLAG_ISSET(g_rmo.flags, OPT_MAKE_RELAY));
-	}
-
-	// Set the progress bar
-	{
-	    RECT rt = {373, 141, 378, 148};	// progress bar image
-	    POINT pt = {105, 95};
-	    render_set_prog_rects(&rt, pt, RGB(100, 111, 132));
-	}
-
-
-	// Set positions for out display text
-	{
-
-	    int i;
-	    RECT rt[] = {
-		{42, 95, 88, 95+12},	// Status
-		{42, 49, 264, 49+12},	// Filename
-		{42, 26, 264, 26+12},	// Streamname
-		{42, 66, 264, 66+12},	// Server Type
-		{42, 78, 85, 78+12},	// Bitrate
-		{92, 78, 264, 78+12}	// MetaInt
-	    };
-				
-	    for(i = 0; i < IDR_NUMFIELDS; i++)
-		render_set_display_data_pos(i, &rt[i]);
-	}
-	{
-	    POINT pt = {380, 141};
-	    render_set_text_color(pt);
-	}
-
-	{
-	    debug_printf ("IDR_STREAMNAME:Loading please wait...\n");
-	    render_set_display_data(IDR_STREAMNAME, "Loading please wait...");
-	}
-			
 	SetTimer (hwnd, 1, 500, (TIMERPROC)UpdateDisplay);
 	dock_init (hwnd);
 
