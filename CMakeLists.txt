@@ -1,0 +1,107 @@
+PROJECT(STREAMRIPPER)
+
+######################################################
+##  This isn't really a full cmake, but its enough 
+##  for making the msys target.
+######################################################
+
+INCLUDE(CheckFunctionExists)
+INCLUDE(FindOpenGL)
+
+######################################################
+##  MATH LIBRARY
+######################################################
+IF(UNIX)
+   SET(MY_MATH_LIB -lm)
+ELSE(UNIX)
+   SET(MY_MATH_LIB)
+ENDIF(UNIX)
+
+######################################################
+##  SOURCE FILES
+######################################################
+SET(STREAMRIPPER_SRC
+	console/streamripper.c
+#	lib/argv.c
+	lib/cbuf2.c
+	lib/charset.c
+	lib/debug.c
+	lib/external.c
+	lib/filelib.c
+	lib/findsep.c
+	lib/http.c
+	lib/iconvert.c
+	lib/mchar.c
+	lib/mpeg.c
+	lib/parse.c
+	lib/prefs.c
+	lib/relaylib.c
+	lib/ripaac.c
+	lib/ripogg.c
+	lib/ripstream.c
+	lib/rip_manager.c
+	lib/socklib.c
+	lib/threadlib.c
+	lib/utf8.c
+	lib/cbuf2.h
+	lib/charmaps.h
+	lib/charset.h
+	lib/compat.h
+	lib/confw32.h
+	lib/debug.h
+	lib/external.h
+	lib/filelib.h
+	lib/findsep.h
+	lib/http.h
+	lib/list.h
+	lib/mchar.h
+	lib/mpeg.h
+	lib/parse.h
+	lib/prefs.h
+	lib/relaylib.h
+	lib/ripogg.h
+	lib/ripstream.h
+	lib/rip_manager.h
+	lib/socklib.h
+	lib/srconfig.h
+	lib/srtypes.h
+	lib/threadlib.h
+	lib/uce_dirent.h
+	lib/utf8.h
+	)
+
+INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.12.12/include/glib-2.0)
+INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.12.12/lib/glib-2.0/include)
+INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/libmad-0.15.1b/msvc++)
+INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/iconv-win32/static)
+INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/tre-0.7.2/lib)
+INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/tre-0.7.2/win32)
+INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/libogg-1.1.3)
+INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/libvorbis-1.1.2)
+
+
+######################################################
+##  TARGETS
+######################################################
+LINK_DIRECTORIES(
+	"${CMAKE_CURRENT_SOURCE_DIR}/libmad-0.15.1b/msvc++/Release"
+	"${CMAKE_CURRENT_SOURCE_DIR}/iconv-win32/static"
+	"${CMAKE_CURRENT_SOURCE_DIR}/tre-0.7.2/win32/Release"
+	"${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.12.12/lib"
+	"${CMAKE_CURRENT_SOURCE_DIR}/libogg-1.1.3"
+	"${CMAKE_CURRENT_SOURCE_DIR}/libvorbis-1.1.2"
+	)
+SET(STREAMRIPPER_LIBS libmad iconv tre glib-2.0 ws2_32 ogg vorbis)
+
+######################################################
+##  LINKING
+######################################################
+ADD_EXECUTABLE(streamripper ${STREAMRIPPER_SRC} ${CMAKE_CURRENT_SOURCE_DIR}/chkstk.o)
+
+TARGET_LINK_LIBRARIES(streamripper ${MY_MATH_LIB} ${STREAMRIPPER_LIBS})
+
+######################################################
+##  INSTALL
+######################################################
+# INSTALL(TARGETS streamripper DESTINATION bin)
