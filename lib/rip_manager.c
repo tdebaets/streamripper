@@ -336,16 +336,18 @@ rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
 {
     int ret;
 
-    if (m_write_data) {
-        ret = filelib_write_track(buf, size);
-        if (ret != SR_SUCCESS) {
-            debug_printf ("filelib_write_track: %d\n",ret);
-            return ret;
-        }
+    if (GET_INDIVIDUAL_TRACKS(rmi->prefs->flags)) {
+	if (m_write_data) {
+	    ret = filelib_write_track(buf, size);
+	    if (ret != SR_SUCCESS) {
+		debug_printf ("filelib_write_track returned: %d\n",ret);
+		return ret;
+	    }
+	}
     }
 
-    rmi->filesize += size;
-    m_bytes_ripped += size;
+    rmi->filesize += size;	/* This is used by the GUI */
+    m_bytes_ripped += size;	/* This is used to determine when to quit */
 
     return SR_SUCCESS;
 }

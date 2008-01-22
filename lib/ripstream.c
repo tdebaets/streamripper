@@ -540,7 +540,7 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
 	    ret = rip_manager_put_data (rmi, &m_getbuffer[curr_song], 
 					curr_song_bytes);
             if (ret != SR_SUCCESS) {
-                debug_printf ("filelib_write_track: %d\n",ret);
+                debug_printf ("rip_manager_put_data returned: %d\n",ret);
                 return ret;
             }
 	}

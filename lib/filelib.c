@@ -1046,9 +1046,15 @@ filelib_write (FHANDLE fp, char *buf, u_long size)
     }
 #if WIN32
     {
+	BOOL rc;
 	DWORD bytes_written = 0;
-	if (!WriteFile(fp, buf, size, &bytes_written, NULL))
+	rc = WriteFile(fp, buf, size, &bytes_written, NULL);
+	if (rc == 0) {
+	    debug_print_error();
+	    debug_printf("filelib_write: WriteFile rc = 0\n");
+	    debug_printf("size = %d, bytes_written = %d\n", size, bytes_written);
 	    return SR_ERROR_CANT_WRITE_TO_FILE;
+	}
     }
 #else
     if (write(fp, buf, size) == -1)
