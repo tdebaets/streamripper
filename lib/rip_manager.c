@@ -352,17 +352,6 @@ rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
     return SR_SUCCESS;
 }
 
-error_code
-rip_manager_put_raw_data(char *buf, int size)
-{
-#if defined (commentout)
-    relaylib_send(buf, size, 1, 0);
-#endif
-    filelib_write_show (buf, size);
-    return SR_SUCCESS;
-}
-
-
 /* 
  * Fires up the relaylib stuff. Most of it is so relaylib 
  * knows what to call the stream which is what the 'construct_sc_repsonse()'

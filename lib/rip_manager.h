@@ -186,7 +186,6 @@ error_code rip_manager_start (RIP_MANAGER_INFO **rmi,
 error_code rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti, int track_count);
 error_code rip_manager_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
 error_code rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size);
-error_code rip_manager_put_raw_data(char *buf, int size);
 
 char *client_relay_header_generate (int icy_meta_support);
 void client_relay_header_release (char *ch);

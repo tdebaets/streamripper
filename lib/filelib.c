@@ -32,15 +32,6 @@
 #define TEMP_STR_LEN	(SR_MAX_PATH*2)
 
 /*****************************************************************************
- * Public functions
- *****************************************************************************/
-error_code filelib_write_track(char *buf, u_long size);
-error_code filelib_write_show(char *buf, u_long size);
-void filelib_shutdown();
-error_code filelib_remove(char *filename);
-
-
-/*****************************************************************************
  * Private Functions
  *****************************************************************************/
 static error_code device_split (mchar* dirname, mchar* device, mchar* path);
