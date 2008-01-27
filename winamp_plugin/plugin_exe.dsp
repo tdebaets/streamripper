@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ws2_32.lib comctl32.lib libmad.lib tre.lib ogg.lib vorbis.lib charset.lib iconv.lib glib-2.0.lib /nologo /subsystem:windows /machine:I386 /out:"c:/Program files/streamripper/wstreamripper.exe" /libpath:"../libmad-0.15.1b/msvc++/release" /libpath:"../tre-0.7.2/win32/release" /libpath:"../libogg-1.1.3" /libpath:"../libvorbis-1.1.2" /libpath:"../iconv-win32/static" /libpath:"..\win32\glib-2.12.12\lib"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ws2_32.lib comctl32.lib libmad.lib tre.lib ogg.lib vorbis.lib charset.lib iconv.lib glib-2.0.lib /nologo /subsystem:windows /machine:I386 /out:"c:/Program files/streamripper-1.63-beta-2/wstreamripper.exe" /libpath:"../libmad-0.15.1b/msvc++/release" /libpath:"../tre-0.7.2/win32/release" /libpath:"../libogg-1.1.3" /libpath:"../libvorbis-1.1.2" /libpath:"../iconv-win32/static" /libpath:"..\win32\glib-2.12.12\lib"
 
 !ELSEIF  "$(CFG)" == "plugin_exe - Win32 Debug"
 
