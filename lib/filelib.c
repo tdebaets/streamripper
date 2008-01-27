@@ -72,6 +72,9 @@ static void fill_date_buf (mchar* datebuf, int datebuf_len);
 static error_code filelib_open_showfiles ();
 static void move_file (mchar* new_filename, mchar* old_filename);
 static mchar* replace_invalid_chars (mchar *str);
+static BOOL new_file_is_better (mchar *oldfile, mchar *newfile);
+static void delete_file (mchar* filename);
+static void truncate_file (mchar* filename);
 
 /*****************************************************************************
  * Private Vars
@@ -100,44 +103,9 @@ static BOOL	m_do_individual_tracks;
 static mchar    m_session_datebuf[DATEBUF_LEN];
 static mchar    m_stripped_icy_name[SR_MAX_PATH];
 
-// For now we're not going to care. If it makes it good. it not, will know 
-// When we try to create a file in the path.
-static error_code
-mkdir_if_needed (mchar *str)
-{
-    char s[SR_MAX_PATH];
-    string_from_mstring (s, SR_MAX_PATH, str, CODESET_FILESYS);
-#if WIN32
-    mkdir (s);
-#else
-    mkdir (s, 0777);
-#endif
-    return SR_SUCCESS;
-}
-
-/* Recursively make directories.  If make_last == 1, then the final 
-   substring (after the last '/') is considered a directory rather 
-   than a file name */
-static error_code
-mkdir_recursive (mchar *str, int make_last)
-{
-    mchar buf[SR_MAX_PATH];
-    mchar* p = buf;
-    mchar q;
-
-    buf[0] = 0;
-    while ((q = *p++ = *str++) != 0) {
-	if (ISSLASH(q)) {
-	    *p = 0;
-	    mkdir_if_needed (buf);
-	}
-    }
-    if (make_last) {
-	mkdir_if_needed (str);
-    }
-    return SR_SUCCESS;
-}
-
+/*****************************************************************************
+ * Public Functions
+ *****************************************************************************/
 error_code
 filelib_init (BOOL do_individual_tracks,
 	      BOOL do_count,
@@ -268,6 +236,202 @@ filelib_init (BOOL do_individual_tracks,
 	filelib_open_showfiles ();
     }
 
+    return SR_SUCCESS;
+}
+
+error_code
+filelib_start (TRACK_INFO* ti)
+{
+    mchar newfile[TEMP_STR_LEN];
+    mchar fnbase[TEMP_STR_LEN];
+    mchar fnbase1[TEMP_STR_LEN];
+    mchar fnbase2[TEMP_STR_LEN];
+
+    if (!m_do_individual_tracks) return SR_SUCCESS;
+
+    close_file(&m_file);
+
+    /* Compose and trim filename (not including directory) */
+    msnprintf (fnbase1, TEMP_STR_LEN, m_S m_(" - ") m_S, 
+	       ti->artist, ti->title);
+    trim_filename (fnbase, fnbase1);
+    msnprintf (newfile, TEMP_STR_LEN, m_S m_S m_S, 
+	       m_incomplete_directory, fnbase, m_extension);
+    if (m_keep_incomplete) {
+	int n = 1;
+	mchar oldfile[TEMP_STR_LEN];
+	msnprintf (oldfile, TEMP_STR_LEN, m_S m_S m_S, 
+		   m_incomplete_directory, fnbase, m_extension);
+	mstrcpy (fnbase1, fnbase);
+	while (file_exists (oldfile)) {
+	    msnprintf (fnbase1, TEMP_STR_LEN, m_("(%d)") m_S, 
+		       n, fnbase);
+	    trim_filename (fnbase2, fnbase1);
+	    msnprintf (oldfile, TEMP_STR_LEN, m_S m_S m_S, 
+		       m_incomplete_directory,
+		       fnbase2, m_extension);
+	    n++;
+	}
+	if (mstrcmp (newfile, oldfile) != 0) {
+	    move_file (oldfile, newfile);
+	}
+    }
+    mstrcpy (m_incomplete_filename, newfile);
+    return filelib_open_for_write(&m_file, newfile);
+}
+
+error_code
+filelib_write_cue (TRACK_INFO* ti, int secs)
+{
+    static int track_no = 1;
+    int rc;
+    char buf1[MAX_TRACK_LEN];
+    char buf2[MAX_TRACK_LEN];
+
+    if (!m_do_show) return SR_SUCCESS;
+    if (!m_cue_file) return SR_SUCCESS;
+
+    rc = snprintf (buf2, MAX_TRACK_LEN, "  TRACK %02d AUDIO\n", track_no++);
+    filelib_write (m_cue_file, buf2, rc);
+    string_from_mstring (buf1, MAX_TRACK_LEN, ti->title, CODESET_ID3);
+    rc = snprintf (buf2, MAX_TRACK_LEN, "    TITLE \"%s\"\n", buf1);
+    filelib_write (m_cue_file, buf2, rc);
+    string_from_mstring (buf1, MAX_TRACK_LEN, ti->artist, CODESET_ID3);
+    rc = snprintf (buf2, MAX_TRACK_LEN, "    PERFORMER \"%s\"\n", buf1);
+    filelib_write (m_cue_file, buf2, rc);
+    rc = snprintf (buf2, MAX_TRACK_LEN, "    INDEX 01 %02d:%02d:00\n", 
+		   secs / 60, secs % 60);
+    filelib_write (m_cue_file, buf2, rc);
+
+    return SR_SUCCESS;
+}
+
+error_code
+filelib_write_track(char *buf, u_long size)
+{
+    return filelib_write (m_file, buf, size);
+}
+
+error_code
+filelib_write_show(char *buf, u_long size)
+{
+    error_code rc;
+    if (!m_do_show) {
+	return SR_SUCCESS;
+    }
+    rc = filelib_write (m_show_file, buf, size);
+    if (rc != SR_SUCCESS) {
+	m_do_show = 0;
+    }
+    return rc;
+}
+
+// Moves the file from incomplete to complete directory
+// fullpath is an output parameter
+error_code
+filelib_end (TRACK_INFO* ti,
+	     enum OverwriteOpt overwrite,
+	     BOOL truncate_dup,
+	     mchar *fullpath)
+{
+    BOOL ok_to_write = TRUE;
+    mchar newfile[TEMP_STR_LEN];
+
+    if (!m_do_individual_tracks) return SR_SUCCESS;
+
+    close_file (&m_file);
+
+    /* Construct filename for completed file */
+    parse_and_subst_pat (newfile, ti, m_output_directory, 
+			 m_output_pattern, m_extension);
+
+    /* Build up the output directory */
+    mkdir_recursive (newfile, 0);
+
+    // If we are over writing existing tracks
+    switch (overwrite) {
+    case OVERWRITE_ALWAYS:
+	ok_to_write = TRUE;
+	break;
+    case OVERWRITE_NEVER:
+	if (file_exists (newfile)) {
+	    ok_to_write = FALSE;
+	} else {
+	    ok_to_write = TRUE;
+	}
+	break;
+    case OVERWRITE_LARGER:
+    default:
+	/* Smart overwriting -- only overwrite if new file is bigger */
+	ok_to_write = new_file_is_better (newfile, m_incomplete_filename);
+	break;
+    }
+
+    if (ok_to_write) {
+	if (file_exists (newfile)) {
+	    delete_file (newfile);
+	}
+	move_file (newfile, m_incomplete_filename);
+    } else {
+	if (truncate_dup && file_exists (m_incomplete_filename)) {
+	    // TruncateFile(m_incomplete_filename);
+	    truncate_file (m_incomplete_filename);
+	}
+    }
+
+    if (fullpath) {
+	mstrcpy (fullpath, newfile);
+    }
+    if (m_count != -1)
+	m_count++;
+    return SR_SUCCESS;
+}
+
+void
+filelib_shutdown()
+{
+    close_files();
+}
+
+
+ /*****************************************************************************
+ * Private Functions
+ *****************************************************************************/
+// For now we're not going to care. If it makes it good. it not, will know 
+// When we try to create a file in the path.
+static error_code
+mkdir_if_needed (mchar *str)
+{
+    char s[SR_MAX_PATH];
+    string_from_mstring (s, SR_MAX_PATH, str, CODESET_FILESYS);
+#if WIN32
+    mkdir (s);
+#else
+    mkdir (s, 0777);
+#endif
+    return SR_SUCCESS;
+}
+
+/* Recursively make directories.  If make_last == 1, then the final 
+   substring (after the last '/') is considered a directory rather 
+   than a file name */
+static error_code
+mkdir_recursive (mchar *str, int make_last)
+{
+    mchar buf[SR_MAX_PATH];
+    mchar* p = buf;
+    mchar q;
+
+    buf[0] = 0;
+    while ((q = *p++ = *str++) != 0) {
+	if (ISSLASH(q)) {
+	    *p = 0;
+	    mkdir_if_needed (buf);
+	}
+    }
+    if (make_last) {
+	mkdir_if_needed (str);
+    }
     return SR_SUCCESS;
 }
 
@@ -558,7 +722,8 @@ sr_getcwd (mchar* dirbuf)
     return SR_SUCCESS;
 }
 
-void close_file (FHANDLE* fp)
+static void
+close_file (FHANDLE* fp)
 {
     if (*fp != INVALID_FHANDLE) {
 #if defined WIN32
@@ -570,14 +735,15 @@ void close_file (FHANDLE* fp)
     }
 }
 
-void close_files()
+static void
+close_files()
 {
     close_file (&m_file);
     close_file (&m_show_file);
     close_file (&m_cue_file);
 }
 
-BOOL
+static BOOL
 file_exists (mchar *filename)
 {
     FHANDLE f;
@@ -595,32 +761,6 @@ file_exists (mchar *filename)
     }
     close_file (&f);
     return TRUE;
-}
-
-error_code
-filelib_write_cue (TRACK_INFO* ti, int secs)
-{
-    static int track_no = 1;
-    int rc;
-    char buf1[MAX_TRACK_LEN];
-    char buf2[MAX_TRACK_LEN];
-
-    if (!m_do_show) return SR_SUCCESS;
-    if (!m_cue_file) return SR_SUCCESS;
-
-    rc = snprintf (buf2, MAX_TRACK_LEN, "  TRACK %02d AUDIO\n", track_no++);
-    filelib_write (m_cue_file, buf2, rc);
-    string_from_mstring (buf1, MAX_TRACK_LEN, ti->title, CODESET_ID3);
-    rc = snprintf (buf2, MAX_TRACK_LEN, "    TITLE \"%s\"\n", buf1);
-    filelib_write (m_cue_file, buf2, rc);
-    string_from_mstring (buf1, MAX_TRACK_LEN, ti->artist, CODESET_ID3);
-    rc = snprintf (buf2, MAX_TRACK_LEN, "    PERFORMER \"%s\"\n", buf1);
-    filelib_write (m_cue_file, buf2, rc);
-    rc = snprintf (buf2, MAX_TRACK_LEN, "    INDEX 01 %02d:%02d:00\n", 
-		   secs / 60, secs % 60);
-    filelib_write (m_cue_file, buf2, rc);
-
-    return SR_SUCCESS;
 }
 
 /* It's a bit touch and go here. My artist substitution might 
@@ -778,47 +918,6 @@ parse_and_subst_pat (mchar* newfile,
     mstrncat (newfile, extension, SR_MAX_PATH);
 }
 
-error_code
-filelib_start (TRACK_INFO* ti)
-{
-    mchar newfile[TEMP_STR_LEN];
-    mchar fnbase[TEMP_STR_LEN];
-    mchar fnbase1[TEMP_STR_LEN];
-    mchar fnbase2[TEMP_STR_LEN];
-
-    if (!m_do_individual_tracks) return SR_SUCCESS;
-
-    close_file(&m_file);
-
-    /* Compose and trim filename (not including directory) */
-    msnprintf (fnbase1, TEMP_STR_LEN, m_S m_(" - ") m_S, 
-	       ti->artist, ti->title);
-    trim_filename (fnbase, fnbase1);
-    msnprintf (newfile, TEMP_STR_LEN, m_S m_S m_S, 
-	       m_incomplete_directory, fnbase, m_extension);
-    if (m_keep_incomplete) {
-	int n = 1;
-	mchar oldfile[TEMP_STR_LEN];
-	msnprintf (oldfile, TEMP_STR_LEN, m_S m_S m_S, 
-		   m_incomplete_directory, fnbase, m_extension);
-	mstrcpy (fnbase1, fnbase);
-	while (file_exists (oldfile)) {
-	    msnprintf (fnbase1, TEMP_STR_LEN, m_("(%d)") m_S, 
-		       n, fnbase);
-	    trim_filename (fnbase2, fnbase1);
-	    msnprintf (oldfile, TEMP_STR_LEN, m_S m_S m_S, 
-		       m_incomplete_directory,
-		       fnbase2, m_extension);
-	    n++;
-	}
-	if (mstrcmp (newfile, oldfile) != 0) {
-	    move_file (oldfile, newfile);
-	}
-    }
-    mstrcpy (m_incomplete_filename, newfile);
-    return filelib_open_for_write(&m_file, newfile);
-}
-
 static long
 get_file_size (mchar *filename)
 {
@@ -891,7 +990,7 @@ new_file_is_better (mchar *oldfile, mchar *newfile)
     return TRUE;
 }
 
-void
+static void
 truncate_file (mchar* filename)
 {
     char fn[SR_MAX_PATH];
@@ -908,7 +1007,7 @@ truncate_file (mchar* filename)
 #endif
 }
 
-void
+static void
 move_file (mchar* new_filename, mchar* old_filename)
 {
     char old_fn[SR_MAX_PATH];
@@ -922,7 +1021,7 @@ move_file (mchar* new_filename, mchar* old_filename)
 #endif
 }
 
-void
+static void
 delete_file (mchar* filename)
 {
     char fn[SR_MAX_PATH];
@@ -932,67 +1031,6 @@ delete_file (mchar* filename)
 #else
     unlink (fn);
 #endif
-}
-
-// Moves the file from incomplete to complete directory
-// fullpath is an output parameter
-error_code
-filelib_end (TRACK_INFO* ti,
-	     enum OverwriteOpt overwrite,
-	     BOOL truncate_dup,
-	     mchar *fullpath)
-{
-    BOOL ok_to_write = TRUE;
-    mchar newfile[TEMP_STR_LEN];
-
-    if (!m_do_individual_tracks) return SR_SUCCESS;
-
-    close_file (&m_file);
-
-    /* Construct filename for completed file */
-    parse_and_subst_pat (newfile, ti, m_output_directory, 
-			 m_output_pattern, m_extension);
-
-    /* Build up the output directory */
-    mkdir_recursive (newfile, 0);
-
-    // If we are over writing existing tracks
-    switch (overwrite) {
-    case OVERWRITE_ALWAYS:
-	ok_to_write = TRUE;
-	break;
-    case OVERWRITE_NEVER:
-	if (file_exists (newfile)) {
-	    ok_to_write = FALSE;
-	} else {
-	    ok_to_write = TRUE;
-	}
-	break;
-    case OVERWRITE_LARGER:
-    default:
-	/* Smart overwriting -- only overwrite if new file is bigger */
-	ok_to_write = new_file_is_better (newfile, m_incomplete_filename);
-	break;
-    }
-
-    if (ok_to_write) {
-	if (file_exists (newfile)) {
-	    delete_file (newfile);
-	}
-	move_file (newfile, m_incomplete_filename);
-    } else {
-	if (truncate_dup && file_exists (m_incomplete_filename)) {
-	    // TruncateFile(m_incomplete_filename);
-	    truncate_file (m_incomplete_filename);
-	}
-    }
-
-    if (fullpath) {
-	mstrcpy (fullpath, newfile);
-    }
-    if (m_count != -1)
-	m_count++;
-    return SR_SUCCESS;
 }
 
 static error_code
@@ -1028,7 +1066,7 @@ filelib_open_for_write (FHANDLE* fp, mchar* filename)
     return SR_SUCCESS;
 }
 
-error_code
+static error_code
 filelib_write (FHANDLE fp, char *buf, u_long size)
 {
     if (!fp) {
@@ -1053,12 +1091,6 @@ filelib_write (FHANDLE fp, char *buf, u_long size)
 #endif
 
     return SR_SUCCESS;
-}
-
-error_code
-filelib_write_track(char *buf, u_long size)
-{
-    return filelib_write (m_file, buf, size);
 }
 
 static error_code
@@ -1106,26 +1138,6 @@ filelib_open_showfiles ()
 	return rc;
     }
     return rc;
-}
-
-error_code
-filelib_write_show(char *buf, u_long size)
-{
-    error_code rc;
-    if (!m_do_show) {
-	return SR_SUCCESS;
-    }
-    rc = filelib_write (m_show_file, buf, size);
-    if (rc != SR_SUCCESS) {
-	m_do_show = 0;
-    }
-    return rc;
-}
-
-void
-filelib_shutdown()
-{
-    close_files();
 }
 
 /* GCS: This should get only the name, not the directory */
@@ -1202,7 +1214,7 @@ get_next_sequence_number (mchar* fn_base)
 }
 
 /* GCS FIX: This should only strip "." at beginning of path */
-mchar* 
+static mchar* 
 replace_invalid_chars (mchar *str)
 {
 # if defined (WIN32)

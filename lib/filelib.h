@@ -80,12 +80,11 @@ filelib_init (BOOL do_individual_tracks,
 	      int get_date_stamp,
 	      char* icy_name);
 error_code filelib_start (TRACK_INFO* ti);
-error_code filelib_end (TRACK_INFO* ti, enum OverwriteOpt overwrite,
-			BOOL truncate_dup, mchar *fullpath);
 error_code filelib_write_track(char *buf, u_long size);
 error_code filelib_write_show(char *buf, u_long size);
-void filelib_shutdown();
-error_code filelib_remove(char *filename);
 error_code filelib_write_cue(TRACK_INFO* ti, int secs);
+error_code filelib_end (TRACK_INFO* ti, enum OverwriteOpt overwrite,
+			BOOL truncate_dup, mchar *fullpath);
+void filelib_shutdown();
 
 #endif //FILELIB
