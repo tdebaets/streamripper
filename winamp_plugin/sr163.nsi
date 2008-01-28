@@ -14,12 +14,12 @@
 ;General
 
   ;Name and file
-  Name "Streamripper for Windows and Winamp v1.63-beta-2"
-  OutFile "streamripper-windows-installer-1.63-beta-2.exe"
+  Name "Streamripper for Windows and Winamp v1.63-beta-3"
+  OutFile "streamripper-windows-installer-1.63-beta-3.exe"
 
   ;Default installation folder
-  InstallDir "$PROGRAMFILES\Streamripper-1.63-beta-2"
-  ;InstallDir "$PROGRAMFILES\Streamripper"
+  ;InstallDir "$PROGRAMFILES\Streamripper-1.63-beta-3"
+  InstallDir "$PROGRAMFILES\Streamripper"
   
   ;Get installation folder from registry if available
   ; InstallDirRegKey HKCU "Software\Streamripper" ""
@@ -124,7 +124,7 @@ SectionEnd
 Section "GUI Application" sec_gui
 
   SetOutPath "$INSTDIR"
-  File "C:\Program Files\Streamripper\wstreamripper.exe"
+  File "release\wstreamripper.exe"
 
   SetOutPath $INSTDIR\Skins
   File srskin.bmp

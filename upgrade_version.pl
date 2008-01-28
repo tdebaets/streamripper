@@ -37,6 +37,7 @@ if (!$new_version) {
 	  "configure.ac",
 	  "lib/rip_manager.h",
 	  "winamp_plugin/sr2x.nsi",
+	  "winamp_plugin/sr163.nsi",
 	  "makedist_win.bat",
 	  "streamripper.1.asc",
 	  );
