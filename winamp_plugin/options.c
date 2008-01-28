@@ -20,6 +20,7 @@
 #include <shlobj.h>
 #include <stdio.h>
 #include <prsht.h>
+#include <assert.h>
 
 #include "rip_manager.h"
 #include "options.h"
@@ -27,7 +28,7 @@
 #include "winamp_exe.h"
 #include "debug.h"
 #include "render.h"
-#include <assert.h>
+#include "prefs.h"
 
 #define MAX_INI_LINE_LEN	1024
 #define DEFAULT_RELAY_PORT	8000
@@ -38,9 +39,9 @@
 #define SKIN_PREV_TOP		(2*50)
 #define	MAX_SKINS		256
 
-/**********************************************************************************
+/*****************************************************************************
  * Private functions
- **********************************************************************************/
+ *****************************************************************************/
 static LRESULT CALLBACK con_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK file_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK pat_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -48,9 +49,9 @@ static LRESULT CALLBACK skin_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 static LRESULT CALLBACK splitting_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK external_dlg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-/**********************************************************************************
- * Private Vars
- **********************************************************************************/
+/*****************************************************************************
+ * Private variables
+ *****************************************************************************/
 // This is what we need from shfolder.h, but thats not on my home system
 typedef HRESULT (__stdcall * PFNSHGETFOLDERPATHA)(HWND, int, HANDLE, DWORD, LPSTR);  
 
@@ -59,6 +60,9 @@ static int m_skin_list_size = 0;
 static int m_curskin = 0;
 static int m_last_sheet = 0;    // not yet implemented
 
+/*****************************************************************************
+ * Public functions
+ *****************************************************************************/
 BOOL
 get_skin_list()
 {
@@ -68,14 +72,6 @@ get_skin_list()
 
     m_skin_list_size = 0;
     memset(m_pskin_list, 0, sizeof(m_pskin_list));
-
-#if defined (commentout)
-    if (!winamp_get_path(temppath)) {
-	debug_printf ("winamp_get_path failed #1\n");
-	return FALSE;
-    }
-    debug_printf ("temppath = %s\n", temppath);
-#endif
 
     temppath[0] = 0;
     strcat(temppath, SKIN_PATH);
@@ -310,7 +306,8 @@ options_dialog_show (HINSTANCE inst, HWND parent)
 	    //JCBUG font color doesn't change until restart.
 	    render_change_skin (g_gui_prefs.default_skin);
 	}
-	options_save ();
+	prefs_save ();
+	// options_save ();
     }
     debug_printf ("options_dialog_show checkpoint 4\n");
     free_skin_list ();
@@ -356,6 +353,9 @@ add_useragent_strings(HWND hdlg)
     SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)"UnknownPlayer/1.x");
 }
 
+/*****************************************************************************
+ * Private functions
+ *****************************************************************************/
 static void
 set_overwrite_combo (HWND hdlg)
 {
@@ -898,6 +898,7 @@ skin_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return FALSE;
 }
 
+#if defined (commentout)
 BOOL
 options_load ()
 {
@@ -1125,3 +1126,4 @@ options_save ()
 
     return TRUE;
 }
+#endif
