@@ -22,7 +22,6 @@ libstreamripper_a_SOURCES = \
 	http.c \
 	iconvert.c \
 	mchar.c \
-	mpeg.c \
 	parse.c \
 	prefs.c \
 	relaylib.c \
@@ -44,7 +43,6 @@ libstreamripper_a_SOURCES = \
 	http.h \
 	list.h \
 	mchar.h \
-	mpeg.h \
 	parse.h \
 	prefs.h \
 	relaylib.h \

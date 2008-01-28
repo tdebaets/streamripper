@@ -334,8 +334,6 @@ lib_manifest = \
 	lib/list.h \
 	lib/mchar.c \
 	lib/mchar.h \
-	lib/mpeg.c \
-	lib/mpeg.h \
 	lib/parse.c \
 	lib/parse.h \
 	lib/prefs.c \

@@ -1,5 +1,6 @@
 aclocal -I m4
 automake --add-missing --foreign Makefile
+automake --foreign lib/Makefile
 autoconf
 autoheader
 
