@@ -252,14 +252,6 @@ SOURCE=..\lib\mchar.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\lib\mpeg.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\lib\mpeg.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\lib\parse.c
 # End Source File
 # Begin Source File
