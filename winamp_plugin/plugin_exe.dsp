@@ -100,6 +100,10 @@ SOURCE=.\options.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\options.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\plugin_main.c
 # End Source File
 # Begin Source File
@@ -133,10 +137,6 @@ SOURCE=.\gen.h
 # Begin Source File
 
 SOURCE=.\ipc_pe.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\options.h
 # End Source File
 # Begin Source File
 

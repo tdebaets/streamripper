@@ -88,6 +88,7 @@ init ()
 {
     WNDCLASS wc;
     char* sr_debug_env;
+    int rc;
 
     sr_debug_env = getenv ("STREAMRIPPER_DEBUG");
     if (sr_debug_env) {
@@ -95,15 +96,13 @@ init ()
 	debug_set_filename (sr_debug_env);
     }
 
-#if defined (commentout)
-    winamp_init (g_plugin.hDllInstance);
-#endif
     winamp_init (m_hinstance);
 
-    //options_load (&g_rmo, &m_guiOpt);
-
-    prefs_load ();
+    rc = prefs_load ();
     prefs_get_stream_prefs (&g_rmo, "");
+    if (rc == 0) {
+	options_get_desktop_folder (g_rmo.output_directory);
+    }
     prefs_get_wstreamripper_prefs (&g_gui_prefs);
     prefs_save ();
 

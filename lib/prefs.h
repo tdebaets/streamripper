@@ -115,7 +115,7 @@ struct global_prefs
 #endif
 
 /* Prototypes */
-void prefs_load (void);
+int prefs_load (void);
 void prefs_save (void);
 void prefs_get_global_prefs (GLOBAL_PREFS *global_prefs);
 void prefs_set_global_prefs (GLOBAL_PREFS *global_prefs);

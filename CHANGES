@@ -1,7 +1,8 @@
 New for 1.63-beta-3
 --------------
 * Fix problem when not ripping individual tracks
-
+* Plugin: no longer saves unused sripper.ini to Winamp folder
+* Plugin: once again default output directory is the desktop
 
 New for 1.63-beta-2
 --------------

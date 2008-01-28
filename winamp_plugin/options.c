@@ -63,6 +63,51 @@ static int m_last_sheet = 0;    // not yet implemented
 /*****************************************************************************
  * Public functions
  *****************************************************************************/
+void
+options_get_desktop_folder (char *path)
+{
+    /* For windows, try to put on the desktop */
+    HRESULT hresult;
+    static HMODULE hMod = NULL;
+    PFNSHGETFOLDERPATHA pSHGetFolderPath = NULL;
+
+    if (!path)
+	return;
+
+    // Load SHFolder.dll only once
+    if (!hMod) {
+	hMod = LoadLibrary("SHFolder.dll");
+    }
+
+    if (hMod == NULL) {
+	debug_printf ("Failed to load SHFolder.dll\n");
+	return;
+    }
+
+    /* Obtain a pointer to the SHGetFolderPathA function */
+    pSHGetFolderPath = (PFNSHGETFOLDERPATHA) GetProcAddress (hMod, "SHGetFolderPathA");
+    if (pSHGetFolderPath == 0) {
+	debug_printf ("Failed to get SHGetFolderPathA from SHFolder\n");
+	return;
+    }
+
+    /* Use SHGetFolderPathA to get desktop folder */
+    /* Note, path must be at least MAX_PATH */
+    hresult = pSHGetFolderPath (NULL, CSIDL_COMMON_DESKTOPDIRECTORY, (HANDLE)0, (DWORD)0, path);
+    if (SUCCEEDED(hresult)) {
+	debug_printf ("SHGetFolderPathA succeeded %s (%08x)\n", path, hresult);
+    } else {
+	debug_printf ("SHGetFolderPathA failed %s (%08x)\n", path, hresult);
+	/* If failed (win98), try again */
+	hresult = pSHGetFolderPath (NULL, CSIDL_DESKTOPDIRECTORY, (HANDLE)0, (DWORD)0, path);
+	if (SUCCEEDED(hresult)) {
+	    debug_printf ("SHGetFolderPathA (2) succeeded %s (%08x)\n", path, hresult);
+	} else {
+	    debug_printf ("SHGetFolderPathA (2) failed %s (%08x)\n", path, hresult);
+	}
+    }
+}
+
 BOOL
 get_skin_list()
 {
@@ -121,52 +166,6 @@ free_skin_list()
 	m_pskin_list[m_skin_list_size] = NULL;
     }
     m_skin_list_size = 0;
-}
-
-BOOL
-get_desktop_folder (char *path)
-{
-    HRESULT hresult;
-    static HMODULE hMod = NULL;
-    PFNSHGETFOLDERPATHA pSHGetFolderPath = NULL;
-
-    if (!path)
-	return FALSE;
-
-    path[0] = '\0';
-
-    // Load SHFolder.dll only once
-    if (!hMod) {
-	hMod = LoadLibrary("SHFolder.dll");
-    }
-
-    if (hMod == NULL) {
-	debug_printf ("Failed to load SHFolder.dll\n");
-	return FALSE;
-    }
-
-    // Obtain a pointer to the SHGetFolderPathA function
-    pSHGetFolderPath = (PFNSHGETFOLDERPATHA) GetProcAddress (hMod, "SHGetFolderPathA");
-    if (pSHGetFolderPath == 0) {
-	debug_printf ("Failed to get SHGetFolderPathA from SHFolder\n");
-	return FALSE;
-    }
-
-    // Use SHGetFolderPathA to get desktop folder
-    hresult = pSHGetFolderPath (NULL, CSIDL_COMMON_DESKTOPDIRECTORY, (HANDLE)0, (DWORD)0, path);
-    if (SUCCEEDED(hresult)) {
-	debug_printf ("SHGetFolderPathA succeeded %s (%08x)\n", path, hresult);
-    } else {
-	debug_printf ("SHGetFolderPathA failed %s (%08x)\n", path, hresult);
-	/* If failed (win98), try again */
-	hresult = pSHGetFolderPath (NULL, CSIDL_DESKTOPDIRECTORY, (HANDLE)0, (DWORD)0, path);
-	if (SUCCEEDED(hresult)) {
-	    debug_printf ("SHGetFolderPathA (2) succeeded %s (%08x)\n", path, hresult);
-	} else {
-	    debug_printf ("SHGetFolderPathA (2) failed %s (%08x)\n", path, hresult);
-	}
-    }
-    return path[0] != '\0';
 }
 
 BOOL
@@ -1127,3 +1126,4 @@ options_save ()
     return TRUE;
 }
 #endif
+

@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#include <glib.h>
 
 #include "rip_manager.h"
 #include "mchar.h"
@@ -49,11 +48,15 @@ static void prefs_get_int (int *dest, char *group, char *key);
 static void prefs_get_long (long *dest, char *group, char *key);
 static void prefs_set_string (char* group, char* key, char* value);
 static void prefs_set_integer (char* group, char* key, gint value);
+static void get_default_folder (char *path);
 
 /******************************************************************************
  * Public functions
  *****************************************************************************/
-void
+/* Return 0 if the user doesn't have a preference file yet, 
+   and non-zero if he does.  This is used by the winamp plugin 
+   to override the default output directory. */
+int
 prefs_load (void)
 {
     gboolean rc;
@@ -75,9 +78,6 @@ prefs_load (void)
     rc = g_key_file_load_from_file (m_key_file, prefs_fn,
 				    flags, &error);
 
-    /* GCS FIX - Where to do this? */
-    // prefs_get_wstreamripper_defaults (&global_prefs.wstreamripper_prefs);
-
     if (!rc) {
 	GLOBAL_PREFS global_prefs;
 	memset (&global_prefs, 0, sizeof(GLOBAL_PREFS));
@@ -86,6 +86,7 @@ prefs_load (void)
     }
     g_free (prefs_fn);
     g_free (prefs_dir);
+    return (int) rc;
 }
 
 void
@@ -284,13 +285,8 @@ prefs_get_stream_defaults (STREAM_PREFS* prefs)
     debug_printf ("- set_rip_manager_options_defaults -\n");
     //    prefs->url[0] = 0;
     prefs->proxyurl[0] = 0;
+
     strcpy(prefs->output_directory, "./");
-    /* GCS FIX: Plugin defaults to desktop */
-#if defined (commentout)
-    if (rmo->output_directory[0] == 0) {
-	strcpy (rmo->output_directory, desktop_path);
-    }
-#endif
     prefs->output_pattern[0] = 0;
     prefs->showfile_pattern[0] = 0;
     prefs->if_name[0] = 0;
