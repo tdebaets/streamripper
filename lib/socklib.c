@@ -130,13 +130,24 @@ socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_name)
     if (!socket_handle || !host)
 	return SR_ERROR_INVALID_PARAM;
 
+    /* On error:
+       Unix returns -1 and sets errno.
+       Windows??? */
     socket_handle->s = socket(AF_INET, SOCK_STREAM, 0);
+    if (socket_handle->s == SOCKET_ERROR) {
+	debug_printf ("socket() failed\n");
+	WSACleanup();
+	return SR_ERROR_CANT_CREATE_SOCKET;
+    }
 
     if (if_name) {
 	if (read_interface(if_name,&local.sin_addr.s_addr) != 0)
 	    local.sin_addr.s_addr = htonl(INADDR_ANY);
 	local.sin_family = AF_INET;
 	local.sin_port = htons(0);
+	/* On error:
+	   Unix returns -1 and sets errno.
+	   Windows??? */
 	if (bind(socket_handle->s, (struct sockaddr *)&local, 
 		 sizeof(local)) == SOCKET_ERROR) {
 	    debug_printf ("Bind failed\n");
@@ -153,6 +164,8 @@ socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_name)
 	} else {
 	    debug_printf("resolving hostname: %s failed\n", host);
 	    WSACleanup();
+	    /* GCS Added... */
+	    closesocket(socket_handle->s);
 	    return SR_ERROR_CANT_RESOLVE_HOSTNAME;
 	}
     }
@@ -163,6 +176,9 @@ socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_name)
     rc = connect (socket_handle->s, (struct sockaddr *)&address, len);
     if (rc == SOCKET_ERROR) {
 	debug_printf("connect failed\n");
+	/* GCS Added... */
+	WSACleanup();
+	closesocket(socket_handle->s);
 	return SR_ERROR_CONNECT_FAILED;
     }
 
@@ -173,6 +189,9 @@ socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_name)
 			 (char *)&timeout, sizeof(timeout));
 	if (rc == SOCKET_ERROR) {
 	    debug_printf("setsockopt failed\n");
+	    /* GCS Added... */
+	    WSACleanup();
+	    closesocket(socket_handle->s);
 	    return SR_ERROR_CANT_SET_SOCKET_OPTIONS;
 	}
     }

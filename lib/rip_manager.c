@@ -239,6 +239,7 @@ init_error_strings (void)
     SET_ERR_STR("SR_ERROR_NO_OGG_PAGES_FOR_RELAY",              0x3f);
     SET_ERR_STR("SR_ERROR_CANT_PARSE_PLS",                      0x40);
     SET_ERR_STR("SR_ERROR_CANT_PARSE_M3U",                      0x41);
+    SET_ERR_STR("SR_ERROR_CANT_CREATE_SOCKET",                  0x42);
 }
 
 static void

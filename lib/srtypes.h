@@ -213,7 +213,7 @@ enum OverwriteOpt {
 // are not organized at all, should have space to insert in places.
 //
 /* ************** IMPORTANT IF YOU ADD ERROR CODES!!!! ***********************/
-#define NUM_ERROR_CODES					((0x41)+1)
+#define NUM_ERROR_CODES					((0x42)+1)
 /* ************** IMPORTANT IF YOU ADD ERROR CODES!!!! ***********************/
 #define SR_SUCCESS				  0x00
 #define SR_SUCCESS_BUFFERING			  0x01
@@ -282,5 +282,6 @@ enum OverwriteOpt {
 #define SR_ERROR_NO_OGG_PAGES_FOR_RELAY		- 0x3f
 #define SR_ERROR_CANT_PARSE_PLS	                - 0x40
 #define SR_ERROR_CANT_PARSE_M3U	                - 0x41
+#define SR_ERROR_CANT_CREATE_SOCKET	        - 0x42
 
 #endif //__SRIPPER_H__
