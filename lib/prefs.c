@@ -37,7 +37,6 @@ static GKeyFile *m_key_file = NULL;
  *****************************************************************************/
 static void prefs_get_stream_defaults (STREAM_PREFS* prefs);
 static gchar* prefs_get_config_dir (void);
-static void prefs_copy_to_keyfile (STREAM_PREFS* prefs);
 static void prefs_get_prefs (STREAM_PREFS* prefs, char* label);
 static void prefs_set_prefs (STREAM_PREFS* prefs, STREAM_PREFS* default_prefs, 
 				char* group);
@@ -48,7 +47,6 @@ static void prefs_get_int (int *dest, char *group, char *key);
 static void prefs_get_long (long *dest, char *group, char *key);
 static void prefs_set_string (char* group, char* key, char* value);
 static void prefs_set_integer (char* group, char* key, gint value);
-static void get_default_folder (char *path);
 
 /******************************************************************************
  * Public functions
@@ -266,6 +264,52 @@ prefs_set_stream_prefs (STREAM_PREFS* prefs, char* label)
     }
     prefs_set_prefs (prefs, 0, label);
 }
+
+/* GCS: This is not quite complete, missing splitting & codesets */
+void
+debug_stream_prefs (STREAM_PREFS* prefs)
+{
+    debug_printf ("label = %s\n", prefs->label);
+    debug_printf ("url = %s\n", prefs->url);
+    debug_printf ("proxyurl = %s\n", prefs->proxyurl);
+    debug_printf ("output_directory = %s\n", prefs->output_directory);
+    debug_printf ("output_pattern = %s\n", prefs->output_pattern);
+    debug_printf ("showfile_pattern = %s\n", prefs->showfile_pattern);
+    debug_printf ("if_name = %s\n", prefs->if_name);
+    debug_printf ("rules_file = %s\n", prefs->rules_file);
+    debug_printf ("pls_file = %s\n", prefs->pls_file);
+    debug_printf ("relay_ip = %s\n", prefs->relay_ip);
+    debug_printf ("ext_cmd = %s\n", prefs->ext_cmd);
+    debug_printf ("useragent = %s\n", prefs->useragent);
+    debug_printf ("relay_port = %d\n", prefs->relay_port);
+    debug_printf ("max_port = %d\n", prefs->max_port);
+    debug_printf ("max_connections = %d\n", prefs->max_connections);
+    debug_printf ("maxMB_rip_size = %d\n", prefs->maxMB_rip_size);
+    debug_printf ("auto_reconnect = %d\n",
+		  OPT_FLAG_ISSET (prefs->flags, OPT_AUTO_RECONNECT));
+    debug_printf ("make_relay = %d\n",
+		  OPT_FLAG_ISSET (prefs->flags, OPT_MAKE_RELAY));
+    debug_printf ("add_id3v1 = %d\n",
+		  OPT_FLAG_ISSET (prefs->flags, OPT_ADD_ID3V1));
+    debug_printf ("add_id3v2 = %d\n",
+		  OPT_FLAG_ISSET (prefs->flags, OPT_ADD_ID3V2));
+    debug_printf ("check_max_bytes = %d\n",
+		  OPT_FLAG_ISSET (prefs->flags, OPT_CHECK_MAX_BYTES));
+    debug_printf ("keep_incomplete = %d\n",
+		  OPT_FLAG_ISSET (prefs->flags, OPT_KEEP_INCOMPLETE));
+    debug_printf ("rip_individual_tracks = %d\n",
+		  OPT_FLAG_ISSET (prefs->flags, OPT_INDIVIDUAL_TRACKS));
+    debug_printf ("rip_single_file = %d\n",
+		  OPT_FLAG_ISSET (prefs->flags, OPT_SINGLE_FILE_OUTPUT));
+    debug_printf ("use_ext_cmd = %d\n",
+		  OPT_FLAG_ISSET (prefs->flags, OPT_EXTERNAL_CMD));
+    debug_printf ("timeout = %d\n", prefs->timeout);
+    debug_printf ("dropcount = %d\n", prefs->dropcount);
+    debug_printf ("count_start = %d\n", prefs->count_start);
+    debug_printf ("overwrite = %s\n", 
+		  overwrite_opt_to_string(prefs->overwrite));
+};
+
 
 /******************************************************************************
  * Private functions

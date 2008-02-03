@@ -397,11 +397,27 @@ client_relay_header_release (char *ch)
 }
 
 static void
+debug_ripthread (RIP_MANAGER_INFO* rmi)
+{
+    debug_printf ("------ RIP_MANAGER_INFO -------\n");
+    debug_printf ("streamname = %s\n", rmi->streamname);
+    debug_printf ("server_name = %s\n", rmi->server_name);
+    debug_printf ("bitrate = %d\n", rmi->bitrate);
+    debug_printf ("meta_interval = %d\n", rmi->meta_interval);
+    debug_printf ("filename = %s\n", rmi->filename);
+    debug_printf ("filesize = %d\n", rmi->filesize);
+    debug_printf ("status = %d\n", rmi->status);
+    debug_printf ("track_count = %d\n", rmi->track_count);
+    debug_printf ("external_process = %p\n", rmi->ep);
+}
+
+static void
 ripthread (void *thread_arg)
 {
     error_code ret;
     RIP_MANAGER_INFO* rmi = (RIP_MANAGER_INFO*) thread_arg;
-    debug_printf ("ripthread URL = %s\n", rmi->prefs->url);
+    debug_ripthread (rmi);
+    debug_stream_prefs (rmi->prefs);
 
     if ((ret = start_ripping(rmi)) != SR_SUCCESS) {
 	debug_printf ("Ripthread did start_ripping()\n");

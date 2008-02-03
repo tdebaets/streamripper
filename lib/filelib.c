@@ -133,26 +133,31 @@ filelib_init (BOOL do_individual_tracks,
     m_show_name[0] = 0;
     m_do_show = do_show_file;
     m_do_individual_tracks = do_individual_tracks;
-
+    
     debug_printf ("FILELIB_INIT: output_directory=%s\n",
 		  output_directory ? output_directory : "");
     debug_printf ("FILELIB_INIT: output_pattern=%s\n",
 		  output_pattern ? output_pattern : "");
     debug_printf ("FILELIB_INIT: showfile_pattern=%s\n",
 		  showfile_pattern ? showfile_pattern : "");
-
+    
+    debug_printf ("converting output_directory\n");
     mstring_from_string (tmp_output_directory, SR_MAX_PATH, output_directory, 
 			 CODESET_LOCALE);
+    debug_printf ("converting output_pattern\n");
     mstring_from_string (tmp_output_pattern, SR_MAX_PATH, output_pattern, 
 			 CODESET_LOCALE);
+    debug_printf ("converting showfile_pattern\n");
     mstring_from_string (tmp_showfile_pattern, SR_MAX_PATH, showfile_pattern, 
 			 CODESET_LOCALE);
+    debug_printf ("converting icy_name\n");
     mstring_from_string (m_icy_name, SR_MAX_PATH, icy_name, 
 			 CODESET_METADATA);
     debug_printf ("Converted output directory: len=%d\n", 
 		  mstrlen (tmp_output_directory));
     mstrcpy (m_stripped_icy_name, m_icy_name);
     
+    debug_printf ("Replacing invalid chars in stripped_icy_name\n");
     replace_invalid_chars (m_stripped_icy_name);
 
     switch (content_type) {
@@ -194,7 +199,10 @@ filelib_init (BOOL do_individual_tracks,
 			  get_separate_dirs,
 			  get_date_stamp,
 			  0);
-
+    debug_mprintf (m_("m_output_directory: ") m_S m_("\n"),
+		   m_output_directory);
+    debug_mprintf (m_("m_output_pattern: ") m_S m_("\n"),
+		   m_output_pattern);
     msnprintf (m_incomplete_directory, SR_MAX_PATH, m_S m_S m_C, 
 	       m_output_directory, m_("incomplete"), PATH_SLASH);
 
