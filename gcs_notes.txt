@@ -145,11 +145,13 @@ Winamp winproc -> hook_winamp_callback
 -----------------------------------------------------------------------
 * Multirip/main loop
 
-GUI thread
-  Rip thread
-    Accept thread for relay
-    Send thread for relay
+main (GUI thread)
+  ripthread (Connect & process, blocks on select() for reading from stream)
+    thread_accept (Blocks on select() for new relay connections)
+    thread_send (Blocks on select() for writing to clients)
     External process
+
+
 
 * Data structs:
     1) Global preferences

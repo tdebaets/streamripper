@@ -93,6 +93,8 @@ main (int argc, char *argv[])
 
     
     rip_manager_init ();
+
+    /* Launch the ripping thread */
     if ((ret = rip_manager_start (&rmi, &prefs, rip_callback)) != SR_SUCCESS) {
 	fprintf(stderr, "Couldn't connect to %s\n", prefs.url);
 	exit(1);
@@ -130,6 +132,7 @@ catch_sig(int code)
 	fprintf(stderr, "\n");
     if (!m_started)
         exit(2);
+    printf ("Caught sig...\n");
     m_got_sig = TRUE;
 }
 

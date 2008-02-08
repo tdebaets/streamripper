@@ -155,8 +155,10 @@ rip_manager_stop (RIP_MANAGER_INFO *rmi)
     }
 
     // blocks until everything is ok and closed
+    printf ("Waiting for m_hthread to close...\n");
     debug_printf ("Waiting for m_hthread to close...\n");
     threadlib_waitforclose(&m_hthread);
+    printf ("Done.\n");
     debug_printf ("Destroying subsystems...\n");
     destroy_subsystems();
     debug_printf ("Destroying m_started_sem\n");
@@ -419,19 +421,23 @@ ripthread (void *thread_arg)
     debug_ripthread (rmi);
     debug_stream_prefs (rmi->prefs);
 
+    /* Connect to remote server */
     if ((ret = start_ripping(rmi)) != SR_SUCCESS) {
 	debug_printf ("Ripthread did start_ripping()\n");
 	threadlib_signal_sem (&m_started_sem);
 	post_error (rmi, ret);
 	goto DONE;
     }
+
     m_status_callback (rmi, RM_STARTED, (void *)NULL);
     post_status (rmi, RM_STATUS_BUFFERING);
     debug_printf ("Ripthread did initialization\n");
     threadlib_signal_sem(&m_started_sem);
 
     while (TRUE) {
+	printf ("Calling ripstream_rip\n");
         ret = ripstream_rip(rmi);
+	printf ("Finished ripstream_rip\n");
 
 	/* If the user told us to stop, well, then we bail */
 	if (!m_ripping)
