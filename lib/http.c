@@ -724,7 +724,7 @@ http_get_sc_header(const char* url, HSOCKET *sock, SR_HTTP_HEADER *info)
     int ret;
     char headbuf[MAX_HEADER_LEN] = {'\0'};
 
-    if ((ret = socklib_read_header(sock, headbuf, MAX_HEADER_LEN, NULL)) != SR_SUCCESS)
+    if ((ret = socklib_read_header(sock, headbuf, MAX_HEADER_LEN)) != SR_SUCCESS)
 	return ret;
 
     if ((ret = http_parse_sc_header(url, headbuf, info)) != SR_SUCCESS)

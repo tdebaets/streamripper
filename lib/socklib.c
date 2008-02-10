@@ -214,9 +214,7 @@ void socklib_close(HSOCKET *socket_handle)
 }
 
 error_code
-socklib_read_header(HSOCKET *socket_handle, char *buffer, int size, 
-		    int (*recvall)(HSOCKET *socket_handle, char* buffer,
-				   int size, int timeout))
+socklib_read_header(HSOCKET *socket_handle, char *buffer, int size)
 {
     int i;
 #ifdef WIN32
@@ -224,15 +222,10 @@ socklib_read_header(HSOCKET *socket_handle, char *buffer, int size,
 #endif
     int ret;
     char *t;
-    int (*myrecv)(HSOCKET *socket_handle, char* buffer, int size, int timeout);
 
     if (socket_handle->closed)
 	return SR_ERROR_SOCKET_CLOSED;
 
-    if (recvall)
-	myrecv = recvall;
-    else
-	myrecv = socklib_recvall;
 #ifdef WIN32
     if (setsockopt(socket_handle->s, SOL_SOCKET,  SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) == SOCKET_ERROR)
 	return SR_ERROR_CANT_SET_SOCKET_OPTIONS;
@@ -241,8 +234,10 @@ socklib_read_header(HSOCKET *socket_handle, char *buffer, int size,
     memset(buffer, 0, size);
     for(i = 0; i < size; i++)
     {
-	if ((ret = (*myrecv)(socket_handle, &buffer[i], 1, 0)) < 0)
+	ret = socklib_recvall (socket_handle, &buffer[i], 1, 0);
+	if (ret < 0) {
 	    return ret;
+	}
 
 	if (ret == 0) {
 	    debug_printf("http header:\n%s\n", buffer);
