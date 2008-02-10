@@ -14,6 +14,19 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+/******************************************************************************
+ * Rip Manager API
+ *
+ *   Callback Function
+ *     void (*status_callback)(RIP_MANAGER_INFO* rmi, 
+ *                              int message, void *data));
+ *   Functions
+ *     void rip_manager_init (void);
+ *     error_code rip_manager_start (RIP_MANAGER_INFO **rmi, 
+ *	  STREAM_PREFS *prefs, RIP_MANAGER_CALLBACK status_callback);
+ *     void rip_manager_stop (RIP_MANAGER_INFO *rmi);
+ *
+ *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -88,7 +101,7 @@ rip_manager_init (void)
 error_code
 rip_manager_start (RIP_MANAGER_INFO **rmi,
 		   STREAM_PREFS *prefs,
-		   void (*status_callback)(RIP_MANAGER_INFO* rmi, int message, void *data))
+		   RIP_MANAGER_CALLBACK status_callback)
 {
     int ret = 0;
 
