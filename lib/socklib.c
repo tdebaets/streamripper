@@ -46,12 +46,10 @@
 #include "compat.h"
 #include "debug.h"
 
-#define DEFAULT_TIMEOUT		15
 
 #if WIN32
+#define DEFAULT_TIMEOUT		(15 * 1000)
 #define FIRST_READ_TIMEOUT	(30 * 1000)
-#elif __UNIX__
-#define FIRST_READ_TIMEOUT	30
 #endif
 
 
@@ -184,7 +182,7 @@ socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_name)
 
 #ifdef WIN32
     {
-	struct timeval timeout = {DEFAULT_TIMEOUT*1000, 0};
+	struct timeval timeout = {DEFAULT_TIMEOUT, 0};
 	rc = setsockopt (socket_handle->s, SOL_SOCKET,  SO_RCVTIMEO, 
 			 (char *)&timeout, sizeof(timeout));
 	if (rc == SOCKET_ERROR) {
@@ -247,9 +245,8 @@ socklib_read_header(HSOCKET *socket_handle, char *buffer, int size)
 	if (socket_handle->closed)
 	    return SR_ERROR_SOCKET_CLOSED;
 
-	/* GCS: This patch is too restrictive. */
 #if defined (commentout)
-	//look for the end of the icy-header
+	/* This is too restrictive.  Some servers do not send this. */
 	if (!strstr(buffer, "icy-") && !strstr(buffer,"ice-"))
 	    continue;
 #endif
@@ -258,8 +255,8 @@ socklib_read_header(HSOCKET *socket_handle, char *buffer, int size)
 
 	if (strncmp(t, "\r\n\r\n", 4) == 0)
 	    break;
-
-	if (strncmp(t, "\n\0\r\n", 4) == 0)	// wtf? live365 seems to do this
+	/* Allegedly live365 used to do this */
+	if (strncmp(t, "\n\0\r\n", 4) == 0)
 	    break;
     }
 
@@ -271,7 +268,7 @@ socklib_read_header(HSOCKET *socket_handle, char *buffer, int size)
     buffer[i] = '\0';
 
 #ifdef WIN32
-    timeout.tv_sec = DEFAULT_TIMEOUT*1000;
+    timeout.tv_sec = DEFAULT_TIMEOUT;
     if (setsockopt(socket_handle->s, SOL_SOCKET,  SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) == SOCKET_ERROR)
 	return SR_ERROR_CANT_SET_SOCKET_OPTIONS;
 #endif

@@ -1,3 +1,8 @@
+New for 1.63-beta-4
+--------------
+* Improve responsivity of CTL-C on unix
+* Remove dead code
+
 New for 1.63-beta-3
 --------------
 Sun 01-27-2008
