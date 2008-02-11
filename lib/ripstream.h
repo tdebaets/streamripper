@@ -21,6 +21,6 @@ ripstream_init (RIP_MANAGER_INFO* rmi,
 		BOOL add_id3v2,
 		External_Process* ep);
 error_code ripstream_rip (RIP_MANAGER_INFO* rmi);
-void ripstream_destroy();
+void ripstream_clear(RIP_MANAGER_INFO* rmi);
 
 #endif //__RIPLIB__

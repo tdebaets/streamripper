@@ -185,9 +185,9 @@ ripstream_init (RIP_MANAGER_INFO* rmi,
 }
 
 void
-ripstream_destroy()
+ripstream_clear(RIP_MANAGER_INFO* rmi)
 {
-    debug_printf ("RIPSTREAM_DESTROY\n");
+    debug_printf ("RIPSTREAM_CLEAR\n");
     if (m_getbuffer) {free(m_getbuffer); m_getbuffer = NULL;}
     m_find_silence = -1;
     m_cbuf2_size = 0;
@@ -392,7 +392,7 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
     u_long extract_size;
 
     /* get the data & meta-data from the stream */
-    debug_printf ("RIPSTREAM_RIP: top of loop\n");
+    debug_printf ("RIPSTREAM_RIP_MP3: top of loop\n");
     ret = get_stream_data(rmi, m_getbuffer, m_current_track.raw_metadata);
     if (ret != SR_SUCCESS) {
 	debug_printf("get_stream_data bad return code: %d\n", ret);

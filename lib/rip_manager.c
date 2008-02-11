@@ -61,7 +61,7 @@ static void ripthread (void *thread_arg);
 static error_code start_relay(int content_type);
 static void post_status (RIP_MANAGER_INFO* rmi, int status);
 static error_code start_ripping (RIP_MANAGER_INFO* rmi);
-static void destroy_subsystems();
+void destroy_subsystems (RIP_MANAGER_INFO* rmi);
 
 /******************************************************************************
  * Private Vars
@@ -170,7 +170,7 @@ rip_manager_stop (RIP_MANAGER_INFO *rmi)
     debug_printf ("Waiting for m_hthread to close...\n");
     threadlib_waitforclose(&m_hthread);
     debug_printf ("Destroying subsystems...\n");
-    destroy_subsystems();
+    destroy_subsystems (rmi);
     debug_printf ("Destroying m_started_sem\n");
     threadlib_destroy_sem(&rmi->started_sem);
     debug_printf ("Done with rip_manager_stop\n");
@@ -401,7 +401,7 @@ ripthread (void *thread_arg)
 	if (m_bytes_ripped/1000000 >= (rmi->prefs->maxMB_rip_size) &&
 		GET_CHECK_MAX_BYTES (rmi->prefs->flags)) {
 	    socklib_close (&m_sock);
-	    destroy_subsystems ();
+	    destroy_subsystems (rmi);
 	    post_error (rmi, SR_ERROR_MAX_BYTES_RIPPED);
 	    break;
 	}
@@ -441,7 +441,7 @@ ripthread (void *thread_arg)
 		}
 		relaylib_shutdown();
 		filelib_shutdown();
-		ripstream_destroy();
+		ripstream_clear (rmi);
 		ret = start_ripping (rmi);
 		if (ret == SR_SUCCESS)
 		    break;
@@ -452,9 +452,10 @@ ripthread (void *thread_arg)
 		 */
 		Sleep(1000);
 	    }
+	    if (!rmi->started) break;
 	}
 	else if (ret != SR_SUCCESS) {
-	    destroy_subsystems();
+	    destroy_subsystems (rmi);
 	    post_error (rmi, ret);
 	    break;
 	}
@@ -473,14 +474,9 @@ ripthread (void *thread_arg)
 }
 
 void
-destroy_subsystems()
+destroy_subsystems (RIP_MANAGER_INFO* rmi)
 {
-    ripstream_destroy();
-#if defined (commentout)
-    if (m_destroy_func) {
-	m_destroy_func();
-    }
-#endif
+    ripstream_clear (rmi);
     relaylib_shutdown();
     socklib_cleanup();
     filelib_shutdown();
@@ -570,11 +566,6 @@ start_ripping (RIP_MANAGER_INFO* rmi)
     if (ret != SR_SUCCESS)
 	goto RETURN_ERR;
 
-#if defined (commentout)
-    /* This doesn't seem to be used */
-    m_status_callback(RM_OUTPUT_DIR, (void*)filelib_get_output_directory);
-#endif
-
     /* Start up external program to get metadata. */
     rmi->ep = 0;
     if (GET_EXTERNAL_CMD(rmi->prefs->flags)) {
@@ -590,7 +581,7 @@ start_ripping (RIP_MANAGER_INFO* rmi)
     /* ripstream is good to go, it knows how to get data, and where
      * it's sending it to
      */
-    ripstream_destroy();
+    ripstream_clear (rmi);
     ret = ripstream_init(rmi,
 			 m_sock, 
 			 GET_MAKE_RELAY(rmi->prefs->flags),
@@ -605,7 +596,7 @@ start_ripping (RIP_MANAGER_INFO* rmi)
 			 GET_ADD_ID3V2(rmi->prefs->flags),
 			 rmi->ep);
     if (ret != SR_SUCCESS) {
-	ripstream_destroy();
+	ripstream_clear (rmi);
 	goto RETURN_ERR;
     }
 
@@ -642,10 +633,6 @@ start_ripping (RIP_MANAGER_INFO* rmi)
 
  RETURN_ERR:
     socklib_close(&m_sock);
-#if defined (commentout)
-    if (m_destroy_func)
-	m_destroy_func();
-#endif
     return ret;	
 }
 
