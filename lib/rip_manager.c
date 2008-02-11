@@ -40,6 +40,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include "errors.h"
 #include "filelib.h"
 #include "socklib.h"
 #include "http.h"
@@ -61,7 +62,6 @@ static error_code start_relay(int content_type);
 static void post_status (RIP_MANAGER_INFO* rmi, int status);
 static error_code start_ripping (RIP_MANAGER_INFO* rmi);
 static void destroy_subsystems();
-static void init_error_strings (void);
 
 /******************************************************************************
  * Private Vars
@@ -70,10 +70,8 @@ static SR_HTTP_HEADER		m_http_info;
 static HSOCKET			m_sock;
 static THREAD_HANDLE		m_hthread;		// rip thread handle
 static void			(*m_status_callback)(RIP_MANAGER_INFO* rmi, int message, void *data);
-static BOOL			m_ripping = FALSE;
 static u_long			m_bytes_ripped;
 static BOOL			m_write_data = TRUE;	// Should we actually write to a file or not
-static HSEM			m_started_sem;	// to prevent deadlocks when ripping is stopped before its started.
 
 
 static char* overwrite_opt_strings[] = {
@@ -83,19 +81,13 @@ static char* overwrite_opt_strings[] = {
     "larger"
 };
 
-/*
- * Needs english type messages, just copy pasted for now
- */
-static char m_error_str[NUM_ERROR_CODES][MAX_ERROR_STR];
-#define SET_ERR_STR(str, code)	strncpy(m_error_str[code], str, MAX_ERROR_STR);
-
 /******************************************************************************
  * Public functions
  *****************************************************************************/
 void
 rip_manager_init (void)
 {
-    init_error_strings ();
+    errors_init ();
 }
 
 error_code
@@ -113,11 +105,7 @@ rip_manager_start (RIP_MANAGER_INFO **rmi,
     memset ((*rmi), 0, sizeof(RIP_MANAGER_INFO));
     (*rmi)->prefs = prefs;
 
-    m_started_sem = threadlib_create_sem();
-    if (m_ripping)
-	return SR_SUCCESS;		// to prevent reentrenty
-
-    m_ripping = TRUE;
+    (*rmi)->started_sem = threadlib_create_sem();
 
     register_codesets (&prefs->cs_opt);
 
@@ -143,29 +131,21 @@ rip_manager_start (RIP_MANAGER_INFO **rmi,
     init_metadata_parser (prefs->rules_file);
 
     /* Start the ripping thread */
-    m_ripping = TRUE;
     debug_printf ("Pre ripthread: %s\n", (*rmi)->prefs->url);
+    (*rmi)->started = 1;
     return threadlib_beginthread (&m_hthread, ripthread, (void*) (*rmi));
-}
-
-char*
-rip_manager_get_error_str(error_code code)
-{
-    if (code > 0 || code < -NUM_ERROR_CODES)
-        return NULL;
-    return m_error_str[-code];
 }
 
 void
 rip_manager_stop (RIP_MANAGER_INFO *rmi)
 {
     // Make sure this function isn't getting called twice
-    if (!m_ripping) {
-	debug_printf ("rip_manager_stop() called while not m_ripping\n");
+    if (!rmi->started) {
+	debug_printf ("rip_manager_stop() called while not started\n");
 	return;
     }
     
-    /* Write to pipe so thread will exit select() */
+    /* Write to pipe so ripping thread will exit select() */
 #if __UNIX__
     debug_printf ("Writing to abort_pipe.\n");
     write (rmi->abort_pipe[1], "0", 1);
@@ -173,8 +153,8 @@ rip_manager_stop (RIP_MANAGER_INFO *rmi)
 
     // Make sure the ripping started before we try to stop
     debug_printf ("Waiting for m_started_sem...\n");
-    threadlib_waitfor_sem(&m_started_sem);
-    m_ripping = FALSE;
+    threadlib_waitfor_sem(&rmi->started_sem);
+    rmi->started = 0;
 
     // Causes the code running in the thread to bail
     debug_printf ("Closing m_sock...\n");
@@ -192,7 +172,7 @@ rip_manager_stop (RIP_MANAGER_INFO *rmi)
     debug_printf ("Destroying subsystems...\n");
     destroy_subsystems();
     debug_printf ("Destroying m_started_sem\n");
-    threadlib_destroy_sem(&m_started_sem);
+    threadlib_destroy_sem(&rmi->started_sem);
     debug_printf ("Done with rip_manager_stop\n");
 
     /* Close pipes */
@@ -208,87 +188,13 @@ rip_manager_stop (RIP_MANAGER_INFO *rmi)
  * Private functions
  *****************************************************************************/
 static void
-init_error_strings (void)
-{
-    SET_ERR_STR("SR_SUCCESS",					0x00);
-    SET_ERR_STR("SR_ERROR_CANT_FIND_TRACK_SEPERATION",		0x01);
-    SET_ERR_STR("SR_ERROR_DECODE_FAILURE",			0x02);
-    SET_ERR_STR("SR_ERROR_INVALID_URL",				0x03);
-    SET_ERR_STR("SR_ERROR_WIN32_INIT_FAILURE",			0x04);
-    SET_ERR_STR("Could not connect to the stream. Try checking that the stream is up\n"
-		"and that your proxy settings are correct.",	0x05);
-    SET_ERR_STR("SR_ERROR_CANT_RESOLVE_HOSTNAME",		0x06);
-    SET_ERR_STR("SR_ERROR_RECV_FAILED",				0x07);
-    SET_ERR_STR("SR_ERROR_SEND_FAILED",				0x08);
-    SET_ERR_STR("SR_ERROR_PARSE_FAILURE",			0x09);
-    SET_ERR_STR("SR_ERROR_NO_RESPOSE_HEADER: Server is not a shoutcast stream",		0x0a);
-    SET_ERR_STR("Server returned an unknown error code",	0x0b);
-    SET_ERR_STR("SR_ERROR_NO_META_INTERVAL",			0x0c);
-    SET_ERR_STR("SR_ERROR_INVALID_PARAM",			0x0d);
-    SET_ERR_STR("SR_ERROR_NO_HTTP_HEADER",			0x0e);
-    SET_ERR_STR("SR_ERROR_CANT_GET_LIVE365_ID",			0x0f);
-    SET_ERR_STR("SR_ERROR_CANT_ALLOC_MEMORY",			0x10);
-    SET_ERR_STR("SR_ERROR_CANT_FIND_IP_PORT",			0x11);
-    SET_ERR_STR("SR_ERROR_CANT_FIND_MEMBERNAME",		0x12);
-    SET_ERR_STR("SR_ERROR_CANT_FIND_TRACK_NAME",		0x13);
-    SET_ERR_STR("SR_ERROR_NULL_MEMBER_NAME",			0x14);
-    SET_ERR_STR("SR_ERROR_CANT_FIND_TIME_TAG",			0x15);
-    SET_ERR_STR("SR_ERROR_BUFFER_EMPTY",			0x16);
-    SET_ERR_STR("SR_ERROR_BUFFER_FULL",				0x17);
-    SET_ERR_STR("SR_ERROR_CANT_INIT_XAUDIO",			0x18);
-    SET_ERR_STR("SR_ERROR_BUFFER_TOO_SMALL",			0x19);
-    SET_ERR_STR("SR_ERROR_CANT_CREATE_THREAD",			0x1A);
-    SET_ERR_STR("SR_ERROR_CANT_FIND_MPEG_HEADER",		0x1B);
-    SET_ERR_STR("SR_ERROR_INVALID_METADATA",			0x1C);
-    SET_ERR_STR("SR_ERROR_NO_TRACK_INFO",			0x1D);
-    SET_ERR_STR("SR_EEROR_CANT_FIND_SUBSTR",			0x1E);
-    SET_ERR_STR("SR_ERROR_CANT_BIND_ON_PORT",			0x1F);
-    SET_ERR_STR("SR_ERROR_HOST_NOT_CONNECTED",			0x20);
-    SET_ERR_STR("HTTP:404 Not Found",				0x21);
-    SET_ERR_STR("HTTP:401 Unauthorized",			0x22);
-    SET_ERR_STR("HTTP:502 Bad Gateway",				0x23);	// Connection Refused
-    SET_ERR_STR("SR_ERROR_CANT_CREATE_FILE",			0x24);
-    SET_ERR_STR("SR_ERROR_CANT_WRITE_TO_FILE",			0x25);
-    SET_ERR_STR("SR_ERROR_CANT_CREATE_DIR",			0x26);
-    SET_ERR_STR("HTTP:400 Bad Request ",			0x27);	// Server Full
-    SET_ERR_STR("SR_ERROR_CANT_SET_SOCKET_OPTIONS",		0x28);
-    SET_ERR_STR("SR_ERROR_SOCK_BASE",				0x29);
-    SET_ERR_STR("SR_ERROR_INVALID_DIRECTORY",			0x2a);
-    SET_ERR_STR("SR_ERROR_FAILED_TO_MOVE_FILE",			0x2b);
-    SET_ERR_STR("SR_ERROR_CANT_LOAD_MPGLIB",			0x2c);
-    SET_ERR_STR("SR_ERROR_CANT_INIT_MPGLIB",			0x2d);
-    SET_ERR_STR("SR_ERROR_CANT_UNLOAD_MPGLIB",			0x2e);
-    SET_ERR_STR("SR_ERROR_PCM_BUFFER_TO_SMALL",			0x2f);
-    SET_ERR_STR("SR_ERROR_CANT_DECODE_MP3",			0x30);
-    SET_ERR_STR("SR_ERROR_SOCKET_CLOSED",			0x31);
-    SET_ERR_STR("Due to legal reasons Streamripper can no longer work with Live365(tm).\r\n"
-		"See streamripper.sourceforge.net for more on this matter.", 0x32);
-    SET_ERR_STR("The maximum number of bytes ripped has been reached", 0x33);
-    SET_ERR_STR("SR_ERROR_CANT_WAIT_ON_THREAD",			0x34);
-    SET_ERR_STR("SR_ERROR_CANT_CREATE_EVENT",			0x35);
-    SET_ERR_STR("SR_ERROR_NOT_SHOUTCAST_STREAM",		0x36);
-    SET_ERR_STR("HTTP:407 - Proxy Authentication Required",	0x37);
-    SET_ERR_STR("HTTP:403 - Access Forbidden (try changing the UserAgent)", 0x38);
-    SET_ERR_STR("The output directory length is too long",      0x39);
-    SET_ERR_STR("SR_ERROR_PROGRAM_ERROR",                       0x3a);
-    SET_ERR_STR("SR_ERROR_TIMEOUT",                             0x3b);
-    SET_ERR_STR("SR_ERROR_SELECT_FAILED",                       0x3c);
-    SET_ERR_STR("SR_ERROR_RESERVED_WINDOW_EMPTY",               0x3d);
-    SET_ERR_STR("SR_ERROR_CANT_BIND_ON_INTERFACE",              0x3e);
-    SET_ERR_STR("SR_ERROR_NO_OGG_PAGES_FOR_RELAY",              0x3f);
-    SET_ERR_STR("SR_ERROR_CANT_PARSE_PLS",                      0x40);
-    SET_ERR_STR("SR_ERROR_CANT_PARSE_M3U",                      0x41);
-    SET_ERR_STR("SR_ERROR_CANT_CREATE_SOCKET",                  0x42);
-    SET_ERR_STR("SR_ERROR_CREATE_PIPE_FAILED",                  0x43);
-}
-
-static void
-post_error (RIP_MANAGER_INFO* rmi, int err)
+post_error (RIP_MANAGER_INFO* rmi, error_code err)
 {
     ERROR_INFO err_info;
     err_info.error_code = err;
-    strcpy(err_info.error_str, m_error_str[abs(err)]);
-    debug_printf ("post_error: %d %s\n", err_info.error_code, err_info.error_str);
+    strcpy(err_info.error_str, errors_get_string (err));
+    debug_printf ("post_error: %d %s\n", err_info.error_code, 
+		  err_info.error_str);
     m_status_callback (rmi, RM_ERROR, &err_info);
 }
 
@@ -460,9 +366,10 @@ ripthread (void *thread_arg)
     debug_stream_prefs (rmi->prefs);
 
     /* Connect to remote server */
-    if ((ret = start_ripping(rmi)) != SR_SUCCESS) {
+    ret = start_ripping(rmi);
+    if (ret != SR_SUCCESS) {
 	debug_printf ("Ripthread did start_ripping()\n");
-	threadlib_signal_sem (&m_started_sem);
+	threadlib_signal_sem (&rmi->started_sem);
 	post_error (rmi, ret);
 	goto DONE;
     }
@@ -470,13 +377,15 @@ ripthread (void *thread_arg)
     m_status_callback (rmi, RM_STARTED, (void *)NULL);
     post_status (rmi, RM_STATUS_BUFFERING);
     debug_printf ("Ripthread did initialization\n");
-    threadlib_signal_sem(&m_started_sem);
+    threadlib_signal_sem(&rmi->started_sem);
 
     while (TRUE) {
+	debug_printf ("Gonna ripstream_rip\n");
         ret = ripstream_rip(rmi);
+	debug_printf ("Did ripstream_rip\n");
 
 	/* If the user told us to stop, well, then we bail */
-	if (!m_ripping)
+	if (!rmi->started)
 	    break;
 
 	/* 
@@ -515,7 +424,7 @@ ripthread (void *thread_arg)
 		 GET_AUTO_RECONNECT (rmi->prefs->flags)) {
 	    /* Try to reconnect, if thats what the user wants */
 	    post_status (rmi, RM_STATUS_RECONNECTING);
-	    while (m_ripping) {
+	    while (rmi->started) {
 		// Hopefully this solves a lingering bug 
 		// with auto-reconnects failing to bind to the relay port
 		// (a long with other unknown problems)
@@ -556,10 +465,10 @@ ripthread (void *thread_arg)
 
     // We get here when there was either a fatal error
     // or we we're not auto-reconnecting and the stream just stopped
-    // or when we have been told to stop, via the m_ripping flag
+    // or when we have been told to stop, via the rmi->started flag
  DONE:
     m_status_callback (rmi, RM_DONE, 0);
-    m_ripping = FALSE;
+    rmi->started = 0;
     debug_printf ("ripthread() exiting!\n");
 }
 
@@ -764,57 +673,3 @@ overwrite_opt_to_string (enum OverwriteOpt oo)
 {
     return overwrite_opt_strings[(int) oo];
 }
-
-#if defined (commentout)
-void
-set_rip_manager_options_defaults (PREFS *rmo)
-{
-    debug_printf ("- set_rip_manager_options_defaults -\n");
-    rmo->url[0] = 0;
-    rmo->proxyurl[0] = 0;
-    strcpy(rmo->output_directory, "./");
-    rmo->output_pattern[0] = 0;
-    rmo->showfile_pattern[0] = 0;
-    rmo->if_name[0] = 0;
-    rmo->rules_file[0] = 0;
-    rmo->pls_file[0] = 0;
-    rmo->relay_ip[0] = 0;
-    rmo->relay_port = 8000;
-    rmo->max_port = 18000;
-    rmo->max_connections = 1;
-    rmo->maxMB_rip_size = 0;
-    rmo->flags = OPT_AUTO_RECONNECT | 
-	    OPT_SEPERATE_DIRS | 
-	    OPT_SEARCH_PORTS |
-	    /* OPT_ADD_ID3V1 | -- removed starting 1.62-beta-2 */
-	    OPT_ADD_ID3V2 |
-	    OPT_INDIVIDUAL_TRACKS;
-    strcpy(rmo->useragent, "sr-POSIX/" SRVERSION);
-
-    // Defaults for splitpoint - times are in ms
-    rmo->sp_opt.xs = 1;
-    rmo->sp_opt.xs_min_volume = 1;
-    rmo->sp_opt.xs_silence_length = 1000;
-    rmo->sp_opt.xs_search_window_1 = 6000;
-    rmo->sp_opt.xs_search_window_2 = 6000;
-    rmo->sp_opt.xs_offset = 0;
-    rmo->sp_opt.xs_padding_1 = 300;
-    rmo->sp_opt.xs_padding_2 = 300;
-
-    /* GCS FIX: What is the difference between this timeout 
-       and the one used in setsockopt()? */
-#if defined (commentout)
-    rmo->timeout = 0;
-#endif
-    rmo->timeout = 15;
-    rmo->dropcount = 0;
-
-    // Defaults for codeset
-    memset (&rmo->cs_opt, 0, sizeof(CODESET_OPTIONS));
-    set_codesets_default (&rmo->cs_opt);
-
-    rmo->count_start = 0;
-    rmo->overwrite = OVERWRITE_LARGER;
-    rmo->ext_cmd[0] = 0;
-}
-#endif

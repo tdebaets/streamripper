@@ -18,6 +18,7 @@
 #define __FILELIB_H__
 
 #include "srtypes.h"
+#include "errors.h"
 #if WIN32
 #include <windows.h>
 #endif

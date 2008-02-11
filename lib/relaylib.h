@@ -18,6 +18,7 @@
 #define __RELAYLIB_H__
 
 #include "srtypes.h"
+#include "errors.h"
 #include "compat.h"
 
 /* Each relay connection gets this struct */

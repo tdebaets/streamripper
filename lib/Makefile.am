@@ -16,6 +16,7 @@ libstreamripper_a_SOURCES = \
 	cbuf2.c \
 	charset.c \
 	debug.c \
+	errors.c \
 	external.c \
 	filelib.c \
 	findsep.c \
@@ -37,6 +38,7 @@ libstreamripper_a_SOURCES = \
 	charset.h \
 	compat.h \
 	debug.h \
+	errors.h \
 	external.h \
 	filelib.h \
 	findsep.h \

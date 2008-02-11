@@ -19,6 +19,7 @@
 #define __FINDSEP_H__
 
 #include "srtypes.h"
+#include "errors.h"
 
 error_code
 findsep_silence (const u_char* mpgbuf, 

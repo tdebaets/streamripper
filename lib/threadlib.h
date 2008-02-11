@@ -2,6 +2,7 @@
 #define __THREADLIB_H__
 
 #include "srtypes.h"
+#include "errors.h"
 #include "compat.h"
 
 typedef struct THREAD_HANDLEst

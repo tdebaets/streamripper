@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "errors.h"
 #include "relaylib.h"
 #include "cbuf2.h"
 #include "debug.h"

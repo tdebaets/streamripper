@@ -321,6 +321,8 @@ lib_manifest = \
 	lib/confw32.h \
 	lib/debug.c \
 	lib/debug.h \
+	lib/errors.c \
+	lib/errors.h \
 	lib/external.c \
 	lib/external.h \
 	lib/filelib.c \

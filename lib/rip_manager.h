@@ -20,6 +20,8 @@
 #include "external.h"
 #include "prefs.h"
 #include "srtypes.h"
+#include "errors.h"
+#include "compat.h"
 
 #define SRVERSION	"1.63-beta-3"
 
@@ -68,6 +70,8 @@ typedef struct RIP_MANAGER_INFOst
 #if __UNIX__
     int abort_pipe[2];           // write to pipe to abort select()
 #endif
+    int started;
+    HSEM started_sem;	    /* protect RMI data when starting and stopping */
 } RIP_MANAGER_INFO;
 
 

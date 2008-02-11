@@ -143,10 +143,17 @@ Shutdown procedure
   gui thread polls m_got_sig (CTL-C) and m_alldone (rip_manager done)
   callback sets m_alldone
 
-* Data structs:
+Data structs:
     1) Global preferences
     2) Stream preferences
     3) Stream state variables (rmi)
+
+Semaphore/Mutex
+   1) cbuf2->cbuf_sem
+   2) m_debug_lock
+   3) m_started_sem
+   4) m_sem_not_connected
+   5) g_relay_list_sem
 
 -----------------------------------------------------------------------
 HTTP HEADERS
