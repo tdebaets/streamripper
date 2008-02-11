@@ -212,7 +212,8 @@ void socklib_close(HSOCKET *socket_handle)
 }
 
 error_code
-socklib_read_header(HSOCKET *socket_handle, char *buffer, int size)
+socklib_read_header(RIP_MANAGER_INFO* rmi, HSOCKET *socket_handle, 
+		    char *buffer, int size)
 {
     int i;
 #ifdef WIN32
@@ -232,7 +233,7 @@ socklib_read_header(HSOCKET *socket_handle, char *buffer, int size)
     memset(buffer, 0, size);
     for(i = 0; i < size; i++)
     {
-	ret = socklib_recvall (socket_handle, &buffer[i], 1, 0);
+	ret = socklib_recvall (rmi, socket_handle, &buffer[i], 1, 0);
 	if (ret < 0) {
 	    return ret;
 	}
@@ -276,8 +277,9 @@ socklib_read_header(HSOCKET *socket_handle, char *buffer, int size)
     return SR_SUCCESS;
 }
 
-int
-socklib_recvall (HSOCKET *socket_handle, char* buffer, int size, int timeout)
+error_code
+socklib_recvall (RIP_MANAGER_INFO* rmi, HSOCKET *socket_handle, 
+		 char* buffer, int size, int timeout)
 {
     int ret = 0, read = 0;
     int sock;
@@ -293,23 +295,29 @@ socklib_recvall (HSOCKET *socket_handle, char* buffer, int size, int timeout)
 	if (timeout > 0) {
 	    /* Wait up to 'timeout' seconds for data on socket to be 
 	       ready for read */
+#if __UNIX__
+	    FD_SET(rmi->abort_pipe[0], &fds);
+#endif
 	    FD_SET(sock, &fds);
 	    tv.tv_sec = timeout;
 	    tv.tv_usec = 0;
-	    printf ("SELECT -->\n");
 	    ret = select(sock + 1, &fds, NULL, NULL, &tv);
-	    printf ("SELECT <--\n");
 	    if (ret == SOCKET_ERROR) {
 		/* This happens when I kill winamp while ripping */
 		return SR_ERROR_SELECT_FAILED;
 	    }
-	    if (ret != 1)
+	    if (ret == 0) {
 		return SR_ERROR_TIMEOUT;
+	    }
 	}
+#if __UNIX__
+	if (FD_ISSET(rmi->abort_pipe[0], &fds)) {
+	    debug_printf ("socklib_recvall detected write to abort pipe.\n");
+	    return SR_ERROR_ABORT_PIPE_SIGNALLED;
+	}
+#endif
 
-	printf ("RECV -->\n");
         ret = recv(socket_handle->s, &buffer[read], size, 0);
-	printf ("RECV <--\n");
 	debug_printf ("RECV req %5d bytes, got %5d bytes\n", size, ret);
 
         if (ret == SOCKET_ERROR) {

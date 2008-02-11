@@ -65,25 +65,28 @@ typedef struct RIP_MANAGER_INFOst
     int	status;
     int track_count;
     External_Process *ep;
+#if __UNIX__
+    int abort_pipe[2];           // write to pipe to abort select()
+#endif
 } RIP_MANAGER_INFO;
 
 
 // Rip manager flags options
-#define OPT_AUTO_RECONNECT	0x00000001		// reconnect automatticly if dropped
-#define OPT_SEPERATE_DIRS	0x00000002		// create a directory named after the server
-#define OPT_SEARCH_PORTS	0x00000008		// relay server should search for a open port
-#define OPT_MAKE_RELAY		0x00000010		// don't make a relay server
-#define OPT_COUNT_FILES		0x00000020		// add a index counter to the filenames
-#define OPT_OBSOLETE		0x00000040		// Used to be OPT_ADD_ID3, now ignored
-#define OPT_DATE_STAMP		0x00000100		// add a date stamp to the output directory
-#define OPT_CHECK_MAX_BYTES	0x00000200		// use the maxMB_rip_size value to know how much to rip
-#define OPT_KEEP_INCOMPLETE	0x00000400		// overwrite files in the incomplete directory, add counter instead
-#define OPT_SINGLE_FILE_OUTPUT	0x00000800		// enable ripping to single file
-#define OPT_TRUNCATE_DUPS	0x00001000		// truncate file in the incomplete directory already present in complete
-#define OPT_INDIVIDUAL_TRACKS	0x00002000		// should we write the individual tracks?
-#define OPT_EXTERNAL_CMD	0x00004000		// use external command to get metadata?
-#define OPT_ADD_ID3V1		0x00008000		// Add ID3V1
-#define OPT_ADD_ID3V2		0x00010000		// Add ID3V2
+#define OPT_AUTO_RECONNECT	0x00000001	// reconnect automatically if dropped
+#define OPT_SEPERATE_DIRS	0x00000002	// create a directory named after the server
+#define OPT_SEARCH_PORTS	0x00000008	// relay server should search for a open port
+#define OPT_MAKE_RELAY		0x00000010	// don't make a relay server
+#define OPT_COUNT_FILES		0x00000020	// add a index counter to the filenames
+#define OPT_OBSOLETE		0x00000040	// Used to be OPT_ADD_ID3, now ignored
+#define OPT_DATE_STAMP		0x00000100	// add a date stamp to the output directory
+#define OPT_CHECK_MAX_BYTES	0x00000200	// use the maxMB_rip_size value to know how much to rip
+#define OPT_KEEP_INCOMPLETE	0x00000400	// overwrite files in the incomplete directory, add counter instead
+#define OPT_SINGLE_FILE_OUTPUT	0x00000800	// enable ripping to single file
+#define OPT_TRUNCATE_DUPS	0x00001000	// truncate file in the incomplete directory already present in complete
+#define OPT_INDIVIDUAL_TRACKS	0x00002000	// should we write the individual tracks?
+#define OPT_EXTERNAL_CMD	0x00004000	// use external command to get metadata?
+#define OPT_ADD_ID3V1		0x00008000	// Add ID3V1
+#define OPT_ADD_ID3V2		0x00010000	// Add ID3V2
 
 #define OPT_FLAG_ISSET(flags, opt)	    ((flags & opt) > 0)
 // #define OPT_FLAG_SET(flags, opt)	    (flags =| opt)

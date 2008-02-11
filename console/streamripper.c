@@ -132,7 +132,6 @@ catch_sig(int code)
 	fprintf(stderr, "\n");
     if (!m_started)
         exit(2);
-    printf ("Caught sig...\n");
     m_got_sig = TRUE;
 }
 

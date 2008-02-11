@@ -7,7 +7,8 @@
 #include "socklib.h"
 
 error_code
-ripstream_init (HSOCKET sock, 
+ripstream_init (RIP_MANAGER_INFO* rmi,
+		HSOCKET sock, 
 		int have_relay,
 		int timeout, 
 		char *no_meta_name, 

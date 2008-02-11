@@ -51,10 +51,12 @@ static void compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt,
 static int ms_to_bytes (int ms, int bitrate);
 static int bytes_to_secs (unsigned int bytes);
 static void clear_track_info (TRACK_INFO* ti);
-static int ripstream_recvall (char* buffer, int size);
-
-static error_code get_track_from_metadata (int size, char *newtrack);
-static error_code get_stream_data (char *data_buf, char *track_buf);
+static int
+ripstream_recvall (RIP_MANAGER_INFO* rmi, char* buffer, int size);
+static error_code get_track_from_metadata (RIP_MANAGER_INFO* rmi, 
+					   int size, char *newtrack);
+static error_code
+get_stream_data (RIP_MANAGER_INFO* rmi, char *data_buf, char *track_buf);
 static error_code ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi);
 static error_code ripstream_rip_ogg (RIP_MANAGER_INFO* rmi);
 
@@ -128,7 +130,8 @@ typedef struct ID3V2framest {
  * Public functions
  *****************************************************************************/
 error_code
-ripstream_init (HSOCKET sock, 
+ripstream_init (RIP_MANAGER_INFO* rmi,
+		HSOCKET sock, 
 		int have_relay,
 		int timeout, 
 		char *no_meta_name, 
@@ -285,7 +288,7 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 
     /* get the data from the stream */
     debug_printf ("RIPSTREAM_RIP_OGG: top of loop\n");
-    ret = get_stream_data(m_getbuffer, m_current_track.raw_metadata);
+    ret = get_stream_data(rmi, m_getbuffer, m_current_track.raw_metadata);
     if (ret != SR_SUCCESS) {
 	debug_printf("get_stream_data bad return code: %d\n", ret);
 	return ret;
@@ -390,7 +393,7 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
 
     /* get the data & meta-data from the stream */
     debug_printf ("RIPSTREAM_RIP: top of loop\n");
-    ret = get_stream_data(m_getbuffer, m_current_track.raw_metadata);
+    ret = get_stream_data(rmi, m_getbuffer, m_current_track.raw_metadata);
     if (ret != SR_SUCCESS) {
 	debug_printf("get_stream_data bad return code: %d\n", ret);
 	return ret;
@@ -609,14 +612,14 @@ static error_code
 end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, u_long pos2, TRACK_INFO* ti)
 {
     int ret;
-    u_char *buf;
+    char *buf;
 
     /* GCS pos1 is byte position. Here we convert it into a "count". */
     pos1++;
 
     // I think pos can be zero if the silence is right at the beginning
     // i.e. it is a bug in s.r.
-    buf = (u_char*) malloc (pos1);
+    buf = (char*) malloc (pos1);
 
     // pos1 is end of prev track
     // pos2 is beginning of next track
@@ -1024,13 +1027,13 @@ compute_cbuf2_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate,
 
 /* GCS: This used to be myrecv in rip_manager.c */
 static int
-ripstream_recvall (char* buffer, int size)
+ripstream_recvall (RIP_MANAGER_INFO* rmi, char* buffer, int size)
 {
     int ret;
     /* GCS: Jun 5, 2004.  Here is where I think we are getting aussie's 
        problem with the SR_ERROR_INVALID_METADATA or SR_ERROR_NO_TRACK_INFO
        messages */
-    ret = socklib_recvall(&m_sock, buffer, size, m_timeout);
+    ret = socklib_recvall(rmi, &m_sock, buffer, size, m_timeout);
     if (ret >= 0 && ret != size) {
 	debug_printf ("rip_manager_recv: expected %d, got %d\n",size,ret);
 	ret = SR_ERROR_RECV_FAILED;
@@ -1039,7 +1042,7 @@ ripstream_recvall (char* buffer, int size)
 }
 
 static error_code
-get_stream_data (char *data_buf, char *track_buf)
+get_stream_data (RIP_MANAGER_INFO* rmi, char *data_buf, char *track_buf)
 {
     int ret = 0;
     char c;
@@ -1047,14 +1050,14 @@ get_stream_data (char *data_buf, char *track_buf)
 
     *track_buf = 0;
     m_chunkcount++;
-    if ((ret = ripstream_recvall (data_buf, m_buffersize)) <= 0)
+    if ((ret = ripstream_recvall (rmi, data_buf, m_buffersize)) <= 0)
 	return ret;
 
     if (m_meta_interval == NO_META_INTERVAL) {
 	return SR_SUCCESS;
     }
 
-    if ((ret = ripstream_recvall (&c, 1)) <= 0)
+    if ((ret = ripstream_recvall (rmi, &c, 1)) <= 0)
 	return ret;
 
     debug_printf ("METADATA LEN: %d\n",(int)c);
@@ -1068,7 +1071,8 @@ get_stream_data (char *data_buf, char *track_buf)
 	// that the stream does not have metadata
 	return SR_SUCCESS;
     } else {
-	if ((ret = get_track_from_metadata (c * 16, newtrack)) != SR_SUCCESS) {
+	ret = get_track_from_metadata (rmi, c * 16, newtrack);
+	if (ret != SR_SUCCESS) {
 	    debug_printf("get_trackname had a bad return %d", ret);
 	    return ret;
 	}
@@ -1085,7 +1089,7 @@ get_stream_data (char *data_buf, char *track_buf)
 }
 
 static error_code
-get_track_from_metadata (int size, char *newtrack)
+get_track_from_metadata (RIP_MANAGER_INFO* rmi, int size, char *newtrack)
 {
     int i;
     int ret;
@@ -1094,7 +1098,8 @@ get_track_from_metadata (int size, char *newtrack)
     if ((namebuf = malloc(size)) == NULL)
 	return SR_ERROR_CANT_ALLOC_MEMORY;
 
-    if ((ret = ripstream_recvall (namebuf, size)) <= 0) {
+    ret = ripstream_recvall (rmi, namebuf, size);
+    if (ret <= 0) {
 	free(namebuf);
 	return ret;
     }

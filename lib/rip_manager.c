@@ -103,10 +103,11 @@ rip_manager_start (RIP_MANAGER_INFO **rmi,
 		   STREAM_PREFS *prefs,
 		   RIP_MANAGER_CALLBACK status_callback)
 {
-    int ret = 0;
+    int rc;
 
-    if (!prefs || !rmi)
+    if (!prefs || !rmi) {
 	return SR_ERROR_INVALID_PARAM;
+    }
 
     *rmi = (RIP_MANAGER_INFO*) malloc (sizeof(RIP_MANAGER_INFO));
     memset ((*rmi), 0, sizeof(RIP_MANAGER_INFO));
@@ -120,6 +121,19 @@ rip_manager_start (RIP_MANAGER_INFO **rmi,
 
     register_codesets (&prefs->cs_opt);
 
+    /* From select() man page:
+       On systems that lack pselect() reliable (and more
+       portable)  signal  trapping  can  be achieved using the self-pipe trick
+       (where a signal handler writes a byte to a pipe whose other end is mon-
+       itored by select() in the main program.
+    */
+#if __UNIX__
+    rc = pipe ((*rmi)->abort_pipe);
+    if (rc != 0) {
+	return SR_ERROR_CREATE_PIPE_FAILED;
+    }
+#endif
+
     socklib_init();
 
     m_status_callback = status_callback;
@@ -131,8 +145,7 @@ rip_manager_start (RIP_MANAGER_INFO **rmi,
     /* Start the ripping thread */
     m_ripping = TRUE;
     debug_printf ("Pre ripthread: %s\n", (*rmi)->prefs->url);
-    ret = threadlib_beginthread (&m_hthread, ripthread, (void*) (*rmi));
-    return ret;
+    return threadlib_beginthread (&m_hthread, ripthread, (void*) (*rmi));
 }
 
 char*
@@ -152,6 +165,12 @@ rip_manager_stop (RIP_MANAGER_INFO *rmi)
 	return;
     }
     
+    /* Write to pipe so thread will exit select() */
+#if __UNIX__
+    debug_printf ("Writing to abort_pipe.\n");
+    write (rmi->abort_pipe[1], "0", 1);
+#endif
+
     // Make sure the ripping started before we try to stop
     debug_printf ("Waiting for m_started_sem...\n");
     threadlib_waitfor_sem(&m_started_sem);
@@ -168,15 +187,20 @@ rip_manager_stop (RIP_MANAGER_INFO *rmi)
     }
 
     // blocks until everything is ok and closed
-    printf ("Waiting for m_hthread to close...\n");
     debug_printf ("Waiting for m_hthread to close...\n");
     threadlib_waitforclose(&m_hthread);
-    printf ("Done.\n");
     debug_printf ("Destroying subsystems...\n");
     destroy_subsystems();
     debug_printf ("Destroying m_started_sem\n");
     threadlib_destroy_sem(&m_started_sem);
     debug_printf ("Done with rip_manager_stop\n");
+
+    /* Close pipes */
+#if __UNIX__
+    debug_printf ("Closing abort_pipe.\n");
+    close (rmi->abort_pipe[0]);
+    close (rmi->abort_pipe[1]);
+#endif
 }
 
 
@@ -255,6 +279,7 @@ init_error_strings (void)
     SET_ERR_STR("SR_ERROR_CANT_PARSE_PLS",                      0x40);
     SET_ERR_STR("SR_ERROR_CANT_PARSE_M3U",                      0x41);
     SET_ERR_STR("SR_ERROR_CANT_CREATE_SOCKET",                  0x42);
+    SET_ERR_STR("SR_ERROR_CREATE_PIPE_FAILED",                  0x43);
 }
 
 static void
@@ -448,9 +473,7 @@ ripthread (void *thread_arg)
     threadlib_signal_sem(&m_started_sem);
 
     while (TRUE) {
-	printf ("Calling ripstream_rip\n");
         ret = ripstream_rip(rmi);
-	printf ("Finished ripstream_rip\n");
 
 	/* If the user told us to stop, well, then we bail */
 	if (!m_ripping)
@@ -601,7 +624,7 @@ start_ripping (RIP_MANAGER_INFO* rmi)
     debug_printf ("start_ripping: checkpoint 2\n");
 
     /* Connect to the stream */
-    ret = http_sc_connect (&m_sock, prefs->url, pproxy, &m_http_info, 
+    ret = http_sc_connect (rmi, &m_sock, prefs->url, pproxy, &m_http_info, 
 			   prefs->useragent, prefs->if_name);
     if (ret != SR_SUCCESS) {
 	goto RETURN_ERR;
@@ -659,7 +682,8 @@ start_ripping (RIP_MANAGER_INFO* rmi)
      * it's sending it to
      */
     ripstream_destroy();
-    ret = ripstream_init(m_sock, 
+    ret = ripstream_init(rmi,
+			 m_sock, 
 			 GET_MAKE_RELAY(rmi->prefs->flags),
 			 rmi->prefs->timeout, 
 			 m_http_info.icy_name,

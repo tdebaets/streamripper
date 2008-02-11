@@ -445,7 +445,7 @@ thread_accept (void *notused)
     int newsock;
     BOOL good;
     struct sockaddr_in client;
-    int iAddrSize = sizeof(client);
+    socklen_t iAddrSize = sizeof(client);
     RELAY_LIST* newhostsock;
     int icy_metadata;
     char* client_http_header;

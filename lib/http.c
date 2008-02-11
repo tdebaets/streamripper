@@ -27,9 +27,14 @@
  *****************************************************************************/
 static char* make_auth_header(const char *header_name, 
 			      const char *username, const char *password);
-static error_code http_get_sc_header(const char* url, HSOCKET *sock, 
-					SR_HTTP_HEADER *info);
 static char* b64enc(const char *buf, int size);
+static error_code
+http_get_pls (RIP_MANAGER_INFO* rmi, HSOCKET *sock, SR_HTTP_HEADER *info);
+static error_code
+http_get_m3u (RIP_MANAGER_INFO* rmi, HSOCKET *sock, SR_HTTP_HEADER *info);
+static error_code
+http_get_sc_header(RIP_MANAGER_INFO* rmi, const char* url, 
+		   HSOCKET *sock, SR_HTTP_HEADER *info);
 
 /******************************************************************************
  * Private Vars
@@ -39,13 +44,13 @@ static char* b64enc(const char *buf, int size);
 
 
 /******************************************************************************
- * Functions
+ * Public functions
  *****************************************************************************/
-
 /* Connect to a shoutcast type stream, leaves when it's about to 
    get the header info */
 error_code
-http_sc_connect (HSOCKET *sock, const char *url, const char *proxyurl, 
+http_sc_connect (RIP_MANAGER_INFO* rmi,
+		 HSOCKET *sock, const char *url, const char *proxyurl, 
 		 SR_HTTP_HEADER *info, char *useragent, char *if_name)
 {
     char headbuf[MAX_HEADER_LEN];
@@ -81,7 +86,7 @@ http_sc_connect (HSOCKET *sock, const char *url, const char *proxyurl,
 	    return ret;
 
 	debug_printf("http_sc_connect(): calling http_get_sc_header\n");
-	if ((ret = http_get_sc_header(url, sock, info)) != SR_SUCCESS)
+	if ((ret = http_get_sc_header(rmi, url, sock, info)) != SR_SUCCESS)
 	    return ret;
 
 	if (*info->http_location) {
@@ -97,6 +102,9 @@ http_sc_connect (HSOCKET *sock, const char *url, const char *proxyurl,
     return SR_SUCCESS;
 }
 
+/******************************************************************************
+ * Private functions
+ *****************************************************************************/
 /*
  * Parse's a url as in http://host:port/path or host/path, etc..
  * and now http://username:password@server:4480
@@ -615,8 +623,8 @@ Title1=(#1 - 530/18385) GCS hit radio
 Length1=-1
 Version=2
 */
-error_code
-http_get_pls (HSOCKET *sock, SR_HTTP_HEADER *info)
+static error_code
+http_get_pls (RIP_MANAGER_INFO* rmi, HSOCKET *sock, SR_HTTP_HEADER *info)
 {
     int s, bytes;
     error_code rc;
@@ -626,7 +634,7 @@ http_get_pls (HSOCKET *sock, SR_HTTP_HEADER *info)
     const int timeout = 30;
 
     debug_printf ("Reading pls\n");
-    bytes = socklib_recvall (sock, buf, MAX_PLS_LEN, timeout);
+    bytes = socklib_recvall (rmi, sock, buf, MAX_PLS_LEN, timeout);
     if (bytes < SR_SUCCESS) return bytes;
     if (bytes == 0 || bytes == MAX_PLS_LEN) {
 	debug_printf("Failed in getting PLS (%d bytes)\n", bytes);
@@ -679,8 +687,8 @@ http_get_pls (HSOCKET *sock, SR_HTTP_HEADER *info)
 #EXTINF:111,3rd Bass - Al z A-B-Cee z
 mp3/3rd Bass/3rd bass - Al z A-B-Cee z.mp3
 */
-error_code
-http_get_m3u (HSOCKET *sock, SR_HTTP_HEADER *info)
+static error_code
+http_get_m3u (RIP_MANAGER_INFO* rmi, HSOCKET *sock, SR_HTTP_HEADER *info)
 {
     int bytes;
     char buf[MAX_M3U_LEN];
@@ -688,7 +696,7 @@ http_get_m3u (HSOCKET *sock, SR_HTTP_HEADER *info)
     char* p;
 
     debug_printf ("Reading m3u\n");
-    bytes = socklib_recvall (sock, buf, MAX_M3U_LEN, timeout);
+    bytes = socklib_recvall (rmi, sock, buf, MAX_M3U_LEN, timeout);
     if (bytes < SR_SUCCESS) return bytes;
     if (bytes == 0 || bytes == MAX_M3U_LEN) {
 	debug_printf("Failed in getting M3U (%d bytes)\n", bytes);
@@ -719,22 +727,24 @@ http_get_m3u (HSOCKET *sock, SR_HTTP_HEADER *info)
 }
 
 static error_code
-http_get_sc_header(const char* url, HSOCKET *sock, SR_HTTP_HEADER *info)
+http_get_sc_header(RIP_MANAGER_INFO* rmi, const char* url, 
+		   HSOCKET *sock, SR_HTTP_HEADER *info)
 {
     int ret;
     char headbuf[MAX_HEADER_LEN] = {'\0'};
 
-    if ((ret = socklib_read_header(sock, headbuf, MAX_HEADER_LEN)) != SR_SUCCESS)
+    ret = socklib_read_header (rmi, sock, headbuf, MAX_HEADER_LEN);
+    if (ret != SR_SUCCESS)
 	return ret;
 
     if ((ret = http_parse_sc_header(url, headbuf, info)) != SR_SUCCESS)
 	return ret;
 
     if (info->content_type == CONTENT_TYPE_PLS) {
-	ret = http_get_pls (sock, info);
+	ret = http_get_pls (rmi, sock, info);
 	if (ret != SR_SUCCESS) return ret;
     } else if (info->content_type == CONTENT_TYPE_M3U) {
-	ret = http_get_m3u (sock, info);
+	ret = http_get_m3u (rmi, sock, info);
 	if (ret != SR_SUCCESS) return ret;
     }
 

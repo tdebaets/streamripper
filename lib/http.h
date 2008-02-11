@@ -1,6 +1,7 @@
 #ifndef __HTTP_H__
 #define __HTTP_H__
 
+#include "rip_manager.h"
 #include "srtypes.h"
 
 typedef struct SR_HTTP_HEADERst
@@ -34,10 +35,11 @@ error_code http_construct_sc_response(SR_HTTP_HEADER *info, char *header, int si
 error_code inet_get_webpage_alloc(HSOCKET *sock, const char *url,
 					 const char *proxyurl, 
 					 char **buffer, unsigned long *size);
-error_code http_sc_connect(HSOCKET *sock, const char *url, 
-				  const char *proxyurl, 
-				  SR_HTTP_HEADER *info, char *useragent, 
-				  char *if_name);
+error_code http_sc_connect (RIP_MANAGER_INFO* rmi,
+			    HSOCKET *sock, const char *url, 
+			    const char *proxyurl, 
+			    SR_HTTP_HEADER *info, char *useragent, 
+			    char *if_name);
 
 
 #endif //__HTTP_H__
