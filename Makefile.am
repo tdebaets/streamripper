@@ -16,6 +16,8 @@ if SUBDIR_CDK
   MAYBE_CDK = cdk-5.0-20060507
 endif
 
+AM_CPPFLAGS += -I@abs_top_srcdir@/lib
+
 SUBDIRS = $(MAYBE_LIBMAD) $(MAYBE_LIBTRE) $(MAYBE_CDK) lib
 
 bin_PROGRAMS = streamripper

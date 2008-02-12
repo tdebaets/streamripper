@@ -96,6 +96,9 @@ else
   AC_SUBST(LIBMAD)
 fi
 
+dnl Socklen
+TYPE_SOCKLEN_T
+
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
