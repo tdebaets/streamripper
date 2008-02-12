@@ -23,7 +23,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 #if WIN32
-#define sleep	Sleep
+//#define sleep	Sleep
 #include <windows.h>
 #else
 #include <unistd.h>

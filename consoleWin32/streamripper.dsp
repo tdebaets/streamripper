@@ -128,6 +128,14 @@ SOURCE=..\lib\debug.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\lib\errors.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\errors.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\lib\external.c
 # End Source File
 # Begin Source File

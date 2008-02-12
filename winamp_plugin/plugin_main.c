@@ -33,6 +33,7 @@
 #include "filelib.h"
 #include "commctrl.h"
 #include "debug.h"
+#include "errors.h"
 
 #define ID_TRAY	1
 
@@ -467,7 +468,7 @@ start_button_pressed()
 
     ret = rip_manager_start (&m_rmi, &g_rmo, rip_callback);
     if (ret != SR_SUCCESS) {
-	MessageBox (m_hwnd, rip_manager_get_error_str (ret),
+	MessageBox (m_hwnd, errors_get_string (ret),
 		    "Failed to connect to stream", MB_ICONSTOP);
 	start_button_enable();
 	return;
