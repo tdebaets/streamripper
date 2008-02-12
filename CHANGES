@@ -1,7 +1,8 @@
 New for 1.63-beta-4
 --------------
 Monday, Feb 11, 2008
-* Improve responsivity of CTL-C on unix
+* Fix crash on CTRL-C when reconnecting (#764599)
+* Improve responsivity of CTRL-C on unix
 * Remove dead code
 
 New for 1.63-beta-3
