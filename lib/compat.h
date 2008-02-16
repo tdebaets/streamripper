@@ -65,9 +65,9 @@
 
 // Thread Routines
 #if WIN32
-#define THANDLE	HANDLE
+#define THREAD_HANDLE	HANDLE
 #define BeginThread(_thandle_, callback, arg) \
-               {_thandle_ = (THANDLE)_beginthread((void*) callback, 0, (void*) arg);}
+               {_thandle_ = (THREAD_HANDLE)_beginthread((void*) callback, 0, (void*) arg);}
 #define WaitForThread(_thandle_)	WaitForSingleObject(_thandle_, INFINITE);
 #define DestroyThread(_thandle_)	CloseHandle(_thandle_)
 
@@ -81,7 +81,7 @@
 
 #elif __UNIX__
 
-#define THANDLE		pthread_t
+#define THREAD_HANDLE		pthread_t
 #define BeginThread(_thandle_, callback, arg) \
                pthread_create(&_thandle_, NULL, \
                           (void *)callback, (void *)arg)

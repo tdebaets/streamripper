@@ -82,9 +82,9 @@ static int m_have_metadata;
 /*****************************************************************************
  * Private functions
  *****************************************************************************/
-static void thread_accept(void *notused);
-static error_code try_port(u_short port, char *if_name, char *relay_ip);
-static void thread_send(void *notused);
+static void thread_accept (void *arg);
+static error_code try_port (u_short port, char *if_name, char *relay_ip);
+static void thread_send (void *arg);
 
 #define BUFSIZE (1024)
 
@@ -164,9 +164,12 @@ header_receive (int sock, int *icy_metadata)
 	md = strtok (buf, HTTP_HEADER_DELIM);
 	while (md) {
 	    debug_printf ("Got token: %s\n", md);
+
 	    // Finished when we are at end of header: only CRLF will be there.
-	    if ((md[0] == '\r') && (md[1] == 0))
+	    if ((md[0] == '\r') && (md[1] == 0)) {
+		debug_printf ("End of header\n");
 		return 0;
+	    }
 	
 	    // Check for desired tag
 	    if (tag_compare (md, ICY_METADATA_TAG) == 0) {
@@ -421,17 +424,18 @@ relaylib_shutdown ()
 }
 
 error_code
-relaylib_start ()
+relaylib_start (RIP_MANAGER_INFO* rmi)
 {
     int ret;
 
     m_running = TRUE;
-    // Spawn on a thread so it's non-blocking
-    if ((ret = threadlib_beginthread(&m_hthread, thread_accept, 0)) != SR_SUCCESS)
-        return ret;
+
+    ret = threadlib_beginthread (&m_hthread, thread_accept, (void*) rmi);
+    if (ret != SR_SUCCESS) return ret;
     m_running_accept = TRUE;
 
-    if ((ret = threadlib_beginthread(&m_hthread2, thread_send, 0)) != SR_SUCCESS)
+    ret = threadlib_beginthread (&m_hthread2, thread_send, 0);
+    if (ret != SR_SUCCESS)
         return ret;
     m_running_send = TRUE;
 
@@ -439,7 +443,7 @@ relaylib_start ()
 }
 
 void
-thread_accept (void *notused)
+thread_accept (void *arg)
 {
     int ret;
     int newsock;
@@ -449,6 +453,7 @@ thread_accept (void *notused)
     RELAY_LIST* newhostsock;
     int icy_metadata;
     char* client_http_header;
+    RIP_MANAGER_INFO* rmi = (RIP_MANAGER_INFO*) arg;
 
     debug_printf("thread_accept:start\n");
 
@@ -496,7 +501,7 @@ thread_accept (void *notused)
                 if (newsock != SOCKET_ERROR) {
                     // Got successful accept
 
-                    debug_printf ("Relay: Client %d new from %s:%hd\n", newsock,
+                    debug_printf ("Relay: Client %d new from %s:%hu\n", newsock,
                                   inet_ntoa(client.sin_addr), ntohs(client.sin_port));
 
                     // Socket is new and its buffer had better have 
@@ -505,7 +510,7 @@ thread_accept (void *notused)
                     if (header_receive (newsock, &icy_metadata) == 0 && g_cbuf2.buf != NULL) {
 			int header_len;
 			make_nonblocking (newsock);
-			client_http_header = client_relay_header_generate(icy_metadata);
+			client_http_header = client_relay_header_generate (rmi, icy_metadata);
 			header_len = strlen (client_http_header);
 			ret = send (newsock, client_http_header, strlen(client_http_header), 0);
 			debug_printf ("Relay: Sent response header to client %d (%d)\n", 
@@ -649,7 +654,7 @@ relaylib_disconnect (RELAY_LIST* prev, RELAY_LIST* ptr)
 }
 
 void 
-thread_send (void *notused)
+thread_send (void *arg)
 {
     RELAY_LIST* prev;
     RELAY_LIST* ptr;

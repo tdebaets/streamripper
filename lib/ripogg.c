@@ -66,7 +66,7 @@ struct vorbis_release {
  *   serial-number gaps)
  */
 typedef struct _stream_processor {
-    void (*process_page)(struct _stream_processor *, ogg_page *);
+    int (*process_page)(struct _stream_processor *, ogg_page *, TRACK_INFO*);
     void (*process_end)(struct _stream_processor *);
     int isillegal;
     int constraint_violated;
@@ -109,7 +109,7 @@ typedef struct {
 /*****************************************************************************
  * Private Vars
  *****************************************************************************/
-static int printinfo = 1;
+//static int printinfo = 1;
 static int printwarn = 1;
 //static int verbose = 1;
 static int flawed;
@@ -117,7 +117,7 @@ static int flawed;
 static ogg_sync_state ogg_sync;
 static ogg_page page;
 static stream_processor stream;
-static unsigned char* ogg_curr_header;
+static char* ogg_curr_header;
 static int ogg_curr_header_len;
 
 #define CONSTRAINT_PAGE_AFTER_EOS   1
@@ -127,6 +127,7 @@ static int ogg_curr_header_len;
 /*****************************************************************************
  * Functions
  *****************************************************************************/
+#if defined (commentout)
 static stream_set *create_stream_set(void) {
     stream_set *set = calloc(1, sizeof(stream_set));
 
@@ -148,6 +149,7 @@ static void info(char *format, ...)
     vfprintf(stdout, format, ap);
     va_end(ap);
 }
+#endif
 
 static void warn(char *format, ...) 
 {
@@ -258,7 +260,7 @@ vorbis_process (stream_processor *stream, ogg_page *page, TRACK_INFO* ti)
                     if(broken)
                         continue;
 
-                    val = inf->vc.user_comments[i];
+                    val = (unsigned char*) inf->vc.user_comments[i];
 
                     j = sep-inf->vc.user_comments[i]+1;
                     while(j < inf->vc.comment_lengths[i])
@@ -470,6 +472,7 @@ vorbis_end(stream_processor *stream)
     free(stream->data);
 }
 
+#if defined (commentout)
 static void process_null(stream_processor *stream, ogg_page *page)
 {
     /* This is for invalid streams. */
@@ -531,6 +534,7 @@ static void other_start(stream_processor *stream, char *type)
     stream->process_page = process_other;
     stream->process_end = NULL;
 }
+#endif
 
 static void vorbis_start(stream_processor *stream)
 {
@@ -548,6 +552,7 @@ static void vorbis_start(stream_processor *stream)
     vorbis_info_init(&info->vi);
 }
 
+#if defined (commentout)
 static stream_processor *find_stream_processor(stream_set *set, ogg_page *page)
 {
     ogg_uint32_t serial = ogg_page_serialno(page);
@@ -646,6 +651,7 @@ static stream_processor *find_stream_processor(stream_set *set, ogg_page *page)
 
    return stream;
 }
+#endif
 
 void
 rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size,
@@ -724,7 +730,7 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size,
 		ol->m_page_flags |= OGG_PAGE_BOS;
 		ol->m_header_buf_ptr = 0;
 		ol->m_header_buf_len = 0;
-		ogg_curr_header = (unsigned char*) malloc (ol->m_page_len);
+		ogg_curr_header = (char*) malloc (ol->m_page_len);
 		ogg_curr_header_len = ol->m_page_len;
 		memcpy (ogg_curr_header, 
 			page.header, page.header_len);
@@ -735,7 +741,7 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size,
 		ol->m_page_flags |= OGG_PAGE_2;
 		ol->m_header_buf_ptr = 0;
 		ol->m_header_buf_len = 0;
-		ogg_curr_header = (unsigned char*) 
+		ogg_curr_header = (char*) 
 			realloc (ogg_curr_header,
 				 ogg_curr_header_len + ol->m_page_len);
 		memcpy (ogg_curr_header+ogg_curr_header_len,
@@ -791,7 +797,7 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size,
 }
 
 void
-rip_ogg_get_current_header (unsigned char** ptr, int* len)
+rip_ogg_get_current_header (char** ptr, int* len)
 {
     *ptr = ogg_curr_header;
     *len = ogg_curr_header_len;
@@ -814,7 +820,7 @@ rip_ogg_init (void)
 }
 
 void
-rip_ogg_get_current_header (unsigned char** ptr, int* len)
+rip_ogg_get_current_header (char** ptr, int* len)
 {
     *ptr = 0;
     *len = 0;

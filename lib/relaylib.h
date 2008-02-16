@@ -58,12 +58,11 @@ error_code relaylib_set_response_header(char *http_header);
 error_code relaylib_init (BOOL search_ports, u_short relay_port, u_short max_port, 
 	       u_short *port_used, char *if_name, int max_connections, 
 	       char *relay_ip, int have_metadata);
-error_code relaylib_start();
+error_code relaylib_start(RIP_MANAGER_INFO* rmi);
 error_code relaylib_send(char *data, int len, int accept_new, int is_meta);
 void relaylib_shutdown();
 BOOL relaylib_isrunning();
 error_code relaylib_send_meta_data(char *track);
-//int get_relay_sockname(struct sockaddr_in *relay);
 void relaylib_disconnect (RELAY_LIST* prev, RELAY_LIST* ptr);
 
 #endif //__RELAYLIB__

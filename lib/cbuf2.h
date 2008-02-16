@@ -43,7 +43,7 @@ struct OGG_PAGE_LIST_struct
     unsigned long m_page_start;
     unsigned long m_page_len;
     unsigned long m_page_flags;
-    unsigned char *m_header_buf_ptr;
+    char *m_header_buf_ptr;
     unsigned long m_header_buf_len;
     LIST m_list;
 };

@@ -1,10 +1,27 @@
+/* srtypes.h
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
 #ifndef __SRTYPES_H__
 #define __SRTYPES_H__
 
-////////////////////////////////////////////////
-// Types
-////////////////////////////////////////////////
+/******************************************************************************
+ * Types
+ *****************************************************************************/
 #include "srconfig.h"
+#include "compat.h"
 #if WIN32
 /* Warning: Not allowed to mix windows.h & cdk.h */
 #include <windows.h>
@@ -69,6 +86,11 @@ typedef unsigned int uint32_t;
 //#define MAX_DROPSTRING_LEN      255
 
 #define MAX_METADATA_LEN (127*16)
+
+#define MAX_STATUS_LEN		256
+#define MAX_STREAMNAME_LEN	1024
+#define MAX_SERVER_LEN		1024
+#define MAX_EXT_LINE_LEN 255
 
 
 #ifdef WIN32
@@ -203,6 +225,169 @@ enum OverwriteOpt {
     OVERWRITE_NEVER,	// Never replace file in complete with newer
     OVERWRITE_LARGER	// Replace file in complete if newer is larger
 };
+
+/* Information extracted from the stream's HTTP header */
+typedef struct SR_HTTP_HEADERst
+{
+    int content_type;
+    int meta_interval;
+    int have_icy_name;
+    char icy_name[MAX_ICY_STRING];
+    int icy_code;
+    int icy_bitrate;
+    char icy_genre[MAX_ICY_STRING];
+    char icy_url[MAX_ICY_STRING];
+    char http_location[MAX_HOST_LEN];
+    char server[MAX_SERVER_LEN];
+} SR_HTTP_HEADER;
+
+typedef struct URLINFOst
+{
+	char host[MAX_HOST_LEN];
+	char path[SR_MAX_PATH];
+	u_short port;
+	char username[MAX_URI_STRING];
+	char password[MAX_URI_STRING];
+} URLINFO;
+
+typedef struct external_process External_Process;
+struct external_process
+{
+#if defined (WIN32)
+    HANDLE mypipe;   /* read from child stdout */
+    HANDLE hproc;
+    DWORD pid;
+#else
+    int mypipe[2];   /* 0 is for parent reading, 1 is for parent writing */
+    pid_t pid;
+#endif
+    int line_buf_idx;
+    char line_buf[MAX_EXT_LINE_LEN];
+    char album_buf[MAX_EXT_LINE_LEN];
+    char artist_buf[MAX_EXT_LINE_LEN];
+    char title_buf[MAX_EXT_LINE_LEN];
+    char metadata_buf[MAX_EXT_LINE_LEN];
+};
+
+
+#define RIPLIST_LEN 10
+
+typedef struct stream_prefs STREAM_PREFS;
+struct stream_prefs
+{
+    char label[MAX_URL_LEN];		// logical name for this stream
+    char url[MAX_URL_LEN];		// url of the stream to connect to
+    char proxyurl[MAX_URL_LEN];		// url of a http proxy server, 
+                                        //  '\0' otherwise
+    char output_directory[SR_MAX_PATH];	// base directory to output files too
+    char output_pattern[SR_MAX_PATH];	// filename pattern when ripping 
+                                        //  with splitting
+    char showfile_pattern[SR_MAX_PATH];	// filename base when ripping to
+                                        //  single file without splitting
+    char if_name[SR_MAX_PATH];		// local interface to use
+    char rules_file[SR_MAX_PATH];       // file that holds rules for 
+                                        //  parsing metadata
+    char pls_file[SR_MAX_PATH];		// optional, where to create a 
+                                        //  rely .pls file
+    char relay_ip[SR_MAX_PATH];		// optional, ip to bind relaying 
+                                        //  socket to
+    char ext_cmd[SR_MAX_PATH];          // cmd to spawn for external metadata
+    char useragent[MAX_USERAGENT_STR];	// optional, use a different useragent
+    u_short relay_port;			// port to use for the relay server
+					//  GCS 3/30/07 change to u_short
+    u_short max_port;			// highest port the relay server 
+                                        //  can look if it needs to search
+    u_long max_connections;             // max number of connections 
+                                        //  to relay stream
+					//  GCS 8/18/07 change int to u_long
+    u_long maxMB_rip_size;		// max number of megabytes that 
+                                        //  can by writen out before we stop
+    u_long flags;			// all booleans logically OR'd 
+                                        //  together (see above)
+    u_long timeout;			// timeout, in seconds, before a 
+                                        //  stalled connection is forcefully 
+                                        //  closed
+					//  GCS 8/18/07 change int to u_long
+    u_long dropcount;			// number of tracks at beginning 
+                                        //  of connection to always ignore
+					//  GCS 8/18/07 change int to u_long
+    int count_start;                    // which number to start counting?
+    enum OverwriteOpt overwrite;	// overwrite file in complete?
+    SPLITPOINT_OPTIONS sp_opt;		// options for splitpoint rules
+    CODESET_OPTIONS cs_opt;             // which codeset should i use?
+};
+
+typedef struct wstreamripper_prefs WSTREAMRIPPER_PREFS;
+struct wstreamripper_prefs
+{
+    int		m_add_finished_tracks_to_playlist;
+    int		m_start_minimized;
+    long	oldpos_x;
+    long	oldpos_y;
+    int		m_enabled;
+    char	localhost[MAX_HOST_LEN];	// hostname of 'localhost' 
+    char	default_skin[SR_MAX_PATH];
+    int		use_old_playlist_ret;
+    char	riplist[RIPLIST_LEN][MAX_URL_LEN];
+};
+
+typedef struct global_prefs GLOBAL_PREFS;
+struct global_prefs
+{
+    char url[MAX_URL_LEN];                     // default stream
+    STREAM_PREFS stream_prefs;                 // default prefs for new streams
+    WSTREAMRIPPER_PREFS wstreamripper_prefs;   // prefs for winamp plugin
+};
+
+typedef struct RIP_MANAGER_INFOst RIP_MANAGER_INFO;
+struct RIP_MANAGER_INFOst
+{
+    STREAM_PREFS *prefs;
+    char streamname[MAX_STREAMNAME_LEN];
+    char server_name[MAX_SERVER_LEN];
+    int	bitrate;
+    int	meta_interval;
+
+    /* it's not the filename, it's the trackname */
+    char filename[SR_MAX_PATH];
+
+    u_long filesize;
+    int	status;
+    int track_count;
+
+    /* Process id & handle for external process */
+    External_Process *ep;
+
+#if __UNIX__
+    /* Write to the abort pipe to exit select() of the ripping thread */
+    int abort_pipe[2];
+#endif
+
+    /* Is rip manager active? */
+    int started;
+    HSEM started_sem;
+
+    /* Info from stream http header.  It's used for generating relay 
+       header, and formatting strings for winamp playlist. */
+    SR_HTTP_HEADER http_info;
+
+    /* Socket for connection to stream */
+    HSOCKET stream_sock;
+
+    /* Handle to ripping thread */
+    THREAD_HANDLE hthread_ripper;
+
+    /* Callback function */
+    void (*m_status_callback)(RIP_MANAGER_INFO* rmi, int message, void *data);
+
+    /* Bytes ripped is stored to send to callback */
+    u_long m_bytes_ripped;
+
+    /* Should we write a file for this track? */
+    BOOL m_write_data;
+
+};
+
 
 
 #endif //__SRIPPER_H__

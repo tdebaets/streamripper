@@ -34,9 +34,10 @@
  * Public functions
  *****************************************************************************/
 error_code
-threadlib_beginthread (THREAD_HANDLE *thread, void (*callback)(void *), void* arg)
+threadlib_beginthread (THREAD_HANDLE *thread, void (*callback)(void *), 
+		       void* arg)
 {
-    BeginThread (thread->thread_handle, callback, arg);
+    BeginThread (*thread, callback, arg);
     //if (thread->thread_handle == NULL)	// don't feel like porting this
     //	return SR_ERROR_CANT_CREATE_THREAD;
 
@@ -46,7 +47,7 @@ threadlib_beginthread (THREAD_HANDLE *thread, void (*callback)(void *), void* ar
 void
 threadlib_waitforclose (THREAD_HANDLE *thread)
 {
-    WaitForThread (thread->thread_handle);
+    WaitForThread (*thread);
 }
 
 HSEM

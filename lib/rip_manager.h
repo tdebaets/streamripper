@@ -31,10 +31,6 @@
 #define SRPLATFORM      "unix"
 #endif
 
-#define MAX_STATUS_LEN		256
-#define MAX_STREAMNAME_LEN	1024
-#define MAX_SERVER_LEN		1024
-
 // Messages for status_callback hook in rip_manager_init()
 // used for notifing to client whats going on *DO NOT* call 
 // rip_mananger_start or rip_mananger_stop from
@@ -53,26 +49,6 @@
 #define RM_STATUS_BUFFERING		0x01
 #define RM_STATUS_RIPPING		0x02
 #define RM_STATUS_RECONNECTING		0x03
-
-
-typedef struct RIP_MANAGER_INFOst
-{
-    STREAM_PREFS *prefs;
-    char streamname[MAX_STREAMNAME_LEN];
-    char server_name[MAX_SERVER_LEN];
-    int	bitrate;
-    int	meta_interval;
-    char filename[SR_MAX_PATH];  // it's not the filename, it's the trackname
-    u_long filesize;
-    int	status;
-    int track_count;
-    External_Process *ep;
-#if __UNIX__
-    int abort_pipe[2];           // write to pipe to abort select()
-#endif
-    int started;
-    HSEM started_sem;	    /* protect RMI data when starting and stopping */
-} RIP_MANAGER_INFO;
 
 
 // Rip manager flags options
@@ -131,49 +107,6 @@ typedef struct RIP_MANAGER_INFOst
 #define SET_ADD_ID3V2(flags)			(OPT_FLAG_SET(flags, OPT_ADD_ID3V2))
 #endif
 
-#if defined (commentout)
-typedef struct PREFSst
-{
-    char url[MAX_URL_LEN];		// url of the stream to connect to
-    char proxyurl[MAX_URL_LEN];		// url of a http proxy server, 
-                                        //  '\0' otherwise
-    char output_directory[SR_MAX_PATH];	// base directory to output files too
-    char output_pattern[SR_MAX_PATH];	// filename pattern when ripping 
-                                        //  with splitting
-    char showfile_pattern[SR_MAX_PATH];	// filename base when ripping to
-                                        //  single file without splitting
-    char if_name[SR_MAX_PATH];		// local interface to use
-    char rules_file[SR_MAX_PATH];       // file that holds rules for 
-                                        //  parsing metadata
-    char pls_file[SR_MAX_PATH];		// optional, where to create a 
-                                        //  rely .pls file
-    char relay_ip[SR_MAX_PATH];		// optional, ip to bind relaying 
-                                        //  socket to
-    u_short relay_port;			// port to use for the relay server
-					//  GCS 3/30/07 change to u_short
-    u_short max_port;			// highest port the relay server 
-                                        //  can look if it needs to search
-    int max_connections;                // max number of connections 
-                                        //  to relay stream
-    u_long maxMB_rip_size;		// max number of megabytes that 
-                                        //  can by writen out before we stop
-    u_long flags;			// all booleans logically OR'd 
-                                        //  together (see above)
-    char useragent[MAX_USERAGENT_STR];	// optional, use a different useragent
-    SPLITPOINT_OPTIONS sp_opt;		// options for splitpoint rules
-    int timeout;			// timeout, in seconds, before a 
-                                        //  stalled connection is forcefully 
-                                        //  closed
-    int dropcount;			// number of tracks at beginning 
-                                        //  of connection to always ignore
-    CODESET_OPTIONS cs_opt;             // which codeset should i use?
-    int count_start;                    // which number to start counting?
-    enum OverwriteOpt overwrite;	// overwrite file in complete?
-    char ext_cmd[SR_MAX_PATH];          // cmd to spawn for external metadata
-    
-} PREFS;
-#endif
-
 typedef struct ERROR_INFOst
 {
     char error_str[MAX_ERROR_STR];
@@ -196,11 +129,12 @@ error_code rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti, int t
 error_code rip_manager_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
 error_code rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size);
 
-char *client_relay_header_generate (int icy_meta_support);
+char* client_relay_header_generate (RIP_MANAGER_INFO* rmi, 
+				    int icy_meta_support);
 void client_relay_header_release (char *ch);
 
 char* overwrite_opt_to_string (enum OverwriteOpt oo);
 enum OverwriteOpt string_to_overwrite_opt (char* str);
-int rip_manager_get_content_type (void);
+int rip_manager_get_content_type (RIP_MANAGER_INFO* rmi);
 
 #endif //__RIP_MANANGER_H__

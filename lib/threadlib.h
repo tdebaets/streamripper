@@ -5,15 +5,9 @@
 #include "errors.h"
 #include "compat.h"
 
-typedef struct THREAD_HANDLEst
-{
-	THANDLE thread_handle;
-} THREAD_HANDLE;
-
-
-/*********************************************************************************
+/******************************************************************************
  * Public functions
- *********************************************************************************/
+ *****************************************************************************/
 error_code threadlib_beginthread (THREAD_HANDLE *thread, void (*callback)(void *), void* arg);
 extern BOOL		threadlib_isrunning(THREAD_HANDLE *thread);
 extern void		threadlib_waitforclose(THREAD_HANDLE *thread);
