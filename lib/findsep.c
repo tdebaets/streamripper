@@ -116,7 +116,7 @@ static enum mad_flow header_get_bitrate (void *data,
  * Functions
  *****************************************************************************/
 error_code
-findsep_silence (const u_char* mpgbuf,
+findsep_silence (const char* mpgbuf,
 		 long mpgsize,
 		 long len_to_sw,
 		 long searchwindow,
@@ -479,7 +479,7 @@ error(void *data, struct mad_stream *ms, struct mad_frame *frame)
  * they are included here because they are "mad" related.
  */
 error_code
-find_bitrate(unsigned long* bitrate, const u_char* mpgbuf, long mpgsize)
+find_bitrate (unsigned long* bitrate, const char* mpgbuf, long mpgsize)
 {
     struct mad_decoder decoder;
     GET_BITRATE_STRUCT gbs;

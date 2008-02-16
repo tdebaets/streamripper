@@ -580,7 +580,7 @@ find_sep (u_long *pos1, u_long *pos2)
 	*pos2 = rw_start + sw_sil;
     } else {
 	int bufsize = rw_end - rw_start;
-	char* buf = (u_char *)malloc(bufsize);
+	char* buf = (char*) malloc (bufsize);
 	ret = cbuf2_peek_rgn (&g_cbuf2, buf, rw_start, bufsize);
 	if (ret != SR_SUCCESS) {
 	    debug_printf ("PEEK FAILED: %d\n", ret);

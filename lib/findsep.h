@@ -22,7 +22,7 @@
 #include "errors.h"
 
 error_code
-findsep_silence (const u_char* mpgbuf, 
+findsep_silence (const char* mpgbuf, 
 		 long mpgsize, 
 		 long len_to_sw,
 		 long searchwindow,
@@ -32,7 +32,7 @@ findsep_silence (const u_char* mpgbuf,
 		 u_long* pos1, 
 		 u_long* pos2
 		 );
-error_code find_bitrate(unsigned long* bitrate, const u_char* mpgbuf, 
-			long mpgsize);
+error_code
+find_bitrate (unsigned long* bitrate, const char* mpgbuf, long mpgsize);
 
 #endif //__FINDSEP_H__
