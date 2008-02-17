@@ -56,7 +56,9 @@
 /****************************************************************************
  * Private Vars 
  ****************************************************************************/
+#if defined (commentout)
 static BOOL m_done_init = FALSE; // so we don't init the mutex twice.. arg.
+#endif
 
 
 /****************************************************************************
@@ -71,8 +73,10 @@ socklib_init()
     int err;
 #endif
 
+#if defined (commentout)
     if (m_done_init)
 	return SR_SUCCESS;
+#endif
 
 #if WIN32
     wVersionRequested = MAKEWORD( 2, 2 );
@@ -81,7 +85,10 @@ socklib_init()
         return SR_ERROR_WIN32_INIT_FAILURE;
 #endif
 
+#if defined (commentout)
     m_done_init = TRUE;
+#endif
+
     return SR_SUCCESS;
 }
 
@@ -199,13 +206,17 @@ socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_name)
     return SR_SUCCESS;
 }
 
-void socklib_cleanup()
+void
+socklib_cleanup()
 {
     WSACleanup();
+#if defined (commentout)
     m_done_init = FALSE;
+#endif
 }
 
-void socklib_close(HSOCKET *socket_handle)
+void
+socklib_close(HSOCKET *socket_handle)
 {
     closesocket(socket_handle->s);
     socket_handle->closed = TRUE;

@@ -120,9 +120,10 @@ char *rip_manager_get_error_str(int code);
 //u_short rip_mananger_get_relay_port();	
 void set_rip_manager_options_defaults (STREAM_PREFS *m_opt);
 void rip_manager_init (void);
-void rip_manager_stop (RIP_MANAGER_INFO *rmi);
 error_code rip_manager_start (RIP_MANAGER_INFO **rmi, STREAM_PREFS *prefs,
 			      RIP_MANAGER_CALLBACK status_callback);
+void rip_manager_stop (RIP_MANAGER_INFO *rmi);
+void rip_manager_cleanup (void);
 error_code rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti);
 error_code rip_manager_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
 error_code rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size);

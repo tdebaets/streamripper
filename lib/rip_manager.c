@@ -25,6 +25,7 @@
  *     error_code rip_manager_start (RIP_MANAGER_INFO **rmi, 
  *	  STREAM_PREFS *prefs, RIP_MANAGER_CALLBACK status_callback);
  *     void rip_manager_stop (RIP_MANAGER_INFO *rmi);
+ *     void rip_manager_cleanup (void);
  *
  *****************************************************************************/
 #include <stdio.h>
@@ -80,6 +81,7 @@ void
 rip_manager_init (void)
 {
     errors_init ();
+    socklib_init();
 }
 
 /* Create a RMI structure and start the ripping thread */
@@ -114,8 +116,6 @@ rip_manager_start (RIP_MANAGER_INFO **rmi,
 	return SR_ERROR_CREATE_PIPE_FAILED;
     }
 #endif
-
-    socklib_init();
 
     (*rmi)->status_callback = status_callback;
     (*rmi)->bytes_ripped = 0;
@@ -177,6 +177,13 @@ rip_manager_stop (RIP_MANAGER_INFO *rmi)
     close (rmi->abort_pipe[0]);
     close (rmi->abort_pipe[1]);
 #endif
+}
+
+
+void
+rip_manager_cleanup (void)
+{
+    socklib_cleanup();
 }
 
 
@@ -469,7 +476,9 @@ destroy_subsystems (RIP_MANAGER_INFO* rmi)
 {
     ripstream_clear (rmi);
     relaylib_shutdown();
-    socklib_cleanup();
+    /* GCS Feb 17,2008.  The socklib_cleanup() is done at program 
+       shutdown, not rip_manager shutdown. */
+    // socklib_cleanup();
     filelib_shutdown();
 }
 

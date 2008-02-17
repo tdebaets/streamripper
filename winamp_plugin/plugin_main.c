@@ -192,6 +192,8 @@ quit()
     if (m_bRipping)
 	rip_manager_stop (m_rmi);
 
+    rip_manager_cleanup ();
+
     debug_printf ("Going to render_destroy()...\n");
     render_destroy();
     debug_printf ("Going to DestroyWindow()...\n");
