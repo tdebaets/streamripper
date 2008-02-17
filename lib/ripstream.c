@@ -235,14 +235,15 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 	if (ret != SR_SUCCESS) return ret;
 	have_track = 0;
 	/* Warm up the ogg decoding routines */
-	rip_ogg_init ();
+	rip_ogg_init (rmi);
 	/* Done! */
 	rmi->ripstream_first_time_through = 0;
     }
 
     /* Copy the data into cbuffer */
     clear_track_info (&rmi->current_track);
-    ret = cbuf2_insert_chunk (&g_cbuf2, rmi->getbuffer, rmi->getbuffer_size,
+    ret = cbuf2_insert_chunk (rmi, &g_cbuf2, 
+			      rmi->getbuffer, rmi->getbuffer_size,
 			      rmi->http_info.content_type, 
 			      &rmi->current_track);
     if (ret != SR_SUCCESS) {
@@ -379,7 +380,8 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
     }
 
     /* Copy the data into cbuffer */
-    ret = cbuf2_insert_chunk (&g_cbuf2, rmi->getbuffer, rmi->getbuffer_size,
+    ret = cbuf2_insert_chunk (rmi, &g_cbuf2, 
+			      rmi->getbuffer, rmi->getbuffer_size,
 			      rmi->http_info.content_type, 
 			      &rmi->current_track);
     if (ret != SR_SUCCESS) {

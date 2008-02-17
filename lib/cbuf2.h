@@ -86,7 +86,8 @@ void cbuf2_destroy(CBUF2 *buffer);
 error_code cbuf2_extract (CBUF2 *cbuf2, char *data, 
 			  u_long count, u_long* curr_song);
 error_code cbuf2_peek(CBUF2 *buffer, char *items, u_long count);
-error_code cbuf2_insert_chunk (CBUF2 *cbuf2, const char *data, u_long count,
+error_code cbuf2_insert_chunk (RIP_MANAGER_INFO* rmi, 
+			       CBUF2 *cbuf2, const char *data, u_long count,
 			       int content_type, TRACK_INFO* ti);
 error_code cbuf2_fastforward (CBUF2 *buffer, u_long count);
 error_code cbuf2_peek_rgn (CBUF2 *buffer, char *out_buf, 

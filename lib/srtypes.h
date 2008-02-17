@@ -62,6 +62,10 @@ typedef unsigned int uint32_t;
 #include <stddef.h>
 #endif
 
+#if (HAVE_OGG_VORBIS)
+#include <ogg/ogg.h>
+#endif
+
 #define BOOL	int
 #define TRUE	1
 #define FALSE	0
@@ -271,6 +275,29 @@ struct external_process
     char metadata_buf[MAX_EXT_LINE_LEN];
 };
 
+#if (HAVE_OGG_VORBIS)
+typedef struct _stream_processor {
+    int (*process_page)(struct _stream_processor *, ogg_page *, TRACK_INFO*);
+    void (*process_end)(struct _stream_processor *);
+    int isillegal;
+    int constraint_violated;
+    int shownillegal;
+    int isnew;
+    long seqno;
+    int lostseq;
+
+    int start;
+    int end;
+
+    int num;
+    char *type;
+
+    ogg_uint32_t serial; /* must be 32 bit unsigned */
+    ogg_stream_state os;
+    void *data;
+} stream_processor;
+#endif
+
 
 #define RIPLIST_LEN 10
 
@@ -419,15 +446,26 @@ struct RIP_MANAGER_INFOst
     /* Keep track of bytes ripped, to use by cue sheet to compute time. */
     unsigned int cue_sheet_bytes;
 
-    /* CBuf size variables */
+    /* Keep track of how many tracks we have ripped */
+    int track_count;
+
+    /* CBuf size variables.  Used by ripstream.c */
     int cbuf2_size;             /* blocks */
     int rw_start_to_cb_end;     /* bytes */
     int rw_start_to_sw_start;   /* milliseconds */
     int rw_end_to_cb_end;       /* bytes */
     int mic_to_cb_end;          /* blocks */
 
-    /* Keep track of how many tracks we have ripped */
-    int track_count;
+#if (HAVE_OGG_VORBIS)
+    /* Ogg state, used by ripogg.c */
+    ogg_sync_state ogg_sync;
+    ogg_page ogg_pg;
+    stream_processor stream;
+    char* ogg_curr_header;
+    int ogg_curr_header_len;
+#endif
+
+    
 
 };
 

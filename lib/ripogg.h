@@ -19,9 +19,10 @@
 
 #include "list.h"
 
-void rip_ogg_init (void);
-void rip_ogg_get_current_header (char** ptr, int* len);
-void rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size,
+void rip_ogg_init (RIP_MANAGER_INFO* rmi);
+void rip_ogg_get_current_header (RIP_MANAGER_INFO* rmi, char** ptr, int* len);
+void rip_ogg_process_chunk (RIP_MANAGER_INFO* rmi, 
+			    LIST* page_list, const char* buf, u_long size,
 			    TRACK_INFO* ti);
 
 #endif

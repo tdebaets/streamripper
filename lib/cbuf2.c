@@ -352,7 +352,8 @@ cbuf2_peek (CBUF2 *cbuf2, char *data, u_long count)
 }
 
 error_code
-cbuf2_insert_chunk (CBUF2 *cbuf2, const char *data, u_long count,
+cbuf2_insert_chunk (RIP_MANAGER_INFO* rmi,
+		    CBUF2 *cbuf2, const char *data, u_long count,
 		    int content_type, TRACK_INFO* ti)
 {
     LIST this_page_list;
@@ -367,7 +368,7 @@ cbuf2_insert_chunk (CBUF2 *cbuf2, const char *data, u_long count,
 	LIST *p;
 	unsigned long page_loc;
 
-	rip_ogg_process_chunk (&this_page_list, data, count, ti);
+	rip_ogg_process_chunk (rmi, &this_page_list, data, count, ti);
 
 	if (list_empty(&cbuf2->ogg_page_list)) {
 	    page_loc = 0;

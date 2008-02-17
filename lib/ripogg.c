@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdarg.h>
+#include "srtypes.h"
 #include "cbuf2.h"
 #include "ripogg.h"
 #include "utf8.h"
@@ -65,27 +66,6 @@ struct vorbis_release {
  * - detect granulepos 'gaps' (possibly vorbis-specific). (seperate from 
  *   serial-number gaps)
  */
-typedef struct _stream_processor {
-    int (*process_page)(struct _stream_processor *, ogg_page *, TRACK_INFO*);
-    void (*process_end)(struct _stream_processor *);
-    int isillegal;
-    int constraint_violated;
-    int shownillegal;
-    int isnew;
-    long seqno;
-    int lostseq;
-
-    int start;
-    int end;
-
-    int num;
-    char *type;
-
-    ogg_uint32_t serial; /* must be 32 bit unsigned */
-    ogg_stream_state os;
-    void *data;
-} stream_processor;
-
 typedef struct {
     stream_processor *streams;
     int allocated;
@@ -110,15 +90,15 @@ typedef struct {
  * Private Vars
  *****************************************************************************/
 //static int printinfo = 1;
-static int printwarn = 1;
+//static int printwarn = 1;
 //static int verbose = 1;
-static int flawed;
+//static int flawed;
 
-static ogg_sync_state ogg_sync;
-static ogg_page page;
-static stream_processor stream;
-static char* ogg_curr_header;
-static int ogg_curr_header_len;
+//static ogg_sync_state ogg_sync;
+//static ogg_page page;
+//static stream_processor stream;
+//static char* ogg_curr_header;
+//static int ogg_curr_header_len;
 
 #define CONSTRAINT_PAGE_AFTER_EOS   1
 #define CONSTRAINT_MUXING_VIOLATED  2
@@ -127,37 +107,9 @@ static int ogg_curr_header_len;
 /*****************************************************************************
  * Functions
  *****************************************************************************/
-#if defined (commentout)
-static stream_set *create_stream_set(void) {
-    stream_set *set = calloc(1, sizeof(stream_set));
-
-    set->streams = calloc(5, sizeof(stream_processor));
-    set->allocated = 5;
-    set->used = 0;
-
-    return set;
-}
-
-static void info(char *format, ...) 
-{
-    va_list ap;
-
-    if(!printinfo)
-        return;
-
-    va_start(ap, format);
-    vfprintf(stdout, format, ap);
-    va_end(ap);
-}
-#endif
-
 static void warn(char *format, ...) 
 {
     va_list ap;
-
-    flawed = 1;
-    if(!printwarn)
-        return;
 
     va_start(ap, format);
     vfprintf(stdout, format, ap);
@@ -472,71 +424,8 @@ vorbis_end(stream_processor *stream)
     free(stream->data);
 }
 
-#if defined (commentout)
-static void process_null(stream_processor *stream, ogg_page *page)
-{
-    /* This is for invalid streams. */
-}
-
-static void process_other(stream_processor *stream, ogg_page *page )
-{
-    ogg_packet packet;
-
-    ogg_stream_pagein(&stream->os, page);
-
-    while(ogg_stream_packetout(&stream->os, &packet) > 0) {
-        /* Should we do anything here? Currently, we don't */
-    }
-}
-
-static void free_stream_set(stream_set *set)
-{
-    int i;
-    for(i=0; i < set->used; i++) {
-        if(!set->streams[i].end) {
-            warn(_("Warning: EOS not set on stream %d\n"), 
-                    set->streams[i].num);
-            if(set->streams[i].process_end)
-                set->streams[i].process_end(&set->streams[i]);
-        }
-        ogg_stream_clear(&set->streams[i].os);
-    }
-
-    free(set->streams);
-    free(set);
-}
-
-static int streams_open(stream_set *set)
-{
-    int i;
-    int res=0;
-    for(i=0; i < set->used; i++) {
-        if(!set->streams[i].end)
-            res++;
-    }
-
-    return res;
-}
-
-static void null_start(stream_processor *stream)
-{
-    stream->process_end = NULL;
-    stream->type = "invalid";
-    stream->process_page = process_null;
-}
-
-static void other_start(stream_processor *stream, char *type)
-{
-    if(type)
-        stream->type = type;
-    else
-        stream->type = "unknown";
-    stream->process_page = process_other;
-    stream->process_end = NULL;
-}
-#endif
-
-static void vorbis_start(stream_processor *stream)
+static void 
+vorbis_start(stream_processor *stream)
 {
     misc_vorbis_info *info;
 
@@ -552,109 +441,9 @@ static void vorbis_start(stream_processor *stream)
     vorbis_info_init(&info->vi);
 }
 
-#if defined (commentout)
-static stream_processor *find_stream_processor(stream_set *set, ogg_page *page)
-{
-    ogg_uint32_t serial = ogg_page_serialno(page);
-    int i, found = 0;
-    int invalid = 0;
-    int constraint = 0;
-    stream_processor *stream;
-
-    for(i=0; i < set->used; i++) {
-        if(serial == set->streams[i].serial) {
-            /* We have a match! */
-            found = 1;
-            stream = &(set->streams[i]);
-
-            set->in_headers = 0;
-            /* if we have detected EOS, then this can't occur here. */
-            if(stream->end) {
-                stream->isillegal = 1;
-                stream->constraint_violated = CONSTRAINT_PAGE_AFTER_EOS;
-                return stream;
-            }
-
-            stream->isnew = 0;
-            stream->start = ogg_page_bos(page);
-            stream->end = ogg_page_eos(page);
-            stream->serial = serial;
-            return stream;
-        }
-    }
-
-    /* If there are streams open, and we've reached the end of the
-     * headers, then we can't be starting a new stream.
-     * XXX: might this sometimes catch ok streams if EOS flag is missing,
-     * but the stream is otherwise ok?
-     */
-    if(streams_open(set) && !set->in_headers) {
-        constraint = CONSTRAINT_MUXING_VIOLATED;
-        invalid = 1;
-    }
-
-    set->in_headers = 1;
-
-    if(set->allocated < set->used)
-        stream = &set->streams[set->used];
-    else {
-        set->allocated += 5;
-        set->streams = realloc(set->streams, sizeof(stream_processor)*
-                set->allocated);
-        stream = &set->streams[set->used];
-    }
-    set->used++;
-    stream->num = set->used; /* We count from 1 */
-
-    stream->isnew = 1;
-    stream->isillegal = invalid;
-    stream->constraint_violated = constraint;
-
-    {
-        int res;
-        ogg_packet packet;
-
-        /* We end up processing the header page twice, but that's ok. */
-        ogg_stream_init(&stream->os, serial);
-        ogg_stream_pagein(&stream->os, page);
-        res = ogg_stream_packetout(&stream->os, &packet);
-        if(res <= 0) {
-            warn(_("Warning: Invalid header page, no packet found\n"));
-            null_start(stream);
-        }
-        else if(packet.bytes >= 7 && memcmp(packet.packet, "\001vorbis", 7)==0)
-            vorbis_start(stream);
-        else if(packet.bytes >= 8 && memcmp(packet.packet, "OggMIDI\0", 8)==0) 
-            other_start(stream, "MIDI");
-        else
-            other_start(stream, NULL);
-
-        res = ogg_stream_packetout(&stream->os, &packet);
-        if(res > 0) {
-            warn(_("Warning: Invalid header page in stream %d, "
-                              "contains multiple packets\n"), stream->num);
-        }
-
-        /* re-init, ready for processing */
-        ogg_stream_clear(&stream->os);
-        ogg_stream_init(&stream->os, serial);
-   }
-
-   stream->start = ogg_page_bos(page);
-   stream->end = ogg_page_eos(page);
-   stream->serial = serial;
-
-   if(stream->serial == 0 || stream->serial == -1) {
-       debug_printf ("Note: Stream %d has serial number %d, which is legal but may "
-              "cause problems with some tools.", stream->num, stream->serial);
-   }
-
-   return stream;
-}
-#endif
-
 void
-rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size,
+rip_ogg_process_chunk (RIP_MANAGER_INFO* rmi, 
+		       LIST* page_list, const char* buf, u_long size,
 		       TRACK_INFO* ti)
 {
     OGG_PAGE_LIST* ol;
@@ -669,12 +458,12 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size,
 
     debug_printf ("-- rip_ogg_process_chunk (%d)\n", size);
 
-    buffer = ogg_sync_buffer (&ogg_sync, size);
+    buffer = ogg_sync_buffer (&rmi->ogg_sync, size);
     memcpy (buffer, buf, size);
-    ogg_sync_wrote (&ogg_sync, size);
+    ogg_sync_wrote (&rmi->ogg_sync, size);
 
     do {
-	switch (ret = ogg_sync_pageout (&ogg_sync, &page)) {
+	switch (ret = ogg_sync_pageout (&rmi->ogg_sync, &rmi->ogg_pg)) {
 	case -1:
 	    /* -1 if we were not properly synced and had to skip some bytes */
 	    debug_printf ("Hole in ogg, skipping bytes\n");
@@ -688,24 +477,25 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size,
 	    debug_printf ("Found an ogg page!\n");
 
 	    /* Do stuff needed for decoding vorbis */
-	    if (ogg_page_bos (&page)) {
+	    if (ogg_page_bos (&rmi->ogg_pg)) {
 		int rc;
 		ogg_packet packet;
-		ogg_stream_init (&stream.os, ogg_page_serialno (&page));
-		ogg_stream_pagein (&stream.os, &page);
-		rc = ogg_stream_packetout(&stream.os, &packet);
+		ogg_stream_init (&rmi->stream.os, 
+				 ogg_page_serialno (&rmi->ogg_pg));
+		ogg_stream_pagein (&rmi->stream.os, &rmi->ogg_pg);
+		rc = ogg_stream_packetout(&rmi->stream.os, &packet);
 		if (rc <= 0) {
 		    printf ("Warning: Invalid header page, no packet found\n");
-		    // null_start (&stream);
+		    // null_start (&rmi->stream);
 		    exit (1);
 		} else if (packet.bytes >= 7 
 			   && memcmp(packet.packet, "\001vorbis", 7)==0) {
-		    vorbis_start (&stream);
+		    vorbis_start (&rmi->stream);
 		}
 	    }
-	    header = vorbis_process (&stream, &page, ti);
-	    if (ogg_page_eos (&page)) {
-		vorbis_end (&stream);
+	    header = vorbis_process (&rmi->stream, &rmi->ogg_pg, ti);
+	    if (ogg_page_eos (&rmi->ogg_pg)) {
+		vorbis_end (&rmi->stream);
 	    }
 
 	    /* Create ogg page boundary struct */
@@ -714,7 +504,7 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size,
 		printf ("Malloc error\n");
 		exit (1);
 	    }
-	    ol->m_page_len = page.header_len + page.body_len;
+	    ol->m_page_len = rmi->ogg_pg.header_len + rmi->ogg_pg.body_len;
 	    ol->m_page_flags = 0;
 
 	    /* *****************************************************
@@ -725,41 +515,42 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size,
 	       header is freed when the last page of the song is 
 	       ejected from the cbuf. 
 	    ** ******************************************************/
-	    if (ogg_page_bos (&page)) {
+	    if (ogg_page_bos (&rmi->ogg_pg)) {
 		/* First page in song */
 		ol->m_page_flags |= OGG_PAGE_BOS;
 		ol->m_header_buf_ptr = 0;
 		ol->m_header_buf_len = 0;
-		ogg_curr_header = (char*) malloc (ol->m_page_len);
-		ogg_curr_header_len = ol->m_page_len;
-		memcpy (ogg_curr_header, 
-			page.header, page.header_len);
-		memcpy (ogg_curr_header+page.header_len, 
-			page.body, page.body_len);
+		rmi->ogg_curr_header = (char*) malloc (ol->m_page_len);
+		rmi->ogg_curr_header_len = ol->m_page_len;
+		memcpy (rmi->ogg_curr_header, 
+			rmi->ogg_pg.header, rmi->ogg_pg.header_len);
+		memcpy (rmi->ogg_curr_header+rmi->ogg_pg.header_len, 
+			rmi->ogg_pg.body, rmi->ogg_pg.body_len);
 	    } else if (header) {
 		/* Second or third page in song */
 		ol->m_page_flags |= OGG_PAGE_2;
 		ol->m_header_buf_ptr = 0;
 		ol->m_header_buf_len = 0;
-		ogg_curr_header = (char*) 
-			realloc (ogg_curr_header,
-				 ogg_curr_header_len + ol->m_page_len);
-		memcpy (ogg_curr_header+ogg_curr_header_len,
-			page.header, page.header_len);
-		memcpy (ogg_curr_header+ogg_curr_header_len+page.header_len,
-			page.body, page.body_len);
-		ogg_curr_header_len += ol->m_page_len;
-	    } else if (!ogg_page_eos (&page)) {
+		rmi->ogg_curr_header = (char*) 
+			realloc (rmi->ogg_curr_header,
+				 rmi->ogg_curr_header_len + ol->m_page_len);
+		memcpy (rmi->ogg_curr_header+rmi->ogg_curr_header_len,
+			rmi->ogg_pg.header, rmi->ogg_pg.header_len);
+		memcpy (rmi->ogg_curr_header + rmi->ogg_curr_header_len 
+			+ rmi->ogg_pg.header_len,
+			rmi->ogg_pg.body, rmi->ogg_pg.body_len);
+		rmi->ogg_curr_header_len += ol->m_page_len;
+	    } else if (!ogg_page_eos (&rmi->ogg_pg)) {
 		/* Middle pages in song */
-		ol->m_header_buf_ptr = ogg_curr_header;
-		ol->m_header_buf_len = ogg_curr_header_len;
+		ol->m_header_buf_ptr = rmi->ogg_curr_header;
+		ol->m_header_buf_len = rmi->ogg_curr_header_len;
 	    } else {
 		/* Last page in song */
 		ol->m_page_flags |= OGG_PAGE_EOS;
-		ol->m_header_buf_ptr = ogg_curr_header;
-		ol->m_header_buf_len = ogg_curr_header_len;
-		ogg_curr_header = 0;
-		ogg_curr_header_len = 0;
+		ol->m_header_buf_ptr = rmi->ogg_curr_header;
+		ol->m_header_buf_len = rmi->ogg_curr_header_len;
+		rmi->ogg_curr_header = 0;
+		rmi->ogg_curr_header_len = 0;
 	    }
 
 	    debug_printf ("OGG_PAGE\n"
@@ -769,12 +560,12 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size,
 			  "  page no = %d\n"
 			  "  bos? = %d\n"
 			  "  eos? = %d\n",
-			  page.header_len,
-			  page.body_len,
-			  ogg_page_serialno (&page),
-			  ogg_page_pageno (&page),
-			  ogg_page_bos (&page),
-			  ogg_page_eos (&page));
+			  rmi->ogg_pg.header_len,
+			  rmi->ogg_pg.body_len,
+			  ogg_page_serialno (&rmi->ogg_pg),
+			  ogg_page_pageno (&rmi->ogg_pg),
+			  ogg_page_bos (&rmi->ogg_pg),
+			  ogg_page_eos (&rmi->ogg_pg));
 	    list_add_tail (&(ol->m_list), page_list);
 	    break;
 	}
@@ -787,50 +578,51 @@ rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size,
 		  "  unsynced = %d\n"
 		  "  headerbytes = %d\n"
 		  "  bodybytes = %d\n",
-		  ogg_sync.storage,
-		  ogg_sync.fill,
-		  ogg_sync.returned,
-		  ogg_sync.unsynced,
-		  ogg_sync.headerbytes,
-		  ogg_sync.bodybytes);
+		  rmi->ogg_sync.storage,
+		  rmi->ogg_sync.fill,
+		  rmi->ogg_sync.returned,
+		  rmi->ogg_sync.unsynced,
+		  rmi->ogg_sync.headerbytes,
+		  rmi->ogg_sync.bodybytes);
     //    return 1;
 }
 
 void
-rip_ogg_get_current_header (char** ptr, int* len)
+rip_ogg_get_current_header (RIP_MANAGER_INFO* rmi, char** ptr, int* len)
 {
-    *ptr = ogg_curr_header;
-    *len = ogg_curr_header_len;
+    *ptr = rmi->ogg_curr_header;
+    *len = rmi->ogg_curr_header_len;
 }
 
 void
-rip_ogg_init (void)
+rip_ogg_init (RIP_MANAGER_INFO* rmi)
 {
-    ogg_sync_init (&ogg_sync);
-    memset (&stream, 0, sizeof(stream_processor));
-    ogg_curr_header = 0;
-    ogg_curr_header_len = 0;
+    ogg_sync_init (&rmi->ogg_sync);
+    memset (&rmi->stream, 0, sizeof(stream_processor));
+    rmi->ogg_curr_header = 0;
+    rmi->ogg_curr_header_len = 0;
 }
 
 #else /* HAVE_OGG_VORBIS == 0 */
 
 void
-rip_ogg_init (void)
+rip_ogg_process_chunk (RIP_MANAGER_INFO* rmi, 
+		       LIST* page_list, const char* buf, u_long size,
+		       TRACK_INFO* ti)
 {
+    INIT_LIST_HEAD (page_list);
 }
 
 void
-rip_ogg_get_current_header (char** ptr, int* len)
+rip_ogg_get_current_header (RIP_MANAGER_INFO* rmi, char** ptr, int* len)
 {
     *ptr = 0;
     *len = 0;
 }
 
 void
-rip_ogg_process_chunk (LIST* page_list, const char* buf, u_long size,
-		       TRACK_INFO* ti)
+rip_ogg_init (RIP_MANAGER_INFO* rmi)
 {
-    INIT_LIST_HEAD (page_list);
 }
 
 #endif /* HAVE_OGG_VORBIS */
