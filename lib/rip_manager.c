@@ -437,8 +437,8 @@ ripthread (void *thread_arg)
 		    debug_printf ("Close external\n");
 		    close_external (&rmi->ep);
 		}
-		relaylib_shutdown();
-		filelib_shutdown();
+		relaylib_stop (rmi);
+		filelib_shutdown ();
 		ripstream_clear (rmi);
 		ret = start_ripping (rmi);
 		if (ret == SR_SUCCESS)
@@ -475,7 +475,7 @@ void
 destroy_subsystems (RIP_MANAGER_INFO* rmi)
 {
     ripstream_clear (rmi);
-    relaylib_shutdown();
+    relaylib_stop (rmi);
     /* GCS Feb 17,2008.  The socklib_cleanup() is done at program 
        shutdown, not rip_manager shutdown. */
     // socklib_cleanup();
@@ -601,7 +601,8 @@ start_ripping (RIP_MANAGER_INFO* rmi)
      */
     if (GET_MAKE_RELAY (rmi->prefs->flags)) {
 	u_short new_port = 0;
-	ret = relaylib_init(GET_SEARCH_PORTS(rmi->prefs->flags), 
+	ret = relaylib_init(rmi, 
+			    GET_SEARCH_PORTS(rmi->prefs->flags), 
 			    rmi->prefs->relay_port,
 			    rmi->prefs->max_port, 
 			    &new_port,

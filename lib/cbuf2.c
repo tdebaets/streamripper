@@ -185,7 +185,7 @@ cbuf2_advance_relay_list (RIP_MANAGER_INFO* rmi, CBUF2* cbuf2, u_long count)
 	    } else {
 		debug_printf ("Relay: Client %d couldn't keep up with cbuf\n", 
 			      ptr->m_sock);
-		relaylib_disconnect (prev, ptr);
+		relaylib_disconnect (rmi, prev, ptr);
 	    }
 	}
 	ptr = next;

@@ -43,6 +43,7 @@ error_code relaylib_send(char *data, int len, int accept_new, int is_meta);
 void relaylib_stop (RIP_MANAGER_INFO* rmi);
 BOOL relaylib_isrunning();
 error_code relaylib_send_meta_data(char *track);
-void relaylib_disconnect (RELAY_LIST* prev, RELAY_LIST* ptr);
+void relaylib_disconnect (RIP_MANAGER_INFO* rmi, 
+			  RELAY_LIST* prev, RELAY_LIST* ptr);
 
 #endif //__RELAYLIB__

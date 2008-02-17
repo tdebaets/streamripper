@@ -391,9 +391,9 @@ void
 relaylib_stop (RIP_MANAGER_INFO* rmi)
 {
     int ix;
-    debug_printf("relaylib_shutdown:start\n");
+    debug_printf("relaylib_stop:start\n");
     if (!relaylib_isrunning()) {
-        debug_printf("***relaylib_shutdown:return\n");
+        debug_printf("***relaylib_stop:return\n");
         return;
     }
     m_running = FALSE;
@@ -417,11 +417,11 @@ relaylib_stop (RIP_MANAGER_INFO* rmi)
     debug_printf("waiting for relay close\n");
     threadlib_waitforclose(&m_hthread);
     threadlib_waitforclose(&m_hthread2);
-    destroy_all_hostsocks();
+    destroy_all_hostsocks(rmi);
     threadlib_destroy_sem(&m_sem_not_connected);
     m_initdone = FALSE;
 
-    debug_printf("relaylib_shutdown:done!\n");
+    debug_printf("relaylib_stop:done!\n");
 }
 
 error_code
@@ -475,7 +475,7 @@ thread_accept (void* arg)
 	}
 
         // Poll once per second, instead of blocking forever in 
-	// accept(), so that we can regain control if relaylib_shutdown() 
+	// accept(), so that we can regain control if relaylib_stop() 
 	// called
         FD_ZERO (&fds);
         while (m_listensock != SOCKET_ERROR && m_running)
@@ -632,7 +632,7 @@ send_to_relay (RIP_MANAGER_INFO* rmi, RELAY_LIST* ptr)
 }
 
 void 
-relaylib_disconnect (RELAY_LIST* prev, RELAY_LIST* ptr)
+relaylib_disconnect (RIP_MANAGER_INFO* rmi, RELAY_LIST* prev, RELAY_LIST* ptr)
 {
     RELAY_LIST* next = ptr->m_next;
     int sock = ptr->m_sock;
@@ -683,7 +683,7 @@ thread_send (void* arg)
 		if (!good) {
 		    debug_printf ("Relay: Client %d disconnected (%s)\n", 
 				  sock, strerror(errno));
-		    relaylib_disconnect (prev, ptr);
+		    relaylib_disconnect (rmi, prev, ptr);
 		} else if (ptr != NULL) {
 		    prev = ptr;
 		}
