@@ -92,6 +92,8 @@ typedef unsigned int uint32_t;
 #define MAX_SERVER_LEN		1024
 #define MAX_EXT_LINE_LEN 255
 
+#define DEFAULT_META_INTERVAL	1024
+
 
 #ifdef WIN32
   #ifndef _WINSOCKAPI_
@@ -340,20 +342,28 @@ struct global_prefs
 };
 
 typedef struct RIP_MANAGER_INFOst RIP_MANAGER_INFO;
+typedef void(*RIP_MANAGER_CALLBACK)(RIP_MANAGER_INFO* rmi, 
+				    int message, void *data);
 struct RIP_MANAGER_INFOst
 {
     STREAM_PREFS *prefs;
     char streamname[MAX_STREAMNAME_LEN];
     char server_name[MAX_SERVER_LEN];
-    int	bitrate;
+    u_long filesize;
+    int	status;
     int	meta_interval;
+
+    /* Bitrate as reported by http header */
+    int	http_bitrate;
+
+    /* Bitrate detected in first frame */
+    int detected_bitrate;
+
+    /* Bitrate used to compute buffer size */
+    int bitrate;
 
     /* it's not the filename, it's the trackname */
     char filename[SR_MAX_PATH];
-
-    u_long filesize;
-    int	status;
-    int track_count;
 
     /* Process id & handle for external process */
     External_Process *ep;
@@ -378,16 +388,48 @@ struct RIP_MANAGER_INFOst
     THREAD_HANDLE hthread_ripper;
 
     /* Callback function */
-    void (*m_status_callback)(RIP_MANAGER_INFO* rmi, int message, void *data);
+    //void (*m_status_callback)(RIP_MANAGER_INFO* rmi, int message, void *data);
+    RIP_MANAGER_CALLBACK status_callback;
 
     /* Bytes ripped is stored to send to callback */
-    u_long m_bytes_ripped;
+    u_long bytes_ripped;
 
     /* Should we write a file for this track? */
-    BOOL m_write_data;
+    BOOL write_data;
+
+    /* Title & artist info */
+    TRACK_INFO old_track;	    /* The track that's being ripped now */
+    TRACK_INFO new_track;	    /* The track that's gonna start soon */
+    TRACK_INFO current_track;       /* The metadata as I'm parsing it */
+
+    /* After the first buffer, we collect statistics about the stream */
+    int ripstream_first_time_through;
+
+    /* What is the title if there is no metadata? */
+    char no_meta_name[MAX_TRACK_LEN];
+
+    /* A temporary buffer used by ripstream.c */
+    char* getbuffer;
+    unsigned long getbuffer_size;
+
+    /* A counter that keeps track of how many more blocks to read before 
+       we can do silence detection.  Used by ripstream.c */
+    int find_silence;
+
+    /* Keep track of bytes ripped, to use by cue sheet to compute time. */
+    unsigned int cue_sheet_bytes;
+
+    /* CBuf size variables */
+    int cbuf2_size;             /* blocks */
+    int rw_start_to_cb_end;     /* bytes */
+    int rw_start_to_sw_start;   /* milliseconds */
+    int rw_end_to_cb_end;       /* bytes */
+    int mic_to_cb_end;          /* blocks */
+
+    /* Keep track of how many tracks we have ripped */
+    int track_count;
 
 };
-
 
 
 #endif //__SRIPPER_H__

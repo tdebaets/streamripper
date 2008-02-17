@@ -113,8 +113,6 @@ typedef struct ERROR_INFOst
     error_code error_code;
 } ERROR_INFO;
 
-typedef void(*RIP_MANAGER_CALLBACK)(RIP_MANAGER_INFO* rmi, 
-				    int message, void *data);
 
 
 /* Public functions */
@@ -125,7 +123,7 @@ void rip_manager_init (void);
 void rip_manager_stop (RIP_MANAGER_INFO *rmi);
 error_code rip_manager_start (RIP_MANAGER_INFO **rmi, STREAM_PREFS *prefs,
 			      RIP_MANAGER_CALLBACK status_callback);
-error_code rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti, int track_count);
+error_code rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti);
 error_code rip_manager_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
 error_code rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size);
 

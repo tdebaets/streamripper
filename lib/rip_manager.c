@@ -66,11 +66,6 @@ void destroy_subsystems (RIP_MANAGER_INFO* rmi);
 /******************************************************************************
  * Private Vars
  *****************************************************************************/
-static void			(*m_status_callback)(RIP_MANAGER_INFO* rmi, int message, void *data);
-static u_long			m_bytes_ripped;
-static BOOL			m_write_data = TRUE;	// Should we actually write to a file or not
-
-
 static char* overwrite_opt_strings[] = {
     "",		// UNKNOWN
     "always",
@@ -122,9 +117,9 @@ rip_manager_start (RIP_MANAGER_INFO **rmi,
 
     socklib_init();
 
-    m_status_callback = status_callback;
-    m_bytes_ripped = 0;
-    m_write_data = 1;
+    (*rmi)->status_callback = status_callback;
+    (*rmi)->bytes_ripped = 0;
+    (*rmi)->write_data = 1;
 
     /* Initialize the parsing rules */
     init_metadata_parser (prefs->rules_file);
@@ -196,7 +191,7 @@ post_error (RIP_MANAGER_INFO* rmi, error_code err)
     strcpy(err_info.error_str, errors_get_string (err));
     debug_printf ("post_error: %d %s\n", err_info.error_code, 
 		  err_info.error_str);
-    m_status_callback (rmi, RM_ERROR, &err_info);
+    rmi->status_callback (rmi, RM_ERROR, &err_info);
 }
 
 static void
@@ -204,10 +199,10 @@ post_status (RIP_MANAGER_INFO* rmi, int status)
 {
     if (status != 0)
         rmi->status = status;
-    m_status_callback (rmi, RM_UPDATE, 0);
+    rmi->status_callback (rmi, RM_UPDATE, 0);
 }
 
-void
+static void
 compose_console_string (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
 {
     mchar console_string[SR_MAX_PATH];
@@ -224,7 +219,7 @@ compose_console_string (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
  * update via the callback 
  */
 error_code
-rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti, int track_count)
+rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
 {
     int ret;
 
@@ -232,24 +227,23 @@ rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti, int track_count)
     /* GCS FIX -- here is where i would compose the incomplete filename */
     char* trackname = ti->raw_metadata;
     debug_printf("rip_manager_start_track: %s\n", trackname);
-    if (m_write_data && (ret = filelib_start(trackname)) != SR_SUCCESS) {
+    if (rmi->write_data && (ret = filelib_start(trackname)) != SR_SUCCESS) {
         return ret;
     }
 #endif
 
-    m_write_data = ti->save_track;
+    rmi->write_data = ti->save_track;
 
-    if (m_write_data && (ret = filelib_start (ti)) != SR_SUCCESS) {
+    if (rmi->write_data && (ret = filelib_start (ti)) != SR_SUCCESS) {
         return ret;
     }
 
     rmi->filesize = 0;
-    rmi->track_count = track_count;
 
     /* Compose the string for the console output */
     compose_console_string (rmi, ti);
     rmi->filename[SR_MAX_PATH-1] = '\0';
-    m_status_callback (rmi, RM_NEW_TRACK, (void*) rmi->filename);
+    rmi->status_callback (rmi, RM_NEW_TRACK, (void*) rmi->filename);
     post_status(rmi, 0);
 
     return SR_SUCCESS;
@@ -266,7 +260,7 @@ rip_manager_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
     mchar mfullpath[SR_MAX_PATH];
     char fullpath[SR_MAX_PATH];
 
-    if (m_write_data) {
+    if (rmi->write_data) {
         filelib_end (ti, rmi->prefs->overwrite,
 		     GET_TRUNCATE_DUPS(rmi->prefs->flags),
 		     mfullpath);
@@ -274,7 +268,7 @@ rip_manager_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
     post_status(rmi, 0);
 
     string_from_mstring (fullpath, SR_MAX_PATH, mfullpath, CODESET_FILESYS);
-    m_status_callback (rmi, RM_TRACK_DONE, (void*)fullpath);
+    rmi->status_callback (rmi, RM_TRACK_DONE, (void*)fullpath);
 
     return SR_SUCCESS;
 }
@@ -285,7 +279,7 @@ rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
     int ret;
 
     if (GET_INDIVIDUAL_TRACKS(rmi->prefs->flags)) {
-	if (m_write_data) {
+	if (rmi->write_data) {
 	    ret = filelib_write_track(buf, size);
 	    if (ret != SR_SUCCESS) {
 		debug_printf ("filelib_write_track returned: %d\n",ret);
@@ -295,7 +289,7 @@ rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
     }
 
     rmi->filesize += size;	/* This is used by the GUI */
-    m_bytes_ripped += size;	/* This is used to determine when to quit */
+    rmi->bytes_ripped += size;	/* This is used to determine when to quit */
 
     return SR_SUCCESS;
 }
@@ -371,7 +365,7 @@ ripthread (void *thread_arg)
 	goto DONE;
     }
 
-    m_status_callback (rmi, RM_STARTED, (void *)NULL);
+    rmi->status_callback (rmi, RM_STARTED, (void *)NULL);
     post_status (rmi, RM_STATUS_BUFFERING);
     debug_printf ("Ripthread did initialization\n");
     threadlib_signal_sem(&rmi->started_sem);
@@ -394,8 +388,8 @@ ripthread (void *thread_arg)
 	 * the interface it's a weird combonation of threads
 	 * wnd locks, etc.. all i know is that this appeared to work
 	 */
-        /* GCS Aug 23, 2003: m_bytes_ripped can still overflow */
-	if (m_bytes_ripped/1000000 >= (rmi->prefs->maxMB_rip_size) &&
+        /* GCS Aug 23, 2003: bytes_ripped can still overflow */
+	if (rmi->bytes_ripped/1000000 >= (rmi->prefs->maxMB_rip_size) &&
 		GET_CHECK_MAX_BYTES (rmi->prefs->flags)) {
 	    socklib_close (&rmi->stream_sock);
 	    destroy_subsystems (rmi);
@@ -465,7 +459,7 @@ ripthread (void *thread_arg)
     // or we we're not auto-reconnecting and the stream just stopped
     // or when we have been told to stop, via the rmi->started flag
  DONE:
-    m_status_callback (rmi, RM_DONE, 0);
+    rmi->status_callback (rmi, RM_DONE, 0);
     rmi->started = 0;
     debug_printf ("ripthread() exiting!\n");
 }
@@ -543,7 +537,9 @@ start_ripping (RIP_MANAGER_INFO* rmi)
      * stream, this info are things like server name, type, 
      * bitrate etc.. */
     rmi->meta_interval = rmi->http_info.meta_interval;
-    rmi->bitrate = rmi->http_info.icy_bitrate;
+    rmi->http_bitrate = rmi->http_info.icy_bitrate;
+    rmi->detected_bitrate = -1;
+    rmi->bitrate = -1;
     strcpy (rmi->streamname, rmi->http_info.icy_name);
     strcpy (rmi->server_name, rmi->http_info.server);
 
@@ -576,23 +572,12 @@ start_ripping (RIP_MANAGER_INFO* rmi)
 	}
     }
 
-    /* ripstream is good to go, it knows how to get data, and where
-     * it's sending it to
-     */
+    /* Ripstream is good to go, it knows how to get data, and where
+     * it's writing to. */
+    strcpy(rmi->no_meta_name, rmi->http_info.icy_name);
+    rmi->getbuffer = 0;
     ripstream_clear (rmi);
-    ret = ripstream_init(rmi,
-			 rmi->stream_sock, 
-			 GET_MAKE_RELAY(rmi->prefs->flags),
-			 rmi->prefs->timeout, 
-			 rmi->http_info.icy_name,
-			 rmi->prefs->dropcount,
-			 &rmi->prefs->sp_opt,
-			 rmi->bitrate, 
-			 rmi->http_info.meta_interval,
-			 rmi->http_info.content_type, 
-			 GET_ADD_ID3V1(rmi->prefs->flags),
-			 GET_ADD_ID3V2(rmi->prefs->flags),
-			 rmi->ep);
+    ret = ripstream_init(rmi);
     if (ret != SR_SUCCESS) {
 	ripstream_clear (rmi);
 	goto RETURN_ERR;
