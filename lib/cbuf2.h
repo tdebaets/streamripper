@@ -50,7 +50,7 @@ error_code
 cbuf2_init (CBUF2 *cbuf2, int content_type, int have_relay, 
 	    unsigned long chunk_size, unsigned long num_chunks);
 void cbuf2_destroy(CBUF2 *buffer);
-error_code cbuf2_extract (CBUF2 *cbuf2, char *data, 
+error_code cbuf2_extract (RIP_MANAGER_INFO* rmi, CBUF2 *cbuf2, char *data, 
 			  u_long count, u_long* curr_song);
 error_code cbuf2_peek(CBUF2 *buffer, char *items, u_long count);
 error_code cbuf2_insert_chunk (RIP_MANAGER_INFO* rmi, 
@@ -80,7 +80,7 @@ error_code cbuf2_extract_relay (CBUF2 *cbuf2, char *data, u_long *pos,
 				u_long *len, int icy_metadata);
 #endif
 error_code cbuf2_extract_relay (CBUF2 *cbuf2, RELAY_LIST* ptr);
-error_code cbuf2_advance_ogg (CBUF2 *cbuf2, int requested_free_size);
+error_code cbuf2_advance_ogg (RIP_MANAGER_INFO* rmi, CBUF2 *cbuf2, int requested_free_size);
 void cbuf2_debug_lists (CBUF2 *cbuf2);
 
 #endif

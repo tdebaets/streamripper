@@ -164,11 +164,11 @@ cbuf2_advance_metadata_list (CBUF2* cbuf2)
 }
 
 static void
-cbuf2_advance_relay_list (CBUF2* cbuf2, u_long count)
+cbuf2_advance_relay_list (RIP_MANAGER_INFO* rmi, CBUF2* cbuf2, u_long count)
 {
     RELAY_LIST *prev, *ptr, *next;
 
-    ptr = g_relay_list;
+    ptr = rmi->relay_list;
     if (ptr == NULL) {
 	return;
     }
@@ -200,7 +200,7 @@ cbuf2_set_next_song (CBUF2 *cbuf2, u_long pos)
 
 /* Advance the cbuffer while respecting ogg page boundaries */
 error_code
-cbuf2_advance_ogg (CBUF2 *cbuf2, int requested_free_size)
+cbuf2_advance_ogg (RIP_MANAGER_INFO* rmi, CBUF2 *cbuf2, int requested_free_size)
 {
     u_long count;
     LIST *p, *n;
@@ -211,8 +211,8 @@ cbuf2_advance_ogg (CBUF2 *cbuf2, int requested_free_size)
     }
 
     if (cbuf2->have_relay) {
-	debug_printf ("Waiting for g_relay_list_sem\n");
-	threadlib_waitfor_sem (&g_relay_list_sem);
+	debug_printf ("Waiting for rmi->relay_list_sem\n");
+	threadlib_waitfor_sem (&rmi->relay_list_sem);
     }
     debug_printf ("Waiting for cbuf2->cbuf_sem\n");
     threadlib_waitfor_sem (&cbuf2->cbuf_sem);
@@ -243,11 +243,11 @@ cbuf2_advance_ogg (CBUF2 *cbuf2, int requested_free_size)
     cbuf2->item_count -= count;
 
     if (cbuf2->have_relay) {
-	cbuf2_advance_relay_list (cbuf2, count);
+	cbuf2_advance_relay_list (rmi, cbuf2, count);
     }
     threadlib_signal_sem (&cbuf2->cbuf_sem);
     if (cbuf2->have_relay) {
-	threadlib_signal_sem (&g_relay_list_sem);
+	threadlib_signal_sem (&rmi->relay_list_sem);
     }
 
     if (cbuf2->item_count + requested_free_size <= cbuf2->size) {
@@ -260,7 +260,8 @@ cbuf2_advance_ogg (CBUF2 *cbuf2, int requested_free_size)
 /* On extract, we need to update all the relay pointers. */
 /* GCS Now it always extracts a chunk */
 error_code
-cbuf2_extract (CBUF2 *cbuf2, char *data, u_long count, u_long* curr_song)
+cbuf2_extract (RIP_MANAGER_INFO* rmi, CBUF2 *cbuf2, 
+	       char *data, u_long count, u_long* curr_song)
 {
     u_long frag1, frag2;
 
@@ -270,8 +271,8 @@ cbuf2_extract (CBUF2 *cbuf2, char *data, u_long count, u_long* curr_song)
     }
 
     if (cbuf2->have_relay) {
-	debug_printf ("Waiting for g_relay_list_sem\n");
-	threadlib_waitfor_sem (&g_relay_list_sem);
+	debug_printf ("Waiting for rmi->relay_list_sem\n");
+	threadlib_waitfor_sem (&rmi->relay_list_sem);
     }
     debug_printf ("Waiting for cbuf2->cbuf_sem\n");
     threadlib_waitfor_sem (&cbuf2->cbuf_sem);
@@ -297,11 +298,11 @@ cbuf2_extract (CBUF2 *cbuf2, char *data, u_long count, u_long* curr_song)
     cbuf2_advance_metadata_list (cbuf2);
 
     if (cbuf2->have_relay) {
-	cbuf2_advance_relay_list (cbuf2, count);
+	cbuf2_advance_relay_list (rmi, cbuf2, count);
     }
     threadlib_signal_sem (&cbuf2->cbuf_sem);
     if (cbuf2->have_relay) {
-	threadlib_signal_sem (&g_relay_list_sem);
+	threadlib_signal_sem (&rmi->relay_list_sem);
     }
     return SR_SUCCESS;
 }

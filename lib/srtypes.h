@@ -309,6 +309,29 @@ typedef struct CBUF2_struct
     LIST        frame_list;
 } CBUF2;
 
+
+/* Each relay server gets this list of clients */
+typedef struct RELAY_LIST_struct RELAY_LIST;
+struct RELAY_LIST_struct
+{
+    SOCKET m_sock;
+    int m_is_new;
+    
+    char* m_buffer;           // large enough for 1 block & 1 metadata
+    u_long m_buffer_size;
+    u_long m_cbuf_pos;        // must lie along chunck boundary for mp3
+    u_long m_offset;
+    u_long m_left_to_send;
+    int m_icy_metadata;        // true if client requested metadata
+
+    char* m_header_buf_ptr;    // for ogg header pages
+    u_long m_header_buf_len;   // for ogg header pages
+    u_long m_header_buf_off;   // for ogg header pages
+
+    RELAY_LIST* m_next;
+};
+
+
 #if (HAVE_OGG_VORBIS)
 typedef struct _stream_processor {
     int (*process_page)(struct _stream_processor *, ogg_page *, TRACK_INFO*);
@@ -492,6 +515,11 @@ struct RIP_MANAGER_INFOst
     int rw_start_to_sw_start;   /* milliseconds */
     int rw_end_to_cb_end;       /* bytes */
     int mic_to_cb_end;          /* blocks */
+
+    /* The Relay list */
+    RELAY_LIST* relay_list;
+    unsigned long relay_list_len;
+    HSEM relay_list_sem;
 
 #if (HAVE_OGG_VORBIS)
     /* Ogg state, used by ripogg.c */

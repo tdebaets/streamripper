@@ -59,9 +59,9 @@
 /*****************************************************************************
  * Global variables
  *****************************************************************************/
-RELAY_LIST* g_relay_list = NULL;
-unsigned long g_relay_list_len = 0;
-HSEM g_relay_list_sem;
+//RELAY_LIST* g_relay_list = NULL;
+//unsigned long g_relay_list_len = 0;
+//HSEM g_relay_list_sem;
 
 /*****************************************************************************
  * Private vars
@@ -93,24 +93,24 @@ static void thread_send (void *arg);
 #define ICY_METADATA_TAG "Icy-MetaData:"
 
 static void
-destroy_all_hostsocks(void)
+destroy_all_hostsocks (RIP_MANAGER_INFO* rmi)
 {
     RELAY_LIST* ptr;
 
-    threadlib_waitfor_sem (&g_relay_list_sem);
-    while (g_relay_list != NULL) {
-        ptr = g_relay_list;
+    threadlib_waitfor_sem (&rmi->relay_list_sem);
+    while (rmi->relay_list != NULL) {
+        ptr = rmi->relay_list;
         closesocket(ptr->m_sock);
-        g_relay_list = ptr->m_next;
+        rmi->relay_list = ptr->m_next;
         if (ptr->m_buffer != NULL) {
             free (ptr->m_buffer);
             ptr->m_buffer = NULL;
         }
         free(ptr);
     }
-    g_relay_list_len = 0;
-    g_relay_list = NULL;
-    threadlib_signal_sem (&g_relay_list_sem);
+    rmi->relay_list_len = 0;
+    rmi->relay_list = NULL;
+    threadlib_signal_sem (&rmi->relay_list_sem);
 }
 
 static int
@@ -273,7 +273,8 @@ catch_pipe(int code)
 #endif
 
 error_code
-relaylib_init (BOOL search_ports, u_short relay_port, u_short max_port, 
+relaylib_init (RIP_MANAGER_INFO* rmi,
+	       BOOL search_ports, u_short relay_port, u_short max_port, 
 	       u_short *port_used, char *if_name, int max_connections, 
 	       char *relay_ip, int have_metadata)
 {
@@ -303,8 +304,8 @@ relaylib_init (BOOL search_ports, u_short relay_port, u_short max_port,
 
     if (m_initdone != TRUE) {
         m_sem_not_connected = threadlib_create_sem();
-        g_relay_list_sem = threadlib_create_sem();
-        threadlib_signal_sem(&g_relay_list_sem);
+        rmi->relay_list_sem = threadlib_create_sem();
+        threadlib_signal_sem(&rmi->relay_list_sem);
 
         // NOTE: we need to signal it here in case we try to destroy
         // relaylib before the thread starts!
@@ -387,7 +388,7 @@ try_port (u_short port, char *if_name, char *relay_ip)
 }
 
 void
-relaylib_shutdown ()
+relaylib_stop (RIP_MANAGER_INFO* rmi)
 {
     int ix;
     debug_printf("relaylib_shutdown:start\n");
@@ -489,9 +490,9 @@ thread_accept (void* arg)
                 unsigned long num_connected;
                 /* If connections are full, do nothing.  Note that 
                     m_max_connections is 0 for infinite connections allowed. */
-                threadlib_waitfor_sem (&g_relay_list_sem);
-                num_connected = g_relay_list_len;
-                threadlib_signal_sem (&g_relay_list_sem);
+                threadlib_waitfor_sem (&rmi->relay_list_sem);
+                num_connected = rmi->relay_list_len;
+                threadlib_signal_sem (&rmi->relay_list_sem);
                 if (m_max_connections > 0 && num_connected >= (unsigned long) m_max_connections) {
                     continue;
                 }
@@ -520,19 +521,19 @@ thread_accept (void* arg)
                             newhostsock = malloc (sizeof(RELAY_LIST));
                             if (newhostsock != NULL) {
                                 // Add new client to list (headfirst)
-                                threadlib_waitfor_sem (&g_relay_list_sem);
+                                threadlib_waitfor_sem (&rmi->relay_list_sem);
                                 newhostsock->m_is_new = 1;
                                 newhostsock->m_sock = newsock;
-                                newhostsock->m_next = g_relay_list;
+                                newhostsock->m_next = rmi->relay_list;
 				if (m_have_metadata) {
                                     newhostsock->m_icy_metadata = icy_metadata;
 				} else {
                                     newhostsock->m_icy_metadata = 0;
 				}
 
-                                g_relay_list = newhostsock;
-                                g_relay_list_len++;
-                                threadlib_signal_sem (&g_relay_list_sem);
+                                rmi->relay_list = newhostsock;
+                                rmi->relay_list_len++;
+                                threadlib_signal_sem (&rmi->relay_list_sem);
                                 good = TRUE;
                             }
                         }
@@ -643,14 +644,14 @@ relaylib_disconnect (RELAY_LIST* prev, RELAY_LIST* ptr)
     if (prev != NULL) {
 	prev->m_next = next;
     } else {
-	g_relay_list = next;
+	rmi->relay_list = next;
     }
     if (ptr->m_buffer != NULL) {
 	free (ptr->m_buffer);
         ptr->m_buffer = NULL;
     }
     free (ptr);
-    g_relay_list_len --;
+    rmi->relay_list_len --;
 }
 
 void 
@@ -665,8 +666,8 @@ thread_send (void* arg)
     RIP_MANAGER_INFO* rmi = (RIP_MANAGER_INFO*) arg;
 
     while (m_running) {
-	threadlib_waitfor_sem (&g_relay_list_sem);
-	ptr = g_relay_list;
+	threadlib_waitfor_sem (&rmi->relay_list_sem);
+	ptr = rmi->relay_list;
 	if (ptr != NULL) {
 	    prev = NULL;
 	    while (ptr != NULL) {
@@ -691,7 +692,7 @@ thread_send (void* arg)
 	} else {
 	    err = SR_ERROR_HOST_NOT_CONNECTED;
 	}
-	threadlib_signal_sem (&g_relay_list_sem);
+	threadlib_signal_sem (&rmi->relay_list_sem);
 	Sleep (50);
     }
     m_running_send = FALSE;

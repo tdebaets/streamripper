@@ -307,10 +307,10 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 	debug_printf ("cbuf2_get_free < getbuffer_size\n");
 	extract_size = rmi->getbuffer_size - cbuf2_get_free(&rmi->cbuf2);
 
-        ret = cbuf2_advance_ogg (&rmi->cbuf2, rmi->getbuffer_size);
+        ret = cbuf2_advance_ogg (rmi, &rmi->cbuf2, rmi->getbuffer_size);
 
         if (ret != SR_SUCCESS) {
-	    debug_printf("cbuf2_extract had bad return code %d\n", ret);
+	    debug_printf("cbuf2_advance_ogg had bad return code %d\n", ret);
 	    return ret;
 	}
     }
@@ -471,7 +471,8 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
 	u_long curr_song;
 	debug_printf ("cbuf2_get_free < getbuffer_size\n");
 	extract_size = rmi->getbuffer_size - cbuf2_get_free(&rmi->cbuf2);
-        ret = cbuf2_extract(&rmi->cbuf2, rmi->getbuffer, extract_size, &curr_song);
+        ret = cbuf2_extract(rmi, &rmi->cbuf2, rmi->getbuffer, 
+			    extract_size, &curr_song);
         if (ret != SR_SUCCESS) {
 	    debug_printf("cbuf2_extract had bad return code %d\n", ret);
 	    return ret;
