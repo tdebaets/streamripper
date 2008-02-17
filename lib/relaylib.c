@@ -434,7 +434,7 @@ relaylib_start (RIP_MANAGER_INFO* rmi)
     if (ret != SR_SUCCESS) return ret;
     m_running_accept = TRUE;
 
-    ret = threadlib_beginthread (&m_hthread2, thread_send, 0);
+    ret = threadlib_beginthread (&m_hthread2, thread_send, (void*) rmi);
     if (ret != SR_SUCCESS)
         return ret;
     m_running_send = TRUE;
@@ -443,7 +443,7 @@ relaylib_start (RIP_MANAGER_INFO* rmi)
 }
 
 void
-thread_accept (void *arg)
+thread_accept (void* arg)
 {
     int ret;
     int newsock;
@@ -507,7 +507,7 @@ thread_accept (void *arg)
                     // Socket is new and its buffer had better have 
 		    // room to hold the entire HTTP header!
                     good = FALSE;
-                    if (header_receive (newsock, &icy_metadata) == 0 && g_cbuf2.buf != NULL) {
+                    if (header_receive (newsock, &icy_metadata) == 0 && rmi->cbuf2.buf != NULL) {
 			int header_len;
 			make_nonblocking (newsock);
 			client_http_header = client_relay_header_generate (rmi, icy_metadata);
@@ -559,7 +559,7 @@ thread_accept (void *arg)
 
 /* Sock is ready to receive, so send it from cbuf to relay */
 static BOOL 
-send_to_relay (RELAY_LIST* ptr)
+send_to_relay (RIP_MANAGER_INFO* rmi, RELAY_LIST* ptr)
 {
     int ret;
     int err_errno;
@@ -574,7 +574,7 @@ send_to_relay (RELAY_LIST* ptr)
 	ptr->m_offset = 0;
 	ptr->m_left_to_send = 0;
 
-	cbuf2_init_relay_entry (&g_cbuf2, ptr, burst_amount);
+	cbuf2_init_relay_entry (&rmi->cbuf2, ptr, burst_amount);
 	
 	ptr->m_is_new = 0;
     }
@@ -584,7 +584,7 @@ send_to_relay (RELAY_LIST* ptr)
 	if (!ptr->m_left_to_send) {
 	    error_code rc;
 	    ptr->m_offset = 0;
-	    rc = cbuf2_extract_relay (&g_cbuf2, ptr);
+	    rc = cbuf2_extract_relay (&rmi->cbuf2, ptr);
 	    
 	    if (rc == SR_ERROR_BUFFER_EMPTY) {
 		break;
@@ -654,7 +654,7 @@ relaylib_disconnect (RELAY_LIST* prev, RELAY_LIST* ptr)
 }
 
 void 
-thread_send (void *arg)
+thread_send (void* arg)
 {
     RELAY_LIST* prev;
     RELAY_LIST* ptr;
@@ -662,6 +662,7 @@ thread_send (void *arg)
     int sock;
     BOOL good;
     error_code err = SR_SUCCESS;
+    RIP_MANAGER_INFO* rmi = (RIP_MANAGER_INFO*) arg;
 
     while (m_running) {
 	threadlib_waitfor_sem (&g_relay_list_sem);
@@ -675,7 +676,7 @@ thread_send (void *arg)
 		if (swallow_receive(sock) != 0) {
 		    good = FALSE;
 		} else {
-		    good = send_to_relay (ptr);
+		    good = send_to_relay (rmi, ptr);
 		}
 	       
 		if (!good) {

@@ -36,39 +36,6 @@ struct METADATA_LIST_struct
 #define OGG_PAGE_EOS        0x02
 #define OGG_PAGE_2          0x04
 
-/* Each ogg page boundary within the cbuf gets this struct */
-typedef struct OGG_PAGE_LIST_struct OGG_PAGE_LIST;
-struct OGG_PAGE_LIST_struct
-{
-    unsigned long m_page_start;
-    unsigned long m_page_len;
-    unsigned long m_page_flags;
-    char *m_header_buf_ptr;
-    unsigned long m_header_buf_len;
-    LIST m_list;
-};
-
-typedef struct CBUF2_struct
-{
-    char*	buf;
-    int         content_type;
-    int         have_relay;
-    u_long	num_chunks;
-    u_long	chunk_size;
-    u_long	size;        /* size is chunk_size * num_chunks */
-    u_long	base_idx;
-    u_long	item_count;  /* Amount filled */
-    u_long	next_song;   /* start of next song (mp3 only) */
-    OGG_PAGE_LIST* song_page;    /* current page being written (ogg only) */
-    u_long      song_page_done;  /* amount finished in current page (ogg) */
-
-    HSEM        cbuf_sem;
-
-    LIST        metadata_list;
-    LIST        ogg_page_list;
-    LIST        frame_list;
-} CBUF2;
-
 
 /*****************************************************************************
  * Global variables

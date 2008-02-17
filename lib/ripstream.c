@@ -127,7 +127,7 @@ ripstream_clear(RIP_MANAGER_INFO* rmi)
 
     rmi->find_silence = -1;
     rmi->cbuf2_size = 0;
-    cbuf2_destroy (&g_cbuf2);
+    cbuf2_destroy (&rmi->cbuf2);
 
     clear_track_info (&rmi->old_track);
     clear_track_info (&rmi->new_track);
@@ -229,7 +229,7 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 	rmi->bitrate = -1;
 	rmi->getbuffer_size = 1024;
 	rmi->cbuf2_size = 128;
-	ret = cbuf2_init (&g_cbuf2, rmi->http_info.content_type, 
+	ret = cbuf2_init (&rmi->cbuf2, rmi->http_info.content_type, 
 			  GET_MAKE_RELAY(rmi->prefs->flags),
 			  rmi->getbuffer_size, rmi->cbuf2_size);
 	if (ret != SR_SUCCESS) return ret;
@@ -242,7 +242,7 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 
     /* Copy the data into cbuffer */
     clear_track_info (&rmi->current_track);
-    ret = cbuf2_insert_chunk (rmi, &g_cbuf2, 
+    ret = cbuf2_insert_chunk (rmi, &rmi->cbuf2, 
 			      rmi->getbuffer, rmi->getbuffer_size,
 			      rmi->http_info.content_type, 
 			      &rmi->current_track);
@@ -263,7 +263,7 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 	    error_code ret;
 	    unsigned long amt_filled;
 	    int got_eos;
-	    ret = cbuf2_ogg_peek_song (&g_cbuf2, rmi->getbuffer, 
+	    ret = cbuf2_ogg_peek_song (&rmi->cbuf2, rmi->getbuffer, 
 				       rmi->getbuffer_size,
 				       &amt_filled, &got_eos);
 	    debug_printf ("^^^ogg_peek: %d %d\n", amt_filled, got_eos);
@@ -303,11 +303,11 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
     }
 
     /* If buffer almost full, advance the buffer */
-    if (cbuf2_get_free(&g_cbuf2) < rmi->getbuffer_size) {
+    if (cbuf2_get_free(&rmi->cbuf2) < rmi->getbuffer_size) {
 	debug_printf ("cbuf2_get_free < getbuffer_size\n");
-	extract_size = rmi->getbuffer_size - cbuf2_get_free(&g_cbuf2);
+	extract_size = rmi->getbuffer_size - cbuf2_get_free(&rmi->cbuf2);
 
-        ret = cbuf2_advance_ogg (&g_cbuf2, rmi->getbuffer_size);
+        ret = cbuf2_advance_ogg (&rmi->cbuf2, rmi->getbuffer_size);
 
         if (ret != SR_SUCCESS) {
 	    debug_printf("cbuf2_extract had bad return code %d\n", ret);
@@ -361,7 +361,7 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
 
         compute_cbuf2_size (rmi, &rmi->prefs->sp_opt, 
 			    rmi->bitrate, rmi->getbuffer_size);
-	ret = cbuf2_init (&g_cbuf2, rmi->http_info.content_type, 
+	ret = cbuf2_init (&rmi->cbuf2, rmi->http_info.content_type, 
 			  GET_MAKE_RELAY(rmi->prefs->flags),
 			  rmi->getbuffer_size, rmi->cbuf2_size);
 	if (ret != SR_SUCCESS) return ret;
@@ -380,7 +380,7 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
     }
 
     /* Copy the data into cbuffer */
-    ret = cbuf2_insert_chunk (rmi, &g_cbuf2, 
+    ret = cbuf2_insert_chunk (rmi, &rmi->cbuf2, 
 			      rmi->getbuffer, rmi->getbuffer_size,
 			      rmi->http_info.content_type, 
 			      &rmi->current_track);
@@ -467,11 +467,11 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
     if (rmi->find_silence >= 0) rmi->find_silence --;
 
     /* If buffer almost full, dump extra to current song. */
-    if (cbuf2_get_free(&g_cbuf2) < rmi->getbuffer_size) {
+    if (cbuf2_get_free(&rmi->cbuf2) < rmi->getbuffer_size) {
 	u_long curr_song;
 	debug_printf ("cbuf2_get_free < getbuffer_size\n");
-	extract_size = rmi->getbuffer_size - cbuf2_get_free(&g_cbuf2);
-        ret = cbuf2_extract(&g_cbuf2, rmi->getbuffer, extract_size, &curr_song);
+	extract_size = rmi->getbuffer_size - cbuf2_get_free(&rmi->cbuf2);
+        ret = cbuf2_extract(&rmi->cbuf2, rmi->getbuffer, extract_size, &curr_song);
         if (ret != SR_SUCCESS) {
 	    debug_printf("cbuf2_extract had bad return code %d\n", ret);
 	    return ret;
@@ -503,17 +503,17 @@ find_sep (RIP_MANAGER_INFO* rmi, u_long* pos1, u_long* pos2)
     debug_printf ("*** Finding separation point\n");
 
     /* First, find the search region w/in cbuffer. */
-    rw_start = g_cbuf2.item_count - rmi->rw_start_to_cb_end;
+    rw_start = rmi->cbuf2.item_count - rmi->rw_start_to_cb_end;
     if (rw_start < 0) {
 	return SR_ERROR_REQUIRED_WINDOW_EMPTY;
     }
-    rw_end = g_cbuf2.item_count - rmi->rw_end_to_cb_end;
+    rw_end = rmi->cbuf2.item_count - rmi->rw_end_to_cb_end;
     if (rw_end < 0) {
 	return SR_ERROR_REQUIRED_WINDOW_EMPTY;
     }
 
     debug_printf ("search window (bytes): %d,%d,%d\n", rw_start, rw_end,
-		  g_cbuf2.item_count);
+		  rmi->cbuf2.item_count);
 
     if (rmi->http_info.content_type != CONTENT_TYPE_MP3) {
 	sw_sil = (rw_end + rw_start) / 2;
@@ -523,7 +523,7 @@ find_sep (RIP_MANAGER_INFO* rmi, u_long* pos1, u_long* pos2)
     } else {
 	int bufsize = rw_end - rw_start;
 	char* buf = (char*) malloc (bufsize);
-	ret = cbuf2_peek_rgn (&g_cbuf2, buf, rw_start, bufsize);
+	ret = cbuf2_peek_rgn (&rmi->cbuf2, buf, rw_start, bufsize);
 	if (ret != SR_SUCCESS) {
 	    debug_printf ("PEEK FAILED: %d\n", ret);
 	    free(buf);
@@ -568,11 +568,11 @@ end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, u_long pos2, TRACK_INFO* ti)
     // positions are relative to cbuf2->read_index
 
     /* First, dump the part only in prev track */
-    ret = cbuf2_peek(&g_cbuf2, buf, pos1);
+    ret = cbuf2_peek (&rmi->cbuf2, buf, pos1);
     if (ret != SR_SUCCESS) goto BAIL;
 
     /* Let cbuf know about the start of the next track */
-    cbuf2_set_next_song (&g_cbuf2, pos2);
+    cbuf2_set_next_song (&rmi->cbuf2, pos2);
 
     // Write that out to the current file
     // GCS FIX: m_bytes_ripped is incorrect when there is padding

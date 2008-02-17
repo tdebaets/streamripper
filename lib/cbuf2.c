@@ -15,21 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "errors.h"
-#include "relaylib.h"
-#include "cbuf2.h"
-#include "debug.h"
-#include "ripogg.h"
-
-/*****************************************************************************
- * Global variables
- *****************************************************************************/
-/* The circular buffer */
-CBUF2 g_cbuf2;
-
 /*****************************************************************************
  * Notes:
  *
@@ -47,6 +32,15 @@ CBUF2 g_cbuf2;
  *   or written.  When the buffer is full or empty, they are equal.
  *   Use the item_count to distinguish these cases.
  *****************************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "errors.h"
+#include "relaylib.h"
+#include "cbuf2.h"
+#include "debug.h"
+#include "ripogg.h"
+
 /*****************************************************************************
  * Private functions
  *****************************************************************************/
@@ -61,9 +55,6 @@ static error_code cbuf2_extract_relay_mp3 (CBUF2 *cbuf2, char *data,
 static error_code cbuf2_extract_relay_ogg (CBUF2 *cbuf2, RELAY_LIST* ptr);
 static u_long cbuf2_offset (CBUF2 *cbuf2, u_long pos);
 static u_long cbuf2_offset_2 (CBUF2 *cbuf2, u_long pos);
-#if defined (commentout)
-static u_long cbuf2_subtract (CBUF2 *cbuf2, u_long pos1, u_long pos2);
-#endif
 
 /*****************************************************************************
  * Function definitions

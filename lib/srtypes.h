@@ -22,6 +22,7 @@
  *****************************************************************************/
 #include "srconfig.h"
 #include "compat.h"
+#include "list.h"
 #if WIN32
 /* Warning: Not allowed to mix windows.h & cdk.h */
 #include <windows.h>
@@ -275,6 +276,39 @@ struct external_process
     char metadata_buf[MAX_EXT_LINE_LEN];
 };
 
+/* Each ogg page boundary within the cbuf gets this struct */
+typedef struct OGG_PAGE_LIST_struct OGG_PAGE_LIST;
+struct OGG_PAGE_LIST_struct
+{
+    unsigned long m_page_start;
+    unsigned long m_page_len;
+    unsigned long m_page_flags;
+    char *m_header_buf_ptr;
+    unsigned long m_header_buf_len;
+    LIST m_list;
+};
+
+typedef struct CBUF2_struct
+{
+    char*	buf;
+    int         content_type;
+    int         have_relay;
+    u_long	num_chunks;
+    u_long	chunk_size;
+    u_long	size;        /* size is chunk_size * num_chunks */
+    u_long	base_idx;
+    u_long	item_count;  /* Amount filled */
+    u_long	next_song;   /* start of next song (mp3 only) */
+    OGG_PAGE_LIST* song_page;    /* current page being written (ogg only) */
+    u_long      song_page_done;  /* amount finished in current page (ogg) */
+
+    HSEM        cbuf_sem;
+
+    LIST        metadata_list;
+    LIST        ogg_page_list;
+    LIST        frame_list;
+} CBUF2;
+
 #if (HAVE_OGG_VORBIS)
 typedef struct _stream_processor {
     int (*process_page)(struct _stream_processor *, ogg_page *, TRACK_INFO*);
@@ -448,6 +482,9 @@ struct RIP_MANAGER_INFOst
 
     /* Keep track of how many tracks we have ripped */
     int track_count;
+
+    /* The circular buffer */
+    CBUF2 cbuf2;
 
     /* CBuf size variables.  Used by ripstream.c */
     int cbuf2_size;             /* blocks */
