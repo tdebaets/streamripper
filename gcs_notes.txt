@@ -139,7 +139,13 @@ main (GUI thread)
     thread_send (Blocks on select() for writing to clients)
     External process
 
-Shutdown procedure
+Subsystem naming convention
+  rip_manager_init()      // Static memory/once per process
+    rip_manager_start()   //   Dynamic memory/once per stream
+    rip_manager_stop()    //   Dynamic memory/once per stream
+  rip_manager_cleanup()   // Static memory/once per process
+
+Shutdown procedure (1.62 and before)
   gui thread polls m_got_sig (CTL-C) and m_alldone (rip_manager done)
   callback sets m_alldone
 

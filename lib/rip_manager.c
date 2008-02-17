@@ -59,7 +59,7 @@
  * Private functions
  *****************************************************************************/
 static void ripthread (void *thread_arg);
-static error_code start_relay (RIP_MANAGER_INFO* rmi, int content_type);
+//static error_code start_relay (RIP_MANAGER_INFO* rmi, int content_type);
 static void post_status (RIP_MANAGER_INFO* rmi, int status);
 static error_code start_ripping (RIP_MANAGER_INFO* rmi);
 void destroy_subsystems (RIP_MANAGER_INFO* rmi);
@@ -306,6 +306,7 @@ rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
  * knows what to call the stream which is what the 'construct_sc_repsonse()'
  * call is about.
  */
+#if defined (commentout)
 static error_code
 start_relay (RIP_MANAGER_INFO* rmi, int content_type)
 {	
@@ -317,6 +318,7 @@ start_relay (RIP_MANAGER_INFO* rmi, int content_type)
 
     return SR_SUCCESS;
 }
+#endif
 
 char *
 client_relay_header_generate (RIP_MANAGER_INFO* rmi, int icy_meta_support)
@@ -601,21 +603,24 @@ start_ripping (RIP_MANAGER_INFO* rmi)
      */
     if (GET_MAKE_RELAY (rmi->prefs->flags)) {
 	u_short new_port = 0;
-	ret = relaylib_init(rmi, 
-			    GET_SEARCH_PORTS(rmi->prefs->flags), 
-			    rmi->prefs->relay_port,
-			    rmi->prefs->max_port, 
-			    &new_port,
-			    rmi->prefs->if_name, 
-			    rmi->prefs->max_connections,
-			    rmi->prefs->relay_ip,
-			    rmi->http_info.meta_interval != NO_META_INTERVAL);
+	ret = relaylib_start (rmi, 
+			      GET_SEARCH_PORTS(rmi->prefs->flags), 
+			      rmi->prefs->relay_port,
+			      rmi->prefs->max_port, 
+			      &new_port,
+			      rmi->prefs->if_name, 
+			      rmi->prefs->max_connections,
+			      rmi->prefs->relay_ip,
+			      rmi->http_info.meta_interval != NO_META_INTERVAL);
 	if (ret != SR_SUCCESS) {
 	    goto RETURN_ERR;
 	}
 
 	rmi->prefs->relay_port = new_port;
+
+#if defined (commentout)
 	start_relay (rmi, rmi->http_info.content_type);
+#endif
 
 	if (0 != rmi->prefs->pls_file[0]) {
 	    create_pls_file (rmi);

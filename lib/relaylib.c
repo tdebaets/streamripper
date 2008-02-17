@@ -57,13 +57,6 @@
 #endif
 
 /*****************************************************************************
- * Global variables
- *****************************************************************************/
-//RELAY_LIST* g_relay_list = NULL;
-//unsigned long g_relay_list_len = 0;
-//HSEM g_relay_list_sem;
-
-/*****************************************************************************
  * Private vars
  *****************************************************************************/
 static HSEM m_sem_not_connected;
@@ -85,6 +78,7 @@ static int m_have_metadata;
 static void thread_accept (void *arg);
 static error_code try_port (u_short port, char *if_name, char *relay_ip);
 static void thread_send (void *arg);
+static error_code relaylib_start_threads (RIP_MANAGER_INFO* rmi);
 
 #define BUFSIZE (1024)
 
@@ -273,10 +267,10 @@ catch_pipe(int code)
 #endif
 
 error_code
-relaylib_init (RIP_MANAGER_INFO* rmi,
-	       BOOL search_ports, u_short relay_port, u_short max_port, 
-	       u_short *port_used, char *if_name, int max_connections, 
-	       char *relay_ip, int have_metadata)
+relaylib_start (RIP_MANAGER_INFO* rmi,
+		BOOL search_ports, u_short relay_port, u_short max_port, 
+		u_short *port_used, char *if_name, int max_connections, 
+		char *relay_ip, int have_metadata)
 {
     int ret;
 #ifdef WIN32
@@ -326,7 +320,13 @@ relaylib_init (RIP_MANAGER_INFO* rmi,
         if (ret == SR_SUCCESS) {
             *port_used = relay_port;
             debug_printf ("Relay: Listening on port %d\n", relay_port);
-            return SR_SUCCESS;
+            ret = SR_SUCCESS;
+
+	    /* GCS From rip_manager.c */
+	    if (!relaylib_isrunning()) {
+		ret = relaylib_start_threads (rmi);
+	    }
+	    return ret;
         } else {
             return ret;
         }
@@ -424,8 +424,8 @@ relaylib_stop (RIP_MANAGER_INFO* rmi)
     debug_printf("relaylib_stop:done!\n");
 }
 
-error_code
-relaylib_start (RIP_MANAGER_INFO* rmi)
+static error_code
+relaylib_start_threads (RIP_MANAGER_INFO* rmi)
 {
     int ret;
 
