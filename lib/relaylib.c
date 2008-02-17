@@ -277,7 +277,10 @@ relaylib_start (RIP_MANAGER_INFO* rmi,
     WSADATA wsd;
 #endif
 
-    debug_printf ("relaylib_init()\n");
+    debug_printf ("relaylib_start()\n");
+
+    rmi->relay_list = 0;
+    rmi->relay_list_len = 0;
 
 #ifdef WIN32
     if (WSAStartup(MAKEWORD(2,2), &wsd) != 0) {
