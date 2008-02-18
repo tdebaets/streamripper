@@ -133,11 +133,16 @@ Winamp winproc -> hook_winamp_callback
 -----------------------------------------------------------------------
 * Multirip/main loop
 
+Streamripper has 4 threads, and one child process.
+
 main (GUI thread)
-  ripthread (Connect & process, blocks on select() for reading from stream)
-    thread_accept (Blocks on select() for new relay connections)
-    thread_send (Blocks on select() for writing to clients)
-    External process
+  ripthread (reads from server)
+    thread_accept (waits for new relay connections)
+    thread_send (writes to relay clients)
+    External process (reads from stdin pipe)
+
+Ripthread
+  
 
 Subsystem naming convention
   rip_manager_init()      // Static memory/once per process
@@ -145,21 +150,29 @@ Subsystem naming convention
     rip_manager_stop()    //   Dynamic memory/once per stream
   rip_manager_cleanup()   // Static memory/once per process
 
-Shutdown procedure (1.62 and before)
-  gui thread polls m_got_sig (CTL-C) and m_alldone (rip_manager done)
-  callback sets m_alldone
+Shutdown procedure
+  signal handler sets m_got_sig on (CTL-C)
+  callback sets m_alldone on ??
+  gui thread polls m_got_sig and m_alldone
+    call rip_manager_stop() if either flags are seen
+
+Relay startup and shutdown
+  rip_manager_start() calls relaylib_start()
+  On reconnection, ripthread() calls relaylib_stop() and relaylib_start()
+
+
 
 Data structs:
-    1) Global preferences
-    2) Stream preferences
-    3) Stream state variables (rmi)
+  1) Global preferences
+  2) Stream preferences
+  3) Stream state variables (rmi)
 
 Semaphore/Mutex
-   1) cbuf2->cbuf_sem
-   2) m_debug_lock
-   3) m_started_sem
-   4) m_sem_not_connected
-   5) g_relay_list_sem
+  1) cbuf2->cbuf_sem
+  2) m_debug_lock
+  3) m_started_sem
+  4) m_sem_not_connected
+  5) g_relay_list_sem
 
 -----------------------------------------------------------------------
 HTTP HEADERS
@@ -499,13 +512,6 @@ File Type: EXECUTABLE IMAGE
 How to tag a new version (e.g. for version 1.60)
 
   cvs rtag -r HEAD sripper-1_60 sripper_1x
-
------------------------------------------------------------------------
-Autoconf versions
-
-Recently (Mon Feb 21 15:23:32 EST 2005) upgraded to:
-
-  - autoconf 2.59, automake 1.9.2, libtool 1.5.10.
 
 -----------------------------------------------------------------------
 How to revise libmad
@@ -852,20 +858,6 @@ Other MP3 libraries
 
 mpglib
 xaudio_sdk
-
------------------------------------------------------------------------
-How to connect to cf servers:
-
-(UNIX)
-roy@mesmer ~ $ eval `ssh-agent`
-Agent pid 4760
-roy@mesmer ~ $ ssh-add .ssh/sf_dsa
-Enter passphrase for .ssh/sf_dsa:
-Identity added: .ssh/sf_dsa (.ssh/sf_dsa)
-roy@mesmer ~ $ ssh cf.sourceforge.net -l codewhacker
-
-(PUTTY)
-C:\gsharp\my_putty_key\3>plink -v -i cf.ppk -l gregsharp -2 cf-shell.sf.net ls
 
 -----------------------------------------------------------------------
 Clients (windows)

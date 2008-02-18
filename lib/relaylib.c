@@ -59,24 +59,15 @@
 /*****************************************************************************
  * Private vars
  *****************************************************************************/
-static HSEM m_sem_not_connected;
-static char m_http_header[MAX_HEADER_LEN];
-static SOCKET m_listensock = SOCKET_ERROR;
-static BOOL m_running = FALSE;
-static BOOL m_running_accept = FALSE;
-static BOOL m_running_send = FALSE;
-static BOOL m_initdone = FALSE;
-static THREAD_HANDLE m_hthread;
-static THREAD_HANDLE m_hthread2;
-
-static int m_max_connections;
-static int m_have_metadata;
+//static int m_max_connections;
+//static int m_have_metadata;
 
 /*****************************************************************************
  * Private functions
  *****************************************************************************/
 static void thread_accept (void *arg);
-static error_code try_port (u_short port, char *if_name, char *relay_ip);
+static error_code try_port (RELAYLIB_INFO* rli, u_short port, 
+			    char *if_name, char *relay_ip);
 static void thread_send (void *arg);
 static error_code relaylib_start_threads (RIP_MANAGER_INFO* rmi);
 
@@ -240,11 +231,7 @@ make_nonblocking (int sock)
 #endif
 }
 
-BOOL relaylib_isrunning()
-{
-    return m_running;
-}
-
+#if defined (commentout)
 error_code
 relaylib_set_response_header(char *http_header)
 {
@@ -255,6 +242,7 @@ relaylib_set_response_header(char *http_header)
 
     return SR_SUCCESS;
 }
+#endif
 
 #ifndef WIN32
 void
@@ -269,13 +257,22 @@ catch_pipe(int code)
 error_code
 relaylib_start (RIP_MANAGER_INFO* rmi,
 		BOOL search_ports, u_short relay_port, u_short max_port, 
-		u_short *port_used, char *if_name, int max_connections, 
-		char *relay_ip, int have_metadata)
+		u_short *port_used, char *if_name, 
+		int max_connections, 
+		char *relay_ip, 
+		int have_metadata)
 {
     int ret;
 #ifdef WIN32
     WSADATA wsd;
 #endif
+    RELAYLIB_INFO* rli = &rmi->relaylib_info;
+
+    /* GCS: These were globally initialized... */
+    rli->m_listensock = SOCKET_ERROR;
+    rli->m_running = FALSE;
+    rli->m_running_accept = FALSE;
+    rli->m_running_send = FALSE;
 
     debug_printf ("relaylib_start()\n");
 
@@ -299,24 +296,22 @@ relaylib_start (RIP_MANAGER_INFO* rmi,
     signal(SIGPIPE, catch_pipe);
 #endif
 
-    if (m_initdone != TRUE) {
-        m_sem_not_connected = threadlib_create_sem();
-        rmi->relay_list_sem = threadlib_create_sem();
-        threadlib_signal_sem(&rmi->relay_list_sem);
+    rli->m_sem_not_connected = threadlib_create_sem();
+    rmi->relay_list_sem = threadlib_create_sem();
+    threadlib_signal_sem (&rmi->relay_list_sem);
 
-        // NOTE: we need to signal it here in case we try to destroy
-        // relaylib before the thread starts!
-        threadlib_signal_sem(&m_sem_not_connected);
-        m_initdone = TRUE;
-    }
-    m_max_connections = max_connections;
-    m_have_metadata = have_metadata;
+    // NOTE: we need to signal it here in case we try to destroy
+    // relaylib before the thread starts!
+    threadlib_signal_sem (&rli->m_sem_not_connected);
+
+    //m_max_connections = max_connections;
+    //m_have_metadata = have_metadata;
     *port_used = 0;
     if (!search_ports)
         max_port = relay_port;
 
     for(;relay_port <= max_port; relay_port++) {
-        ret = try_port ((u_short)relay_port, if_name, relay_ip);
+        ret = try_port (rli, (u_short)relay_port, if_name, relay_ip);
         if (ret == SR_ERROR_CANT_BIND_ON_PORT)
             continue;           // Keep searching.
 
@@ -325,8 +320,7 @@ relaylib_start (RIP_MANAGER_INFO* rmi,
             debug_printf ("Relay: Listening on port %d\n", relay_port);
             ret = SR_SUCCESS;
 
-	    /* GCS From rip_manager.c */
-	    if (!relaylib_isrunning()) {
+	    if (!rli->m_running) {
 		ret = relaylib_start_threads (rmi);
 	    }
 	    return ret;
@@ -338,18 +332,18 @@ relaylib_start (RIP_MANAGER_INFO* rmi,
     return SR_ERROR_CANT_BIND_ON_PORT;
 }
 
-error_code
-try_port (u_short port, char *if_name, char *relay_ip)
+static error_code
+try_port (RELAYLIB_INFO* rli, u_short port, char *if_name, char *relay_ip)
 {
     struct hostent *he;
     struct sockaddr_in local;
 
-    m_listensock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
-    if (m_listensock == SOCKET_ERROR) {
+    rli->m_listensock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+    if (rli->m_listensock == SOCKET_ERROR) {
 	debug_printf ("try_port(%d) failed socket() call\n", port);
         return SR_ERROR_SOCK_BASE;
     }
-    make_nonblocking(m_listensock);
+    make_nonblocking(rli->m_listensock);
 
     if ('\0' == *relay_ip) {
 	if (read_interface(if_name,&local.sin_addr.s_addr) != 0)
@@ -366,23 +360,23 @@ try_port (u_short port, char *if_name, char *relay_ip)
     {
         // Prevent port error when restarting quickly after a previous exit
         int opt = 1;
-        setsockopt(m_listensock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        setsockopt(rli->m_listensock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
     }
 #endif
                         
-    if (bind(m_listensock, (struct sockaddr *)&local, sizeof(local)) == SOCKET_ERROR)
+    if (bind(rli->m_listensock, (struct sockaddr *)&local, sizeof(local)) == SOCKET_ERROR)
     {
 	debug_printf ("try_port(%d) failed bind() call\n", port);
-        closesocket(m_listensock);
-        m_listensock = SOCKET_ERROR;
+        closesocket(rli->m_listensock);
+        rli->m_listensock = SOCKET_ERROR;
         return SR_ERROR_CANT_BIND_ON_PORT;
     }
         
-    if (listen(m_listensock, 1) == SOCKET_ERROR)
+    if (listen(rli->m_listensock, 1) == SOCKET_ERROR)
     {
 	debug_printf ("try_port(%d) failed listen() call\n", port);
-        closesocket(m_listensock);
-        m_listensock = SOCKET_ERROR;
+        closesocket(rli->m_listensock);
+        rli->m_listensock = SOCKET_ERROR;
         return SR_ERROR_SOCK_BASE;
     }
 
@@ -394,35 +388,37 @@ void
 relaylib_stop (RIP_MANAGER_INFO* rmi)
 {
     int ix;
+    RELAYLIB_INFO* rli = &rmi->relaylib_info;
+
     debug_printf("relaylib_stop:start\n");
-    if (!relaylib_isrunning()) {
+    if (!rli->m_running) {
         debug_printf("***relaylib_stop:return\n");
         return;
     }
-    m_running = FALSE;
+    rli->m_running = FALSE;
     ix = 0;
-    while(ix<120 && (m_running_accept | m_running_send)) {
+    while (ix<120 && (rli->m_running_accept | rli->m_running_send)) {
         sleep(1);
         ++ix;
     }
-    if(ix==120) {
+    if (ix==120) {
         debug_printf ("relay threads refused to end, aborting\n");
         fprintf (stderr,"relay threads refused to end, aborting\n");
         exit(1);
     }
 
-    threadlib_signal_sem(&m_sem_not_connected);
-    if (closesocket(m_listensock) == SOCKET_ERROR) {   
+    threadlib_signal_sem (&rli->m_sem_not_connected);
+    if (closesocket(rli->m_listensock) == SOCKET_ERROR) {   
         // JCBUG, what can we do?
     }
-    m_listensock = SOCKET_ERROR;                // Accept thread will watch for this and not try to accept anymore
-    memset(m_http_header, 0, MAX_HEADER_LEN);
-    debug_printf("waiting for relay close\n");
-    threadlib_waitforclose(&m_hthread);
-    threadlib_waitforclose(&m_hthread2);
-    destroy_all_hostsocks(rmi);
-    threadlib_destroy_sem(&m_sem_not_connected);
-    m_initdone = FALSE;
+    /* Accept thread will watch for this and not try to accept anymore */
+    rli->m_listensock = SOCKET_ERROR;
+
+    debug_printf ("waiting for relay close\n");
+    threadlib_waitforclose (&rli->m_hthread_accept);
+    threadlib_waitforclose (&rli->m_hthread_send);
+    destroy_all_hostsocks (rmi);
+    threadlib_destroy_sem (&rli->m_sem_not_connected);
 
     debug_printf("relaylib_stop:done!\n");
 }
@@ -431,17 +427,19 @@ static error_code
 relaylib_start_threads (RIP_MANAGER_INFO* rmi)
 {
     int ret;
+    RELAYLIB_INFO* rli = &rmi->relaylib_info;
 
-    m_running = TRUE;
+    rli->m_running = TRUE;
 
-    ret = threadlib_beginthread (&m_hthread, thread_accept, (void*) rmi);
+    ret = threadlib_beginthread (&rli->m_hthread_accept, 
+				 thread_accept, (void*) rmi);
     if (ret != SR_SUCCESS) return ret;
-    m_running_accept = TRUE;
+    rli->m_running_accept = TRUE;
 
-    ret = threadlib_beginthread (&m_hthread2, thread_send, (void*) rmi);
-    if (ret != SR_SUCCESS)
-        return ret;
-    m_running_send = TRUE;
+    ret = threadlib_beginthread (&rli->m_hthread_send, 
+				 thread_send, (void*) rmi);
+    if (ret != SR_SUCCESS) return ret;
+    rli->m_running_send = TRUE;
 
     return SR_SUCCESS;
 }
@@ -458,10 +456,19 @@ thread_accept (void* arg)
     int icy_metadata;
     char* client_http_header;
     RIP_MANAGER_INFO* rmi = (RIP_MANAGER_INFO*) arg;
+    RELAYLIB_INFO* rli = &rmi->relaylib_info;
+    STREAM_PREFS* prefs = rmi->prefs;
+    int have_metadata;
+
+    if (rmi->http_info.meta_interval == NO_META_INTERVAL) {
+	have_metadata = 0;
+    } else {
+	have_metadata = 1;
+    }
 
     debug_printf("thread_accept:start\n");
 
-    while (m_running)
+    while (rli->m_running)
     {
         fd_set fds;
         struct timeval tv;
@@ -471,8 +478,8 @@ thread_accept (void* arg)
         // when a connection gets dropped, or when streamripper shuts down
         //   this event will get signaled
 	debug_printf("thread_accept:waiting on m_sem_not_connected\n");
-        threadlib_waitfor_sem (&m_sem_not_connected);
-        if (!m_running) {
+        threadlib_waitfor_sem (&rli->m_sem_not_connected);
+        if (!rli->m_running) {
 	    debug_printf("thread_accept:exit (no longer m_running)\n");
             break;
 	}
@@ -481,13 +488,13 @@ thread_accept (void* arg)
 	// accept(), so that we can regain control if relaylib_stop() 
 	// called
         FD_ZERO (&fds);
-        while (m_listensock != SOCKET_ERROR && m_running)
+        while (rli->m_listensock != SOCKET_ERROR && rli->m_running)
         {
-            FD_SET (m_listensock, &fds);
+            FD_SET (rli->m_listensock, &fds);
             tv.tv_sec = 1;
             tv.tv_usec = 0;
 	    debug_printf("thread_accept:calling select()\n");
-            ret = select (m_listensock + 1, &fds, NULL, NULL, &tv);
+            ret = select (rli->m_listensock + 1, &fds, NULL, NULL, &tv);
 	    debug_printf("thread_accept:select() returned\n");
             if (ret == 1) {
                 unsigned long num_connected;
@@ -496,12 +503,12 @@ thread_accept (void* arg)
                 threadlib_waitfor_sem (&rmi->relay_list_sem);
                 num_connected = rmi->relay_list_len;
                 threadlib_signal_sem (&rmi->relay_list_sem);
-                if (m_max_connections > 0 && num_connected >= (unsigned long) m_max_connections) {
+                if (prefs->max_connections > 0 && num_connected >= (unsigned long) prefs->max_connections) {
                     continue;
                 }
                 /* Check for connections */
 		debug_printf ("Calling accept()\n");
-                newsock = accept (m_listensock, (struct sockaddr *)&client, &iAddrSize);
+                newsock = accept (rli->m_listensock, (struct sockaddr *)&client, &iAddrSize);
                 if (newsock != SOCKET_ERROR) {
                     // Got successful accept
 
@@ -528,7 +535,7 @@ thread_accept (void* arg)
                                 newhostsock->m_is_new = 1;
                                 newhostsock->m_sock = newsock;
                                 newhostsock->m_next = rmi->relay_list;
-				if (m_have_metadata) {
+				if (have_metadata) {
                                     newhostsock->m_icy_metadata = icy_metadata;
 				} else {
                                     newhostsock->m_icy_metadata = 0;
@@ -551,14 +558,15 @@ thread_accept (void* arg)
             }
             else if (ret == SOCKET_ERROR)
             {
-                // Something went wrong with select
+                /* Something went wrong with select */
                 break;
             }
         }
-        threadlib_signal_sem (&m_sem_not_connected);     // go back to accept
+        threadlib_signal_sem (&rli->m_sem_not_connected);
+	/* loop back up to select */
     }
-    m_running_accept = FALSE;
-    m_running = FALSE;
+    rli->m_running_accept = FALSE;
+    rli->m_running = FALSE;
 }
 
 /* Sock is ready to receive, so send it from cbuf to relay */
@@ -667,8 +675,9 @@ thread_send (void* arg)
     BOOL good;
     error_code err = SR_SUCCESS;
     RIP_MANAGER_INFO* rmi = (RIP_MANAGER_INFO*) arg;
+    RELAYLIB_INFO* rli = &rmi->relaylib_info;
 
-    while (m_running) {
+    while (rli->m_running) {
 	threadlib_waitfor_sem (&rmi->relay_list_sem);
 	ptr = rmi->relay_list;
 	if (ptr != NULL) {
@@ -698,5 +707,5 @@ thread_send (void* arg)
 	threadlib_signal_sem (&rmi->relay_list_sem);
 	Sleep (50);
     }
-    m_running_send = FALSE;
+    rli->m_running_send = FALSE;
 }

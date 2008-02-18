@@ -355,6 +355,19 @@ typedef struct _stream_processor {
 } stream_processor;
 #endif
 
+typedef struct RELAYLIB_INFO_struct RELAYLIB_INFO;
+struct RELAYLIB_INFO_struct
+{
+    HSEM m_sem_not_connected;
+    char m_http_header[MAX_HEADER_LEN];
+    SOCKET m_listensock;
+    BOOL m_running;
+    BOOL m_running_accept;
+    BOOL m_running_send;
+    THREAD_HANDLE m_hthread_accept;
+    THREAD_HANDLE m_hthread_send;
+};
+
 
 #define RIPLIST_LEN 10
 
@@ -520,6 +533,9 @@ struct RIP_MANAGER_INFOst
     RELAY_LIST* relay_list;
     unsigned long relay_list_len;
     HSEM relay_list_sem;
+
+    /* Private data used by relaylib.c */
+    RELAYLIB_INFO relaylib_info;
 
 #if (HAVE_OGG_VORBIS)
     /* Ogg state, used by ripogg.c */

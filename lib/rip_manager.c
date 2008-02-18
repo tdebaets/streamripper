@@ -301,25 +301,6 @@ rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
     return SR_SUCCESS;
 }
 
-/* 
- * Fires up the relaylib stuff. Most of it is so relaylib 
- * knows what to call the stream which is what the 'construct_sc_repsonse()'
- * call is about.
- */
-#if defined (commentout)
-static error_code
-start_relay (RIP_MANAGER_INFO* rmi, int content_type)
-{	
-    int ret;
-
-    if (!relaylib_isrunning())
-	if ((ret = relaylib_start (rmi)) != SR_SUCCESS)
-	    return ret;
-
-    return SR_SUCCESS;
-}
-#endif
-
 char *
 client_relay_header_generate (RIP_MANAGER_INFO* rmi, int icy_meta_support)
 {
@@ -583,8 +564,7 @@ start_ripping (RIP_MANAGER_INFO* rmi)
 	}
     }
 
-    /* Ripstream is good to go, it knows how to get data, and where
-     * it's writing to. */
+    /* Allocate buffers for ripstream */
     strcpy(rmi->no_meta_name, rmi->http_info.icy_name);
     rmi->getbuffer = 0;
     ripstream_clear (rmi);
@@ -594,13 +574,7 @@ start_ripping (RIP_MANAGER_INFO* rmi)
 	goto RETURN_ERR;
     }
 
-    /*
-     * tells the socket relay to start, this local wrapper is for 
-     * setting the respond header, it needs to know server info to 
-     * give winamp any usfull information about
-     * the stream we are relaying.. this just sets the header to 
-     * something very simulare to what we got from the stream.
-     */
+    /* Launch relay server threads */
     if (GET_MAKE_RELAY (rmi->prefs->flags)) {
 	u_short new_port = 0;
 	ret = relaylib_start (rmi, 
@@ -618,14 +592,13 @@ start_ripping (RIP_MANAGER_INFO* rmi)
 
 	rmi->prefs->relay_port = new_port;
 
-#if defined (commentout)
-	start_relay (rmi, rmi->http_info.content_type);
-#endif
-
+	/* Create pls file with address of relay stream */
 	if (0 != rmi->prefs->pls_file[0]) {
 	    create_pls_file (rmi);
 	}
     }
+
+    /* Done. */
     post_status (rmi, RM_STATUS_BUFFERING);
     return SR_SUCCESS;
 
