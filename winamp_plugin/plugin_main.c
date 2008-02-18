@@ -254,7 +254,7 @@ url_is_relay (char* url)
     char relay_url[SR_MAX_PATH];
     compose_relay_url (relay_url, g_gui_prefs.localhost, 
 			g_rmo.relay_port, 
-			rip_manager_get_content_type());
+			rip_manager_get_content_type (m_rmi));
     debug_printf ("Comparing %s vs rly %s\n", url, relay_url);
     return (!strcmp(relay_url, url));
 }
@@ -527,7 +527,7 @@ relay_pressed()
 {
     winamp_add_relay_to_playlist (g_gui_prefs.localhost, 
 	g_rmo.relay_port, 
-	rip_manager_get_content_type());
+	rip_manager_get_content_type (m_rmi));
 }
 
 void
