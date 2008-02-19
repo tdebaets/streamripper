@@ -1,3 +1,8 @@
+New for 1.63-beta-5
+--------------
+* Create a shared library, streamripper.dll, on windows which is shared 
+  by streamripper.exe and wstreamripper.exe
+
 New for 1.63-beta-4
 --------------
 Monday, Feb 11, 2008

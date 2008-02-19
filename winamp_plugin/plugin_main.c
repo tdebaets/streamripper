@@ -460,7 +460,6 @@ start_button_pressed()
 {
     int ret;
     debug_printf ("Start button pressed\n");
-    insert_riplist (g_rmo.url, 0);
 
     assert(!m_bRipping);
     render_clear_all_data();
@@ -469,6 +468,8 @@ start_button_pressed()
     start_button_disable();
 
     ret = rip_manager_start (&m_rmi, &g_rmo, rip_callback);
+    insert_riplist (g_rmo.url, 0);
+
     if (ret != SR_SUCCESS) {
 	MessageBox (m_hwnd, errors_get_string (ret),
 		    "Failed to connect to stream", MB_ICONSTOP);
