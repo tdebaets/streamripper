@@ -44,6 +44,7 @@
 #define _(a) (a)
 
 
+#if defined (commentout)
 struct vorbis_release {
     char *vendor_string;
     char *desc;
@@ -59,6 +60,7 @@ struct vorbis_release {
     {"Xiph.Org libVorbis I 20030909", "1.0.1"},
     {NULL, NULL},
 };
+#endif
 
 /* TODO:
  *

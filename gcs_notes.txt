@@ -1,3 +1,11 @@
+Remaining statics:
+mchar global codesets
+parse global rules
+prefs global key file
+findsep::output
+ripstream::ripstream_rip_ogg
+utf8 global current_charset
+
 -----------------------------------------------------------------------
 cygwin version
 -----------------------------------------------------------------------

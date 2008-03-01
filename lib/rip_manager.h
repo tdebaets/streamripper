@@ -132,7 +132,8 @@ char* client_relay_header_generate (RIP_MANAGER_INFO* rmi,
 				    int icy_meta_support);
 void client_relay_header_release (char *ch);
 
-char* overwrite_opt_to_string (enum OverwriteOpt oo);
+const char*
+overwrite_opt_to_string (enum OverwriteOpt oo);
 enum OverwriteOpt string_to_overwrite_opt (char* str);
 int rip_manager_get_content_type (RIP_MANAGER_INFO* rmi);
 

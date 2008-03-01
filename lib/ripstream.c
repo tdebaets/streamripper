@@ -64,7 +64,7 @@ static error_code ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi);
 static error_code ripstream_rip_ogg (RIP_MANAGER_INFO* rmi);
 
 /*****************************************************************************
- * Private Vars
+ * Private structs
  *****************************************************************************/
 typedef struct ID3V1st
 {

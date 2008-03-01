@@ -59,7 +59,6 @@
  * Private functions
  *****************************************************************************/
 static void ripthread (void *thread_arg);
-//static error_code start_relay (RIP_MANAGER_INFO* rmi, int content_type);
 static void post_status (RIP_MANAGER_INFO* rmi, int status);
 static error_code start_ripping (RIP_MANAGER_INFO* rmi);
 void destroy_subsystems (RIP_MANAGER_INFO* rmi);
@@ -67,7 +66,7 @@ void destroy_subsystems (RIP_MANAGER_INFO* rmi);
 /******************************************************************************
  * Private Vars
  *****************************************************************************/
-static char* overwrite_opt_strings[] = {
+static const char* overwrite_opt_strings[] = {
     "",		// UNKNOWN
     "always",
     "never",
@@ -627,7 +626,7 @@ string_to_overwrite_opt (char* str)
     return OVERWRITE_UNKNOWN;
 }
 
-char*
+const char*
 overwrite_opt_to_string (enum OverwriteOpt oo)
 {
     return overwrite_opt_strings[(int) oo];
