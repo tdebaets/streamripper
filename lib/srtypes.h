@@ -368,6 +368,36 @@ struct RELAYLIB_INFO_struct
     THREAD_HANDLE m_hthread_send;
 };
 
+#define DATEBUF_LEN 50
+
+typedef struct FILELIB_INFO_struct FILELIB_INFO;
+struct FILELIB_INFO_struct
+{
+    FHANDLE m_file;
+    FHANDLE m_show_file;
+    FHANDLE m_cue_file;
+    int m_count;
+    int m_do_show;
+    mchar m_default_pattern[SR_MAX_PATH];
+    mchar m_default_showfile_pattern[SR_MAX_PATH];
+    mchar m_output_directory[SR_MAX_PATH];
+    mchar m_output_pattern[SR_MAX_PATH];
+    mchar m_incomplete_directory[SR_MAX_PATH];
+    mchar m_incomplete_filename[SR_MAX_PATH];
+    mchar m_showfile_directory[SR_MAX_PATH];
+    mchar m_showfile_pattern[SR_MAX_PATH];
+    BOOL m_keep_incomplete;
+    int m_max_filename_length;
+    mchar m_show_name[SR_MAX_PATH];
+    mchar m_cue_name[SR_MAX_PATH];
+    mchar m_icy_name[SR_MAX_PATH];
+    mchar* m_extension;
+    BOOL m_do_individual_tracks;
+    mchar m_session_datebuf[DATEBUF_LEN];
+    mchar m_stripped_icy_name[SR_MAX_PATH];
+    int m_track_no;
+};
+
 
 #define RIPLIST_LEN 10
 
@@ -533,6 +563,9 @@ struct RIP_MANAGER_INFOst
     RELAY_LIST* relay_list;
     unsigned long relay_list_len;
     HSEM relay_list_sem;
+
+    /* Private data used by filelib.c */
+    FILELIB_INFO filelib_info;
 
     /* Private data used by relaylib.c */
     RELAYLIB_INFO relaylib_info;

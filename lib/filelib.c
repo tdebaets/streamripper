@@ -38,24 +38,31 @@ static error_code device_split (mchar* dirname, mchar* device, mchar* path);
 static error_code mkdir_if_needed (mchar *str);
 static error_code mkdir_recursive (mchar *str, int make_last);
 static void close_file (FHANDLE* fp);
-static void close_files ();
+static void close_files (RIP_MANAGER_INFO* rmi);
 static error_code filelib_write (FHANDLE fp, char *buf, u_long size);
 static BOOL file_exists (mchar *filename);
-static void trim_filename (mchar* out, mchar *filename);
-static void trim_mp3_suffix (mchar *filename);
+static void 
+trim_filename (RIP_MANAGER_INFO* rmi, mchar* out, mchar *filename);
+static void
+trim_mp3_suffix (RIP_MANAGER_INFO* rmi, mchar *filename);
 static error_code filelib_open_for_write (FHANDLE* fp, mchar *filename);
 static void
-parse_and_subst_dir (mchar* pattern_head, mchar* pattern_tail, 
+parse_and_subst_dir (RIP_MANAGER_INFO* rmi, 
+		     mchar* pattern_head, mchar* pattern_tail, 
 		     mchar* opat_path, int is_for_showfile);
 static void
-parse_and_subst_pat (mchar* newfile,
+parse_and_subst_pat (RIP_MANAGER_INFO* rmi,
+		     mchar* newfile,
 		     TRACK_INFO* ti,
 		     mchar* directory,
 		     mchar* pattern,
 		     mchar* extension);
-static void set_default_pattern (BOOL get_separate_dirs, BOOL do_count);
+static void
+set_default_pattern (RIP_MANAGER_INFO* rmi, 
+		     BOOL get_separate_dirs, BOOL do_count);
 static error_code 
-set_output_directory (mchar* global_output_directory,
+set_output_directory (RIP_MANAGER_INFO* rmi, 
+		      mchar* global_output_directory,
 		      mchar* global_output_pattern,
 		      mchar* output_pattern,
 		      mchar* output_directory,
@@ -69,45 +76,20 @@ static error_code sr_getcwd (mchar* dirbuf);
 static error_code add_trailing_slash (mchar *str);
 static int get_next_sequence_number (mchar* fn_base);
 static void fill_date_buf (mchar* datebuf, int datebuf_len);
-static error_code filelib_open_showfiles ();
+static error_code filelib_open_showfiles (RIP_MANAGER_INFO* rmi);
 static void move_file (mchar* new_filename, mchar* old_filename);
 static mchar* replace_invalid_chars (mchar *str);
 static BOOL new_file_is_better (mchar *oldfile, mchar *newfile);
 static void delete_file (mchar* filename);
 static void truncate_file (mchar* filename);
 
-/*****************************************************************************
- * Private Vars
- *****************************************************************************/
-#define DATEBUF_LEN 50
-static FHANDLE 	m_file;
-static FHANDLE 	m_show_file;
-static FHANDLE  m_cue_file;
-static int 	m_count;
-static int      m_do_show;
-static mchar 	m_default_pattern[SR_MAX_PATH];
-static mchar 	m_default_showfile_pattern[SR_MAX_PATH];
-static mchar 	m_output_directory[SR_MAX_PATH];
-static mchar 	m_output_pattern[SR_MAX_PATH];
-static mchar 	m_incomplete_directory[SR_MAX_PATH];
-static mchar    m_incomplete_filename[SR_MAX_PATH];
-static mchar 	m_showfile_directory[SR_MAX_PATH];
-static mchar    m_showfile_pattern[SR_MAX_PATH];
-static BOOL	m_keep_incomplete = TRUE;
-static int      m_max_filename_length;
-static mchar 	m_show_name[SR_MAX_PATH];
-static mchar 	m_cue_name[SR_MAX_PATH];
-static mchar 	m_icy_name[SR_MAX_PATH];
-static mchar*	m_extension;
-static BOOL	m_do_individual_tracks;
-static mchar    m_session_datebuf[DATEBUF_LEN];
-static mchar    m_stripped_icy_name[SR_MAX_PATH];
 
 /*****************************************************************************
  * Public Functions
  *****************************************************************************/
 error_code
-filelib_init (BOOL do_individual_tracks,
+filelib_init (RIP_MANAGER_INFO* rmi,
+	      BOOL do_individual_tracks,
 	      BOOL do_count,
 	      int count_start,
 	      BOOL keep_incomplete,
@@ -120,19 +102,21 @@ filelib_init (BOOL do_individual_tracks,
 	      int get_date_stamp,
 	      char* icy_name)
 {
+    FILELIB_INFO* fli = &rmi->filelib_info;
     mchar tmp_output_directory[SR_MAX_PATH];
     mchar tmp_output_pattern[SR_MAX_PATH];
     mchar tmp_showfile_pattern[SR_MAX_PATH];
 
-    m_file = INVALID_FHANDLE;
-    m_show_file = INVALID_FHANDLE;
-    m_cue_file = INVALID_FHANDLE;
-    m_count = do_count ? count_start : -1;
-    m_keep_incomplete = keep_incomplete;
-    memset(&m_output_directory, 0, SR_MAX_PATH);
-    m_show_name[0] = 0;
-    m_do_show = do_show_file;
-    m_do_individual_tracks = do_individual_tracks;
+    fli->m_file = INVALID_FHANDLE;
+    fli->m_show_file = INVALID_FHANDLE;
+    fli->m_cue_file = INVALID_FHANDLE;
+    fli->m_count = do_count ? count_start : -1;
+    fli->m_keep_incomplete = keep_incomplete;
+    memset(&fli->m_output_directory, 0, SR_MAX_PATH);
+    fli->m_show_name[0] = 0;
+    fli->m_do_show = do_show_file;
+    fli->m_do_individual_tracks = do_individual_tracks;
+    fli->m_track_no = 1;
     
     debug_printf ("FILELIB_INIT: output_directory=%s\n",
 		  output_directory ? output_directory : "");
@@ -151,28 +135,28 @@ filelib_init (BOOL do_individual_tracks,
     mstring_from_string (tmp_showfile_pattern, SR_MAX_PATH, showfile_pattern, 
 			 CODESET_LOCALE);
     debug_printf ("converting icy_name\n");
-    mstring_from_string (m_icy_name, SR_MAX_PATH, icy_name, 
+    mstring_from_string (fli->m_icy_name, SR_MAX_PATH, icy_name, 
 			 CODESET_METADATA);
     debug_printf ("Converted output directory: len=%d\n", 
 		  mstrlen (tmp_output_directory));
-    mstrcpy (m_stripped_icy_name, m_icy_name);
+    mstrcpy (fli->m_stripped_icy_name, fli->m_icy_name);
     
     debug_printf ("Replacing invalid chars in stripped_icy_name\n");
-    replace_invalid_chars (m_stripped_icy_name);
+    replace_invalid_chars (fli->m_stripped_icy_name);
 
     switch (content_type) {
     case CONTENT_TYPE_MP3:
-	m_extension = m_(".mp3");
+	fli->m_extension = m_(".mp3");
 	break;
     case CONTENT_TYPE_NSV:
     case CONTENT_TYPE_ULTRAVOX:
-	m_extension = m_(".nsv");
+	fli->m_extension = m_(".nsv");
 	break;
     case CONTENT_TYPE_OGG:
-	m_extension = m_(".ogg");
+	fli->m_extension = m_(".ogg");
 	break;
     case CONTENT_TYPE_AAC:
-	m_extension = m_(".aac");
+	fli->m_extension = m_(".aac");
 	break;
     default:
 	fprintf (stderr, "Error (wrong suggested content type: %d)\n", 
@@ -181,155 +165,161 @@ filelib_init (BOOL do_individual_tracks,
     }
 
     /* Initialize session date */
-    fill_date_buf (m_session_datebuf, DATEBUF_LEN);
+    fill_date_buf (fli->m_session_datebuf, DATEBUF_LEN);
 
     /* Set up the proper pattern if we're using -q and -s flags */
-    set_default_pattern (get_separate_dirs, do_count);
+    set_default_pattern (rmi, get_separate_dirs, do_count);
 
     /* Get the path to the "parent" directory.  This is the directory
        that contains the incomplete dir and the show files.
        It might not contain the complete files if an output_pattern
        was specified. */
-    set_output_directory (m_output_directory,
-			  m_output_pattern,
+    set_output_directory (rmi, 
+			  fli->m_output_directory,
+			  fli->m_output_pattern,
 			  tmp_output_pattern,
 			  tmp_output_directory,
-			  m_default_pattern,
+			  fli->m_default_pattern,
 			  m_("%A - %T"),
 			  get_separate_dirs,
 			  get_date_stamp,
 			  0);
     debug_mprintf (m_("m_output_directory: ") m_S m_("\n"),
-		   m_output_directory);
+		   fli->m_output_directory);
     debug_mprintf (m_("m_output_pattern: ") m_S m_("\n"),
-		   m_output_pattern);
-    msnprintf (m_incomplete_directory, SR_MAX_PATH, m_S m_S m_C, 
-	       m_output_directory, m_("incomplete"), PATH_SLASH);
+		   fli->m_output_pattern);
+    msnprintf (fli->m_incomplete_directory, SR_MAX_PATH, m_S m_S m_C, 
+	       fli->m_output_directory, m_("incomplete"), PATH_SLASH);
 
     /* Recursively make the output directory & incomplete directory */
-    if (m_do_individual_tracks) {
+    if (fli->m_do_individual_tracks) {
 	debug_mprintf (m_("Trying to make output_directory: ") m_S m_("\n"), 
-		       m_output_directory);
-	mkdir_recursive (m_output_directory, 1);
+		       fli->m_output_directory);
+	mkdir_recursive (fli->m_output_directory, 1);
 
 	/* Next, make the incomplete directory */
-	if (m_do_individual_tracks) {
+	if (fli->m_do_individual_tracks) {
 	    debug_mprintf (m_("Trying to make incomplete_directory: ") 
-			   m_S m_("\n"), m_incomplete_directory);
-	    mkdir_if_needed (m_incomplete_directory);
+			   m_S m_("\n"), fli->m_incomplete_directory);
+	    mkdir_if_needed (fli->m_incomplete_directory);
 	}
     }
 
     /* Compute the amount of remaining path length for the filenames */
-    m_max_filename_length = SR_MAX_PATH - mstrlen(m_incomplete_directory);
+    fli->m_max_filename_length = SR_MAX_PATH - mstrlen(fli->m_incomplete_directory);
 
     /* Get directory and pattern of showfile */
     if (do_show_file) {
 	if (*tmp_showfile_pattern) {
-	    trim_mp3_suffix (tmp_showfile_pattern);
-	    if (mstrlen(m_show_name) > SR_MAX_PATH - 5) {
+	    trim_mp3_suffix (rmi, tmp_showfile_pattern);
+	    if (mstrlen(fli->m_show_name) > SR_MAX_PATH - 5) {
 		return SR_ERROR_DIR_PATH_TOO_LONG;
 	    }
 	}
-	set_output_directory (m_showfile_directory,
-			      m_showfile_pattern,
+	set_output_directory (rmi, 
+			      fli->m_showfile_directory,
+			      fli->m_showfile_pattern,
 			      tmp_showfile_pattern,
 			      tmp_output_directory,
-			      m_default_showfile_pattern,
+			      fli->m_default_showfile_pattern,
 			      m_(""),
 			      get_separate_dirs,
 			      get_date_stamp,
 			      1);
-	mkdir_recursive (m_showfile_directory, 1);
-	filelib_open_showfiles ();
+	mkdir_recursive (fli->m_showfile_directory, 1);
+	filelib_open_showfiles (rmi);
     }
 
     return SR_SUCCESS;
 }
 
 error_code
-filelib_start (TRACK_INFO* ti)
+filelib_start (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 {
+    FILELIB_INFO* fli = &rmi->filelib_info;
     mchar newfile[TEMP_STR_LEN];
     mchar fnbase[TEMP_STR_LEN];
     mchar fnbase1[TEMP_STR_LEN];
     mchar fnbase2[TEMP_STR_LEN];
 
-    if (!m_do_individual_tracks) return SR_SUCCESS;
+    if (!fli->m_do_individual_tracks) return SR_SUCCESS;
 
-    close_file(&m_file);
+    close_file (&fli->m_file);
 
     /* Compose and trim filename (not including directory) */
     msnprintf (fnbase1, TEMP_STR_LEN, m_S m_(" - ") m_S, 
 	       ti->artist, ti->title);
-    trim_filename (fnbase, fnbase1);
+    trim_filename (rmi, fnbase, fnbase1);
     msnprintf (newfile, TEMP_STR_LEN, m_S m_S m_S, 
-	       m_incomplete_directory, fnbase, m_extension);
-    if (m_keep_incomplete) {
+	       fli->m_incomplete_directory, fnbase, fli->m_extension);
+    if (fli->m_keep_incomplete) {
 	int n = 1;
 	mchar oldfile[TEMP_STR_LEN];
 	msnprintf (oldfile, TEMP_STR_LEN, m_S m_S m_S, 
-		   m_incomplete_directory, fnbase, m_extension);
+		   fli->m_incomplete_directory, fnbase, fli->m_extension);
 	mstrcpy (fnbase1, fnbase);
 	while (file_exists (oldfile)) {
 	    msnprintf (fnbase1, TEMP_STR_LEN, m_("(%d)") m_S, 
 		       n, fnbase);
-	    trim_filename (fnbase2, fnbase1);
+	    trim_filename (rmi, fnbase2, fnbase1);
 	    msnprintf (oldfile, TEMP_STR_LEN, m_S m_S m_S, 
-		       m_incomplete_directory,
-		       fnbase2, m_extension);
+		       fli->m_incomplete_directory,
+		       fnbase2, fli->m_extension);
 	    n++;
 	}
 	if (mstrcmp (newfile, oldfile) != 0) {
 	    move_file (oldfile, newfile);
 	}
     }
-    mstrcpy (m_incomplete_filename, newfile);
-    return filelib_open_for_write(&m_file, newfile);
+    mstrcpy (fli->m_incomplete_filename, newfile);
+    return filelib_open_for_write (&fli->m_file, newfile);
 }
 
 error_code
-filelib_write_cue (TRACK_INFO* ti, int secs)
+filelib_write_cue (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti, int secs)
 {
-    static int track_no = 1;
+    FILELIB_INFO* fli = &rmi->filelib_info;
     int rc;
     char buf1[MAX_TRACK_LEN];
     char buf2[MAX_TRACK_LEN];
 
-    if (!m_do_show) return SR_SUCCESS;
-    if (!m_cue_file) return SR_SUCCESS;
+    if (!fli->m_do_show) return SR_SUCCESS;
+    if (!fli->m_cue_file) return SR_SUCCESS;
 
-    rc = snprintf (buf2, MAX_TRACK_LEN, "  TRACK %02d AUDIO\n", track_no++);
-    filelib_write (m_cue_file, buf2, rc);
+    rc = snprintf (buf2, MAX_TRACK_LEN, "  TRACK %02d AUDIO\n", 
+		   fli->m_track_no++);
+    filelib_write (fli->m_cue_file, buf2, rc);
     string_from_mstring (buf1, MAX_TRACK_LEN, ti->title, CODESET_ID3);
     rc = snprintf (buf2, MAX_TRACK_LEN, "    TITLE \"%s\"\n", buf1);
-    filelib_write (m_cue_file, buf2, rc);
+    filelib_write (fli->m_cue_file, buf2, rc);
     string_from_mstring (buf1, MAX_TRACK_LEN, ti->artist, CODESET_ID3);
     rc = snprintf (buf2, MAX_TRACK_LEN, "    PERFORMER \"%s\"\n", buf1);
-    filelib_write (m_cue_file, buf2, rc);
+    filelib_write (fli->m_cue_file, buf2, rc);
     rc = snprintf (buf2, MAX_TRACK_LEN, "    INDEX 01 %02d:%02d:00\n", 
 		   secs / 60, secs % 60);
-    filelib_write (m_cue_file, buf2, rc);
+    filelib_write (fli->m_cue_file, buf2, rc);
 
     return SR_SUCCESS;
 }
 
 error_code
-filelib_write_track(char *buf, u_long size)
+filelib_write_track (RIP_MANAGER_INFO* rmi, char *buf, u_long size)
 {
-    return filelib_write (m_file, buf, size);
+    FILELIB_INFO* fli = &rmi->filelib_info;
+    return filelib_write (fli->m_file, buf, size);
 }
 
 error_code
-filelib_write_show(char *buf, u_long size)
+filelib_write_show (RIP_MANAGER_INFO* rmi, char *buf, u_long size)
 {
+    FILELIB_INFO* fli = &rmi->filelib_info;
     error_code rc;
-    if (!m_do_show) {
+    if (!fli->m_do_show) {
 	return SR_SUCCESS;
     }
-    rc = filelib_write (m_show_file, buf, size);
+    rc = filelib_write (fli->m_show_file, buf, size);
     if (rc != SR_SUCCESS) {
-	m_do_show = 0;
+	fli->m_do_show = 0;
     }
     return rc;
 }
@@ -337,21 +327,23 @@ filelib_write_show(char *buf, u_long size)
 // Moves the file from incomplete to complete directory
 // fullpath is an output parameter
 error_code
-filelib_end (TRACK_INFO* ti,
+filelib_end (RIP_MANAGER_INFO* rmi,
+	     TRACK_INFO* ti,
 	     enum OverwriteOpt overwrite,
 	     BOOL truncate_dup,
 	     mchar *fullpath)
 {
+    FILELIB_INFO* fli = &rmi->filelib_info;
     BOOL ok_to_write = TRUE;
     mchar newfile[TEMP_STR_LEN];
 
-    if (!m_do_individual_tracks) return SR_SUCCESS;
+    if (!fli->m_do_individual_tracks) return SR_SUCCESS;
 
-    close_file (&m_file);
+    close_file (&fli->m_file);
 
     /* Construct filename for completed file */
-    parse_and_subst_pat (newfile, ti, m_output_directory, 
-			 m_output_pattern, m_extension);
+    parse_and_subst_pat (rmi, newfile, ti, fli->m_output_directory, 
+			 fli->m_output_pattern, fli->m_extension);
 
     /* Build up the output directory */
     mkdir_recursive (newfile, 0);
@@ -371,7 +363,7 @@ filelib_end (TRACK_INFO* ti,
     case OVERWRITE_LARGER:
     default:
 	/* Smart overwriting -- only overwrite if new file is bigger */
-	ok_to_write = new_file_is_better (newfile, m_incomplete_filename);
+	ok_to_write = new_file_is_better (newfile, fli->m_incomplete_filename);
 	break;
     }
 
@@ -379,26 +371,25 @@ filelib_end (TRACK_INFO* ti,
 	if (file_exists (newfile)) {
 	    delete_file (newfile);
 	}
-	move_file (newfile, m_incomplete_filename);
+	move_file (newfile, fli->m_incomplete_filename);
     } else {
-	if (truncate_dup && file_exists (m_incomplete_filename)) {
-	    // TruncateFile(m_incomplete_filename);
-	    truncate_file (m_incomplete_filename);
+	if (truncate_dup && file_exists (fli->m_incomplete_filename)) {
+	    truncate_file (fli->m_incomplete_filename);
 	}
     }
 
     if (fullpath) {
 	mstrcpy (fullpath, newfile);
     }
-    if (m_count != -1)
-	m_count++;
+    if (fli->m_count != -1)
+	fli->m_count++;
     return SR_SUCCESS;
 }
 
 void
-filelib_shutdown()
+filelib_shutdown (RIP_MANAGER_INFO* rmi)
 {
-    close_files();
+    close_files (rmi);
 }
 
 
@@ -447,36 +438,40 @@ mkdir_recursive (mchar *str, int make_last)
    using the -q & -s flags.  This function cannot overflow 
    these static buffers. */
 static void
-set_default_pattern (BOOL get_separate_dirs, BOOL do_count)
+set_default_pattern (RIP_MANAGER_INFO* rmi, 
+		     BOOL get_separate_dirs, BOOL do_count)
 {
-    /* m_default_pattern */
-    m_default_pattern[0] = 0;
+    FILELIB_INFO* fli = &rmi->filelib_info;
+
+    /* Set up m_default_pattern */
+    fli->m_default_pattern[0] = 0;
     if (get_separate_dirs) {
-	mstrcpy (m_default_pattern, m_("%S") PATH_SLASH_STR);
+	mstrcpy (fli->m_default_pattern, m_("%S") PATH_SLASH_STR);
     }
     if (do_count) {
-	if (m_count < 0) {
-	    mstrncat (m_default_pattern, m_("%q_"), SR_MAX_PATH);
+	if (fli->m_count < 0) {
+	    mstrncat (fli->m_default_pattern, m_("%q_"), SR_MAX_PATH);
 	} else {
-	    msnprintf (&m_default_pattern[mstrlen(m_default_pattern)], 
-		       SR_MAX_PATH - mstrlen(m_default_pattern), 
-		       m_("%%%dq_"), m_count);
+	    msnprintf (&fli->m_default_pattern[mstrlen(fli->m_default_pattern)], 
+		       SR_MAX_PATH - mstrlen(fli->m_default_pattern), 
+		       m_("%%%dq_"), fli->m_count);
 	}
     }
-    mstrncat (m_default_pattern, m_("%A - %T"), SR_MAX_PATH);
+    mstrncat (fli->m_default_pattern, m_("%A - %T"), SR_MAX_PATH);
 
-    /* m_default_showfile_pattern */
-    m_default_showfile_pattern[0] = 0;
+    /* Set up m_default_showfile_pattern */
+    fli->m_default_showfile_pattern[0] = 0;
     if (get_separate_dirs) {
-	mstrcpy (m_default_showfile_pattern, m_("%S") PATH_SLASH_STR);
+	mstrcpy (fli->m_default_showfile_pattern, m_("%S") PATH_SLASH_STR);
     }
-    mstrncat (m_default_showfile_pattern, m_("sr_program_%d"), SR_MAX_PATH);
+    mstrncat (fli->m_default_showfile_pattern, m_("sr_program_%d"), SR_MAX_PATH);
 }
 
 /* This function sets the value of m_output_directory or 
    m_showfile_directory. */
 static error_code 
-set_output_directory (mchar* global_output_directory,
+set_output_directory (RIP_MANAGER_INFO* rmi, 
+		      mchar* global_output_directory,
 		      mchar* global_output_pattern,
 		      mchar* output_pattern,
 		      mchar* output_directory,
@@ -560,7 +555,7 @@ set_output_directory (mchar* global_output_directory,
     debug_printf ("Composed pattern head (%d) <- (%d,%d,%d)\n",
 		  mstrlen(pattern_head), mstrlen(device), 
 		  mstrlen(cwd_path), mstrlen(odir_path));
-    parse_and_subst_dir (pattern_head, pattern_tail, opat_path, 
+    parse_and_subst_dir (rmi, pattern_head, pattern_tail, opat_path, 
 			 is_for_showfile);
 
     /* In case there is no %A, no %T, etc., use the default pattern */
@@ -584,9 +579,11 @@ set_output_directory (mchar* global_output_directory,
    If there is no %A, no %T, etc.
 */
 static void
-parse_and_subst_dir (mchar* pattern_head, mchar* pattern_tail, 
+parse_and_subst_dir (RIP_MANAGER_INFO* rmi, 
+		     mchar* pattern_head, mchar* pattern_tail, 
 		     mchar* opat_path, int is_for_showfile)
 {
+    FILELIB_INFO* fli = &rmi->filelib_info;
     int opi = 0;
     unsigned int phi = 0;
     int ph_base_len;
@@ -626,14 +623,15 @@ parse_and_subst_dir (mchar* pattern_head, mchar* pattern_tail,
 	    continue;
 	case m_('S'):
 	    /* append stream name */
-	    mstrncpy (&pattern_head[phi], m_stripped_icy_name, 
+	    mstrncpy (&pattern_head[phi], fli->m_stripped_icy_name, 
 		      SR_MAX_BASE-phi);
 	    phi = mstrlen (pattern_head);
 	    opi+=2;
 	    continue;
 	case m_('d'):
 	    /* append date info */
-	    mstrncpy (&pattern_head[phi], m_session_datebuf, SR_MAX_BASE-phi);
+	    mstrncpy (&pattern_head[phi], fli->m_session_datebuf, 
+		      SR_MAX_BASE-phi);
 	    phi = mstrlen (pattern_head);
 	    opi+=2;
 	    continue;
@@ -744,11 +742,12 @@ close_file (FHANDLE* fp)
 }
 
 static void
-close_files()
+close_files (RIP_MANAGER_INFO* rmi)
 {
-    close_file (&m_file);
-    close_file (&m_show_file);
-    close_file (&m_cue_file);
+    FILELIB_INFO* fli = &rmi->filelib_info;
+    close_file (&fli->m_file);
+    close_file (&fli->m_show_file);
+    close_file (&fli->m_cue_file);
 }
 
 static BOOL
@@ -778,16 +777,17 @@ file_exists (mchar *filename)
 /* If (TRACK_INFO* ti) is NULL, that means we're being called for the 
    showfile, and therefore some parts don't apply */
 static void
-parse_and_subst_pat (mchar* newfile,
+parse_and_subst_pat (RIP_MANAGER_INFO* rmi,
+		     mchar* newfile,
 		     TRACK_INFO* ti,
 		     mchar* directory,
 		     mchar* pattern,
 		     mchar* extension)
 {
+    FILELIB_INFO* fli = &rmi->filelib_info;
     mchar stripped_artist[SR_MAX_PATH];
     mchar stripped_title[SR_MAX_PATH];
     mchar stripped_album[SR_MAX_PATH];
-#define DATEBUF_LEN 50
     mchar temp[DATEBUF_LEN];
     mchar datebuf[DATEBUF_LEN];
     int opi = 0;
@@ -835,13 +835,13 @@ parse_and_subst_pat (mchar* newfile,
 	case m_('S'):
 	    /* stream name */
 	    /* GCS FIX: Not sure here */
-	    mstrncat (newfile, m_icy_name, MAX_FILEBASELEN-nfi);
+	    mstrncat (newfile, fli->m_icy_name, MAX_FILEBASELEN-nfi);
 	    nfi = mstrlen (newfile);
 	    opi+=2;
 	    continue;
 	case m_('d'):
 	    /* append date info */
-	    mstrncat (newfile, m_session_datebuf, MAX_FILEBASELEN-nfi);
+	    mstrncat (newfile, fli->m_session_datebuf, MAX_FILEBASELEN-nfi);
 	    nfi = mstrlen (newfile);
 	    opi+=2;
 	    continue;
@@ -900,10 +900,10 @@ parse_and_subst_pat (mchar* newfile,
 		ascii_buf[ai] = 0;
 		/* If we got a q, get starting number */
 		if (pat[opi+1+ai] == m_('q')) {
-		    if (m_count == -1) {
-			m_count = mtol(ascii_buf);
+		    if (fli->m_count == -1) {
+			fli->m_count = mtol(ascii_buf);
 		    }
-		    msnprintf (temp, DATEBUF_LEN, m_("%04d"), m_count);
+		    msnprintf (temp, DATEBUF_LEN, m_("%04d"), fli->m_count);
 		    mstrncat (newfile, temp, MAX_FILEBASELEN-nfi);
 		    nfi = mstrlen (newfile);
 		    opi+=ai+2;
@@ -1102,47 +1102,48 @@ filelib_write (FHANDLE fp, char *buf, u_long size)
 }
 
 static error_code
-filelib_open_showfiles ()
+filelib_open_showfiles (RIP_MANAGER_INFO* rmi)
 {
+    FILELIB_INFO* fli = &rmi->filelib_info;
     int rc;
     mchar mcue_buf[1024];
     char cue_buf[1024];
     mchar* basename;
 
-    parse_and_subst_pat (m_show_name, 0, m_showfile_directory, 
-			 m_showfile_pattern, m_extension);
-    parse_and_subst_pat (m_cue_name, 0, m_showfile_directory, 
-			 m_showfile_pattern, 
+    parse_and_subst_pat (rmi, fli->m_show_name, 0, fli->m_showfile_directory, 
+			 fli->m_showfile_pattern, fli->m_extension);
+    parse_and_subst_pat (rmi, fli->m_cue_name, 0, fli->m_showfile_directory, 
+			 fli->m_showfile_pattern, 
 			 m_(".cue"));
 
-    rc = filelib_open_for_write (&m_cue_file, m_cue_name);
+    rc = filelib_open_for_write (&fli->m_cue_file, fli->m_cue_name);
     if (rc != SR_SUCCESS) {
-	m_do_show = 0;
+	fli->m_do_show = 0;
 	return rc;
     }
 
     /* Write cue header here */
     /* GCS Nov 29, 2007 - As suggested on the forum, the cue file
        should use relative path. */
-    basename = mstrrchr (m_show_name, PATH_SLASH);
+    basename = mstrrchr (fli->m_show_name, PATH_SLASH);
     if (basename) {
 	basename++;
     } else {
-	basename = m_show_name;
+	basename = fli->m_show_name;
     }
     debug_mprintf (m_("show_name: ") m_S m_(", basename: ") m_S m_("\n"),
-		   m_show_name, basename);
+		   fli->m_show_name, basename);
     rc = msnprintf (mcue_buf, 1024, m_("FILE \"") m_S m_("\" MP3\n"), 
 		    basename);
     rc = string_from_mstring (cue_buf, 1024, mcue_buf, CODESET_FILESYS);
-    rc = filelib_write (m_cue_file, cue_buf, rc);
+    rc = filelib_write (fli->m_cue_file, cue_buf, rc);
     if (rc != SR_SUCCESS) {
-	m_do_show = 0;
+	fli->m_do_show = 0;
 	return rc;
     }
-    rc = filelib_open_for_write (&m_show_file, m_show_name);
+    rc = filelib_open_for_write (&fli->m_show_file, fli->m_show_name);
     if (rc != SR_SUCCESS) {
-	m_do_show = 0;
+	fli->m_do_show = 0;
 	return rc;
     }
     return rc;
@@ -1150,21 +1151,23 @@ filelib_open_showfiles ()
 
 /* GCS: This should get only the name, not the directory */
 static void
-trim_filename (mchar* out, mchar *filename)
+trim_filename (RIP_MANAGER_INFO* rmi, mchar* out, mchar *filename)
 {
-    long maxlen = m_max_filename_length;
+    FILELIB_INFO* fli = &rmi->filelib_info;
+    long maxlen = fli->m_max_filename_length;
     mstrncpy (out, filename, MAX_TRACK_LEN);
     replace_invalid_chars (out);
     out[maxlen-4] = 0;	// -4 = make room for ".mp3"
 }
 
 static void
-trim_mp3_suffix (mchar *filename)
+trim_mp3_suffix (RIP_MANAGER_INFO* rmi, mchar *filename)
 {
+    FILELIB_INFO* fli = &rmi->filelib_info;
     mchar* suffix_ptr;
     if (mstrlen(filename) <= 4) return;
     suffix_ptr = filename + mstrlen(filename) - 4;  // -4 for ".mp3"
-    if (mstrcmp (suffix_ptr, m_extension) == 0) {
+    if (mstrcmp (suffix_ptr, fli->m_extension) == 0) {
 	*suffix_ptr = 0;
     }
 }

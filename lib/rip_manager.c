@@ -241,7 +241,7 @@ rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
 
     rmi->write_data = ti->save_track;
 
-    if (rmi->write_data && (ret = filelib_start (ti)) != SR_SUCCESS) {
+    if (rmi->write_data && (ret = filelib_start (rmi, ti)) != SR_SUCCESS) {
         return ret;
     }
 
@@ -268,7 +268,7 @@ rip_manager_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
     char fullpath[SR_MAX_PATH];
 
     if (rmi->write_data) {
-        filelib_end (ti, rmi->prefs->overwrite,
+        filelib_end (rmi, ti, rmi->prefs->overwrite,
 		     GET_TRUNCATE_DUPS(rmi->prefs->flags),
 		     mfullpath);
     }
@@ -287,7 +287,7 @@ rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
 
     if (GET_INDIVIDUAL_TRACKS(rmi->prefs->flags)) {
 	if (rmi->write_data) {
-	    ret = filelib_write_track(buf, size);
+	    ret = filelib_write_track (rmi, buf, size);
 	    if (ret != SR_SUCCESS) {
 		debug_printf ("filelib_write_track returned: %d\n",ret);
 		return ret;
@@ -421,7 +421,7 @@ ripthread (void *thread_arg)
 		    close_external (&rmi->ep);
 		}
 		relaylib_stop (rmi);
-		filelib_shutdown ();
+		filelib_shutdown (rmi);
 		ripstream_clear (rmi);
 		ret = start_ripping (rmi);
 		if (ret == SR_SUCCESS)
@@ -462,7 +462,7 @@ destroy_subsystems (RIP_MANAGER_INFO* rmi)
     /* GCS Feb 17,2008.  The socklib_cleanup() is done at program 
        shutdown, not rip_manager shutdown. */
     // socklib_cleanup();
-    filelib_shutdown();
+    filelib_shutdown (rmi);
 }
 
 static int
@@ -537,7 +537,8 @@ start_ripping (RIP_MANAGER_INFO* rmi)
 
     /* Initialize file writing code. */
     ret = filelib_init
-	    (GET_INDIVIDUAL_TRACKS(rmi->prefs->flags),
+	    (rmi, 
+	     GET_INDIVIDUAL_TRACKS(rmi->prefs->flags),
 	     GET_COUNT_FILES(rmi->prefs->flags),
 	     rmi->prefs->count_start,
 	     GET_KEEP_INCOMPLETE(rmi->prefs->flags),

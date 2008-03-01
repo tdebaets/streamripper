@@ -251,7 +251,7 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 	return ret;
     }
 
-    ret = filelib_write_show (rmi->getbuffer, rmi->getbuffer_size);
+    ret = filelib_write_show (rmi, rmi->getbuffer, rmi->getbuffer_size);
     if (ret != SR_SUCCESS) {
         debug_printf("filelib_write_show had bad return code: %d\n", ret);
         return ret;
@@ -296,7 +296,7 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 	    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
 	    return ret;
 	}
-	filelib_write_cue (&rmi->current_track, 0);
+	filelib_write_cue (rmi, &rmi->current_track, 0);
 	copy_track_info (&rmi->old_track, &rmi->current_track);
 
 	have_track = 1;
@@ -389,7 +389,7 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
 	return ret;
     }
 
-    ret = filelib_write_show (rmi->getbuffer, rmi->getbuffer_size);
+    ret = filelib_write_show (rmi, rmi->getbuffer, rmi->getbuffer_size);
     if (ret != SR_SUCCESS) {
         debug_printf("filelib_write_show had bad return code: %d\n", ret);
         return ret;
@@ -408,7 +408,7 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
 	    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
 	    return ret;
 	}
-	filelib_write_cue (&rmi->current_track, 0);
+	filelib_write_cue (rmi, &rmi->current_track, 0);
 	copy_track_info (&rmi->old_track, &rmi->current_track);
     }
 
@@ -629,7 +629,7 @@ start_track_mp3 (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 
     /* Dump to artist/title to cue sheet */
     secs = bytes_to_secs (rmi->cue_sheet_bytes, rmi->bitrate);
-    ret = filelib_write_cue (ti, secs);
+    ret = filelib_write_cue (rmi, ti, secs);
     if (ret != SR_SUCCESS)
         return ret;
 
