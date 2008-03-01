@@ -1,5 +1,6 @@
 New for 1.63-beta-5
 --------------
+* Remove global variables for stream data to allow multi-rip applications
 * Create a shared library, streamripper.dll, on windows which is shared 
   by streamripper.exe and wstreamripper.exe
 
