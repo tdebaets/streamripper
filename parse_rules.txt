@@ -14,6 +14,19 @@
 ##=====USER ADDED RULES=====
 ##===========================================================================
 
+# Rules can start with 'm' for match or 's' for substitute.
+# They can have the flags:
+#  e    -- drop metadata
+#  g    -- apply substitution globally
+#  i    -- ignore case
+#  s    -- save track
+#  x    -- exclude track
+#  A{n} -- match group N is the artist
+#  C{n} -- match group N is the album
+#  N{n} -- match group N is the track number
+#  T{n} -- match group N is the track title
+#  Y{n} -- match group N is the year
+
 # Ignore metadata that begins with "A suivre"
 # The leading "m" says this is a match rule
 # The trailing "e" means drop the metadata

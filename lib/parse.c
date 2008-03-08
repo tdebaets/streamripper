@@ -50,6 +50,7 @@ struct parse_rule {
     int title_idx;
     int album_idx;
     int trackno_idx;
+    int year_idx;
     regex_t* reg;
     mchar* match;
     mchar* subst;
@@ -59,7 +60,7 @@ typedef struct parse_rule Parse_Rule;
 static Parse_Rule m_default_rule_list[] = {
     { PARSERULE_CMD_MATCH, 
       PARSERULE_SKIP,
-      0, 0, 0, 0,
+      0, 0, 0, 0, 0,
       0, 
 #if defined HAVE_WCHAR_SUPPORT
       /* GCS FIX: L string literals are not good */
@@ -72,8 +73,8 @@ static Parse_Rule m_default_rule_list[] = {
     },
     { PARSERULE_CMD_SUBST, 
       PARSERULE_ICASE,
-      0, 0, 0, 0,
-      0, 
+      0, 0, 0, 0, 0,
+      0,
 #if defined HAVE_WCHAR_SUPPORT
       L"[[:space:]]*-?[[:space:]]*mp3pro$",
       L""
@@ -84,8 +85,8 @@ static Parse_Rule m_default_rule_list[] = {
     },
     { PARSERULE_CMD_MATCH, 
       PARSERULE_ICASE,
-      1, 2, 0, 0,
-      0, 
+      1, 2, 0, 0, 0,
+      0,
 #if defined HAVE_WCHAR_SUPPORT
       L"^[[:space:]]*([^-]*[^-[:space:]])[[:space:]]*-[[:space:]]*(.*)[[:space:]]*$",
       L""
@@ -96,8 +97,8 @@ static Parse_Rule m_default_rule_list[] = {
     },
     { 0x00, 
       0x00,
-      0, 0, 0, 0,
-      0, 
+      0, 0, 0, 0, 0,
+      0,
 #if defined HAVE_WCHAR_SUPPORT
       L"",
       L""
@@ -218,6 +219,9 @@ parse_flags (Parse_Rule* pr, char* flags)
 	    break;
 	case 'T':
 	    tag = &pr->title_idx;
+	    break;
+	case 'Y':
+	    tag = &pr->year_idx;
 	    break;
 	case 0:
 	case '\n':
@@ -519,14 +523,18 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 		copy_rule_result (ti->artist, query_string, pmatch, rulep->artist_idx);
 		copy_rule_result (ti->title, query_string, pmatch, rulep->title_idx);
 		copy_rule_result (ti->album, query_string, pmatch, rulep->album_idx);
+		copy_rule_result (ti->track, query_string, pmatch, rulep->trackno_idx);
+		copy_rule_result (ti->year, query_string, pmatch, rulep->year_idx);
 		ti->have_track_info = 1;
 		compose_metadata (ti);
-		/* GCS FIX: We don't have a track number. */
 		debug_mprintf (m_("Parsed track info.\n")
 			       m_("ARTIST: ") m_S m_("\n")
 			       m_("TITLE: ")  m_S m_("\n")
 			       m_("ALBUM: ")  m_S m_("\n"),
-			       ti->artist, ti->title, ti->album);
+			       m_("TRACK: ")  m_S m_("\n"),
+			       m_("YEAR: ")  m_S m_("\n"),
+			       ti->artist, ti->title, ti->album,
+                               ti->track, ti->year);
 		return;
 	    }
 	}

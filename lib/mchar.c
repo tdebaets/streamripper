@@ -320,13 +320,13 @@ int
 mstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen, 
 		     char* c, int codeset_type)
 {
-    CODESET_OPTIONS* mchar_cs = &rmi->mchar_cs;
     if (mlen < 0) return 0;
     *m = 0;
     if (!c) return 0;
 
 #if USE_GLIB_UTF8
     {
+	CODESET_OPTIONS* mchar_cs = &rmi->mchar_cs;
 	GError *error = NULL;
 	gchar* mstring;
 	char* tgt_codeset;

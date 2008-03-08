@@ -158,6 +158,8 @@ format_track_info (TRACK_INFO* ti, char* tag)
 		   m_("ARTIST: ") m_S m_("\n")
 		   m_("TITLE:  ") m_S m_("\n")
 		   m_("ALBUM:  ") m_S m_("\n")
+		   m_("TRACK:  ") m_S m_("\n")
+		   m_("YEAR:  ") m_S m_("\n")
 		   m_("SAVE:   %d\n"),
 		   tag,
 		   ti->have_track_info,
@@ -165,6 +167,8 @@ format_track_info (TRACK_INFO* ti, char* tag)
 		   ti->artist,
 		   ti->title,
 		   ti->album,
+                   ti->track,
+                   ti->year,
 		   ti->save_track);
 }
 
@@ -177,6 +181,7 @@ clear_track_info (TRACK_INFO* ti)
     ti->title[0] = 0;
     ti->album[0] = 0;
     ti->track[0] = 0;
+    ti->year[0] = 0;
     ti->composed_metadata[0] = 0;
     ti->save_track = TRUE;
 }
@@ -189,6 +194,8 @@ copy_track_info (TRACK_INFO* dest, TRACK_INFO* src)
     mstrcpy (dest->artist, src->artist);
     mstrcpy (dest->title, src->title);
     mstrcpy (dest->album, src->album);
+    mstrcpy (dest->track, src->track);
+    mstrcpy (dest->year, src->year);
     strcpy (dest->composed_metadata, src->composed_metadata);
     dest->save_track = src->save_track;
 }
@@ -377,6 +384,11 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
 	} else {
 	    clear_track_info (&rmi->current_track);
 	}
+    }
+
+    if (!rmi->current_track.track[0]) {
+        msnprintf (rmi->current_track.track, MAX_HEADER_LEN,
+		   m_("%d"), rmi->track_count + 1);
     }
 
     /* Copy the data into cbuffer */
@@ -591,6 +603,8 @@ end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, u_long pos2, TRACK_INFO* ti)
 			     ti->title, CODESET_ID3);
 	string_from_mstring (id3.album, sizeof(id3.album),
 			     ti->album, CODESET_ID3);
+	string_from_mstring (id3.year, sizeof(id3.year),
+			     ti->year, CODESET_ID3);
 	id3.genre = (char) 0xFF; // see http://www.id3.org/id3v2.3.0.html#secA
 	ret = rip_manager_put_data (rmi, (char *)&id3, sizeof(id3));
 	if (ret != SR_SUCCESS) {
@@ -612,10 +626,48 @@ end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, u_long pos2, TRACK_INFO* ti)
     return ret;
 }
 
+#define HEADER_SIZE 1600
+// Write data to a new frame, using tag_name e.g. TPE1, and increment
+// *sent with the number of bytes written
+static error_code
+write_id3v2_frame(RIP_MANAGER_INFO* rmi, char* tag_name, mchar* data,
+		  int charset, int *sent)
+{
+    int ret;
+    int rc;
+    char bigbuf[HEADER_SIZE] = "";
+    ID3V2frame id3v2frame;
+#ifndef WIN32
+    __uint32_t framesize = 0;
+#else
+    unsigned long int framesize = 0;
+#endif
+
+    memset(&id3v2frame, '\000', sizeof(id3v2frame));
+    strncpy(id3v2frame.id, tag_name, 4);
+    id3v2frame.pad[2] = charset;
+    rc = string_from_mstring (bigbuf, HEADER_SIZE, data, CODESET_ID3);
+    framesize = htonl (rc+1);
+    ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.id), 4);
+    if (ret != SR_SUCCESS) return ret;
+    *sent += 4;
+    ret = rip_manager_put_data (rmi, (char *)&(framesize),
+                                sizeof(framesize));
+    if (ret != SR_SUCCESS) return ret;
+    *sent += sizeof(framesize);
+    ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.pad), 3);
+    if (ret != SR_SUCCESS) return ret;
+    *sent += 3;
+    ret = rip_manager_put_data (rmi, bigbuf, rc);
+    if (ret != SR_SUCCESS) return ret;
+    *sent += rc;
+
+    return SR_SUCCESS;
+}
+
 static error_code
 start_track_mp3 (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 {
-#define HEADER_SIZE 1600
     int ret;
     int i;
     unsigned int secs;
@@ -635,17 +687,9 @@ start_track_mp3 (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 
     /* Oddsock's ID3 stuff, (oddsock@oddsock.org) */
     if (GET_ADD_ID3V2(rmi->prefs->flags)) {
-	int rc;
 	char bigbuf[HEADER_SIZE] = "";
 	int header_size = HEADER_SIZE;
 	char header1[6] = "ID3\x03\0\0";
-	ID3V2frame id3v2frame;
-	char comment[1024] = "Ripped with Streamripper";
-#ifndef WIN32
-        __uint32_t framesize = 0;
-#else
-	unsigned long int framesize = 0;
-#endif
 	int sent = 0;
 	int id3_charset;
 
@@ -665,83 +709,24 @@ start_track_mp3 (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 	   report ISO-8859-1 in the encoding field */
 	id3_charset = is_id3_unicode();
 
-	/* Write ID3V2 TPE1 frame (Lead performer) */
-	memset(&id3v2frame, '\000', sizeof(id3v2frame));
-	strncpy(id3v2frame.id, "TPE1", 4);
-	id3v2frame.pad[2] = id3_charset;
-	rc = string_from_mstring (bigbuf, HEADER_SIZE, ti->artist, 
-				  CODESET_ID3);
-	framesize = htonl (rc+1);
-	ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.id), 4);
-	if (ret != SR_SUCCESS) return ret;
-	sent += 4;
-	ret = rip_manager_put_data (rmi, (char *)&(framesize), 
-				    sizeof(framesize));
-	if (ret != SR_SUCCESS) return ret;
-	sent += sizeof(framesize);
-	ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.pad), 3);
-	if (ret != SR_SUCCESS) return ret;
-	sent += 3;
-	ret = rip_manager_put_data (rmi, bigbuf, rc);
-	if (ret != SR_SUCCESS) return ret;
-	sent += rc;
+	/* Lead performer */
+        ret = write_id3v2_frame(rmi, "TPE1", ti->artist, id3_charset, &sent);
 
-	/* Write ID3V2 TIT2 frame (Title) */
-	memset(&id3v2frame, '\000', sizeof(id3v2frame));
-	strncpy(id3v2frame.id, "TIT2", 4);
-	id3v2frame.pad[2] = id3_charset;
-	rc = string_from_mstring (bigbuf, HEADER_SIZE, ti->title, 
-				  CODESET_ID3);
-	framesize = htonl (rc+1);
-	ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.id), 4);
-	if (ret != SR_SUCCESS) return ret;
-	sent += 4;
-	ret = rip_manager_put_data (rmi, (char *)&(framesize), sizeof(framesize));
-	if (ret != SR_SUCCESS) return ret;
-	sent += sizeof(framesize);
-	ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.pad), 3);
-	if (ret != SR_SUCCESS) return ret;
-	sent += 3;
-	ret = rip_manager_put_data (rmi, bigbuf, rc);
-	if (ret != SR_SUCCESS) return ret;
-	sent += rc;
+        /* Title */
+        ret = write_id3v2_frame(rmi, "TIT2", ti->title, id3_charset, &sent);
 
-	/* Write ID3V2 TENC frame (Encoded by) */
-	memset(&id3v2frame, '\000', sizeof(id3v2frame));
-	strncpy(id3v2frame.id, "TENC", 4);
-	framesize = htonl(strlen(comment)+1);
-	ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.id), 4);
-	if (ret != SR_SUCCESS) return ret;
-	sent += 4;
-	ret = rip_manager_put_data (rmi, (char *)&(framesize), sizeof(framesize));
-	if (ret != SR_SUCCESS) return ret;
-	sent += sizeof(framesize);
-	ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.pad), 3);
-	if (ret != SR_SUCCESS) return ret;
-	sent += 3;
-	ret = rip_manager_put_data (rmi, comment, strlen(comment));
-	if (ret != SR_SUCCESS) return ret;
-	sent += strlen (comment);
+        /* Encoded by */
+        ret = write_id3v2_frame(rmi, "TENC",
+				m_("Ripped with Streamripper"), 0, &sent);
+	
+        /* Album */
+        ret = write_id3v2_frame(rmi, "TALB", ti->album, 0, &sent);
 
-	/* Write ID3V2 TALB frame (Album) */
-	memset(&id3v2frame, '\000', sizeof(id3v2frame));
-	strncpy(id3v2frame.id, "TALB", 4);
-	id3v2frame.pad[2] = id3_charset;
-	rc = string_from_mstring (bigbuf, HEADER_SIZE, ti->album, 
-				  CODESET_ID3);
-	framesize = htonl (rc+1);
-	ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.id), 4);
-	if (ret != SR_SUCCESS) return ret;
-	sent += 4;
-	ret = rip_manager_put_data (rmi, (char *)&(framesize), sizeof(framesize));
-	if (ret != SR_SUCCESS) return ret;
-	sent += sizeof(framesize);
-	ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.pad), 3);
-	if (ret != SR_SUCCESS) return ret;
-	sent += 3;
-	ret = rip_manager_put_data (rmi, bigbuf, rc);
-	if (ret != SR_SUCCESS) return ret;
-	sent += rc;
+        /* Track */
+        ret = write_id3v2_frame(rmi, "TRCK", ti->track, 0, &sent);
+
+        /* Year */
+        ret = write_id3v2_frame(rmi, "TYER", ti->year, 0, &sent);
 
 	/* Zero out padding */
 	memset (bigbuf, '\000', sizeof(bigbuf));
