@@ -370,10 +370,10 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
     if (rmi->ep) {
 	/* If getting metadata from external process, check for update */
 	clear_track_info (&rmi->current_track);
-	read_external (rmi->ep, &rmi->current_track);
+	read_external (rmi, rmi->ep, &rmi->current_track);
     } else {
 	if (rmi->current_track.raw_metadata[0]) {
-	    parse_metadata (&rmi->current_track);
+	    parse_metadata (rmi, &rmi->current_track);
 	} else {
 	    clear_track_info (&rmi->current_track);
 	}

@@ -118,7 +118,8 @@ static void warn(char *format, ...)
 
 /* Return 1 if the page is a header page */
 static int
-vorbis_process (stream_processor *stream, ogg_page *page, TRACK_INFO* ti)
+vorbis_process (RIP_MANAGER_INFO* rmi, stream_processor *stream, 
+		ogg_page *page, TRACK_INFO* ti)
 {
     ogg_packet packet;
     misc_vorbis_info *inf = stream->data;
@@ -336,14 +337,15 @@ vorbis_process (stream_processor *stream, ogg_page *page, TRACK_INFO* ti)
 			    || !strcmp(inf->vc.user_comments[i],"Artist")) {
 			    /* GCS FIX: This is a bit funky, maybe I need 
 			       to get rid of the ogg built-in utf8 decoder */
-			    mstring_from_string (ti->artist, MAX_TRACK_LEN, 
+			    mstring_from_string (rmi, ti->artist, 
+						 MAX_TRACK_LEN, 
 						 decoded, CODESET_LOCALE);
 			} else if (!strcmp(inf->vc.user_comments[i],"title")
 				   || !strcmp(inf->vc.user_comments[i],"TITLE")
 				   || !strcmp(inf->vc.user_comments[i],"Title")) {
 			    /* GCS FIX: This is a bit funky, maybe I need 
 			       to get rid of the ogg built-in utf8 decoder */
-			    mstring_from_string (ti->title, MAX_TRACK_LEN, 
+			    mstring_from_string (rmi, ti->title, MAX_TRACK_LEN, 
 						 decoded, CODESET_LOCALE);
 			    ti->have_track_info = 1;
 			} else if (!strcmp(inf->vc.user_comments[i],"album")
@@ -351,14 +353,14 @@ vorbis_process (stream_processor *stream, ogg_page *page, TRACK_INFO* ti)
 				   || !strcmp(inf->vc.user_comments[i],"Album")) {
 			    /* GCS FIX: This is a bit funky, maybe I need 
 			       to get rid of the ogg built-in utf8 decoder */
-			    mstring_from_string (ti->album, MAX_TRACK_LEN, 
+			    mstring_from_string (rmi, ti->album, MAX_TRACK_LEN, 
 						 decoded, CODESET_LOCALE);
 			} else if (!strcmp(inf->vc.user_comments[i],"tracknumber")
 				   || !strcmp(inf->vc.user_comments[i],"TRACKNUMBER")
 				   || !strcmp(inf->vc.user_comments[i],"Tracknumber")) {
 			    /* GCS FIX: This is a bit funky, maybe I need 
 			       to get rid of the ogg built-in utf8 decoder */
-			    mstring_from_string (ti->track, MAX_TRACK_LEN, 
+			    mstring_from_string (rmi, ti->track, MAX_TRACK_LEN, 
 						 decoded, CODESET_LOCALE);
 			}
                         free(decoded);
@@ -430,7 +432,6 @@ vorbis_start(stream_processor *stream)
     misc_vorbis_info *info;
 
     stream->type = "vorbis";
-    stream->process_page = vorbis_process;
     stream->process_end = vorbis_end;
 
     stream->data = calloc(1, sizeof(misc_vorbis_info));
@@ -493,7 +494,7 @@ rip_ogg_process_chunk (RIP_MANAGER_INFO* rmi,
 		    vorbis_start (&rmi->stream);
 		}
 	    }
-	    header = vorbis_process (&rmi->stream, &rmi->ogg_pg, ti);
+	    header = vorbis_process (rmi, &rmi->stream, &rmi->ogg_pg, ti);
 	    if (ogg_page_eos (&rmi->ogg_pg)) {
 		vorbis_end (&rmi->stream);
 	    }

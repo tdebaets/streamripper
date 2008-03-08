@@ -85,23 +85,24 @@ rip_manager_init (void)
 
 /* Create a RMI structure and start the ripping thread */
 error_code
-rip_manager_start (RIP_MANAGER_INFO **rmi,
+rip_manager_start (RIP_MANAGER_INFO **rmip,
 		   STREAM_PREFS *prefs,
 		   RIP_MANAGER_CALLBACK status_callback)
 {
+    RIP_MANAGER_INFO* rmi;
     int rc;
 
-    if (!prefs || !rmi) {
+    if (!prefs || !rmip) {
 	return SR_ERROR_INVALID_PARAM;
     }
 
-    *rmi = (RIP_MANAGER_INFO*) malloc (sizeof(RIP_MANAGER_INFO));
-    memset ((*rmi), 0, sizeof(RIP_MANAGER_INFO));
-    (*rmi)->prefs = prefs;
+    rmi = (*rmip) = (RIP_MANAGER_INFO*) malloc (sizeof(RIP_MANAGER_INFO));
+    memset (rmi, 0, sizeof(RIP_MANAGER_INFO));
+    rmi->prefs = prefs;
 
-    (*rmi)->started_sem = threadlib_create_sem();
+    rmi->started_sem = threadlib_create_sem();
 
-    register_codesets (&prefs->cs_opt);
+    register_codesets (rmi, &prefs->cs_opt);
 
     /* From select() man page:
        On systems that lack pselect() reliable (and more
@@ -110,25 +111,24 @@ rip_manager_start (RIP_MANAGER_INFO **rmi,
        itored by select() in the main program.
     */
 #if __UNIX__
-    rc = pipe ((*rmi)->abort_pipe);
+    rc = pipe (rmi->abort_pipe);
     if (rc != 0) {
 	return SR_ERROR_CREATE_PIPE_FAILED;
     }
 #endif
 
-    (*rmi)->status_callback = status_callback;
-    (*rmi)->bytes_ripped = 0;
-    (*rmi)->write_data = 1;
+    rmi->status_callback = status_callback;
+    rmi->bytes_ripped = 0;
+    rmi->write_data = 1;
 
     /* Initialize the parsing rules */
-    init_metadata_parser (prefs->rules_file);
-
+    init_metadata_parser (rmi, prefs->rules_file);
 
     /* Start the ripping thread */
-    debug_printf ("Pre ripthread: %s\n", (*rmi)->prefs->url);
-    (*rmi)->started = 1;
-    return threadlib_beginthread (&(*rmi)->hthread_ripper, 
-				  ripthread, (void*) (*rmi));
+    debug_printf ("Pre ripthread: %s\n", rmi->prefs->url);
+    rmi->started = 1;
+    return threadlib_beginthread (&rmi->hthread_ripper, 
+				  ripthread, (void*) rmi);
 }
 
 void

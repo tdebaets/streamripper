@@ -274,7 +274,7 @@ parse_escaped_string (char* outbuf, char* inbuf)
 /* This mega-function reads in the rules file, and loads 
     all the rules into the m_global_rules_list data structure */
 void
-init_metadata_parser (char* rules_file)
+init_metadata_parser (RIP_MANAGER_INFO* rmi, char* rules_file)
 {
     FILE* fp;
     int ri;     /* Rule index */
@@ -382,7 +382,7 @@ init_metadata_parser (char* rules_file)
 
 	/* Compile the rule */
 	debug_printf ("Compiling the rule\n");
-	mstring_from_string (w_match_buf, MAX_RULE_SIZE, match_buf, 
+	mstring_from_string (rmi, w_match_buf, MAX_RULE_SIZE, match_buf, 
 			     CODESET_UTF8);
 	if (!compile_rule(&m_global_rule_list[ri], w_match_buf)) {
 	    printf ("Warning: malformed regular expression:\n%s\n", 
@@ -397,7 +397,7 @@ init_metadata_parser (char* rules_file)
 	debug_printf ("Copying rule string (2)\n");
 	if (m_global_rule_list[ri].cmd == PARSERULE_CMD_SUBST) {
 	    debug_printf ("Copying rule string (3)\n");
-	    mstring_from_string (w_subst_buf, MAX_RULE_SIZE, subst_buf, 
+	    mstring_from_string (rmi, w_subst_buf, MAX_RULE_SIZE, subst_buf, 
 				 CODESET_UTF8);
 	    debug_printf ("Copying rule string (4)\n");
 	    m_global_rule_list[ri].subst = mstrdup(w_subst_buf);
@@ -441,7 +441,7 @@ compose_metadata (TRACK_INFO* ti)
 }
 
 void
-parse_metadata (TRACK_INFO* ti)
+parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 {
     int eflags;
     int rc;
@@ -469,7 +469,7 @@ parse_metadata (TRACK_INFO* ti)
     /* For now, only default rules supported with ascii 
        regular expressions. */
     debug_printf ("Converting query string to wide\n");
-    mstring_from_string (query_string, MAX_TRACK_LEN, 
+    mstring_from_string (rmi, query_string, MAX_TRACK_LEN, 
 			 ti->raw_metadata, CODESET_METADATA);
     for (rulep = m_global_rule_list; rulep->cmd; rulep++) {
 	regmatch_t pmatch[MAX_SUBMATCHES+1];

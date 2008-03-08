@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "compat.h"
 #include "srtypes.h"
 #include "socklib.h"
@@ -35,6 +36,8 @@ http_get_m3u (RIP_MANAGER_INFO* rmi, HSOCKET *sock, SR_HTTP_HEADER *info);
 static error_code
 http_get_sc_header(RIP_MANAGER_INFO* rmi, const char* url, 
 		   HSOCKET *sock, SR_HTTP_HEADER *info);
+static error_code
+http_parse_url(const char *url, URLINFO *urlinfo);
 
 /******************************************************************************
  * Private Vars
@@ -105,34 +108,58 @@ http_sc_connect (RIP_MANAGER_INFO* rmi,
 /******************************************************************************
  * Private functions
  *****************************************************************************/
+/* See http://www.ietf.org/rfc/rfc3986.txt */
+static void
+unescape_pct_encoding (char* s)
+{
+    char* d = s;
+    char c[3];
+
+    while (*s) {
+	if (*s == '%' && isxdigit(*(s+1)) && isxdigit(*(s+2))) {
+	    c[0] = *(s+1);
+	    c[1] = *(s+2);
+	    c[2] = 0;
+	    *d++ = strtol (c, 0, 16);
+	    s += 3;
+	} else {
+	    *d++ = *s++;
+	}
+    }
+    *d = 0;
+}
+
 /*
  * Parse's a url as in http://host:port/path or host/path, etc..
  * and now http://username:password@server:4480
  */
-error_code
+static error_code
 http_parse_url(const char *url, URLINFO *urlinfo)
 { 
-    /* see if we have a proto */
-    char *s = strstr(url, "://");
     int ret;
+    char *s;
 
     /* if we have a proto, just skip it. should we care about 
        the proto? like fail if it's not http? */
+    s = strstr(url, "://");
     if (s) url = s + strlen("://");
     memcpy(urlinfo->path, (void *)"/\0", 2);
 
     /* search for a login '@' token */
     if (strchr(url, '@') != NULL) {
 	ret = sscanf(url, "%[^:]:%[^@]", urlinfo->username, urlinfo->password);
-#if defined (commentout)
-	if (ret < 2) return SR_ERROR_PARSE_FAILURE;
-#endif
 	if (ret < 1) {
 	    return SR_ERROR_PARSE_FAILURE;
 	} else if (ret == 1) {
 	    urlinfo->password[0] = '\0';
 	}
 	url = strchr(url, '@') + 1;
+	debug_printf ("Username (escaped): %s\n", urlinfo->username);
+	debug_printf ("Password (escaped): %s\n", urlinfo->password);
+	unescape_pct_encoding (urlinfo->username);
+	unescape_pct_encoding (urlinfo->password);
+	debug_printf ("Username (unescaped): %s\n", urlinfo->username);
+	debug_printf ("Password (unescaped): %s\n", urlinfo->password);
     } else {
 	urlinfo->username[0] = '\0';
 	urlinfo->password[0] = '\0';

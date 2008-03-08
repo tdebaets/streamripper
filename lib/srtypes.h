@@ -17,6 +17,12 @@
 #ifndef __SRTYPES_H__
 #define __SRTYPES_H__
 
+//#define USE_GLIB_UTF8 
+
+#if (USE_GLIB_UTF8)
+#include <glib.h>
+#endif
+
 /******************************************************************************
  * Types
  *****************************************************************************/
@@ -68,8 +74,10 @@ typedef unsigned int uint32_t;
 #endif
 
 #define BOOL	int
+#ifndef TRUE
 #define TRUE	1
 #define FALSE	0
+#endif
 
 #define NO_META_INTERVAL	-1
 
@@ -191,7 +199,9 @@ typedef struct CODESET_OPTIONSst
 /* 
  * Wide character support
  */
-#if HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+typedef gchar mchar;
+#elif HAVE_WCHAR_SUPPORT
 typedef wchar_t mchar;
 #else
 typedef char mchar;
@@ -334,7 +344,6 @@ struct RELAY_LIST_struct
 
 #if (HAVE_OGG_VORBIS)
 typedef struct _stream_processor {
-    int (*process_page)(struct _stream_processor *, ogg_page *, TRACK_INFO*);
     void (*process_end)(struct _stream_processor *);
     int isillegal;
     int constraint_violated;
@@ -579,8 +588,8 @@ struct RIP_MANAGER_INFOst
     int ogg_curr_header_len;
 #endif
 
-    
-
+    /* Mchar codesets -- these shadow prefs codesets */
+    CODESET_OPTIONS mchar_cs;
 };
 
 

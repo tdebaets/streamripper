@@ -59,8 +59,9 @@ alloc_ep (void)
     return ep;
 }
 
-int
-parse_external_byte (External_Process* ep, TRACK_INFO* ti, char c)
+static int
+parse_external_byte (RIP_MANAGER_INFO* rmi, External_Process* ep, 
+		     TRACK_INFO* ti, char c)
 {
     int got_metadata = 0;
 
@@ -73,11 +74,11 @@ parse_external_byte (External_Process* ep, TRACK_INFO* ti, char c)
 	if (!strcmp (".",ep->line_buf)) {
 	    /* Found end of record! */
 	    mchar w_raw_metadata[MAX_TRACK_LEN];
-	    mstring_from_string (ti->artist, MAX_TRACK_LEN, ep->artist_buf,
+	    mstring_from_string (rmi, ti->artist, MAX_TRACK_LEN, ep->artist_buf,
 				 CODESET_METADATA);
-	    mstring_from_string (ti->album, MAX_TRACK_LEN, ep->album_buf,
+	    mstring_from_string (rmi, ti->album, MAX_TRACK_LEN, ep->album_buf,
 				 CODESET_METADATA);
-	    mstring_from_string (ti->title, MAX_TRACK_LEN, ep->title_buf,
+	    mstring_from_string (rmi, ti->title, MAX_TRACK_LEN, ep->title_buf,
 				 CODESET_METADATA);
 	    /* GCS FIX - this is not quite right */
 	    msnprintf (w_raw_metadata, MAX_EXT_LINE_LEN, m_S m_(" - ") m_S,
@@ -193,7 +194,7 @@ spawn_external (char* cmd)
 }
  
 int
-read_external (External_Process* ep, TRACK_INFO* ti)
+read_external (RIP_MANAGER_INFO* rmi, External_Process* ep, TRACK_INFO* ti)
 {
     char c;
     int rc;
@@ -223,7 +224,7 @@ read_external (External_Process* ep, TRACK_INFO* ti)
 	rc = ReadFile (ep->mypipe, &c, 1, &num_read, NULL);
 	if (rc > 0 && num_read > 0) {
 	    int got_meta_byte;
-	    got_meta_byte = parse_external_byte (ep, ti, c);
+	    got_meta_byte = parse_external_byte (rmi, ep, ti, c);
 	    if (got_meta_byte) {
 		got_metadata = 1;
 	    }
@@ -312,7 +313,7 @@ spawn_external (char* cmd)
 }
 
 int
-read_external (External_Process* ep, TRACK_INFO* ti)
+read_external (RIP_MANAGER_INFO* rmi, External_Process* ep, TRACK_INFO* ti)
 {
     char c;
     int rc;
@@ -324,7 +325,7 @@ read_external (External_Process* ep, TRACK_INFO* ti)
 	rc = read (ep->mypipe[0],&c,1);
 	if (rc > 0) {
 	    int got_meta_byte;
-	    got_meta_byte = parse_external_byte (ep, ti, c);
+	    got_meta_byte = parse_external_byte (rmi, ep, ti, c);
 	    if (got_meta_byte) {
 		got_metadata = 1;
 	    }

@@ -20,7 +20,7 @@
 #include "srtypes.h"
 
 External_Process* spawn_external (char* cmd);
-int read_external (External_Process* ep, TRACK_INFO* ti);
+int read_external (RIP_MANAGER_INFO* rmi, External_Process* ep, TRACK_INFO* ti);
 void close_external (External_Process** epp);
 
 #endif

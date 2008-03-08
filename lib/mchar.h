@@ -3,7 +3,13 @@
 
 #include "srtypes.h"
 
-#if HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+#define m_(x) x
+#define m_S "%s"
+#define m_C "%c"
+#define m_s "%s"
+#define m_c "%c"
+#elif HAVE_WCHAR_SUPPORT
 #define m_(x) L##x
 #if defined (WIN32)
 #define m_S L"%s"
@@ -30,12 +36,11 @@ char *format_byte_size(char *str, long size);
 void trim(char *str);
 void sr_strncpy(char* dst, char* src, int n);
 
-//void initialize_default_locale (CODESET_OPTIONS* cs_opt);
-//void set_codeset (char* codeset_type, const char* codeset);
 void set_codesets_default (CODESET_OPTIONS* cs_opt);
-void register_codesets (CODESET_OPTIONS* cs_opt);
+void register_codesets (RIP_MANAGER_INFO* rmi, CODESET_OPTIONS* cs_opt);
 
-int mstring_from_string (mchar* m, int mlen, char* c, int codeset_type);
+int mstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen, 
+			 char* c, int codeset_type);
 int string_from_mstring (char* c, int clen, mchar* m, int codeset_type);
 
 mchar* mstrdup (mchar* src);

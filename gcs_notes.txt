@@ -1,3 +1,5 @@
+-- March 1 is the last version before glib utf8 conversion --
+
 Remaining statics:
 mchar global codesets
 parse global rules

@@ -72,10 +72,11 @@ set_output_directory (RIP_MANAGER_INFO* rmi,
 		      int get_date_stamp,
 		      int is_for_showfile
 		      );
-static error_code sr_getcwd (mchar* dirbuf);
+static error_code sr_getcwd (RIP_MANAGER_INFO* rmi, mchar* dirbuf);
 static error_code add_trailing_slash (mchar *str);
 static int get_next_sequence_number (mchar* fn_base);
-static void fill_date_buf (mchar* datebuf, int datebuf_len);
+static void fill_date_buf (RIP_MANAGER_INFO* rmi, mchar* datebuf, 
+			   int datebuf_len);
 static error_code filelib_open_showfiles (RIP_MANAGER_INFO* rmi);
 static void move_file (mchar* new_filename, mchar* old_filename);
 static mchar* replace_invalid_chars (mchar *str);
@@ -126,16 +127,16 @@ filelib_init (RIP_MANAGER_INFO* rmi,
 		  showfile_pattern ? showfile_pattern : "");
     
     debug_printf ("converting output_directory\n");
-    mstring_from_string (tmp_output_directory, SR_MAX_PATH, output_directory, 
-			 CODESET_LOCALE);
+    mstring_from_string (rmi, tmp_output_directory, SR_MAX_PATH, 
+			 output_directory, CODESET_LOCALE);
     debug_printf ("converting output_pattern\n");
-    mstring_from_string (tmp_output_pattern, SR_MAX_PATH, output_pattern, 
-			 CODESET_LOCALE);
+    mstring_from_string (rmi, tmp_output_pattern, SR_MAX_PATH, 
+			 output_pattern, CODESET_LOCALE);
     debug_printf ("converting showfile_pattern\n");
-    mstring_from_string (tmp_showfile_pattern, SR_MAX_PATH, showfile_pattern, 
-			 CODESET_LOCALE);
+    mstring_from_string (rmi, tmp_showfile_pattern, SR_MAX_PATH, 
+			 showfile_pattern, CODESET_LOCALE);
     debug_printf ("converting icy_name\n");
-    mstring_from_string (fli->m_icy_name, SR_MAX_PATH, icy_name, 
+    mstring_from_string (rmi, fli->m_icy_name, SR_MAX_PATH, icy_name, 
 			 CODESET_METADATA);
     debug_printf ("Converted output directory: len=%d\n", 
 		  mstrlen (tmp_output_directory));
@@ -165,7 +166,7 @@ filelib_init (RIP_MANAGER_INFO* rmi,
     }
 
     /* Initialize session date */
-    fill_date_buf (fli->m_session_datebuf, DATEBUF_LEN);
+    fill_date_buf (rmi, fli->m_session_datebuf, DATEBUF_LEN);
 
     /* Set up the proper pattern if we're using -q and -s flags */
     set_default_pattern (rmi, get_separate_dirs, do_count);
@@ -501,7 +502,7 @@ set_output_directory (RIP_MANAGER_INFO* rmi,
     opat_device[0] = 0;
     odir_path[0] = 0;
     opat_path[0] = 0;
-    ret = sr_getcwd (cwd);
+    ret = sr_getcwd (rmi, cwd);
     if (ret != SR_SUCCESS) return ret;
 
     if (!output_pattern || !(*output_pattern)) {
@@ -668,12 +669,12 @@ parse_and_subst_dir (RIP_MANAGER_INFO* rmi,
 }
 
 static void
-fill_date_buf (mchar* datebuf, int datebuf_len)
+fill_date_buf (RIP_MANAGER_INFO* rmi, mchar* datebuf, int datebuf_len)
 {
     char tmp[DATEBUF_LEN];
     time_t now = time(NULL);
     strftime (tmp, datebuf_len, "%Y_%m_%d_%H_%M_%S", localtime(&now));
-    mstring_from_string (datebuf, DATEBUF_LEN, tmp, CODESET_FILESYS);
+    mstring_from_string (rmi, datebuf, DATEBUF_LEN, tmp, CODESET_FILESYS);
 }
 
 static error_code
@@ -710,7 +711,7 @@ device_split (mchar* dirname,
 }
 
 static error_code 
-sr_getcwd (mchar* dirbuf)
+sr_getcwd (RIP_MANAGER_INFO* rmi, mchar* dirbuf)
 {
     char db[SR_MAX_PATH];
 #if defined (WIN32)
@@ -724,7 +725,7 @@ sr_getcwd (mchar* dirbuf)
 	return SR_ERROR_DIR_PATH_TOO_LONG;
     }
 #endif
-    mstring_from_string (dirbuf, SR_MAX_PATH, db, CODESET_FILESYS);
+    mstring_from_string (rmi, dirbuf, SR_MAX_PATH, db, CODESET_FILESYS);
     return SR_SUCCESS;
 }
 
@@ -847,7 +848,7 @@ parse_and_subst_pat (RIP_MANAGER_INFO* rmi,
 	    continue;
 	case m_('D'):
 	    /* current timestamp */
-	    fill_date_buf (datebuf, DATEBUF_LEN);
+	    fill_date_buf (rmi, datebuf, DATEBUF_LEN);
 	    mstrncat (newfile, datebuf, MAX_FILEBASELEN-nfi);
 	    nfi = mstrlen (newfile);
 	    opi+=2;

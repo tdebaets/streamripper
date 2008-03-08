@@ -70,7 +70,6 @@
  *****************************************************************************/
 char	*left_str(char *str, int len);
 char	*subnstr_until(const char *str, char *until, char *newstr, int maxlen);
-// char	*strip_invalid_chars(char *str);
 char	*format_byte_size(char *str, long size);
 void	trim(char *str);
 
@@ -314,13 +313,57 @@ wchar_from_char (char c, const char* codeset)
 /* Input value mlen is measured in mchar, not bytes.
    Return value is the number of mchar occupied by the converted string, 
    not including the null character. */
+/* For GLIB UTF8, it makes more sense to return the dynamically allocated 
+   string, and pass in the codeset string itself rather than 
+   rmi & codeset type. */
 int
-mstring_from_string (mchar* m, int mlen, char* c, int codeset_type)
+mstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen, 
+		     char* c, int codeset_type)
 {
+    CODESET_OPTIONS* mchar_cs = &rmi->mchar_cs;
     if (mlen < 0) return 0;
     *m = 0;
     if (!c) return 0;
-#if defined (HAVE_WCHAR_SUPPORT)
+
+#if USE_GLIB_UTF8
+    {
+	GError *error = NULL;
+	gchar* mstring;
+	char* tgt_codeset;
+	
+	switch (codeset_type) {
+	case CODESET_UTF8:
+	    tgt_codeset = "UTF-8";
+	    break;
+	case CODESET_LOCALE:
+	    tgt_codeset = mchar_cs->codeset_locale;
+	    break;
+	case CODESET_FILESYS:
+	    tgt_codeset = mchar_cs->codeset_filesys;
+	    break;
+	case CODESET_ID3:
+	    tgt_codeset = mchar_cs->codeset_id3;
+	    break;
+	case CODESET_METADATA:
+	    tgt_codeset = mchar_cs->codeset_metadata;
+	    break;
+	case CODESET_RELAY:
+	    tgt_codeset = mchar_cs->codeset_relay;
+	    break;
+	default:
+	    printf ("Program error.  Bad codeset m->c (%d)\n", codeset_type);
+	    exit (-1);
+	}
+	mstring = g_convert_with_fallback 
+		(c, -1, "UTF-8", tgt_codeset, "?", 0, &mlen, &error);
+	if (error) {
+	    debug_printf ("Error converting mstring_from_string\n");
+	    g_free (mstring);
+	    return;
+	}
+	g_ kkk
+    }
+#elif HAVE_WCHAR_SUPPORT
     switch (codeset_type) {
     case CODESET_UTF8:
 	return wstring_from_string (m, mlen, c, "UTF-8");
@@ -484,10 +527,11 @@ set_codesets_default (CODESET_OPTIONS* cs_opt)
     
 }
 
-/* This sets the global variables (ugh) */
 void
-register_codesets (CODESET_OPTIONS* cs_opt)
+register_codesets (RIP_MANAGER_INFO* rmi, CODESET_OPTIONS* cs_opt)
 {
+    CODESET_OPTIONS* mchar_cs = &rmi->mchar_cs;
+
     /* For ID3, force UCS-2, UCS-2LE, UCS-2BE, UTF-16LE, and UTF-16BE 
        to be UTF-16.  This way, we get the BOM like we need.
        This might change if we upgrade to id3v2.4, which allows 
@@ -497,18 +541,16 @@ register_codesets (CODESET_OPTIONS* cs_opt)
 	strcpy (cs_opt->codeset_id3, "UTF-16");
     }
 
-    m_codeset_locale = cs_opt->codeset_locale;
-    m_codeset_filesys = cs_opt->codeset_filesys;
-    m_codeset_id3 = cs_opt->codeset_id3;
-    m_codeset_metadata = cs_opt->codeset_metadata;
-    m_codeset_relay = cs_opt->codeset_relay;
-    debug_printf ("Locale codeset: %s\n", m_codeset_locale);
-    debug_printf ("Filesys codeset: %s\n", m_codeset_filesys);
-    debug_printf ("ID3 codeset: %s\n", m_codeset_id3);
-    debug_printf ("Metadata codeset: %s\n", m_codeset_metadata);
-    debug_printf ("Relay codeset: %s\n", m_codeset_relay);
-
-
+    strcpy (mchar_cs->codeset_locale, cs_opt->codeset_locale);
+    strcpy (mchar_cs->codeset_filesys, cs_opt->codeset_filesys);
+    strcpy (mchar_cs->codeset_id3, cs_opt->codeset_id3);
+    strcpy (mchar_cs->codeset_metadata, cs_opt->codeset_metadata);
+    strcpy (mchar_cs->codeset_relay, cs_opt->codeset_relay);
+    debug_printf ("Locale codeset: %s\n", mchar_cs->codeset_locale);
+    debug_printf ("Filesys codeset: %s\n", mchar_cs->codeset_filesys);
+    debug_printf ("ID3 codeset: %s\n", mchar_cs->codeset_id3);
+    debug_printf ("Metadata codeset: %s\n", mchar_cs->codeset_metadata);
+    debug_printf ("Relay codeset: %s\n", mchar_cs->codeset_relay);
 }
 
 /* This is used to set the codeset byte for id3v2 frames */

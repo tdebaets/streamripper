@@ -3,7 +3,7 @@
 
 #include "srtypes.h"
 
-void init_metadata_parser (char* rules_file);
-void parse_metadata (TRACK_INFO* track_info);
+void init_metadata_parser (RIP_MANAGER_INFO* rmi, char* rules_file);
+void parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
 
 #endif //__PARSE_H__
