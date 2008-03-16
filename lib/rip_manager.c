@@ -214,7 +214,7 @@ compose_console_string (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
     mchar console_string[SR_MAX_PATH];
     msnprintf (console_string, SR_MAX_PATH, m_S m_(" - ") m_S, 
 	       ti->artist, ti->title);
-    string_from_mstring (rmi->filename, SR_MAX_PATH, console_string,
+    string_from_mstring (rmi, rmi->filename, SR_MAX_PATH, console_string,
 			 CODESET_LOCALE);
 }
 
@@ -273,7 +273,7 @@ rip_manager_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
     }
     post_status(rmi, 0);
 
-    string_from_mstring (fullpath, SR_MAX_PATH, mfullpath, CODESET_FILESYS);
+    string_from_mstring (rmi, fullpath, SR_MAX_PATH, mfullpath, CODESET_FILESYS);
     rmi->status_callback (rmi, RM_TRACK_DONE, (void*)fullpath);
 
     return SR_SUCCESS;

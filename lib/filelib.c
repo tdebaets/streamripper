@@ -35,17 +35,17 @@
  * Private Functions
  *****************************************************************************/
 static error_code device_split (mchar* dirname, mchar* device, mchar* path);
-static error_code mkdir_if_needed (mchar *str);
-static error_code mkdir_recursive (mchar *str, int make_last);
+static error_code mkdir_if_needed (RIP_MANAGER_INFO* rmi, mchar *str);
+static error_code mkdir_recursive (RIP_MANAGER_INFO* rmi, mchar *str, int make_last);
 static void close_file (FHANDLE* fp);
 static void close_files (RIP_MANAGER_INFO* rmi);
 static error_code filelib_write (FHANDLE fp, char *buf, u_long size);
-static BOOL file_exists (mchar *filename);
+static BOOL file_exists (RIP_MANAGER_INFO* rmi, mchar *filename);
 static void 
 trim_filename (RIP_MANAGER_INFO* rmi, mchar* out, mchar *filename);
 static void
 trim_mp3_suffix (RIP_MANAGER_INFO* rmi, mchar *filename);
-static error_code filelib_open_for_write (FHANDLE* fp, mchar *filename);
+static error_code filelib_open_for_write (RIP_MANAGER_INFO* rmi, FHANDLE* fp, mchar *filename);
 static void
 parse_and_subst_dir (RIP_MANAGER_INFO* rmi, 
 		     mchar* pattern_head, mchar* pattern_tail, 
@@ -74,15 +74,15 @@ set_output_directory (RIP_MANAGER_INFO* rmi,
 		      );
 static error_code sr_getcwd (RIP_MANAGER_INFO* rmi, mchar* dirbuf);
 static error_code add_trailing_slash (mchar *str);
-static int get_next_sequence_number (mchar* fn_base);
+static int get_next_sequence_number (RIP_MANAGER_INFO* rmi, mchar* fn_base);
 static void fill_date_buf (RIP_MANAGER_INFO* rmi, mchar* datebuf, 
 			   int datebuf_len);
 static error_code filelib_open_showfiles (RIP_MANAGER_INFO* rmi);
-static void move_file (mchar* new_filename, mchar* old_filename);
+static void move_file (RIP_MANAGER_INFO* rmi, mchar* new_filename, mchar* old_filename);
 static mchar* replace_invalid_chars (mchar *str);
-static BOOL new_file_is_better (mchar *oldfile, mchar *newfile);
-static void delete_file (mchar* filename);
-static void truncate_file (mchar* filename);
+static BOOL new_file_is_better (RIP_MANAGER_INFO* rmi, mchar *oldfile, mchar *newfile);
+static void delete_file (RIP_MANAGER_INFO* rmi, mchar* filename);
+static void truncate_file (RIP_MANAGER_INFO* rmi, mchar* filename);
 
 
 /*****************************************************************************
@@ -196,13 +196,13 @@ filelib_init (RIP_MANAGER_INFO* rmi,
     if (fli->m_do_individual_tracks) {
 	debug_mprintf (m_("Trying to make output_directory: ") m_S m_("\n"), 
 		       fli->m_output_directory);
-	mkdir_recursive (fli->m_output_directory, 1);
+	mkdir_recursive (rmi, fli->m_output_directory, 1);
 
 	/* Next, make the incomplete directory */
 	if (fli->m_do_individual_tracks) {
 	    debug_mprintf (m_("Trying to make incomplete_directory: ") 
 			   m_S m_("\n"), fli->m_incomplete_directory);
-	    mkdir_if_needed (fli->m_incomplete_directory);
+	    mkdir_if_needed (rmi, fli->m_incomplete_directory);
 	}
     }
 
@@ -227,7 +227,7 @@ filelib_init (RIP_MANAGER_INFO* rmi,
 			      get_separate_dirs,
 			      get_date_stamp,
 			      1);
-	mkdir_recursive (fli->m_showfile_directory, 1);
+	mkdir_recursive (rmi, fli->m_showfile_directory, 1);
 	filelib_open_showfiles (rmi);
     }
 
@@ -259,7 +259,7 @@ filelib_start (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 	msnprintf (oldfile, TEMP_STR_LEN, m_S m_S m_S, 
 		   fli->m_incomplete_directory, fnbase, fli->m_extension);
 	mstrcpy (fnbase1, fnbase);
-	while (file_exists (oldfile)) {
+	while (file_exists (rmi, oldfile)) {
 	    msnprintf (fnbase1, TEMP_STR_LEN, m_("(%d)") m_S, 
 		       n, fnbase);
 	    trim_filename (rmi, fnbase2, fnbase1);
@@ -269,11 +269,11 @@ filelib_start (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 	    n++;
 	}
 	if (mstrcmp (newfile, oldfile) != 0) {
-	    move_file (oldfile, newfile);
+	    move_file (rmi, oldfile, newfile);
 	}
     }
     mstrcpy (fli->m_incomplete_filename, newfile);
-    return filelib_open_for_write (&fli->m_file, newfile);
+    return filelib_open_for_write (rmi, &fli->m_file, newfile);
 }
 
 error_code
@@ -290,10 +290,10 @@ filelib_write_cue (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti, int secs)
     rc = snprintf (buf2, MAX_TRACK_LEN, "  TRACK %02d AUDIO\n", 
 		   fli->m_track_no++);
     filelib_write (fli->m_cue_file, buf2, rc);
-    string_from_mstring (buf1, MAX_TRACK_LEN, ti->title, CODESET_ID3);
+    string_from_mstring (rmi, buf1, MAX_TRACK_LEN, ti->title, CODESET_ID3);
     rc = snprintf (buf2, MAX_TRACK_LEN, "    TITLE \"%s\"\n", buf1);
     filelib_write (fli->m_cue_file, buf2, rc);
-    string_from_mstring (buf1, MAX_TRACK_LEN, ti->artist, CODESET_ID3);
+    string_from_mstring (rmi, buf1, MAX_TRACK_LEN, ti->artist, CODESET_ID3);
     rc = snprintf (buf2, MAX_TRACK_LEN, "    PERFORMER \"%s\"\n", buf1);
     filelib_write (fli->m_cue_file, buf2, rc);
     rc = snprintf (buf2, MAX_TRACK_LEN, "    INDEX 01 %02d:%02d:00\n", 
@@ -347,7 +347,7 @@ filelib_end (RIP_MANAGER_INFO* rmi,
 			 fli->m_output_pattern, fli->m_extension);
 
     /* Build up the output directory */
-    mkdir_recursive (newfile, 0);
+    mkdir_recursive (rmi, newfile, 0);
 
     // If we are over writing existing tracks
     switch (overwrite) {
@@ -355,7 +355,7 @@ filelib_end (RIP_MANAGER_INFO* rmi,
 	ok_to_write = TRUE;
 	break;
     case OVERWRITE_NEVER:
-	if (file_exists (newfile)) {
+	if (file_exists (rmi, newfile)) {
 	    ok_to_write = FALSE;
 	} else {
 	    ok_to_write = TRUE;
@@ -364,18 +364,18 @@ filelib_end (RIP_MANAGER_INFO* rmi,
     case OVERWRITE_LARGER:
     default:
 	/* Smart overwriting -- only overwrite if new file is bigger */
-	ok_to_write = new_file_is_better (newfile, fli->m_incomplete_filename);
+	ok_to_write = new_file_is_better (rmi, newfile, fli->m_incomplete_filename);
 	break;
     }
 
     if (ok_to_write) {
-	if (file_exists (newfile)) {
-	    delete_file (newfile);
+	if (file_exists (rmi, newfile)) {
+	    delete_file (rmi, newfile);
 	}
-	move_file (newfile, fli->m_incomplete_filename);
+	move_file (rmi, newfile, fli->m_incomplete_filename);
     } else {
-	if (truncate_dup && file_exists (fli->m_incomplete_filename)) {
-	    truncate_file (fli->m_incomplete_filename);
+	if (truncate_dup && file_exists (rmi, fli->m_incomplete_filename)) {
+	    truncate_file (rmi, fli->m_incomplete_filename);
 	}
     }
 
@@ -400,10 +400,10 @@ filelib_shutdown (RIP_MANAGER_INFO* rmi)
 // For now we're not going to care. If it makes it good. it not, will know 
 // When we try to create a file in the path.
 static error_code
-mkdir_if_needed (mchar *str)
+mkdir_if_needed (RIP_MANAGER_INFO* rmi, mchar *str)
 {
     char s[SR_MAX_PATH];
-    string_from_mstring (s, SR_MAX_PATH, str, CODESET_FILESYS);
+    string_from_mstring (rmi, s, SR_MAX_PATH, str, CODESET_FILESYS);
 #if WIN32
     mkdir (s);
 #else
@@ -416,7 +416,7 @@ mkdir_if_needed (mchar *str)
    substring (after the last '/') is considered a directory rather 
    than a file name */
 static error_code
-mkdir_recursive (mchar *str, int make_last)
+mkdir_recursive (RIP_MANAGER_INFO* rmi, mchar *str, int make_last)
 {
     mchar buf[SR_MAX_PATH];
     mchar* p = buf;
@@ -426,11 +426,11 @@ mkdir_recursive (mchar *str, int make_last)
     while ((q = *p++ = *str++) != 0) {
 	if (ISSLASH(q)) {
 	    *p = 0;
-	    mkdir_if_needed (buf);
+	    mkdir_if_needed (rmi, buf);
 	}
     }
     if (make_last) {
-	mkdir_if_needed (str);
+	mkdir_if_needed (rmi, str);
     }
     return SR_SUCCESS;
 }
@@ -752,11 +752,11 @@ close_files (RIP_MANAGER_INFO* rmi)
 }
 
 static BOOL
-file_exists (mchar *filename)
+file_exists (RIP_MANAGER_INFO* rmi, mchar *filename)
 {
     FHANDLE f;
     char fn[SR_MAX_PATH];
-    string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    string_from_mstring (rmi, fn, SR_MAX_PATH, filename, CODESET_FILESYS);
 #if defined (WIN32)
     f = CreateFile (fn, GENERIC_READ,
 	    FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
@@ -870,7 +870,7 @@ parse_and_subst_pat (RIP_MANAGER_INFO* rmi,
 	case m_('q'):
 	    /* automatic sequence number */
 	    msnprintf (temp, DATEBUF_LEN, m_("%04d"), 
-		       get_next_sequence_number (newfile));
+		       get_next_sequence_number (rmi, newfile));
 	    mstrncat (newfile, temp, MAX_FILEBASELEN-nfi);
 	    nfi = mstrlen (newfile);
 	    opi+=2;
@@ -928,13 +928,13 @@ parse_and_subst_pat (RIP_MANAGER_INFO* rmi,
 }
 
 static long
-get_file_size (mchar *filename)
+get_file_size (RIP_MANAGER_INFO* rmi, mchar *filename)
 {
     FILE* fp;
     long len;
     char fn[SR_MAX_PATH];
 
-    string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    string_from_mstring (rmi, fn, SR_MAX_PATH, filename, CODESET_FILESYS);
     fp = fopen (fn, "r");
     if (!fp) return 0;
 
@@ -958,13 +958,13 @@ get_file_size (mchar *filename)
  * captures, modified by GCS to get file size from file system 
  */
 static BOOL
-new_file_is_better (mchar *oldfile, mchar *newfile)
+new_file_is_better (RIP_MANAGER_INFO* rmi, mchar *oldfile, mchar *newfile)
 {
     long oldfilesize=0;
     long newfilesize=0;
 
-    oldfilesize = get_file_size (oldfile);
-    newfilesize = get_file_size (newfile);
+    oldfilesize = get_file_size (rmi, oldfile);
+    newfilesize = get_file_size (rmi, newfile);
     
     /*
      * simple size check for now. Newfile should have at least 1Meg. Else it's
@@ -1000,10 +1000,10 @@ new_file_is_better (mchar *oldfile, mchar *newfile)
 }
 
 static void
-truncate_file (mchar* filename)
+truncate_file (RIP_MANAGER_INFO* rmi, mchar* filename)
 {
     char fn[SR_MAX_PATH];
-    string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    string_from_mstring (rmi, fn, SR_MAX_PATH, filename, CODESET_FILESYS);
     debug_printf ("Trying to truncate file: %s\n", fn);
 #if defined WIN32
     CloseHandle (CreateFile(fn, GENERIC_WRITE, 
@@ -1017,12 +1017,12 @@ truncate_file (mchar* filename)
 }
 
 static void
-move_file (mchar* new_filename, mchar* old_filename)
+move_file (RIP_MANAGER_INFO* rmi, mchar* new_filename, mchar* old_filename)
 {
     char old_fn[SR_MAX_PATH];
     char new_fn[SR_MAX_PATH];
-    string_from_mstring (old_fn, SR_MAX_PATH, old_filename, CODESET_FILESYS);
-    string_from_mstring (new_fn, SR_MAX_PATH, new_filename, CODESET_FILESYS);
+    string_from_mstring (rmi, old_fn, SR_MAX_PATH, old_filename, CODESET_FILESYS);
+    string_from_mstring (rmi, new_fn, SR_MAX_PATH, new_filename, CODESET_FILESYS);
 #if defined WIN32
     MoveFile(old_fn, new_fn);
 #else
@@ -1031,10 +1031,10 @@ move_file (mchar* new_filename, mchar* old_filename)
 }
 
 static void
-delete_file (mchar* filename)
+delete_file (RIP_MANAGER_INFO* rmi, mchar* filename)
 {
     char fn[SR_MAX_PATH];
-    string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    string_from_mstring (rmi, fn, SR_MAX_PATH, filename, CODESET_FILESYS);
 #if defined WIN32
     DeleteFile (fn);
 #else
@@ -1043,10 +1043,10 @@ delete_file (mchar* filename)
 }
 
 static error_code
-filelib_open_for_write (FHANDLE* fp, mchar* filename)
+filelib_open_for_write (RIP_MANAGER_INFO* rmi, FHANDLE* fp, mchar* filename)
 {
     char fn[SR_MAX_PATH];
-    string_from_mstring (fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    string_from_mstring (rmi, fn, SR_MAX_PATH, filename, CODESET_FILESYS);
     debug_printf ("Trying to create file: %s\n", fn);
 #if WIN32
     *fp = CreateFile (fn, GENERIC_WRITE,         // open for reading 
@@ -1117,7 +1117,7 @@ filelib_open_showfiles (RIP_MANAGER_INFO* rmi)
 			 fli->m_showfile_pattern, 
 			 m_(".cue"));
 
-    rc = filelib_open_for_write (&fli->m_cue_file, fli->m_cue_name);
+    rc = filelib_open_for_write (rmi, &fli->m_cue_file, fli->m_cue_name);
     if (rc != SR_SUCCESS) {
 	fli->m_do_show = 0;
 	return rc;
@@ -1136,13 +1136,13 @@ filelib_open_showfiles (RIP_MANAGER_INFO* rmi)
 		   fli->m_show_name, basename);
     rc = msnprintf (mcue_buf, 1024, m_("FILE \"") m_S m_("\" MP3\n"), 
 		    basename);
-    rc = string_from_mstring (cue_buf, 1024, mcue_buf, CODESET_FILESYS);
+    rc = string_from_mstring (rmi, cue_buf, 1024, mcue_buf, CODESET_FILESYS);
     rc = filelib_write (fli->m_cue_file, cue_buf, rc);
     if (rc != SR_SUCCESS) {
 	fli->m_do_show = 0;
 	return rc;
     }
-    rc = filelib_open_for_write (&fli->m_show_file, fli->m_show_name);
+    rc = filelib_open_for_write (rmi, &fli->m_show_file, fli->m_show_name);
     if (rc != SR_SUCCESS) {
 	fli->m_do_show = 0;
 	return rc;
@@ -1176,7 +1176,7 @@ trim_mp3_suffix (RIP_MANAGER_INFO* rmi, mchar *filename)
 /* GCS FIX: This may not work with filesystem charsets where 0-9 are 
    not ascii compatible? */
 static int
-get_next_sequence_number (mchar* fn_base)
+get_next_sequence_number (RIP_MANAGER_INFO* rmi, mchar* fn_base)
 {
     int rc;
     int di = 0;
@@ -1203,8 +1203,8 @@ get_next_sequence_number (mchar* fn_base)
     fn_prefix[0] = 0;
     mstrcpy (fn_prefix, &fn_base[edi+1]);
 
-    rc = string_from_mstring (dname, SR_MAX_PATH, dir_name, CODESET_FILESYS);
-    rc = string_from_mstring (fnp, SR_MAX_PATH, fn_prefix, CODESET_FILESYS);
+    rc = string_from_mstring (rmi, dname, SR_MAX_PATH, dir_name, CODESET_FILESYS);
+    rc = string_from_mstring (rmi, fnp, SR_MAX_PATH, fn_prefix, CODESET_FILESYS);
 
     /* Look through directory for a filenames that match prefix */
     if ((dp = opendir (dname)) == 0) {

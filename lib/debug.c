@@ -126,6 +126,7 @@ debug_printf (char* fmt, ...)
     threadlib_signal_sem (&m_debug_lock);
 }
 
+#if defined (commentout)
 void
 debug_mprintf (mchar* fmt, ...)
 {
@@ -174,6 +175,7 @@ debug_mprintf (mchar* fmt, ...)
     }
     threadlib_signal_sem (&m_debug_lock);
 }
+#endif
 
 void
 debug_print_error (void)

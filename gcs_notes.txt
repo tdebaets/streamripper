@@ -8,6 +8,9 @@ findsep::output
 ripstream::ripstream_rip_ogg
 utf8 global current_charset
 
+-- March 15 irrevocable change to mchar to use glib utf8
+   
+
 -----------------------------------------------------------------------
 cygwin version
 -----------------------------------------------------------------------

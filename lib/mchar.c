@@ -73,14 +73,18 @@ char	*subnstr_until(const char *str, char *until, char *newstr, int maxlen);
 char	*format_byte_size(char *str, long size);
 void	trim(char *str);
 
+
 /*****************************************************************************
  * Private global variables
  *****************************************************************************/
+#if defined (commentout)
 const char* m_codeset_locale;
 const char* m_codeset_filesys;
 const char* m_codeset_id3;
 const char* m_codeset_metadata;
 const char* m_codeset_relay;
+#endif
+
 
 /*****************************************************************************
  * These functions are NOT mchar related
@@ -310,26 +314,151 @@ wchar_from_char (char c, const char* codeset)
 }
 #endif /* HAVE_WCHAR_SUPPORT */
 
+/* From advice of Behdad Esfahbod" <behdad@behdad.org> 
+Very good point.  I raised this here too:
+  http://bugzilla.gnome.org/show_bug.cgi?id=391261#c9
+In Pango these days I loop over the string, calling g_utf8_validate()
+and replacing any invalid bytes with -1.  The -1 byte is known to be
+safe when passed to various glib UTF-8 functions.
+*/
+#if defined (commentout)
+int
+utf8validate (gchar* s)
+{
+}
+#endif
+
+/* Assumes src is valid utf8 */
+int
+utf8cpy (gchar* dst, gchar* src, int dst_len)
+{
+    gchar *s = src;
+    gchar *d = dst;
+    gunichar c;
+    gint dlen = 0;
+    gint clen;
+
+    while ((c = g_utf8_get_char(s))) {
+	clen = g_unichar_to_utf8 (c, d);
+	s = g_utf8_next_char (s);
+	d += clen;
+	dlen += clen;
+	dst_len -= clen;
+	if (dst_len < 7) {
+	    break;
+	}
+    }
+    *d = 0;
+    return dlen;
+}
+
 /* Input value mlen is measured in mchar, not bytes.
    Return value is the number of mchar occupied by the converted string, 
-   not including the null character. */
-/* For GLIB UTF8, it makes more sense to return the dynamically allocated 
+   not including the null character. 
+   
+   For GLIB UTF8, it makes more sense to return the dynamically allocated 
    string, and pass in the codeset string itself rather than 
-   rmi & codeset type. */
+   rmi & codeset type. 
+   
+   GLIB UTF8 returns number of bytes.
+*/
 int
 mstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen, 
 		     char* c, int codeset_type)
 {
+    CODESET_OPTIONS* mchar_cs = &rmi->mchar_cs;
     if (mlen < 0) return 0;
     *m = 0;
     if (!c) return 0;
 
 #if USE_GLIB_UTF8
     {
-	CODESET_OPTIONS* mchar_cs = &rmi->mchar_cs;
 	GError *error = NULL;
 	gchar* mstring;
+	char* src_codeset;
+	gsize tmp;
+	int rc;
+	
+	switch (codeset_type) {
+	case CODESET_UTF8:
+	    src_codeset = "UTF-8";
+	    break;
+	case CODESET_LOCALE:
+	    src_codeset = mchar_cs->codeset_locale;
+	    break;
+	case CODESET_FILESYS:
+	    src_codeset = mchar_cs->codeset_filesys;
+	    break;
+	case CODESET_ID3:
+	    src_codeset = mchar_cs->codeset_id3;
+	    break;
+	case CODESET_METADATA:
+	    src_codeset = mchar_cs->codeset_metadata;
+	    break;
+	case CODESET_RELAY:
+	    src_codeset = mchar_cs->codeset_relay;
+	    break;
+	default:
+	    printf ("Program error.  Bad codeset m->c (%d)\n", codeset_type);
+	    exit (-1);
+	}
+	mstring = g_convert_with_fallback 
+		(c, -1, "UTF-8", src_codeset, "?", 0, &tmp, &error);
+	if (error) {
+	    debug_printf ("Error converting mstring_from_string\n");
+	    g_free (mstring);
+	    return 0;
+	}
+	rc = utf8cpy (m, mstring, mlen);
+	g_free (mstring);
+	return rc;
+    }
+#elif HAVE_WCHAR_SUPPORT
+    switch (codeset_type) {
+    case CODESET_UTF8:
+	return wstring_from_string (m, mlen, c, "UTF-8");
+	break;
+    case CODESET_LOCALE:
+	return wstring_from_string (m, mlen, c, mchar_cs->codeset_locale);
+	break;
+    case CODESET_FILESYS:
+	return wstring_from_string (m, mlen, c, mchar_cs->codeset_filesys);
+	break;
+    case CODESET_ID3:
+	return wstring_from_string (m, mlen, c, mchar_cs->codeset_id3);
+	break;
+    case CODESET_METADATA:
+	return wstring_from_string (m, mlen, c, mchar_cs->codeset_metadata);
+	break;
+    case CODESET_RELAY:
+	return wstring_from_string (m, mlen, c, mchar_cs->codeset_relay);
+	break;
+    default:
+	printf ("Program error.  Bad codeset m->c (%d)\n", codeset_type);
+	exit (-1);
+    }
+#else
+    sr_strncpy (m, c, mlen);
+    return strlen (m);
+#endif
+}
+
+/* Return value is the number of char occupied by the converted string, 
+   not including the null character. */
+int
+string_from_mstring (RIP_MANAGER_INFO* rmi, char* c, int clen, mchar* m, int codeset_type)
+{
+    CODESET_OPTIONS* mchar_cs = &rmi->mchar_cs;
+    if (clen < 0) return 0;
+    *c = 0;
+    if (!m) return 0;
+#if USE_GLIB_UTF8
+    {
+	GError *error = NULL;
+	gchar* cstring;
 	char* tgt_codeset;
+	gsize tmp;
+	int rc;
 	
 	switch (codeset_type) {
 	case CODESET_UTF8:
@@ -354,72 +483,37 @@ mstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen,
 	    printf ("Program error.  Bad codeset m->c (%d)\n", codeset_type);
 	    exit (-1);
 	}
-	mstring = g_convert_with_fallback 
-		(c, -1, "UTF-8", tgt_codeset, "?", 0, &mlen, &error);
+	cstring = g_convert_with_fallback 
+		(c, -1, tgt_codeset, "UTF-8", "?", 0, &tmp, &error);
 	if (error) {
-	    debug_printf ("Error converting mstring_from_string\n");
-	    g_free (mstring);
-	    return;
+	    debug_printf ("Error converting string_from_mstring\n");
+	    g_free (cstring);
+	    return 0;
 	}
-	g_ kkk
+	/* GCS FIX: truncation can chop multibyte string */
+	rc = g_strlcpy (c, cstring, clen);
+	g_free (cstring);
+	return strlen(c);
     }
-#elif HAVE_WCHAR_SUPPORT
-    switch (codeset_type) {
-    case CODESET_UTF8:
-	return wstring_from_string (m, mlen, c, "UTF-8");
-	break;
-    case CODESET_LOCALE:
-	return wstring_from_string (m, mlen, c, m_codeset_locale);
-	break;
-    case CODESET_FILESYS:
-	return wstring_from_string (m, mlen, c, m_codeset_filesys);
-	break;
-    case CODESET_ID3:
-	return wstring_from_string (m, mlen, c, m_codeset_id3);
-	break;
-    case CODESET_METADATA:
-	return wstring_from_string (m, mlen, c, m_codeset_metadata);
-	break;
-    case CODESET_RELAY:
-	return wstring_from_string (m, mlen, c, m_codeset_relay);
-	break;
-    default:
-	printf ("Program error.  Bad codeset m->c (%d)\n", codeset_type);
-	exit (-1);
-    }
-#else
-    sr_strncpy (m, c, mlen);
-    return strlen (m);
-#endif
-}
-
-/* Return value is the number of char occupied by the converted string, 
-   not including the null character. */
-int
-string_from_mstring (char* c, int clen, mchar* m, int codeset_type)
-{
-    if (clen < 0) return 0;
-    *c = 0;
-    if (!m) return 0;
-#if defined (HAVE_WCHAR_SUPPORT)
+#elif defined (HAVE_WCHAR_SUPPORT)
     switch (codeset_type) {
     case CODESET_UTF8:
 	return string_from_wstring (c, clen, m, "UTF-8");
 	break;
     case CODESET_LOCALE:
-	return string_from_wstring (c, clen, m, m_codeset_locale);
+	return string_from_wstring (c, clen, m, mchar_cs->codeset_locale);
 	break;
     case CODESET_FILESYS:
-	return string_from_wstring (c, clen, m, m_codeset_filesys);
+	return string_from_wstring (c, clen, m, mchar_cs->codeset_filesys);
 	break;
     case CODESET_ID3:
-	return string_from_wstring (c, clen, m, m_codeset_id3);
+	return string_from_wstring (c, clen, m, mchar_cs->codeset_id3);
 	break;
     case CODESET_METADATA:
-	return string_from_wstring (c, clen, m, m_codeset_metadata);
+	return string_from_wstring (c, clen, m, mchar_cs->codeset_metadata);
 	break;
     case CODESET_RELAY:
-	return string_from_wstring (c, clen, m, m_codeset_relay);
+	return string_from_wstring (c, clen, m, mchar_cs->codeset_relay);
 	break;
     default:
 	printf ("Program error.  Bad codeset c->m.\n");
@@ -432,27 +526,28 @@ string_from_mstring (char* c, int clen, mchar* m, int codeset_type)
 }
 
 mchar
-mchar_from_char (char c, int codeset_type)
+mchar_from_char (RIP_MANAGER_INFO* rmi, char c, int codeset_type)
 {
+    CODESET_OPTIONS* mchar_cs = &rmi->mchar_cs;
 #if defined (HAVE_WCHAR_SUPPORT)
     switch (codeset_type) {
     case CODESET_UTF8:
 	return wchar_from_char (c, "UTF-8");
 	break;
     case CODESET_LOCALE:
-	return wchar_from_char (c, m_codeset_locale);
+	return wchar_from_char (c, mchar_cs->codeset_locale);
 	break;
     case CODESET_FILESYS:
-	return wchar_from_char (c, m_codeset_filesys);
+	return wchar_from_char (c, mchar_cs->codeset_filesys);
 	break;
     case CODESET_ID3:
-	return wchar_from_char (c, m_codeset_id3);
+	return wchar_from_char (c, mchar_cs->codeset_id3);
 	break;
     case CODESET_METADATA:
-	return wchar_from_char (c, m_codeset_metadata);
+	return wchar_from_char (c, mchar_cs->codeset_metadata);
 	break;
     case CODESET_RELAY:
-	return wchar_from_char (c, m_codeset_relay);
+	return wchar_from_char (c, mchar_cs->codeset_relay);
 	break;
     default:
 	printf ("Program error.  Bad codeset c->m.\n");
@@ -555,10 +650,11 @@ register_codesets (RIP_MANAGER_INFO* rmi, CODESET_OPTIONS* cs_opt)
 
 /* This is used to set the codeset byte for id3v2 frames */
 int
-is_id3_unicode (void)
+is_id3_unicode (RIP_MANAGER_INFO* rmi)
 {
+    CODESET_OPTIONS* mchar_cs = &rmi->mchar_cs;
 #if HAVE_WCHAR_SUPPORT
-    if (!strcmp ("UTF-16", m_codeset_id3)) {
+    if (!strcmp ("UTF-16", mchar_cs->codeset_id3)) {
 	return 1;
     }
 #endif
@@ -580,7 +676,9 @@ mstrncpy (mchar* dst, mchar* src, int n)
 mchar* 
 mstrdup (mchar* src)
 {
-#if defined HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+    return strdup (src);
+#elif defined HAVE_WCHAR_SUPPORT
     /* wstrdup/wcsdup is non-standard */
     mchar* new_string = (mchar*) malloc (sizeof(mchar)*(wcslen(src) + 1));
     wcscpy (new_string, src);
@@ -593,7 +691,9 @@ mstrdup (mchar* src)
 mchar* 
 mstrcpy (mchar* dest, const mchar* src)
 {
-#if defined HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+    return strcpy (dest, src);
+#elif defined HAVE_WCHAR_SUPPORT
     return wcscpy (dest, src);
 #else
     return strcpy (dest, src);
@@ -603,7 +703,9 @@ mstrcpy (mchar* dest, const mchar* src)
 size_t
 mstrlen (mchar* s)
 {
-#if defined HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+    return strlen (s);
+#elif defined HAVE_WCHAR_SUPPORT
     return wcslen (s);
 #else
     return strlen (s);
@@ -618,7 +720,9 @@ msnprintf (mchar* dest, size_t n, const mchar* fmt, ...)
     int rc;
     va_list ap;
     va_start (ap, fmt);
-#if defined HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+    rc = vsnprintf (dest, n, fmt, ap);
+#elif defined HAVE_WCHAR_SUPPORT
     rc = vswprintf (dest, n, fmt, ap);
     debug_printf ("vswprintf got %d\n", rc);
 #else
@@ -631,7 +735,10 @@ msnprintf (mchar* dest, size_t n, const mchar* fmt, ...)
 mchar*
 mstrchr (const mchar* ws, mchar wc)
 {
-#if defined HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+    /* GCS FIX: This makes no sense */
+    return strchr (ws, wc);
+#elif defined HAVE_WCHAR_SUPPORT
     return wcschr (ws, wc);
 #else
     return strchr (ws, wc);
@@ -641,7 +748,10 @@ mstrchr (const mchar* ws, mchar wc)
 mchar*
 mstrrchr (const mchar* ws, mchar wc)
 {
-#if defined HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+    /* GCS FIX: This makes no sense */
+    return strrchr (ws, wc);
+#elif defined HAVE_WCHAR_SUPPORT
     return wcsrchr (ws, wc);
 #else
     return strrchr (ws, wc);
@@ -651,7 +761,9 @@ mstrrchr (const mchar* ws, mchar wc)
 mchar*
 mstrncat (mchar* ws1, const mchar* ws2, size_t n)
 {
-#if defined HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+    return strncat (ws1, ws2, n);
+#elif defined HAVE_WCHAR_SUPPORT
     return wcsncat (ws1, ws2, n);
 #else
     return strncat (ws1, ws2, n);
@@ -661,7 +773,9 @@ mstrncat (mchar* ws1, const mchar* ws2, size_t n)
 int
 mstrcmp (const mchar* ws1, const mchar* ws2)
 {
-#if defined HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+    return strcmp (ws1, ws2);
+#elif defined HAVE_WCHAR_SUPPORT
     return wcscmp (ws1, ws2);
 #else
     return strcmp (ws1, ws2);
@@ -671,7 +785,9 @@ mstrcmp (const mchar* ws1, const mchar* ws2)
 long int
 mtol (const mchar* string)
 {
-#if defined HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+    return strtol (string, 0, 0);
+#elif defined HAVE_WCHAR_SUPPORT
     return wcstol (string, 0, 0);
 #else
     return strtol (string, 0, 0);

@@ -83,7 +83,7 @@ parse_external_byte (RIP_MANAGER_INFO* rmi, External_Process* ep,
 	    /* GCS FIX - this is not quite right */
 	    msnprintf (w_raw_metadata, MAX_EXT_LINE_LEN, m_S m_(" - ") m_S,
 		       ti->artist, ti->title);
-	    string_from_mstring (ti->raw_metadata, MAX_EXT_LINE_LEN, 
+	    string_from_mstring (rmi, ti->raw_metadata, MAX_EXT_LINE_LEN, 
 				 w_raw_metadata, CODESET_METADATA);
 	    ti->have_track_info = 1;
 	    ti->save_track = TRUE;

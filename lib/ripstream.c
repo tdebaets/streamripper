@@ -597,13 +597,13 @@ end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, u_long pos2, TRACK_INFO* ti)
 	ID3V1Tag id3;
 	memset (&id3, '\000',sizeof(id3));
 	strncpy (id3.tag, "TAG", strlen("TAG"));
-	string_from_mstring (id3.artist, sizeof(id3.artist), 
+	string_from_mstring (rmi, id3.artist, sizeof(id3.artist), 
 			     ti->artist, CODESET_ID3);
-	string_from_mstring (id3.songtitle, sizeof(id3.songtitle), 
+	string_from_mstring (rmi, id3.songtitle, sizeof(id3.songtitle), 
 			     ti->title, CODESET_ID3);
-	string_from_mstring (id3.album, sizeof(id3.album),
+	string_from_mstring (rmi, id3.album, sizeof(id3.album),
 			     ti->album, CODESET_ID3);
-	string_from_mstring (id3.year, sizeof(id3.year),
+	string_from_mstring (rmi, id3.year, sizeof(id3.year),
 			     ti->year, CODESET_ID3);
 	id3.genre = (char) 0xFF; // see http://www.id3.org/id3v2.3.0.html#secA
 	ret = rip_manager_put_data (rmi, (char *)&id3, sizeof(id3));
@@ -646,7 +646,7 @@ write_id3v2_frame(RIP_MANAGER_INFO* rmi, char* tag_name, mchar* data,
     memset(&id3v2frame, '\000', sizeof(id3v2frame));
     strncpy(id3v2frame.id, tag_name, 4);
     id3v2frame.pad[2] = charset;
-    rc = string_from_mstring (bigbuf, HEADER_SIZE, data, CODESET_ID3);
+    rc = string_from_mstring (rmi, bigbuf, HEADER_SIZE, data, CODESET_ID3);
     framesize = htonl (rc+1);
     ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.id), 4);
     if (ret != SR_SUCCESS) return ret;
@@ -707,7 +707,7 @@ start_track_mp3 (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 	/* ID3 V2.3 is only defined for ISO-8859-1 and UCS-2
 	   If user specifies another codeset, we will use it, and 
 	   report ISO-8859-1 in the encoding field */
-	id3_charset = is_id3_unicode();
+	id3_charset = is_id3_unicode(rmi);
 
 	/* Lead performer */
         ret = write_id3v2_frame(rmi, "TPE1", ti->artist, id3_charset, &sent);

@@ -62,7 +62,10 @@ static Parse_Rule m_default_rule_list[] = {
       PARSERULE_SKIP,
       0, 0, 0, 0, 0,
       0, 
-#if defined HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+      "^A suivre:",
+      ""
+#elif defined HAVE_WCHAR_SUPPORT
       /* GCS FIX: L string literals are not good */
       L"^A suivre:",
       L""
@@ -75,7 +78,10 @@ static Parse_Rule m_default_rule_list[] = {
       PARSERULE_ICASE,
       0, 0, 0, 0, 0,
       0,
-#if defined HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+      "[[:space:]]*-?[[:space:]]*mp3pro$",
+      ""
+#elif defined HAVE_WCHAR_SUPPORT
       L"[[:space:]]*-?[[:space:]]*mp3pro$",
       L""
 #else
@@ -87,7 +93,10 @@ static Parse_Rule m_default_rule_list[] = {
       PARSERULE_ICASE,
       1, 2, 0, 0, 0,
       0,
-#if defined HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+      "^[[:space:]]*([^-]*[^-[:space:]])[[:space:]]*-[[:space:]]*(.*)[[:space:]]*$",
+      ""
+#elif defined HAVE_WCHAR_SUPPORT
       L"^[[:space:]]*([^-]*[^-[:space:]])[[:space:]]*-[[:space:]]*(.*)[[:space:]]*$",
       L""
 #else
@@ -99,7 +108,10 @@ static Parse_Rule m_default_rule_list[] = {
       0x00,
       0, 0, 0, 0, 0,
       0,
-#if defined HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+      "",
+      ""
+#elif defined HAVE_WCHAR_SUPPORT
       L"",
       L""
 #else
@@ -116,7 +128,10 @@ static Parse_Rule* m_global_rule_list = m_default_rule_list;
 static int
 sr_regcomp (Parse_Rule* pr, mchar* rule_string, int cflags)
 {
-#if defined HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+    /* GCS FIX: Use PCRE for utf8 */
+    return regcomp(pr->reg, rule_string, cflags);
+#elif defined HAVE_WCHAR_SUPPORT
     return regwcomp(pr->reg, rule_string, cflags);
 #else
     return regcomp(pr->reg, rule_string, cflags);
@@ -127,7 +142,10 @@ static int
 mregexec (const regex_t* preg, const mchar* string, size_t nmatch,
 	  regmatch_t pmatch[], int eflags)
 {
-#if defined HAVE_WCHAR_SUPPORT
+#if USE_GLIB_UTF8
+    /* GCS FIX: Use PCRE for utf8 */
+    return regexec (preg, string, nmatch, pmatch, eflags);
+#elif defined HAVE_WCHAR_SUPPORT
     return regwexec (preg, string, nmatch, pmatch, eflags);
 #else
     return regexec (preg, string, nmatch, pmatch, eflags);
@@ -415,7 +433,7 @@ init_metadata_parser (RIP_MANAGER_INFO* rmi, char* rules_file)
 }
 
 void
-compose_metadata (TRACK_INFO* ti)
+compose_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 {
     int num_bytes;
     unsigned char num_16_bytes;
@@ -435,7 +453,7 @@ compose_metadata (TRACK_INFO* ti)
 	debug_printf ("No track info when composing relay metadata\n");
     }
     debug_printf ("Converting relay string to char\n");
-    num_bytes = string_from_mstring (&ti->composed_metadata[1], 
+    num_bytes = string_from_mstring (rmi, &ti->composed_metadata[1], 
 				     MAX_METADATA_LEN, 
 				     w_composed_metadata, 
 				     CODESET_RELAY);
@@ -526,7 +544,7 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 		copy_rule_result (ti->track, query_string, pmatch, rulep->trackno_idx);
 		copy_rule_result (ti->year, query_string, pmatch, rulep->year_idx);
 		ti->have_track_info = 1;
-		compose_metadata (ti);
+		compose_metadata (rmi, ti);
 		debug_mprintf (m_("Parsed track info.\n")
 			       m_("ARTIST: ") m_S m_("\n")
 			       m_("TITLE: ")  m_S m_("\n")
@@ -569,5 +587,5 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
     debug_printf ("Fell through while parsing data...\n");
     mstrncpy (ti->title, query_string, MAX_TRACK_LEN);
     ti->have_track_info = 1;
-    compose_metadata (ti);
+    compose_metadata (rmi, ti);
 }

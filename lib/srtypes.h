@@ -17,7 +17,7 @@
 #ifndef __SRTYPES_H__
 #define __SRTYPES_H__
 
-//#define USE_GLIB_UTF8 
+#define USE_GLIB_UTF8 1
 
 #if (USE_GLIB_UTF8)
 #include <glib.h>

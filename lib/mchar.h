@@ -41,7 +41,8 @@ void register_codesets (RIP_MANAGER_INFO* rmi, CODESET_OPTIONS* cs_opt);
 
 int mstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen, 
 			 char* c, int codeset_type);
-int string_from_mstring (char* c, int clen, mchar* m, int codeset_type);
+int string_from_mstring (RIP_MANAGER_INFO* rmi, char* c, int clen, 
+			 mchar* m, int codeset_type);
 
 mchar* mstrdup (mchar* src);
 mchar* mstrcpy (mchar* dest, const mchar* src);
@@ -53,7 +54,6 @@ mchar* mstrrchr (const mchar* ws, mchar wc);
 mchar* mstrncat (mchar* ws1, const mchar* ws2, size_t n);
 int mstrcmp (const mchar* ws1, const mchar* ws2);
 long int mtol (const mchar* string);
-
-int is_id3_unicode (void);
+int is_id3_unicode (RIP_MANAGER_INFO* mchar_cs);
 
 #endif /*__MCHAR_H__*/
