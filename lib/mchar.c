@@ -75,18 +75,6 @@ void	trim(char *str);
 
 
 /*****************************************************************************
- * Private global variables
- *****************************************************************************/
-#if defined (commentout)
-const char* m_codeset_locale;
-const char* m_codeset_filesys;
-const char* m_codeset_id3;
-const char* m_codeset_metadata;
-const char* m_codeset_relay;
-#endif
-
-
-/*****************************************************************************
  * These functions are NOT mchar related
  *****************************************************************************/
 char*
@@ -338,15 +326,14 @@ utf8cpy (gchar* dst, gchar* src, int dst_len)
     gint dlen = 0;
     gint clen;
 
-    while ((c = g_utf8_get_char(s))) {
+    while (dst_len > 6) {
+	c = g_utf8_get_char(s);
+	if (!c) break;
 	clen = g_unichar_to_utf8 (c, d);
-	s = g_utf8_next_char (s);
 	d += clen;
 	dlen += clen;
 	dst_len -= clen;
-	if (dst_len < 7) {
-	    break;
-	}
+	s = g_utf8_next_char (s);
     }
     *d = 0;
     return dlen;
@@ -443,6 +430,23 @@ mstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen,
 #endif
 }
 
+/* Replacement for mstring_from_string using dynamic allocation */
+gchar*
+utf8_string_from_string (char* src, char* codeset)
+{
+    GError *error = NULL;
+    gchar* utf8_string;
+    gsize tmp;
+	
+    utf8_string = g_convert_with_fallback 
+	    (src, -1, "UTF-8", codeset, "?", 0, &tmp, &error);
+    if (error) {
+	debug_printf ("Error converting utf8_string_from_string\n");
+	/* If there's an error, return partial string */
+    }
+    return utf8_string;
+}
+
 /* Return value is the number of char occupied by the converted string, 
    not including the null character. */
 int
@@ -484,13 +488,14 @@ string_from_mstring (RIP_MANAGER_INFO* rmi, char* c, int clen, mchar* m, int cod
 	    exit (-1);
 	}
 	cstring = g_convert_with_fallback 
-		(c, -1, tgt_codeset, "UTF-8", "?", 0, &tmp, &error);
+		(m, -1, tgt_codeset, "UTF-8", "?", 0, &tmp, &error);
 	if (error) {
 	    debug_printf ("Error converting string_from_mstring\n");
 	    g_free (cstring);
 	    return 0;
 	}
 	/* GCS FIX: truncation can chop multibyte string */
+	/* This will be fixed by using dynamic memory here... */
 	rc = g_strlcpy (c, cstring, clen);
 	g_free (cstring);
 	return strlen(c);
@@ -522,39 +527,6 @@ string_from_mstring (RIP_MANAGER_INFO* rmi, char* c, int clen, mchar* m, int cod
 #else
     sr_strncpy (c, m, clen);
     return strlen (c);
-#endif
-}
-
-mchar
-mchar_from_char (RIP_MANAGER_INFO* rmi, char c, int codeset_type)
-{
-    CODESET_OPTIONS* mchar_cs = &rmi->mchar_cs;
-#if defined (HAVE_WCHAR_SUPPORT)
-    switch (codeset_type) {
-    case CODESET_UTF8:
-	return wchar_from_char (c, "UTF-8");
-	break;
-    case CODESET_LOCALE:
-	return wchar_from_char (c, mchar_cs->codeset_locale);
-	break;
-    case CODESET_FILESYS:
-	return wchar_from_char (c, mchar_cs->codeset_filesys);
-	break;
-    case CODESET_ID3:
-	return wchar_from_char (c, mchar_cs->codeset_id3);
-	break;
-    case CODESET_METADATA:
-	return wchar_from_char (c, mchar_cs->codeset_metadata);
-	break;
-    case CODESET_RELAY:
-	return wchar_from_char (c, mchar_cs->codeset_relay);
-	break;
-    default:
-	printf ("Program error.  Bad codeset c->m.\n");
-	exit (-1);
-    }
-#else
-    return c;
 #endif
 }
 
@@ -619,7 +591,6 @@ set_codesets_default (CODESET_OPTIONS* cs_opt)
 
     /* I could potentially add stuff like forcing filesys to be utf8 
        (or whatever) for osx here */
-    
 }
 
 void
@@ -736,8 +707,7 @@ mchar*
 mstrchr (const mchar* ws, mchar wc)
 {
 #if USE_GLIB_UTF8
-    /* GCS FIX: This makes no sense */
-    return strchr (ws, wc);
+    return g_utf8_strchr (ws, -1, g_utf8_get_char(&wc));
 #elif defined HAVE_WCHAR_SUPPORT
     return wcschr (ws, wc);
 #else
@@ -749,8 +719,7 @@ mchar*
 mstrrchr (const mchar* ws, mchar wc)
 {
 #if USE_GLIB_UTF8
-    /* GCS FIX: This makes no sense */
-    return strrchr (ws, wc);
+    return g_utf8_strrchr (ws, -1, g_utf8_get_char(&wc));
 #elif defined HAVE_WCHAR_SUPPORT
     return wcsrchr (ws, wc);
 #else

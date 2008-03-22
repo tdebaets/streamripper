@@ -22,10 +22,8 @@
 #if (USE_GLIB_UTF8)
 #include <glib.h>
 #endif
+#include "regex.h"
 
-/******************************************************************************
- * Types
- *****************************************************************************/
 #include "srconfig.h"
 #include "compat.h"
 #include "list.h"
@@ -48,6 +46,9 @@
 #include <sys/sockio.h>
 #endif
 
+/******************************************************************************
+ * Types
+ *****************************************************************************/
 /* Note: uint32_t is standardized in ISO C99, so let's use that one */
 #if !HAVE_UINT32_T
 # if HAVE_U_INT32_T
@@ -206,6 +207,23 @@ typedef wchar_t mchar;
 #else
 typedef char mchar;
 #endif
+
+/* 
+ * Parse_Rule is a single line of the parse rules file
+ */
+struct parse_rule {
+    int cmd;
+    int flags;
+    int artist_idx;
+    int title_idx;
+    int album_idx;
+    int trackno_idx;
+    int year_idx;
+    regex_t* reg;
+    mchar* match;
+    mchar* subst;
+};
+typedef struct parse_rule Parse_Rule;
 
 /* 
  * TRACK_INFO is the parsed metadata
@@ -579,6 +597,9 @@ struct RIP_MANAGER_INFOst
 
     /* Private data used by relaylib.c */
     RELAYLIB_INFO relaylib_info;
+
+    /* Private data used by parse.c */
+    Parse_Rule* parse_rules;
 
 #if (HAVE_OGG_VORBIS)
     /* Ogg state, used by ripogg.c */

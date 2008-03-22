@@ -56,4 +56,6 @@ int mstrcmp (const mchar* ws1, const mchar* ws2);
 long int mtol (const mchar* string);
 int is_id3_unicode (RIP_MANAGER_INFO* mchar_cs);
 
+gchar* utf8_string_from_string (char* src, char* codeset);
+
 #endif /*__MCHAR_H__*/

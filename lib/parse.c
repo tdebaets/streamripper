@@ -23,7 +23,6 @@
 #include "mchar.h"
 #include "debug.h"
 #include "srtypes.h"
-#include "regex.h"
 
 /* GCS FIX: figure out function prototypes for regwcomp, regwexec */
 
@@ -42,20 +41,6 @@
 #define PARSERULE_SAVE               0x08
 #define PARSERULE_EXCLUDE            0x10
 
-
-struct parse_rule {
-    int cmd;
-    int flags;
-    int artist_idx;
-    int title_idx;
-    int album_idx;
-    int trackno_idx;
-    int year_idx;
-    regex_t* reg;
-    mchar* match;
-    mchar* subst;
-};
-typedef struct parse_rule Parse_Rule;
 
 static Parse_Rule m_default_rule_list[] = {
     { PARSERULE_CMD_MATCH, 
@@ -120,7 +105,8 @@ static Parse_Rule m_default_rule_list[] = {
 #endif
     }
 };
-static Parse_Rule* m_global_rule_list = m_default_rule_list;
+
+// static Parse_Rule* m_global_rule_list = m_default_rule_list;
 
 /*****************************************************************************
  * Public functions
@@ -175,15 +161,16 @@ compile_rule (Parse_Rule* pr, mchar* rule_string)
 }
 
 static void
-use_default_rules (void)
+use_default_rules (RIP_MANAGER_INFO* rmi)
 {
     Parse_Rule* rulep;
 
     /* set global rule list to default */
-    m_global_rule_list = m_default_rule_list;
+    rmi->parse_rules = (Parse_Rule*) malloc (sizeof(m_default_rule_list));
+    memcpy (rmi->parse_rules, m_default_rule_list, sizeof(m_default_rule_list));
 
     /* compile regular expressions */
-    for (rulep = m_global_rule_list; rulep->cmd; rulep++) {
+    for (rulep = rmi->parse_rules; rulep->cmd; rulep++) {
 	compile_rule (rulep, rulep->match);
     }
 }
@@ -294,7 +281,7 @@ parse_escaped_string (char* outbuf, char* inbuf)
 }
 
 /* This mega-function reads in the rules file, and loads 
-    all the rules into the m_global_rules_list data structure */
+    all the rules into the rmi->parse_rules data structure */
 void
 init_metadata_parser (RIP_MANAGER_INFO* rmi, char* rules_file)
 {
@@ -303,16 +290,16 @@ init_metadata_parser (RIP_MANAGER_INFO* rmi, char* rules_file)
     int rn;     /* Number of rules allocated */
 
     if (!rules_file || !*rules_file) {
-	use_default_rules ();
+	use_default_rules (rmi);
 	return;
     }
     fp = fopen (rules_file, "r");
     if (!fp) {
-	use_default_rules ();
+	use_default_rules (rmi);
 	return;
     }
 
-    m_global_rule_list = 0;
+    rmi->parse_rules = 0;
     ri = rn = 0;
     while (1) {
 	char rule_buf[MAX_RULE_SIZE];
@@ -329,9 +316,9 @@ init_metadata_parser (RIP_MANAGER_INFO* rmi, char* rules_file)
 	/* If there are no more rules in the file, */
 	/* this rule will become the sentinel null rule */
 	if (ri+1 != rn) {
-	    m_global_rule_list = realloc (m_global_rule_list,
-					  (ri+1) * sizeof(Parse_Rule));
-	    memset (&m_global_rule_list[ri], 0, sizeof(Parse_Rule));
+	    rmi->parse_rules = realloc (rmi->parse_rules,
+					(ri+1) * sizeof(Parse_Rule));
+	    memset (&rmi->parse_rules[ri], 0, sizeof(Parse_Rule));
 	    rn = ri+1;
 	}
 
@@ -350,11 +337,11 @@ init_metadata_parser (RIP_MANAGER_INFO* rmi, char* rules_file)
 	switch (*rbp++) {
 	case 'm':
 	    got_command = 1;
-	    m_global_rule_list[ri].cmd = PARSERULE_CMD_MATCH;
+	    rmi->parse_rules[ri].cmd = PARSERULE_CMD_MATCH;
 	    break;
 	case 's':
 	    got_command = 1;
-	    m_global_rule_list[ri].cmd = PARSERULE_CMD_SUBST;
+	    rmi->parse_rules[ri].cmd = PARSERULE_CMD_SUBST;
 	    break;
 	case '#':
 	    got_command = 0;
@@ -384,7 +371,7 @@ init_metadata_parser (RIP_MANAGER_INFO* rmi, char* rules_file)
 	}
 
 	/* Parse subst string */
-	if (m_global_rule_list[ri].cmd == PARSERULE_CMD_SUBST) {
+	if (rmi->parse_rules[ri].cmd == PARSERULE_CMD_SUBST) {
 	    rbp = parse_escaped_string (subst_buf, rbp);
 	    debug_printf ("subst_buf=%s\n", subst_buf);
 	    if (!rbp) {
@@ -395,7 +382,7 @@ init_metadata_parser (RIP_MANAGER_INFO* rmi, char* rules_file)
 	}
 
 	/* Parse flags */
-	rc = parse_flags (&m_global_rule_list[ri], rbp);
+	rc = parse_flags (&rmi->parse_rules[ri], rbp);
 	if (!rc) {
 	    printf ("Warning: malformed command in rules file:\n%s\n",
 		    rule_buf);
@@ -406,7 +393,7 @@ init_metadata_parser (RIP_MANAGER_INFO* rmi, char* rules_file)
 	debug_printf ("Compiling the rule\n");
 	mstring_from_string (rmi, w_match_buf, MAX_RULE_SIZE, match_buf, 
 			     CODESET_UTF8);
-	if (!compile_rule(&m_global_rule_list[ri], w_match_buf)) {
+	if (!compile_rule(&rmi->parse_rules[ri], w_match_buf)) {
 	    printf ("Warning: malformed regular expression:\n%s\n", 
 		    match_buf);
 	    continue;
@@ -415,14 +402,14 @@ init_metadata_parser (RIP_MANAGER_INFO* rmi, char* rules_file)
 	/* Copy rule strings */
 	debug_printf ("Copying rule string (1)\n");
 	debug_mprintf (m_("String is ") m_S m_("\n"), w_match_buf);
-	m_global_rule_list[ri].match = mstrdup(w_match_buf);
+	rmi->parse_rules[ri].match = mstrdup(w_match_buf);
 	debug_printf ("Copying rule string (2)\n");
-	if (m_global_rule_list[ri].cmd == PARSERULE_CMD_SUBST) {
+	if (rmi->parse_rules[ri].cmd == PARSERULE_CMD_SUBST) {
 	    debug_printf ("Copying rule string (3)\n");
 	    mstring_from_string (rmi, w_subst_buf, MAX_RULE_SIZE, subst_buf, 
 				 CODESET_UTF8);
 	    debug_printf ("Copying rule string (4)\n");
-	    m_global_rule_list[ri].subst = mstrdup(w_subst_buf);
+	    rmi->parse_rules[ri].subst = mstrdup(w_subst_buf);
 	    debug_printf ("Copying rule string (5)\n");
 	}
 
@@ -493,7 +480,7 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
     debug_printf ("Converting query string to wide\n");
     mstring_from_string (rmi, query_string, MAX_TRACK_LEN, 
 			 ti->raw_metadata, CODESET_METADATA);
-    for (rulep = m_global_rule_list; rulep->cmd; rulep++) {
+    for (rulep = rmi->parse_rules; rulep->cmd; rulep++) {
 	regmatch_t pmatch[MAX_SUBMATCHES+1];
 
 	eflags = 0;
@@ -548,8 +535,8 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 		debug_mprintf (m_("Parsed track info.\n")
 			       m_("ARTIST: ") m_S m_("\n")
 			       m_("TITLE: ")  m_S m_("\n")
-			       m_("ALBUM: ")  m_S m_("\n"),
-			       m_("TRACK: ")  m_S m_("\n"),
+			       m_("ALBUM: ")  m_S m_("\n")
+			       m_("TRACK: ")  m_S m_("\n")
 			       m_("YEAR: ")  m_S m_("\n"),
 			       ti->artist, ti->title, ti->album,
                                ti->track, ti->year);
@@ -589,3 +576,11 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
     ti->have_track_info = 1;
     compose_metadata (rmi, ti);
 }
+
+void
+parser_free (RIP_MANAGER_INFO* rmi)
+{
+    free (rmi->parse_rules);
+    rmi->parse_rules = 0;
+}
+

@@ -122,6 +122,8 @@ rip_manager_start (RIP_MANAGER_INFO **rmip,
     rmi->write_data = 1;
 
     /* Initialize the parsing rules */
+    /* GCS FIX: parser_free() would need to be freed by the caller.  
+       But he has no cleanup routine to call! */
     init_metadata_parser (rmi, prefs->rules_file);
 
     /* Start the ripping thread */
@@ -419,9 +421,7 @@ ripthread (void *thread_arg)
 		    debug_printf ("Close external\n");
 		    close_external (&rmi->ep);
 		}
-		relaylib_stop (rmi);
-		filelib_shutdown (rmi);
-		ripstream_clear (rmi);
+		destroy_subsystems (rmi);
 		ret = start_ripping (rmi);
 		if (ret == SR_SUCCESS)
 		    break;

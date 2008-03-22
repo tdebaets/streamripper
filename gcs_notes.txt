@@ -1,15 +1,12 @@
 -- March 1 is the last version before glib utf8 conversion --
+-- March 15 irrevocable change to mchar to use glib utf8
 
-Remaining statics:
-mchar global codesets
-parse global rules
-prefs global key file
+Remaining static variables:
+prefs global key file   << This is ok, but needs locking >>
 findsep::output
 ripstream::ripstream_rip_ogg
 utf8 global current_charset
 
--- March 15 irrevocable change to mchar to use glib utf8
-   
 
 -----------------------------------------------------------------------
 cygwin version
