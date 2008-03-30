@@ -410,16 +410,16 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
     if (rmi->ripstream_first_time_through) {
 	int ret;
 	debug_printf ("First time through...\n");
-	rmi->ripstream_first_time_through = 0;
 	if (!rmi->current_track.have_track_info) {
 	    strcpy (rmi->current_track.raw_metadata, rmi->no_meta_name);
 	}
-	ret = rip_manager_start_track (rmi, &rmi->current_track);
+	msnprintf (rmi->current_track.track, MAX_HEADER_LEN, m_("0"));
+	ret = start_track_mp3 (rmi, &rmi->current_track);
 	if (ret != SR_SUCCESS) {
-	    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
+	    debug_printf ("start_track_mp3 failed(#1): %d\n",ret);
 	    return ret;
 	}
-	filelib_write_cue (rmi, &rmi->current_track, 0);
+	rmi->ripstream_first_time_through = 0;
 	copy_track_info (&rmi->old_track, &rmi->current_track);
     }
 
@@ -734,8 +734,11 @@ start_track_mp3 (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 	ret = rip_manager_put_data (rmi, bigbuf, HEADER_SIZE-sent);
 	if (ret != SR_SUCCESS) return ret;
     }
-    rmi->track_count ++;
-    debug_printf ("Changed track count to %d\n", rmi->track_count);
+
+    if (!rmi->ripstream_first_time_through) {
+        rmi->track_count ++;
+        debug_printf ("Changed track count to %d\n", rmi->track_count);
+    }
 
     return SR_SUCCESS;
 }
