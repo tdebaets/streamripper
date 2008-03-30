@@ -48,13 +48,14 @@ static u_long cbuf2_idx_to_chunk (CBUF2 *cbuf2, u_long idx);
 static u_long cbuf2_add (CBUF2 *cbuf2, u_long pos, u_long len);
 static void cbuf2_get_used_fragments (CBUF2 *cbuf2, u_long* frag1, 
 				      u_long* frag2);
-static void cbuf2_advance_metadata_list (CBUF2* cbuf2);
+static void cbuf2_advance_metadata_list (RIP_MANAGER_INFO* rmi, CBUF2* cbuf2);
 static error_code cbuf2_extract_relay_mp3 (CBUF2 *cbuf2, char *data, 
 					   u_long *pos, u_long *len, 
 					   int icy_metadata);
 static error_code cbuf2_extract_relay_ogg (CBUF2 *cbuf2, RELAY_LIST* ptr);
 static u_long cbuf2_offset (CBUF2 *cbuf2, u_long pos);
 static u_long cbuf2_offset_2 (CBUF2 *cbuf2, u_long pos);
+static void cbuf2_debug_lists (RIP_MANAGER_INFO* rmi, CBUF2 *cbuf2);
 
 /*****************************************************************************
  * Function definitions
@@ -121,7 +122,7 @@ cbuf2_insert (CBUF2 *cbuf2, const char *data, u_long count)
 }
 
 static void
-cbuf2_advance_metadata_list (CBUF2* cbuf2)
+cbuf2_advance_metadata_list (RIP_MANAGER_INFO* rmi, CBUF2* cbuf2)
 {
     u_long frag1, frag2;
     u_long metadata_pos;
@@ -160,7 +161,7 @@ cbuf2_advance_metadata_list (CBUF2* cbuf2)
 	}
     }
     debug_printf ("CBUF_EXTRACT\n");
-    cbuf2_debug_lists (cbuf2);
+    cbuf2_debug_lists (rmi, cbuf2);
 }
 
 static void
@@ -295,7 +296,7 @@ cbuf2_extract (RIP_MANAGER_INFO* rmi, CBUF2 *cbuf2,
 	cbuf2->next_song -= count;
     }
 
-    cbuf2_advance_metadata_list (cbuf2);
+    cbuf2_advance_metadata_list (rmi, cbuf2);
 
     if (cbuf2->have_relay) {
 	cbuf2_advance_relay_list (rmi, cbuf2, count);
@@ -412,7 +413,7 @@ cbuf2_insert_chunk (RIP_MANAGER_INFO* rmi,
 	list_add_tail (&(ml->m_list), &(cbuf2->metadata_list));
     }
     debug_printf ("CBUF_INSERT\n");
-    cbuf2_debug_lists (cbuf2);
+    cbuf2_debug_lists (rmi, cbuf2);
 
     threadlib_signal_sem (&cbuf2->cbuf_sem);
     return SR_SUCCESS;
@@ -549,48 +550,51 @@ cbuf2_extract_relay_mp3 (CBUF2 *cbuf2, char *data, u_long *pos, u_long *len,
 }
 
 void
-cbuf2_debug_lists (CBUF2 *cbuf2)
+cbuf2_debug_lists (RIP_MANAGER_INFO* rmi, CBUF2 *cbuf2)
 {
     LIST *p;
 
-    debug_printf ("---CBUF_DEBUG_META_LIST---\n");
-    debug_printf("%ld: <size>\n", cbuf2->size);
-    debug_printf("%ld: Start\n", cbuf2->base_idx);
-    list_for_each (p, &(cbuf2->metadata_list)) {
-	METADATA_LIST *meta_tmp;
-	int metadata_pos;
-	meta_tmp = list_entry (p, METADATA_LIST, m_list);
-	metadata_pos = (meta_tmp->m_chunk + 1) * cbuf2->chunk_size - 1;
-	debug_printf("%ld: %d [%d]%s\n", 
-		     metadata_pos,
-		     meta_tmp->m_chunk, 
-		     (int) meta_tmp->m_composed_metadata[0],
-		     &meta_tmp->m_composed_metadata[1]);
-    }
-    debug_printf("%ld: End\n", cbuf2_write_index(cbuf2));
+    if (rmi->http_info.content_type != CONTENT_TYPE_OGG) {
+	debug_printf ("---CBUF_DEBUG_META_LIST---\n");
+	debug_printf("%ld: <size>\n", cbuf2->size);
+	debug_printf("%ld: Start\n", cbuf2->base_idx);
+	list_for_each (p, &(cbuf2->metadata_list)) {
+	    METADATA_LIST *meta_tmp;
+	    int metadata_pos;
+	    meta_tmp = list_entry (p, METADATA_LIST, m_list);
+	    metadata_pos = (meta_tmp->m_chunk + 1) * cbuf2->chunk_size - 1;
+	    debug_printf("%ld: %d [%d]%s\n", 
+			 metadata_pos,
+			 meta_tmp->m_chunk, 
+			 (int) meta_tmp->m_composed_metadata[0],
+			 &meta_tmp->m_composed_metadata[1]);
+	}
+	debug_printf("%ld: End\n", cbuf2_write_index(cbuf2));
 
-    debug_printf ("---CBUF_DEBUG_OGG_LIST---\n");
-    debug_printf("%ld: <size>\n", cbuf2->size);
-    debug_printf("%ld: Start\n", cbuf2->base_idx);
-    list_for_each (p, &(cbuf2->ogg_page_list)) {
-	OGG_PAGE_LIST *ogg_tmp;
-	ogg_tmp = list_entry (p, OGG_PAGE_LIST, m_list);
-	debug_printf("ogg page = %02x [%ld, %ld, %ld]\n", 
-		     ogg_tmp->m_page_flags,
-		     ogg_tmp->m_page_start,
-		     ogg_tmp->m_page_len,
-		     cbuf2_add(cbuf2,ogg_tmp->m_page_start,
-			       ogg_tmp->m_page_len));
-    }
-    if (cbuf2->song_page) {
-	debug_printf ("%ld(%ld): Song Page\n", 
-		      cbuf2->song_page->m_page_start,
-		      cbuf2->song_page_done);
     } else {
-	debug_printf ("---: Song Page\n");
+	debug_printf ("---CBUF_DEBUG_OGG_LIST---\n");
+	debug_printf("%ld: <size>\n", cbuf2->size);
+	debug_printf("%ld: Start\n", cbuf2->base_idx);
+	list_for_each (p, &(cbuf2->ogg_page_list)) {
+	    OGG_PAGE_LIST *ogg_tmp;
+	    ogg_tmp = list_entry (p, OGG_PAGE_LIST, m_list);
+	    debug_printf("ogg page = %02x [%ld, %ld, %ld]\n", 
+			 ogg_tmp->m_page_flags,
+			 ogg_tmp->m_page_start,
+			 ogg_tmp->m_page_len,
+			 cbuf2_add(cbuf2,ogg_tmp->m_page_start,
+				   ogg_tmp->m_page_len));
+	}
+	if (cbuf2->song_page) {
+	    debug_printf ("%ld(%ld): Song Page\n", 
+			  cbuf2->song_page->m_page_start,
+			  cbuf2->song_page_done);
+	} else {
+	    debug_printf ("---: Song Page\n");
+	}
+	debug_printf ("%ld: End\n", cbuf2_write_index(cbuf2));
+	debug_printf ("---\n");
     }
-    debug_printf ("%ld: End\n", cbuf2_write_index(cbuf2));
-    debug_printf ("---\n");
 }
 
 error_code

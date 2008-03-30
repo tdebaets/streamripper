@@ -970,6 +970,7 @@ ripstream_recvall (RIP_MANAGER_INFO* rmi, char* buffer, int size)
     return ret;
 }
 
+/* Data followed by meta-data */
 static error_code
 get_stream_data (RIP_MANAGER_INFO* rmi, char *data_buf, char *track_buf)
 {

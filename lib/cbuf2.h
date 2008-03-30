@@ -81,6 +81,5 @@ error_code cbuf2_extract_relay (CBUF2 *cbuf2, char *data, u_long *pos,
 #endif
 error_code cbuf2_extract_relay (CBUF2 *cbuf2, RELAY_LIST* ptr);
 error_code cbuf2_advance_ogg (RIP_MANAGER_INFO* rmi, CBUF2 *cbuf2, int requested_free_size);
-void cbuf2_debug_lists (CBUF2 *cbuf2);
 
 #endif
