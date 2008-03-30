@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "utf8.h"
+#include "charset.h"
 
 
 #ifdef _WIN32
@@ -217,7 +218,6 @@ int utf8_decode(const char *from, char **to)
 
 #else /* End win32. Rest is for real operating systems */
 
-
 #ifdef HAVE_LANGINFO_CODESET
 #include <langinfo.h>
 #endif
@@ -226,6 +226,7 @@ int iconvert(const char *fromcode, const char *tocode,
 	     const char *from, size_t fromlen,
 	     char **to, size_t *tolen);
 
+#if defined (commentout)
 static char *current_charset = 0; /* means "US-ASCII" */
 
 void convert_set_charset(const char *charset)
@@ -244,6 +245,7 @@ void convert_set_charset(const char *charset)
   if (charset && *charset)
     current_charset = strdup(charset);
 }
+#endif
 
 static int convert_buffer(const char *fromcode, const char *tocode,
 			  const char *from, size_t fromlen,
@@ -291,6 +293,7 @@ static int convert_string(const char *fromcode, const char *tocode,
   return 3;
 }
 
+#if defined (commentout)
 int utf8_encode(const char *from, char **to)
 {
   char *charset;
@@ -300,21 +303,26 @@ int utf8_encode(const char *from, char **to)
   charset = current_charset ? current_charset : "US-ASCII";
   return convert_string(charset, "UTF-8", from, to, '#');
 }
+#endif
 
 int utf8_decode(const char *from, char **to)
 {
-  char *charset;
+    char *charset;
 
-  if(*from == 0) {
-      *to = malloc(1);
-      **to = 0;
-      return 1;
-  }
+    if(*from == 0) {
+	*to = malloc(1);
+	**to = 0;
+	return 1;
+    }
 
-  if (!current_charset)
-    convert_set_charset(0);
-  charset = current_charset ? current_charset : "US-ASCII";
-  return convert_string("UTF-8", charset, from, to, '?');
+#if defined (commentout)
+    if (!current_charset)
+	convert_set_charset(0);
+    charset = current_charset ? current_charset : "US-ASCII";
+    return convert_string("UTF-8", charset, from, to, '?');
+#endif
+    return convert_string("UTF-8", "US-ASCII", from, to, '?');
+
 }
 
 #endif

@@ -3,7 +3,6 @@
 
 Remaining static variables:
 prefs global key file   << This is ok, but needs locking >>
-findsep::output
 ripstream::ripstream_rip_ogg
 utf8 global current_charset
 
