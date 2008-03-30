@@ -6,6 +6,8 @@ THANKS (1.62 & 1.63)
 "nn" for adding checks on disk full, improved parsing of parse rules file.
 "Max Mutrix" <rmaxm a@t yahoo.com> for fixing two problems with the relay lib
 and a fix for id3 on 64-bit systems.
+"Andrew Neitsch" <neitsch a@t blindrut.ca> for a patch that parses year and 
+track information from metadata.
 
 THANKS (1.61)
 ---------------------
