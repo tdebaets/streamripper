@@ -32,9 +32,7 @@
 #include "debug.h"
 #include "list.h"
 
-#define MIN_RMS_SILENCE		100
 #define MAX_RMS_SILENCE		32767 //max short
-#define NUM_SILTRACKERS		30
 #define READSIZE	2000
 // #define READSIZE	1000
 
@@ -50,13 +48,11 @@ struct FRAME_LIST_struct
     LIST m_list;
 };
 
-typedef struct SILENCETRACKERst
+typedef struct MIN_POSst
 {
-    long insilencecount;
-    double silencevol;
-    unsigned long silstart_samp;
-    BOOL foundsil;
-} SILENCETRACKER;
+    unsigned short volume;
+    unsigned long pos;
+} MIN_POS;
 
 typedef struct DECODE_STRUCTst
 {
@@ -72,8 +68,12 @@ typedef struct DECODE_STRUCTst
     unsigned long  pcmpos;
     long  samplerate;
     short prev_sample;
-    SILENCETRACKER siltrackers[NUM_SILTRACKERS];
     LIST frame_list;
+    unsigned short* maxvolume_buffer;
+    unsigned long maxvolume_buffer_offs;
+    int maxvolume_buffer_depth;
+    int max_search_depth;
+    MIN_POS* min_maxvolume_buffer;
 } DECODE_STRUCT;
 
 typedef struct GET_BITRATE_STRUCTst
@@ -90,13 +90,12 @@ typedef struct GET_BITRATE_STRUCTst
 /*****************************************************************************
  * Private functions
  *****************************************************************************/
-static void init_siltrackers(SILENCETRACKER* siltrackers);
-static void apply_padding (DECODE_STRUCT* ds, unsigned long silstart,
+static void apply_padding (DECODE_STRUCT* ds, unsigned long silsplit,
 			   long padding1, long padding2,
 			   u_long* pos1, u_long* pos2);
 static void free_frame_list (DECODE_STRUCT* ds);
 static enum mad_flow input(void *data, struct mad_stream *ms);
-static void search_for_silence(DECODE_STRUCT *ds, double vol);
+static void search_for_silence(DECODE_STRUCT *ds, unsigned short vol);
 static signed int scale(mad_fixed_t sample);
 static enum mad_flow output(void *data, struct mad_header const *header,
 			    struct mad_pcm *pcm);
@@ -131,23 +130,26 @@ findsep_silence (const char* mpgbuf,
     DECODE_STRUCT ds;
     struct mad_decoder decoder;
     int result;
-    unsigned long silstart;
+    int bestsil;
     int i;
     
     ds.mpgbuf = (unsigned char*)mpgbuf;
     ds.mpgsize = mpgsize;
     ds.pcmpos = 0;
-    ds.mpgpos = 0;
+    ds.mpgpos= 0;
     ds.samplerate = 0;
     ds.prev_sample = 0;
     ds.len_to_sw_ms = len_to_sw;
     ds.searchwindow_ms = searchwindow;
     ds.silence_ms = silence_length;
+    ds.maxvolume_buffer = 0;
+    ds.maxvolume_buffer_offs = 0;
+    ds.maxvolume_buffer_depth = 0;
+    ds.max_search_depth = 0;
+    ds.min_maxvolume_buffer = 0;
     INIT_LIST_HEAD (&ds.frame_list);
 
     debug_printf ("FINDSEP: %p -> %p (%d)\n", mpgbuf, mpgbuf+mpgsize, mpgsize);
-
-    init_siltrackers(ds.siltrackers);
 
 #if defined (MAKE_DUMP_MP3)
     {
@@ -174,28 +176,43 @@ findsep_silence (const char* mpgbuf,
 
     /* Search through siltrackers to find minimum volume point */
     assert(ds.mpgsize != 0);
-    silstart = ds.pcmpos/2;
-    for(i = 0; i < NUM_SILTRACKERS; i++) {
-	debug_printf("SILT: %2d/%8g, pcm=%4d, found=%d, insil=%d\n", 
-	    i,
-	    ds.siltrackers[i].silencevol,
-	    ds.siltrackers[i].silstart_samp,
-	    ds.siltrackers[i].foundsil,
-	    ds.siltrackers[i].insilencecount
-	    );
-	if (ds.siltrackers[i].foundsil) {
-	    debug_printf("found!\n");
-	    silstart = ds.siltrackers[i].silstart_samp;
-	    break;
-	}
+
+    /* Start with the highest silence-length */
+    bestsil = 0;
+
+    double delta = 1;
+    for (i = 1; i <= ds.max_search_depth; ++i)
+    {
+        unsigned long current = ds.min_maxvolume_buffer[bestsil].volume;
+        unsigned long candidate = ds.min_maxvolume_buffer[i].volume;
+
+        delta *= 0.6;
+
+        /* Only halve the silence-length if we can reduce the
+           max-volume by at least 40 % by doing so. */
+        if (current * delta > candidate)
+        {
+            bestsil = i;
+            delta = 1;
+        }
     }
 
-    if (i == NUM_SILTRACKERS) {
-	debug_printf("warning: no silence found between tracks\n");
-    }
+    debug_printf("Most silent region: depth %d, max-volume %d, pos %ld,"
+            "sample window %ld (%f ms)\n",
+            bestsil,
+            ds.min_maxvolume_buffer[bestsil].volume,
+            ds.min_maxvolume_buffer[bestsil].pos,
+            ds.silence_samples / (1 << bestsil),
+            ds.silence_samples
+            * 1000.0 / (double)(ds.samplerate * (1 << bestsil)));
 
-    /* Now that we have the start of the silence, let's add the padding */
-    apply_padding (&ds, silstart, padding1, padding2, pos1, pos2);
+    /* Now that we have the silence position, let's add the padding */
+    apply_padding (&ds, ds.min_maxvolume_buffer[bestsil].pos,
+            padding1, padding2, pos1, pos2);
+
+    /* Free the max volume buffers */
+    free (ds.maxvolume_buffer);
+    free (ds.min_maxvolume_buffer);
 
     /* Free the list of frame info */
     free_frame_list (&ds);
@@ -203,22 +220,9 @@ findsep_silence (const char* mpgbuf,
     return SR_SUCCESS;
 }
 
-void init_siltrackers(SILENCETRACKER* siltrackers)
-{
-    int i;
-    long stepsize = (MAX_RMS_SILENCE - MIN_RMS_SILENCE) / (NUM_SILTRACKERS-1);
-    long rms = MIN_RMS_SILENCE;
-    for (i = 0; i < NUM_SILTRACKERS; i++, rms += stepsize) {
-	siltrackers[i].foundsil = 0;
-	siltrackers[i].silstart_samp = 0;
-	siltrackers[i].insilencecount = 0;
-	siltrackers[i].silencevol = rms;
-    }
-}
-
 static void
 apply_padding (DECODE_STRUCT* ds,
-	       unsigned long silstart,
+	       unsigned long silsplit,
 	       long padding1,
 	       long padding2,
 	       u_long* pos1, 
@@ -229,11 +233,9 @@ apply_padding (DECODE_STRUCT* ds,
     FRAME_LIST *pos;
     long pos1s, pos2s;
 
-    pos1s = silstart 
-	    + (ds->silence_samples/2) 
+    pos1s = silsplit
 	    + padding1 * (ds->samplerate/1000);
-    pos2s = silstart 
-	    + (ds->silence_samples/2) 
+    pos2s = silsplit
 	    - padding2 * (ds->samplerate/1000);
 
     debug_printf ("Applying padding: p1,p2 = (%d,%d), pos1s,pos2s = (%d,%d)\n", padding1, padding2, pos1s, pos2s);
@@ -329,27 +331,76 @@ input(void *data, struct mad_stream *ms)
 }
 
 void
-search_for_silence (DECODE_STRUCT *ds, double vol)
+propagate_max_value (unsigned short *max_buffer, unsigned long node_pos, int depth)
+{
+    unsigned long current_pos = node_pos;
+    unsigned long parent_pos = current_pos / 2;
+
+    while (depth-- > 0)
+    {
+        unsigned long sibling_pos = current_pos ^ 1;
+
+        unsigned short current_val = max_buffer[current_pos];
+        unsigned short sibling_val = max_buffer[sibling_pos];
+
+        if (current_val > sibling_val)
+            max_buffer[parent_pos] = current_val;
+        else
+            max_buffer[parent_pos] = sibling_val;
+
+        current_pos = parent_pos;
+        parent_pos /= 2;
+    }
+}
+
+void
+insert_value (DECODE_STRUCT *ds, unsigned short vol, unsigned long pos)
 {
     int i;
-    for(i = 0; i < NUM_SILTRACKERS; i++) {
-	SILENCETRACKER *pstracker = &ds->siltrackers[i];
+    unsigned long current_pos = 1;
+    unsigned short prev = ds->maxvolume_buffer[ds->maxvolume_buffer_offs];
+    int depth = 1;
 
-	if (pstracker->foundsil)
-	    continue;
+    ds->maxvolume_buffer[ds->maxvolume_buffer_offs] = vol;
+    vol = prev;
 
-	if (vol < pstracker->silencevol) {
-	    if (pstracker->insilencecount == 0) {
-		pstracker->silstart_samp = ds->pcmpos;
-	    }
-	    pstracker->insilencecount++;
-	} else {
-	    pstracker->insilencecount = 0;
-	}
+    for (i = 1; i < ds->maxvolume_buffer_depth; ++i)
+    {
+        unsigned long index = ds->maxvolume_buffer_offs + current_pos
+            + (pos % current_pos);
 
-	if (pstracker->insilencecount > ds->silence_samples) {
-	    pstracker->foundsil = TRUE;
-	}
+        prev = ds->maxvolume_buffer[index];
+        ds->maxvolume_buffer[index] = vol;
+        vol = prev;
+
+        propagate_max_value (ds->maxvolume_buffer, index, depth++);
+
+        current_pos *= 2;
+    }
+}
+
+void
+search_for_silence (DECODE_STRUCT *ds, unsigned short vol)
+{
+    unsigned long window_size = 1;
+    unsigned long window_pos = ds->pcmpos - ds->len_to_sw_start_samp;
+    unsigned long node_pos = ds->maxvolume_buffer_offs;
+    int i;
+
+    insert_value (ds, vol, ds->pcmpos);
+
+    window_size = 1;
+    for (i = ds->maxvolume_buffer_depth - 1; i >= 0; --i) {
+        if (i <= ds->max_search_depth
+            && window_pos >= window_size
+            && ds->maxvolume_buffer[node_pos] < ds->min_maxvolume_buffer[i].volume)
+        {
+            ds->min_maxvolume_buffer[i].volume = ds->maxvolume_buffer[node_pos];
+            ds->min_maxvolume_buffer[i].pos = ds->pcmpos - window_size / 2;
+        }
+
+        node_pos /= 2;
+        window_size *= 2;
     }
 }
 
@@ -400,7 +451,7 @@ output (void *data, struct mad_header const *header,
     FRAME_LIST *fl;
     unsigned int nchannels, nsamples;
     mad_fixed_t const *left_ch, *right_ch;
-    signed int sample;
+    static signed int sample;
     double v;
 
     nchannels = pcm->channels;
@@ -448,16 +499,64 @@ output (void *data, struct mad_header const *header,
     return MAD_FLOW_CONTINUE;
 }
 
+static unsigned long
+next_power_of_two(long value)
+{
+    long result = 1;
+    while (result < value)
+        result *= 2;
+    return result;
+}
+
+static void
+init_maxvolume_buffer(DECODE_STRUCT *ds)
+{
+    unsigned long buffer_offset = 1;
+    unsigned long temp = ds->silence_samples;
+    unsigned long depth = 0;
+    int i;
+    while (temp > 0) {
+        ++depth;
+        temp /= 2;
+        buffer_offset += temp;
+    }
+
+    ds->maxvolume_buffer_depth = depth;
+
+    /* Let the minimum silence-length be 10 ms. */
+    ds->max_search_depth =
+        depth - (int)ceil(log(10 * (ds->samplerate / 1000.0)) / log(2)) - 1;
+
+    /* Unless the user specified silence-length is lower. */
+    if (ds->max_search_depth < 0)
+        ds->max_search_depth = 0;
+
+    ds->maxvolume_buffer =
+        (unsigned short*) calloc(buffer_offset + ds->silence_samples,
+                sizeof(unsigned short));
+    ds->maxvolume_buffer_offs = buffer_offset;
+
+    ds->min_maxvolume_buffer = (MIN_POS*) malloc(depth * sizeof(MIN_POS));
+
+    for (i = 0; i < depth; ++i)
+    {
+        ds->min_maxvolume_buffer[i].volume = MAX_RMS_SILENCE;
+        ds->min_maxvolume_buffer[i].pos = 0;
+    }
+}
+
 static enum 
 mad_flow header(void *data, struct mad_header const *pheader)
 {
     DECODE_STRUCT *ds = (DECODE_STRUCT *)data;
     if (!ds->samplerate) {
 	ds->samplerate = pheader->samplerate;
-	ds->silence_samples = ds->silence_ms * (ds->samplerate/1000);
+	ds->silence_samples =
+        next_power_of_two(ds->silence_ms * (ds->samplerate/1000));
 	ds->len_to_sw_start_samp = ds->len_to_sw_ms * (ds->samplerate/1000);
 	ds->len_to_sw_end_samp = (ds->len_to_sw_ms + ds->searchwindow_ms) 
 		* (ds->samplerate/1000);
+	init_maxvolume_buffer(ds);
 	debug_printf ("Setting samplerate: %ld\n",ds->samplerate);
     }
     return MAD_FLOW_CONTINUE;
