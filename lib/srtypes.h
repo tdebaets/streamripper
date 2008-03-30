@@ -552,6 +552,9 @@ struct RIP_MANAGER_INFOst
     /* Should we write a file for this track? */
     BOOL write_data;
 
+    /* Used by ripstream ogg logic */
+    int ogg_have_track;
+
     /* Title & artist info */
     TRACK_INFO old_track;	    /* The track that's being ripped now */
     TRACK_INFO new_track;	    /* The track that's gonna start soon */

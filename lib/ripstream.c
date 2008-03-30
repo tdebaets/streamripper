@@ -220,7 +220,6 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
     int ret;
     int real_ret = SR_SUCCESS;
     u_long extract_size;
-    static int have_track = 0;
 
     /* get the data from the stream */
     debug_printf ("RIPSTREAM_RIP_OGG: top of loop\n");
@@ -240,7 +239,7 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 			  GET_MAKE_RELAY(rmi->prefs->flags),
 			  rmi->getbuffer_size, rmi->cbuf2_size);
 	if (ret != SR_SUCCESS) return ret;
-	have_track = 0;
+	rmi->ogg_have_track = 0;
 	/* Warm up the ogg decoding routines */
 	rip_ogg_init (rmi);
 	/* Done! */
@@ -265,7 +264,7 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
     }
 
     /* If we have unwritten pages for the current track, write them */
-    if (have_track) {
+    if (rmi->ogg_have_track) {
 	do {
 	    error_code ret;
 	    unsigned long amt_filled;
@@ -288,7 +287,7 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 	    }
 	    if (got_eos) {
 		end_track_ogg (rmi, &rmi->old_track);
-		have_track = 0;
+		rmi->ogg_have_track = 0;
 		break;
 	    }
 	} while (1);
@@ -306,7 +305,7 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 	filelib_write_cue (rmi, &rmi->current_track, 0);
 	copy_track_info (&rmi->old_track, &rmi->current_track);
 
-	have_track = 1;
+	rmi->ogg_have_track = 1;
     }
 
     /* If buffer almost full, advance the buffer */
