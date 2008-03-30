@@ -91,6 +91,7 @@ Section "Core Libraries" sec_core
   File "D:\sripper_1x\win32\glib-2.12.12\bin\libglib-2.0-0.dll"
   File "D:\sripper_1x\iconv-win32\dll\iconv.dll"
   File "D:\sripper_1x\intl.dll"
+  File "..\win32\Release\streamripper.dll"
   
   ;Store installation folder(s)
   WriteRegStr HKCU "Software\Streamripper" "" $INSTDIR
@@ -124,7 +125,7 @@ SectionEnd
 Section "GUI Application" sec_gui
 
   SetOutPath "$INSTDIR"
-  File "release\wstreamripper.exe"
+  File "..\win32\Release\wstreamripper.exe"
 
   SetOutPath $INSTDIR\Skins
   File srskin.bmp
@@ -143,7 +144,7 @@ Section "Console Application" sec_console
 
   SetOutPath "$INSTDIR"
 
-  File "D:\sripper_1x\consoleWin32\Release\streamripper.exe"
+  File "..\win32\Release\streamripper.exe"
   
   ;Store installation folder
   WriteRegStr HKCU "Software\Streamripper" "" $INSTDIR
