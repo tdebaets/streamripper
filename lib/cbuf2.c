@@ -31,6 +31,11 @@
  *   The read & write indices always point to the next byte to be read 
  *   or written.  When the buffer is full or empty, they are equal.
  *   Use the item_count to distinguish these cases.
+ *
+ *   cbuf2->base_idx refers to the beginning of the filled region
+ *
+ *   Chunks are always absolute
+ *
  *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,9 +54,7 @@ static u_long cbuf2_add (CBUF2 *cbuf2, u_long pos, u_long len);
 static void cbuf2_get_used_fragments (CBUF2 *cbuf2, u_long* frag1, 
 				      u_long* frag2);
 static void cbuf2_advance_metadata_list (RIP_MANAGER_INFO* rmi, CBUF2* cbuf2);
-static error_code cbuf2_extract_relay_mp3 (CBUF2 *cbuf2, char *data, 
-					   u_long *pos, u_long *len, 
-					   int icy_metadata);
+static error_code cbuf2_extract_relay_mp3 (CBUF2 *cbuf2, RELAY_LIST* ptr);
 static error_code cbuf2_extract_relay_ogg (CBUF2 *cbuf2, RELAY_LIST* ptr);
 static u_long cbuf2_offset (CBUF2 *cbuf2, u_long pos);
 static u_long cbuf2_offset_2 (CBUF2 *cbuf2, u_long pos);
@@ -177,11 +180,11 @@ cbuf2_advance_relay_list (RIP_MANAGER_INFO* rmi, CBUF2* cbuf2, u_long count)
     while (ptr != NULL) {
 	next = ptr->m_next;
 	if (!ptr->m_is_new) {
-	    if (ptr->m_cbuf_pos >= count) {
-		u_long old_pos = ptr->m_cbuf_pos;
-		ptr->m_cbuf_pos -= count;
+	    if (ptr->m_cbuf_offset >= count) {
+		u_long old_pos = ptr->m_cbuf_offset;
+		ptr->m_cbuf_offset -= count;
 		debug_printf ("Updated relay pointer: %d -> %d\n",
-			      old_pos, ptr->m_cbuf_pos);
+			      old_pos, ptr->m_cbuf_offset);
 		prev = ptr;
 	    } else {
 		debug_printf ("Relay: Client %d couldn't keep up with cbuf\n", 
@@ -428,9 +431,7 @@ cbuf2_extract_relay (CBUF2 *cbuf2, RELAY_LIST* ptr)
     if (cbuf2->content_type == CONTENT_TYPE_OGG) {
 	return cbuf2_extract_relay_ogg (cbuf2, ptr);
     } else {
-	return cbuf2_extract_relay_mp3 (cbuf2, ptr->m_buffer, 
-					&ptr->m_cbuf_pos, &ptr->m_left_to_send,
-					ptr->m_icy_metadata);
+	return cbuf2_extract_relay_mp3 (cbuf2, ptr);
     }
 }
 
@@ -459,16 +460,16 @@ cbuf2_extract_relay_ogg (CBUF2 *cbuf2, RELAY_LIST* ptr)
 	u_long relay_idx, remaining;
 
 	threadlib_waitfor_sem (&cbuf2->cbuf_sem);
-	relay_idx = cbuf2_add (cbuf2, cbuf2->base_idx, ptr->m_cbuf_pos);
+	relay_idx = cbuf2_add (cbuf2, cbuf2->base_idx, ptr->m_cbuf_offset);
 	cbuf2_get_used_fragments (cbuf2, &frag1, &frag2);
-	if (ptr->m_cbuf_pos < frag1) {
-	    remaining = frag1 - ptr->m_cbuf_pos;
+	if (ptr->m_cbuf_offset < frag1) {
+	    remaining = frag1 - ptr->m_cbuf_offset;
 	} else {
-	    remaining = cbuf2->item_count - ptr->m_cbuf_pos;
+	    remaining = cbuf2->item_count - ptr->m_cbuf_offset;
 	}
 	debug_printf ("%p p=%d/t=%d (f1=%d,f2=%d) [r=%d/bs=%d]\n", 
 		      ptr,
-		      ptr->m_cbuf_pos, cbuf2->item_count,
+		      ptr->m_cbuf_offset, cbuf2->item_count,
 		      frag1, frag2,
 		      remaining, ptr->m_buffer_size);
 	if (remaining == 0) {
@@ -478,11 +479,11 @@ cbuf2_extract_relay_ogg (CBUF2 *cbuf2, RELAY_LIST* ptr)
 	if (remaining > ptr->m_buffer_size) {
 	    memcpy (ptr->m_buffer, &cbuf2->buf[relay_idx], ptr->m_buffer_size);
 	    ptr->m_left_to_send = ptr->m_buffer_size;
-	    ptr->m_cbuf_pos += ptr->m_buffer_size;
+	    ptr->m_cbuf_offset += ptr->m_buffer_size;
 	} else {
 	    memcpy (ptr->m_buffer, &cbuf2->buf[relay_idx], remaining);
 	    ptr->m_left_to_send = remaining;
-	    ptr->m_cbuf_pos += remaining;
+	    ptr->m_cbuf_offset += remaining;
 	}
 	threadlib_signal_sem (&cbuf2->cbuf_sem);
     }
@@ -490,46 +491,51 @@ cbuf2_extract_relay_ogg (CBUF2 *cbuf2, RELAY_LIST* ptr)
 }
 
 static error_code 
-cbuf2_extract_relay_mp3 (CBUF2 *cbuf2, char *data, u_long *pos, u_long *len,
-			 int icy_metadata)
+cbuf2_extract_relay_mp3 (CBUF2 *cbuf2, RELAY_LIST* ptr)
 {
     u_long frag1, frag2;
     u_long relay_chunk_no;
     u_long relay_idx;
-    u_long old_pos;
+    u_long old_offset;
+
+
+    char *data = ptr->m_buffer;
+    u_long *offset = &ptr->m_cbuf_offset;
+    u_long *len = &ptr->m_left_to_send;       /* Amount that relay lib 
+						 needs to send to client */
+    int icy_metadata = ptr->m_icy_metadata;
+
     *len = 0;
 
     /* Check if there is data to send to the relay */
     threadlib_waitfor_sem (&cbuf2->cbuf_sem);
     cbuf2_get_used_fragments (cbuf2, &frag1, &frag2);
-    if (*pos + cbuf2->chunk_size > cbuf2->item_count) {
+    if (*offset + cbuf2->chunk_size > cbuf2->item_count) {
 	threadlib_signal_sem (&cbuf2->cbuf_sem);
 	return SR_ERROR_BUFFER_EMPTY;
     }
 
     /* Otherwise, there is enough data */
-    /* The *pos is the offset from the filled part of the buffer */
-    old_pos = *pos;
-    relay_idx = cbuf2_add (cbuf2, cbuf2->base_idx, *pos);
-    relay_chunk_no = cbuf2_idx_to_chunk (cbuf2, *pos);
+    /* The *offset is the offset from the filled part of the buffer */
+    old_offset = *offset;
+    relay_idx = cbuf2_add (cbuf2, cbuf2->base_idx, *offset);
+    relay_chunk_no = cbuf2_idx_to_chunk (cbuf2, relay_idx);
     memcpy (data, &cbuf2->buf[relay_idx], cbuf2->chunk_size);
-    *pos += cbuf2->chunk_size;
+    *offset += cbuf2->chunk_size;
     *len = cbuf2->chunk_size;
-    debug_printf ("Updated relay pointer: %d -> %d (%d %d %d)\n",
-		  old_pos, *pos, cbuf2->base_idx,
-		  relay_idx, cbuf2_write_index(cbuf2));
-    debug_printf ("Partial request fulfilled: %d bytes (%d)\n", *len, 
-		  icy_metadata);
+    debug_printf ("RELAY_DEBUG Was: offset=%d, idx=%d, chunk=%d\n", old_offset,
+		  relay_idx, relay_chunk_no);
+    debug_printf ("RELAY_DEBUG Changed to: offset=%d\n", *offset);
     if (icy_metadata) {
 	int have_metadata = 0;
 	LIST *p = cbuf2->metadata_list.next;
 	METADATA_LIST *tmp;
 	list_for_each (p, &(cbuf2->metadata_list)) {
 	    tmp = list_entry(p, METADATA_LIST, m_list);
-	    debug_printf ("Comparing metadata: meta=%d relay=%d\n",
+	    debug_printf ("RELAY_DEBUG Comparing metadata: meta=%d relay=%d\n",
 			  tmp->m_chunk, relay_chunk_no);
 	    if (tmp->m_chunk == relay_chunk_no) {
-		debug_printf ("Got metadata!\n");
+		debug_printf ("RELAY_DEBUG Got metadata!\n");
 		have_metadata = 1;
 		break;
 	    }
@@ -776,14 +782,14 @@ cbuf2_init_relay_entry (CBUF2 *cbuf2, RELAY_LIST* ptr, u_long burst_request)
 
     threadlib_waitfor_sem (&cbuf2->cbuf_sem);
     if (burst_request >= cbuf2->item_count) {
-	ptr->m_cbuf_pos = 0;
+	ptr->m_cbuf_offset = 0;
     } else {
-	ptr->m_cbuf_pos = cbuf2->item_count - burst_request;
+	ptr->m_cbuf_offset = cbuf2->item_count - burst_request;
     }
     if (cbuf2->content_type == CONTENT_TYPE_OGG) {
 	/* Move to ogg page boundary */
 	int no_boundary_yet = 1;
-	u_long req_pos = ptr->m_cbuf_pos;
+	u_long req_pos = ptr->m_cbuf_offset;
 	p = cbuf2->ogg_page_list.next;
 	list_for_each (p, &(cbuf2->ogg_page_list)) {
 	    u_long page_offset;
@@ -791,13 +797,13 @@ cbuf2_init_relay_entry (CBUF2 *cbuf2, RELAY_LIST* ptr, u_long burst_request)
 	    page_offset = cbuf2_offset (cbuf2, tmp->m_page_start);
 	    if (page_offset < req_pos || no_boundary_yet) {
 		if (tmp->m_page_flags & OGG_PAGE_BOS) {
-		    ptr->m_cbuf_pos = page_offset;
+		    ptr->m_cbuf_offset = page_offset;
 		    ptr->m_header_buf_ptr = 0;
 		    ptr->m_header_buf_len = 0;
 		    ptr->m_header_buf_off = 0;
 		    no_boundary_yet = 0;
 		} else if (!(tmp->m_page_flags & OGG_PAGE_2)) {
-		    ptr->m_cbuf_pos = page_offset;
+		    ptr->m_cbuf_offset = page_offset;
 		    ptr->m_header_buf_ptr = tmp->m_header_buf_ptr;
 		    ptr->m_header_buf_len = tmp->m_header_buf_len;
 		    ptr->m_header_buf_off = 0;
@@ -806,7 +812,7 @@ cbuf2_init_relay_entry (CBUF2 *cbuf2, RELAY_LIST* ptr, u_long burst_request)
 	    }
 	    debug_printf ("Computing cbuf2_offset: "
 			  "req=%d pos=%d bas=%d pag=%d off=%d hbuf=%d\n",
-			  req_pos, ptr->m_cbuf_pos, 
+			  req_pos, ptr->m_cbuf_offset, 
 			  cbuf2->base_idx, tmp->m_page_start,
 			  page_offset, ptr->m_header_buf_ptr);
 	    if (!no_boundary_yet && page_offset > req_pos) {
@@ -819,11 +825,11 @@ cbuf2_init_relay_entry (CBUF2 *cbuf2, RELAY_LIST* ptr, u_long burst_request)
 	}
     } else {
 	/* Move to metadata boundary */
-	ptr->m_cbuf_pos = (ptr->m_cbuf_pos / cbuf2->chunk_size) 
+	ptr->m_cbuf_offset = (ptr->m_cbuf_offset / cbuf2->chunk_size) 
 		* cbuf2->chunk_size;
     }
     debug_printf ("cbuf2_init_relay_entry: %d %d %d %d\n",
-		  ptr->m_cbuf_pos, 
+		  ptr->m_cbuf_offset, 
 		  cbuf2->base_idx, 
 		  cbuf2->item_count, 
 		  cbuf2->size

@@ -4,6 +4,7 @@ New for 1.63-beta-5
 * Create a shared library, streamripper.dll, on windows which is shared 
   by streamripper.exe and wstreamripper.exe
 * Fix problem reported in forum to allow pct-escaping of username, password
+* Fix delay in sending meta-data to relay stream
 * Add Andrew Neitsch's patch for parsing year & track from metadata
 
 New for 1.63-beta-4

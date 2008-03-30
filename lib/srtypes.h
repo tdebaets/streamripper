@@ -346,9 +346,9 @@ struct RELAY_LIST_struct
     SOCKET m_sock;
     int m_is_new;
     
-    char* m_buffer;           // large enough for 1 block & 1 metadata
+    char* m_buffer;            // large enough for 1 block & 1 metadata
     u_long m_buffer_size;
-    u_long m_cbuf_pos;        // must lie along chunck boundary for mp3
+    u_long m_cbuf_offset;      // must lie along chunck boundary for mp3
     u_long m_offset;
     u_long m_left_to_send;
     int m_icy_metadata;        // true if client requested metadata
