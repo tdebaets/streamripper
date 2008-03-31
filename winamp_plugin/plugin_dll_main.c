@@ -36,9 +36,10 @@
 //#include "dsp_sripper.h"
 #include "registry.h"
 
-static int  init ();
-static void config (); 
-void quit ();
+static int dll_init ();
+static void dll_config ();
+void dll_quit ();
+void dll_cleanup ();
 static void create_pipes (void);
 static void destroy_pipes (void);
 static void launch_pipe_threads (void);
@@ -57,6 +58,7 @@ static HANDLE m_hprocess;
 static DWORD m_process_id;
 
 static TCHAR m_szToopTip[] = "Streamripper For Winamp";
+static int m_running = 0;
 static int m_enabled;
 static UINT m_timer_id;
 
@@ -74,9 +76,9 @@ void debug_printf (char* fmt, ...);
 winampGeneralPurposePlugin g_plugin = {
     GPPHDR_VER,
     m_szToopTip,
-    init,
-    config,
-    quit
+    dll_init,
+    dll_config,
+    dll_quit
 };
 
 BOOL WINAPI
@@ -92,7 +94,7 @@ winampGetGeneralPurposePlugin ()
 }
 
 int
-init ()
+dll_init ()
 {
     int rc;
 
@@ -112,6 +114,7 @@ init ()
     rc = write_pipe ("Hello World");
     if (rc != 0) {
 	/* Don't know why this would happen */
+	debug_printf ("Destroying pipes...\n");
 	destroy_pipes ();
 	return 1;
     }
@@ -124,6 +127,8 @@ init ()
     m_timer_id = SetTimer (NULL, 0, SR_TIMER_PERIOD, (TIMERPROC) timer_proc);
 
     debug_printf ("Completed settimer\n");
+
+    m_running = 1;
     return 0;
 }
 
@@ -161,34 +166,43 @@ EnableDlgProc (HWND hwndDlg, UINT umsg, WPARAM wParam, LPARAM lParam)
 }
 
 void
-config ()
+dll_config ()
 {
-    BOOL prev_enabled = m_enabled;
-
     debug_printf ("Config\n");
+    m_enabled = m_running;
+
     DialogBox(g_plugin.hDllInstance, 
 	      MAKEINTRESOURCE(IDD_ENABLE), 
 	      g_plugin.hwndParent,
 	      EnableDlgProc);
 
-    if (m_enabled) {
-	if (!prev_enabled) {
-	    init();
-	}
+    if (m_enabled && !m_running) {
+	dll_init();
     }
-    else if(prev_enabled) {
-	quit();
+    else if (!m_enabled && m_running) {
+	dll_quit();
     }
 }
 
 void
-quit()
+dll_quit()
 {
-    m_enabled = 0;
     debug_printf ("Quit\n");
+    if (m_running) {
+	dll_cleanup ();
+    }
+    debug_printf ("Quit done\n");
+}
+
+void
+dll_cleanup ()
+{
+    m_running = 0;
+    debug_printf ("Cleaning up\n");
     KillTimer (NULL, m_timer_id);
     unhook_winamp ();
     destroy_pipes ();
+    debug_printf ("Cleanup done\n");
 }
 
 /*****************************************************************************
@@ -236,10 +250,11 @@ create_pipes (void)
 	SR_PIPE_SIZE         // pipe size
     );
     if (rc == 0) {
-	display_last_error ();
+	//display_last_error ();
+	debug_printf ("CreatePipe() failed\n");
 	exit (1);	     // ?
     }
-    DuplicateHandle (
+    rc = DuplicateHandle (
 	GetCurrentProcess(),
 	tmp,
 	GetCurrentProcess(),
@@ -248,7 +263,17 @@ create_pipes (void)
 	FALSE,
 	DUPLICATE_SAME_ACCESS
     );
-    CloseHandle (tmp);
+    if (rc == 0) {
+	//display_last_error ();
+	debug_printf ("DuplicateHandle() failed\n");
+	exit (1);	     // ?
+    }
+    rc = CloseHandle (tmp);
+    if (rc == 0) {
+	//display_last_error ();
+	debug_printf ("CloseHandle() failed\n");
+	exit (1);	     // ?
+    }
 
     /* Create a pipe that the child process (exe) will write to */
     tmp = NULL;
@@ -259,10 +284,11 @@ create_pipes (void)
 	SR_PIPE_SIZE         // pipe size
     );
     if (rc == 0) {
-	display_last_error ();
+	//display_last_error ();
+	debug_printf ("CreatePipe() failed\n");
 	exit (1);	     // ?
     }
-    DuplicateHandle (
+    rc = DuplicateHandle (
 	GetCurrentProcess(),
 	tmp,
 	GetCurrentProcess(),
@@ -271,7 +297,17 @@ create_pipes (void)
 	FALSE,
 	DUPLICATE_SAME_ACCESS
     );
-    CloseHandle (tmp);
+    if (rc == 0) {
+	//display_last_error ();
+	debug_printf ("DuplicateHandle() failed\n");
+	exit (1);	     // ?
+    }
+    rc = CloseHandle (tmp);
+    if (rc == 0) {
+	//display_last_error ();
+	debug_printf ("CloseHandle() failed\n");
+	exit (1);	     // ?
+    }
 }
 
 static void
@@ -325,16 +361,21 @@ write_pipe (char* msg)
     BOOL rc;
 
     rc = check_child_process ();
-    if (!rc) return 1;
+    if (!rc) {
+	debug_printf ("check_child_process failed\n");
+	return 1;
+    }
 
     for (i=0; i<strlen(msg); i++) {
 	rc = WriteFile (m_hpipe_dll_write, &msg[i], 1, &num_written, 0);
 	if (rc == 0) {
+	    debug_printf ("WriteFile failed, error code = %d\n", GetLastError());
 	    //display_last_error ();
 	    return 1;
 	}
 	if (num_written != 1) {
-	    //display_last_error ();
+	    /* I don't think this can happen */
+	    debug_printf ("WriteFile did not write byte\n");
 	    return 1;
 	}
     }
@@ -441,9 +482,9 @@ check_child_process (void)
     
     if (m_hprocess == INVALID_HANDLE_VALUE) return 0;
     rc = GetExitCodeProcess (m_hprocess, &exit_code);
-#if defined (commentout)
     debug_printf ("CHECK CHILD: %d %d (%d)\n", rc, exit_code, 
 		exit_code == STILL_ACTIVE);
+#if defined (commentout)
 #endif
     return exit_code == STILL_ACTIVE;
 }

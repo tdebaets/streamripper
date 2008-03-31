@@ -109,6 +109,10 @@ SOURCE=..\winamp_plugin\registry.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\winamp_plugin\Script.rc
+# End Source File
+# Begin Source File
+
 SOURCE=..\winamp_plugin\winamp_dll.c
 # End Source File
 # End Group

@@ -23,7 +23,7 @@
 #include "debug.h"
 #include "gen.h"
 
-#define SNAP_OFFSET		10	
+#define SNAP_OFFSET		10
 #define WINAMP_CLASSIC_WINS	4
 #define WINAMP_MODERN_WINS	8
 
@@ -62,7 +62,7 @@ static void notify_dock ();
 static BOOL winamp_get_path (char *path);
 
 int write_pipe (char* msg);
-void quit ();
+void dll_quit ();
 int check_child_process (void);
 
 /*****************************************************************************
@@ -93,8 +93,8 @@ extern winampGeneralPurposePlugin g_plugin;
 
 /* Debug stuff */
 
-//static int debug_on = 1;
-static int debug_on = 0;
+static int debug_on = 1;
+//static int debug_on = 0;
 static int debug_initialized = 0;
 FILE* gcsfp = 0;
 
@@ -434,7 +434,7 @@ hook_winamp_callback (HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
     rc = check_child_process ();
     if (rc == 0) {
 	WNDPROC wp = find_winamp_callback (hwnd);
-	quit ();
+	dll_quit ();
 	if (wp) {
 	    return CallWindowProc (wp, hwnd, umsg, wparam, lparam);
 	} else {
@@ -500,7 +500,7 @@ hook_winamp_callback (HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 	    rc = write_pipe ("Resize 1");
 	}
 	if (rc != 0) {
-	    quit ();
+	    dll_quit ();
 	}
     }
 
@@ -601,7 +601,7 @@ notify_dock ()
     if (bi > 0) {
 	rc = write_pipe (buf);
 	if (rc != 0) {
-	    quit();
+	    dll_quit();
 	}
     }
 }
