@@ -1,5 +1,6 @@
 New for 1.63-beta-5
 --------------
+Sunday, March 30, 2008
 * Remove global variables for stream data to allow multi-rip applications
 * Internal string processing now uses UTF-8 instead of wide characters
 * Create a shared library, streamripper.dll, on windows which is shared 
