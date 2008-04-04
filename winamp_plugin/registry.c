@@ -17,12 +17,9 @@
  */
 #include <windows.h>
 #include <stdio.h>
-
-//#include "dsp_sripper.h"
 #include "srtypes.h"
 #include "wa_ipc.h"
 #include "ipc_pe.h"
-//#include "winamp.h"
 #include "debug.h"
 #include "mchar.h"
 
@@ -31,15 +28,6 @@
 /*********************************************************************************
  * Public functions
  *********************************************************************************/
-BOOL winamp_init();			
-BOOL winamp_add_track_to_playlist(char *track);
-void winamp_add_rip_to_menu (void);
-
-/*********************************************************************************
- * Private Vars
- *********************************************************************************/
-// Get's winamp's path from the reg key ..
-// HKEY_CLASSES_ROOT\Applications\winamp.exe\shell\Enqueue\command
 BOOL
 get_string_from_registry (char *path, HKEY hkey, LPCTSTR subkey, LPTSTR name)
 {
@@ -105,5 +93,69 @@ strip_registry_path (char* path, char* tail)
 
     debug_printf ("Did not find path\n");
     return FALSE;
+}
+
+/* Return TRUE if found, FALSE if not found */
+BOOL
+get_int_from_registry (int *val, HKEY hkey, LPCTSTR subkey, LPTSTR name)
+{
+    LONG rc;
+    HKEY hkey_result;
+    DWORD type;
+    DWORD dword_val;
+    DWORD size = sizeof(DWORD);
+
+    debug_printf ("Trying RegOpenKeyEx: 0x%08x %s\n", hkey, subkey);
+    rc = RegOpenKeyEx (hkey, subkey, 0, KEY_QUERY_VALUE, &hkey_result);
+    if (rc != ERROR_SUCCESS) {
+	return FALSE;
+    }
+
+    debug_printf ("Trying RegQueryValueEx: %s\n", name);
+    rc = RegQueryValueEx (hkey_result, name, NULL, &type, (LPBYTE) &dword_val, &size);
+    if (rc != ERROR_SUCCESS) {
+	debug_printf ("Return code = %d\n", rc);
+	RegCloseKey (hkey_result);
+	return FALSE;
+    }
+    if (type != REG_DWORD) {
+	debug_printf ("Not a DWORD = %d\n", type);
+	RegCloseKey (hkey_result);
+	return FALSE;
+    }
+
+    *val = dword_val;
+    RegCloseKey (hkey_result);
+    return TRUE;
+}
+
+/* Return TRUE if found, FALSE if not found */
+BOOL
+set_int_to_registry (HKEY hkey, LPCTSTR subkey, LPTSTR name, int val)
+{
+    LONG rc;
+    HKEY hkey_result;
+    DWORD disposition;
+    DWORD dword_val = val;
+    DWORD size = sizeof(DWORD);
+
+    debug_printf ("Trying RegOpenKeyEx: 0x%08x %s\n", hkey, subkey);
+    rc = RegCreateKeyEx (hkey, subkey, 0, "foobar", REG_OPTION_NON_VOLATILE,
+			KEY_WRITE, NULL, &hkey_result, &disposition);
+    if (rc != ERROR_SUCCESS) {
+	debug_printf ("RegCreateKeyEx Return code = %d\n", rc);
+	return FALSE;
+    }
+
+    debug_printf ("Trying RegSetValueEx: %s\n", name);
+    rc = RegSetValueEx (hkey_result, name, 0, REG_DWORD, (CONST BYTE*) &dword_val, size);
+    if (rc != ERROR_SUCCESS) {
+	debug_printf ("RegSetValueEx Return code = %d\n", rc);
+	RegCloseKey (hkey_result);
+	return FALSE;
+    }
+
+    RegCloseKey (hkey_result);
+    return TRUE;
 }
 

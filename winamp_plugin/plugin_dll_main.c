@@ -36,6 +36,7 @@
 //#include "dsp_sripper.h"
 #include "registry.h"
 
+static int dll_startup ();
 static int dll_init ();
 static void dll_config ();
 void dll_quit ();
@@ -76,7 +77,7 @@ void debug_printf (char* fmt, ...);
 winampGeneralPurposePlugin g_plugin = {
     GPPHDR_VER,
     m_szToopTip,
-    dll_init,
+    dll_startup,
     dll_config,
     dll_quit
 };
@@ -91,6 +92,29 @@ __declspec(dllexport) winampGeneralPurposePlugin*
 winampGetGeneralPurposePlugin ()
 {
     return &g_plugin;
+}
+
+int
+dll_startup ()
+{
+    BOOL got_key;
+    int start_enabled;
+
+    m_running = 0;
+    got_key = get_int_from_registry (&start_enabled, HKEY_LOCAL_MACHINE, 
+	    TEXT("Software\\Streamripper\\plugin_dll"), 
+	    TEXT("Enabled"));
+    if (!got_key) {
+	set_int_to_registry (HKEY_LOCAL_MACHINE, 
+		TEXT("Software\\Streamripper\\plugin_dll"), 
+		TEXT("Enabled"), 1);
+	return dll_init();
+    }
+    if (start_enabled) {
+	return dll_init();
+    }
+
+    return 0;
 }
 
 int
@@ -176,11 +200,21 @@ dll_config ()
 	      g_plugin.hwndParent,
 	      EnableDlgProc);
 
-    if (m_enabled && !m_running) {
-	dll_init();
+    if (m_enabled) {
+	set_int_to_registry (HKEY_LOCAL_MACHINE, 
+		TEXT("Software\\Streamripper\\plugin_dll"), 
+		TEXT("Enabled"), 1);
+	if (!m_running) {
+	    dll_init();
+	}
     }
-    else if (!m_enabled && m_running) {
-	dll_quit();
+    else {
+	set_int_to_registry (HKEY_LOCAL_MACHINE, 
+		TEXT("Software\\Streamripper\\plugin_dll"), 
+		TEXT("Enabled"), 0);
+	if (m_running) {
+	    dll_quit();
+	}
     }
 }
 

@@ -252,11 +252,19 @@ BOOL
 url_is_relay (char* url)
 {
     char relay_url[SR_MAX_PATH];
+#if defined (commentout)
+    debug_printf ("Trying to get_content_type %p\n", m_rmi);
+    rip_manager_get_content_type (m_rmi);
+    debug_printf ("Trying to compose_relay_url\n");
     compose_relay_url (relay_url, g_gui_prefs.localhost, 
 			g_rmo.relay_port, 
 			rip_manager_get_content_type (m_rmi));
+#endif
+    compose_relay_url (relay_url, g_gui_prefs.localhost, 
+			g_rmo.relay_port, 
+			CONTENT_TYPE_MP3);
     debug_printf ("Comparing %s vs rly %s\n", url, relay_url);
-    return (!strcmp(relay_url, url));
+    return (!strncmp(relay_url, url, strlen(relay_url)));
 }
 
 BOOL
@@ -290,14 +298,12 @@ add_url_from_winamp (char* url)
     strcpy (m_winamp_stream_cache, url);
     
     if (!url_is_stream(url) || url_is_relay (url)) {
-	debug_printf ("AUFW not_stream/is_relay: %d\n", g_rmo.url[0]);
 	if (g_rmo.url[0]) {
 	    set_ripping_url (g_rmo.url);
 	} else {
 	    set_ripping_url (0);
 	}
     } else {
-	debug_printf ("AUFW setting g_rmo.url: %s\n", g_rmo.url);
 	strcpy(g_rmo.url, url);
 	insert_riplist (url, 0);
 	set_ripping_url (url);

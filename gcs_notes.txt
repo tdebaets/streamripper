@@ -949,22 +949,20 @@ Shoutcast lists
 shoutcast.com (mp3)
 icecast.org (mp3/ogg)
 oddsock.org
-http://www.steamcast.com/
+http://www.steamcast.com
 jetcast/jetaudio (mp3)
 peercast (relay-to-shoutcast)
 www.tuner2.com (aac)
 live365
+bee.fm (Russian)
+inlive.co.kr (korean)
+http://www.mukulcast.com (korean)
+http://live.ladio.livedoor.com (japanese)
 
 mostly non-shoutcast
 http://www.radio-locator.com/cgi-bin/home
 http://www.wwitv.com/portal.htm?http://www.wwitv.com/television/index.html
 
-A couple of korean ones
-inlive.co.kr (?)
-http://www.mukulcast.com/ (?)
-
-A japanese one
-http://live.ladio.livedoor.com/
 
 
 -----------------------------------------------------------------------

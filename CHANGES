@@ -1,3 +1,9 @@
+New for 1.63-beta-6
+--------------
+Thursday, April 3, 2008
+* Fix crashes in winamp plugin
+* Fix problem where plugin didn't remember if it was enabled
+
 New for 1.63-beta-5
 --------------
 Sunday, March 30, 2008
