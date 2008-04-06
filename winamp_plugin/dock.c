@@ -136,6 +136,21 @@ switch_docking_index (void)
 }
 #endif
 
+HWND
+find_visible_winamp_win (void)
+{
+    int w;
+
+    for (w = 0; w < WINAMP_MAX_WINS; w++) {
+	if (m_winamp_wins[w].hwnd) {
+	    LONG style = GetWindowLong (m_winamp_wins[w].hwnd, GWL_STYLE);
+	    if (style & WS_VISIBLE) {
+		return m_winamp_wins[w].hwnd;
+	    }
+	}
+    }
+    return 0;
+}
 
 /* This is called whenever the window transitions between 
    visible and hidden */
@@ -151,113 +166,112 @@ dock_show_window (HWND hwnd, int nCmdShow)
     ShowWindow (hwnd, nCmdShow);
 }
 
-// This taken from James Spibey's <spib@bigfoot.com> code example for 
-// how to do a winamp plugin the goto's are mine :)
-VOID
-dock_window (HWND hwnd)
+/* Find (top, left) position for streamripper window. 
+    This taken from James Spibey's <spib@bigfoot.com> code 
+    example for how to do a winamp plugin. */
+void
+get_docked_position (int* top, int* left, RECT* wa_rect, RECT* sr_rect)
 {
-    int i;
-    RECT rt;
-    int left, top;
-    RECT rtparents[WINAMP_MAX_WINS];
-
-    if (!m_docked)
-	return;
-
-    GetWindowRect (hwnd, &rt);
-
-#if defined (commentout)
-    if (m_skin_is_modern) {
-	for (i = 0; i < m_num_modern_wins; i++) {
-	    GetWindowRect (m_winamp_modern_wins[i].hwnd, &rtparents[i]);
-	}
-    } else {
-	for (i = 0; i < WINAMP_CLASSIC_WINS; i++) {
-	    GetWindowRect (m_winamp_classic_wins[i].hwnd, &rtparents[i]);
-	}
-    }
-#endif
-
-    i = 0;
-    GetWindowRect (m_docked_hwnd, &rtparents[i]);
-    debug_printf ("Docking against [%d] (%d %d %d %d)\n", m_docked_hwnd, rtparents[i].top, rtparents[i].left, rtparents[i].bottom, rtparents[i].right);
-
     switch (m_docked_side)
     {
     case DOCKED_TOP_LL:
-	top = rtparents[i].top - RTHEIGHT(rt);
-	left = rtparents[i].left;
-	goto SETWINDOW;
+	*top = wa_rect->top - RTHEIGHT(*sr_rect);
+	*left = wa_rect->left;
+	break;
     case DOCKED_TOP_LR:
-	top = rtparents[i].top - RTHEIGHT(rt);
-	left = rtparents[i].right;
-	goto SETWINDOW;
+	*top = wa_rect->top - RTHEIGHT(*sr_rect);
+	*left = wa_rect->right;
+	break;
     case DOCKED_TOP_RL:
-	top = rtparents[i].top - RTHEIGHT(rt);
-	left = rtparents[i].left - RTWIDTH(rt);
-	goto SETWINDOW;
+	*top = wa_rect->top - RTHEIGHT(*sr_rect);
+	*left = wa_rect->left - RTWIDTH(*sr_rect);
+	break;
     case DOCKED_LEFT_TT:
-	top = rtparents[i].top;
-	left = rtparents[i].left - RTWIDTH(rt);
-	goto SETWINDOW;
+	*top = wa_rect->top;
+	*left = wa_rect->left - RTWIDTH(*sr_rect);
+	break;
     case DOCKED_LEFT_TB:
-	top = rtparents[i].bottom;
-	left = rtparents[i].left - RTWIDTH(rt);
-	goto SETWINDOW;
+	*top = wa_rect->bottom;
+	*left = wa_rect->left - RTWIDTH(*sr_rect);
+	break;
     case DOCKED_LEFT_BT:
-	top = rtparents[i].top - RTHEIGHT(rt);
-	left = rtparents[i].left - RTWIDTH(rt);
-	goto SETWINDOW;
+	*top = wa_rect->top - RTHEIGHT(*sr_rect);
+	*left = wa_rect->left - RTWIDTH(*sr_rect);
+	break;
     case DOCKED_BOTTOM_LL:
-	top = rtparents[i].bottom;
-	left = rtparents[i].left;
-	goto SETWINDOW;
+	*top = wa_rect->bottom;
+	*left = wa_rect->left;
+	break;
     case DOCKED_BOTTOM_RL:
-	top = rtparents[i].bottom;
-	left = rtparents[i].left - RTWIDTH(rt);
-	goto SETWINDOW;
+	*top = wa_rect->bottom;
+	*left = wa_rect->left - RTWIDTH(*sr_rect);
+	break;
     case DOCKED_BOTTOM_LR:
-	top = rtparents[i].bottom;
-	left = rtparents[i].right;
-	goto SETWINDOW;
+	*top = wa_rect->bottom;
+	*left = wa_rect->right;
+	break;
     case DOCKED_RIGHT_TT:
-	top = rtparents[i].top;
-	left = rtparents[i].right;
-	goto SETWINDOW;
+	*top = wa_rect->top;
+	*left = wa_rect->right;
+	break;
     case DOCKED_RIGHT_TB:
-	top = rtparents[i].bottom;
-	left = rtparents[i].right;
-	goto SETWINDOW;
+	*top = wa_rect->bottom;
+	*left = wa_rect->right;
+	break;
     case DOCKED_RIGHT_BT:
-	top = rtparents[i].top - RTHEIGHT(rt);
-	left = rtparents[i].right;
-	goto SETWINDOW;
+	*top = wa_rect->top - RTHEIGHT(*sr_rect);
+	*left = wa_rect->right;
+	break;
 
-	// My extensions
+    /* Jon Clegg's extensions */
     case DOCKED_LEFT:
-	top = rtparents[i].top + m_docked_diff.y;
-	left = rtparents[i].left - RTWIDTH(rt);
-	goto SETWINDOW;
+	*top = wa_rect->top + m_docked_diff.y;
+	*left = wa_rect->left - RTWIDTH(*sr_rect);
+	break;
     case DOCKED_RIGHT:
-	top = rtparents[i].top + m_docked_diff.y;
-	left = rtparents[i].right;
-	debug_printf ("DOCKED_RIGHT\n");
-	goto SETWINDOW;
+	*top = wa_rect->top + m_docked_diff.y;
+	*left = wa_rect->right;
+	break;
     case DOCKED_TOP:
-	top = rtparents[i].top - RTHEIGHT(rt);
-	left = rtparents[i].left + m_docked_diff.x;
-	goto SETWINDOW;
+	*top = wa_rect->top - RTHEIGHT(*sr_rect);
+	*left = wa_rect->left + m_docked_diff.x;
+	break;
     case DOCKED_BOTTOM:
-	top = rtparents[i].bottom;
-	left = rtparents[i].left + m_docked_diff.x;
-	goto SETWINDOW;
-
+	*top = wa_rect->bottom;
+	*left = wa_rect->left + m_docked_diff.x;
+	break;
     default:
-	return;
+	debug_printf ("Error in get_docked_position.\n");
+	break;
     }
- SETWINDOW:
-    debug_printf ("SetWindowPos (dock) [%d] (%d %d %d %d)\n", hwnd, left, top, RTWIDTH(rt), RTHEIGHT(rt));
-    SetWindowPos (hwnd, NULL, left, top, RTWIDTH(rt), RTHEIGHT(rt), SWP_NOACTIVATE);
+}
+
+/* This docks the window, and also sets the z order.
+    Warning, this could potentially recurse if, say, another 
+    plugin is changing the z order too. */
+VOID
+dock_window (HWND hwnd)
+{
+    RECT sr_rect;
+    int left, top;
+    RECT wa_rect;
+    static int max_recurse = 30;
+
+    GetWindowRect (hwnd, &sr_rect);
+
+    if (m_docked) {
+	GetWindowRect (m_docked_hwnd, &wa_rect);
+	debug_printf ("Docking against [%d] (%d %d %d %d)\n", m_docked_hwnd, wa_rect.top, wa_rect.left, wa_rect.bottom, wa_rect.right);
+	get_docked_position (&top, &left, &wa_rect, &sr_rect);
+	debug_printf ("SetWindowPos (dock) to [%d] (%d %d %d %d)\n", hwnd, left, top, RTWIDTH(sr_rect), RTHEIGHT(sr_rect));
+	SetWindowPos (hwnd, m_docked_hwnd, left, top, RTWIDTH(sr_rect), RTHEIGHT(sr_rect), SWP_NOACTIVATE);
+    } else {
+	/* Not docked, but still need to set z order */
+	HWND wa_hwnd = find_visible_winamp_win ();
+	if (wa_hwnd) {
+	    SetWindowPos (hwnd, wa_hwnd, sr_rect.left, sr_rect.top, RTWIDTH(sr_rect), RTHEIGHT(sr_rect), SWP_NOACTIVATE);
+	}
+    }
 }
 
 VOID
@@ -552,6 +566,12 @@ dock_do_lbuttondown (HWND hwnd, LONG wparam, LONG lparam)
     GetClientRect (hwnd, &rt);
     rt.bottom = rt.top + 120;
     if (PtInRect (&rt, cur)) {
+	/* Activate winamp */
+	HWND wa_hwnd = find_visible_winamp_win ();
+	if (wa_hwnd) {
+	    SetActiveWindow (wa_hwnd);
+	}
+
 	SetCapture(hwnd);
 	m_dragging = TRUE;
 	m_drag_from.x = (short)cur.x;

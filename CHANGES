@@ -1,3 +1,11 @@
+New for 1.63-beta-7
+--------------
+Sunday, April 6, 2008
+* Remove wstreamripper from taskbar & alt-tab when used as plugin
+* Move wstreamripper to top when winamp is activated
+* Activate winamp when user clicks on wstreamripper
+* Updates to windows uninstaller
+
 New for 1.63-beta-6
 --------------
 Thursday, April 3, 2008

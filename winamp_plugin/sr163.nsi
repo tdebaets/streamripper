@@ -98,6 +98,10 @@ Section "Core Libraries" sec_core
   
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "DisplayName" "Streamripper (Remove only)"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "UninstallString" "$INSTDIR\Uninstall.exe"
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "NoModify" 1
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "NoRepair" 1
   
 SectionEnd
 
@@ -116,6 +120,10 @@ Section "Winamp Plugin" sec_plugin
   
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "DisplayName" "Streamripper (Remove only)"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "UninstallString" "$INSTDIR\Uninstall.exe"
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "NoModify" 1
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "NoRepair" 1
   
   ;Read a value from an InstallOptions INI file
   !insertmacro INSTALLOPTIONS_READ $IniValue "sr163_directories.ini" "Field 2" "State"
@@ -137,6 +145,10 @@ Section "GUI Application" sec_gui
   
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "DisplayName" "Streamripper (Remove only)"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "UninstallString" "$INSTDIR\Uninstall.exe"
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "NoModify" 1
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "NoRepair" 1
   
 SectionEnd
 
@@ -151,31 +163,11 @@ Section "Console Application" sec_console
   
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "DisplayName" "Streamripper (Remove only)"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "UninstallString" "$INSTDIR\Uninstall.exe"
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "NoModify" 1
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "NoRepair" 1
   
-SectionEnd
-
-Section "Uninstall"
-  Delete $WADIR\Plugins\gen_sripper.dll
-  Delete $INSTDIR\streamripper.exe
-  Delete $INSTDIR\wstreamripper.exe
-  Delete $INSTDIR\gen_sripper.dll
-  Delete $INSTDIR\iconv.dll
-  Delete $INSTDIR\intl.dll
-  Delete $INSTDIR\libglib-2.0-0.dll
-  Delete $INSTDIR\ogg.dll
-  Delete $INSTDIR\tre.dll
-  Delete $INSTDIR\vorbis.dll
-  Delete $INSTDIR\README
-  Delete $INSTDIR\COPYING
-  Delete $INSTDIR\THANKS
-  Delete $INSTDIR\CHANGES
-  Delete $INSTDIR\SRIPPER_HOWTO.TXT
-  Delete $INSTDIR\sripper.ini
-  Delete $INSTDIR\parse_rules.txt
-  Delete $INSTDIR\fake_external_metadata.pl
-  Delete $INSTDIR\fetch_external_metadata.pl
-  RMDir /r $INSTDIR\Skins
-  RMDir $INSTDIR
 SectionEnd
 
 ;--------------------------------
@@ -291,12 +283,30 @@ FunctionEnd
 
 Section "Uninstall"
 
-  ;ADD YOUR OWN FILES HERE...
-
+  Delete $WADIR\Plugins\gen_sripper.dll
+  Delete $INSTDIR\streamripper.exe
+  Delete $INSTDIR\wstreamripper.exe
+  Delete $INSTDIR\gen_sripper.dll
+  Delete $INSTDIR\iconv.dll
+  Delete $INSTDIR\intl.dll
+  Delete $INSTDIR\libglib-2.0-0.dll
+  Delete $INSTDIR\ogg.dll
+  Delete $INSTDIR\tre.dll
+  Delete $INSTDIR\vorbis.dll
+  Delete $INSTDIR\streamripper.dll
+  Delete $INSTDIR\README
+  Delete $INSTDIR\COPYING
+  Delete $INSTDIR\THANKS
+  Delete $INSTDIR\CHANGES
+  Delete $INSTDIR\SRIPPER_HOWTO.TXT
+  Delete $INSTDIR\sripper.ini
+  Delete $INSTDIR\parse_rules.txt
+  Delete $INSTDIR\fake_external_metadata.pl
+  Delete $INSTDIR\fetch_external_metadata.pl
+  RMDir /r $INSTDIR\Skins
   Delete "$INSTDIR\Uninstall.exe"
-
   RMDir "$INSTDIR"
 
-  DeleteRegKey /ifempty HKCU "Software\Streamripper"
+;;  DeleteRegKey /ifempty HKCU "Software\Streamripper"
 
 SectionEnd

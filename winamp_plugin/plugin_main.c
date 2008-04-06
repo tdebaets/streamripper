@@ -139,10 +139,24 @@ init ()
     m_hwnd = CreateWindow (m_szWindowClass, g_plugin.description, WS_POPUP,
 			   m_guiOpt.oldpos.x, m_guiOpt.oldpos.y, WINDOW_WIDTH, WINDOW_HEIGHT, 
 			   g_plugin.hwndParent, NULL, g_plugin.hDllInstance, NULL);
-#endif
     m_hwnd = CreateWindow (m_szWindowClass, "Streamripper Plugin", WS_POPUP,
 			   g_gui_prefs.oldpos_x, g_gui_prefs.oldpos_y, WINDOW_WIDTH, WINDOW_HEIGHT, 
 			   NULL, NULL, m_hinstance, NULL);
+#endif
+    /* Ref: http://msdn2.microsoft.com/en-us/library/bb776822.aspx */
+    if (g_running_standalone) {
+	m_hwnd = CreateWindowEx (
+			WS_EX_APPWINDOW,
+			m_szWindowClass, "Streamripper Plugin", WS_POPUP,
+			g_gui_prefs.oldpos_x, g_gui_prefs.oldpos_y, WINDOW_WIDTH, WINDOW_HEIGHT, 
+			NULL, NULL, m_hinstance, NULL);
+    } else {
+	m_hwnd = CreateWindowEx (
+			WS_EX_TOOLWINDOW,
+			m_szWindowClass, "Streamripper Plugin", WS_POPUP,
+			g_gui_prefs.oldpos_x, g_gui_prefs.oldpos_y, WINDOW_WIDTH, WINDOW_HEIGHT, 
+			NULL, NULL, m_hinstance, NULL);
+    }
 
     // Create a systray icon
     memset(&m_nid, 0, sizeof(NOTIFYICONDATA));
@@ -525,7 +539,7 @@ options_button_pressed()
 void
 close_button_pressed()
 {
-    dock_show_window(m_hwnd, SW_HIDE);
+    dock_show_window (m_hwnd, SW_HIDE);
     g_gui_prefs.m_start_minimized = TRUE;
 }
 
