@@ -481,6 +481,26 @@ http_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
 	    info->icy_bitrate = atoi(stempbr);
 	}
     }
+
+
+    // Check for Apache
+    else if (((start = (char *)strstr(header, "Apache")) != NULL) &&
+	     ((start = (char *)strstr(header, "x-audiocast-name")) != NULL)) {
+	// Streaming straight from apache with audiocast headers
+	extract_header_value(header, info->icy_url, "x-audiocast-server-url:",
+			     sizeof(info->icy_url));
+	rc = extract_header_value(header, info->icy_name, "x-audiocast-name:",
+				  sizeof(info->icy_name));
+	info->have_icy_name |= rc;
+	extract_header_value(header, info->icy_genre, "x-audiocast-genre:",
+			     sizeof(info->icy_genre));
+	rc = extract_header_value(header, stempbr, "x-audiocast-bitrate:",
+				  sizeof(stempbr));
+	if (rc) {
+	    info->icy_bitrate = atoi(stempbr);
+	}
+    }
+
     // WTF is Zwitterion?
     else if ((start = (char *)strstr(header, "Zwitterion v")) != NULL) {
 	sscanf(start, "%[^<]<", info->server);
