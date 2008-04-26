@@ -1,6 +1,8 @@
 #ifndef __ERRORS_H__
 #define __ERRORS_H__
 
+#include "srtypes.h"
+
 typedef int error_code;
 
 ////////////////////////////////////////////////
@@ -82,6 +84,12 @@ typedef int error_code;
 #define SR_ERROR_CANT_CREATE_SOCKET	        - 0x42
 #define SR_ERROR_CREATE_PIPE_FAILED	        - 0x43
 #define SR_ERROR_ABORT_PIPE_SIGNALLED           - 0x44  // Not an error
+
+typedef struct ERROR_INFOst
+{
+    char error_str[MAX_ERROR_STR];
+    error_code error_code;
+} ERROR_INFO;
 
 
 void errors_init (void);

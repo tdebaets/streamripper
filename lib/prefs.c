@@ -528,19 +528,22 @@ prefs_get_prefs (STREAM_PREFS* prefs, char* group)
     if (prefs_get_ulong (&temp, group, "auto_reconnect")) {
 	OPT_FLAG_SET (prefs->flags, OPT_AUTO_RECONNECT, temp);
     }
+    if (prefs_get_ulong (&temp, group, "separate_dirs")) {
+	OPT_FLAG_SET (prefs->flags, OPT_SEPERATE_DIRS, temp);
+    }
     if (prefs_get_ulong (&temp, group, "make_relay")) {
 	OPT_FLAG_SET (prefs->flags, OPT_MAKE_RELAY, temp);
+    }
+    if (prefs_get_ulong (&temp, group, "add_numeric_prefix")) {
+	OPT_FLAG_SET (prefs->flags, OPT_COUNT_FILES, temp);
     }
     if (prefs_get_ulong (&temp, group, "add_id3")) {
 	/* Obsolete */
 	OPT_FLAG_SET (prefs->flags, OPT_ADD_ID3V1, temp);
 	OPT_FLAG_SET (prefs->flags, OPT_ADD_ID3V2, temp);
     }
-    if (prefs_get_ulong (&temp, group, "add_id3v1")) {
-	OPT_FLAG_SET (prefs->flags, OPT_ADD_ID3V1, temp);
-    }
-    if (prefs_get_ulong (&temp, group, "add_id3v2")) {
-	OPT_FLAG_SET (prefs->flags, OPT_ADD_ID3V2, temp);
+    if (prefs_get_ulong (&temp, group, "add_date_stamp")) {
+	OPT_FLAG_SET (prefs->flags, OPT_DATE_STAMP, temp);
     }
     if (prefs_get_ulong (&temp, group, "check_max_bytes")) {
 	OPT_FLAG_SET (prefs->flags, OPT_CHECK_MAX_BYTES, temp);
@@ -548,14 +551,23 @@ prefs_get_prefs (STREAM_PREFS* prefs, char* group)
     if (prefs_get_ulong (&temp, group, "keep_incomplete")) {
 	OPT_FLAG_SET (prefs->flags, OPT_KEEP_INCOMPLETE, temp);
     }
-    if (prefs_get_ulong (&temp, group, "rip_individual_tracks")) {
-	OPT_FLAG_SET (prefs->flags, OPT_INDIVIDUAL_TRACKS, temp);
-    }
     if (prefs_get_ulong (&temp, group, "rip_single_file")) {
 	OPT_FLAG_SET (prefs->flags, OPT_SINGLE_FILE_OUTPUT, temp);
     }
+    if (prefs_get_ulong (&temp, group, "truncate_incomplete_when_in_complete")) {
+	OPT_FLAG_SET (prefs->flags, OPT_TRUNCATE_DUPS, temp);
+    }
+    if (prefs_get_ulong (&temp, group, "rip_individual_tracks")) {
+	OPT_FLAG_SET (prefs->flags, OPT_INDIVIDUAL_TRACKS, temp);
+    }
     if (prefs_get_ulong (&temp, group, "use_ext_cmd")) {
 	OPT_FLAG_SET (prefs->flags, OPT_EXTERNAL_CMD, temp);
+    }
+    if (prefs_get_ulong (&temp, group, "add_id3v1")) {
+	OPT_FLAG_SET (prefs->flags, OPT_ADD_ID3V1, temp);
+    }
+    if (prefs_get_ulong (&temp, group, "add_id3v2")) {
+	OPT_FLAG_SET (prefs->flags, OPT_ADD_ID3V2, temp);
     }
 
     /* Splitpoint options */
@@ -632,23 +644,31 @@ prefs_set_prefs (STREAM_PREFS* prefs, STREAM_PREFS* gp, char* group)
 
     /* Flags */
     prefs_set_integer (group, "auto_reconnect",
-			    OPT_FLAG_ISSET (prefs->flags, OPT_AUTO_RECONNECT));
+		       OPT_FLAG_ISSET (prefs->flags, OPT_AUTO_RECONNECT));
+    prefs_set_integer (group, "separate_dirs",
+		       OPT_FLAG_ISSET (prefs->flags, OPT_SEPERATE_DIRS));
     prefs_set_integer (group, "make_relay",
-			    OPT_FLAG_ISSET (prefs->flags, OPT_MAKE_RELAY));
-    prefs_set_integer (group, "add_id3v1",
-			    OPT_FLAG_ISSET (prefs->flags, OPT_ADD_ID3V1));
-    prefs_set_integer (group, "add_id3v2",
-			    OPT_FLAG_ISSET (prefs->flags, OPT_ADD_ID3V2));
+		       OPT_FLAG_ISSET (prefs->flags, OPT_MAKE_RELAY));
+    prefs_set_integer (group, "add_numeric_prefix",
+		       OPT_FLAG_ISSET (prefs->flags, OPT_COUNT_FILES));
+    prefs_set_integer (group, "add_date_stamp",
+		       OPT_FLAG_ISSET (prefs->flags, OPT_DATE_STAMP));
     prefs_set_integer (group, "check_max_bytes",
-			    OPT_FLAG_ISSET (prefs->flags, OPT_CHECK_MAX_BYTES));
+		       OPT_FLAG_ISSET (prefs->flags, OPT_CHECK_MAX_BYTES));
     prefs_set_integer (group, "keep_incomplete",
-			    OPT_FLAG_ISSET (prefs->flags, OPT_KEEP_INCOMPLETE));
-    prefs_set_integer (group, "rip_individual_tracks",
-			    OPT_FLAG_ISSET (prefs->flags, OPT_INDIVIDUAL_TRACKS));
+		       OPT_FLAG_ISSET (prefs->flags, OPT_KEEP_INCOMPLETE));
     prefs_set_integer (group, "rip_single_file",
-			    OPT_FLAG_ISSET (prefs->flags, OPT_SINGLE_FILE_OUTPUT));
+		       OPT_FLAG_ISSET (prefs->flags, OPT_SINGLE_FILE_OUTPUT));
+    prefs_set_integer (group, "truncate_incomplete_when_in_complete",
+		       OPT_FLAG_ISSET (prefs->flags, OPT_TRUNCATE_DUPS));
+    prefs_set_integer (group, "rip_individual_tracks",
+		       OPT_FLAG_ISSET (prefs->flags, OPT_INDIVIDUAL_TRACKS));
     prefs_set_integer (group, "use_ext_cmd",
-			    OPT_FLAG_ISSET (prefs->flags, OPT_EXTERNAL_CMD));
+		       OPT_FLAG_ISSET (prefs->flags, OPT_EXTERNAL_CMD));
+    prefs_set_integer (group, "add_id3v1",
+		       OPT_FLAG_ISSET (prefs->flags, OPT_ADD_ID3V1));
+    prefs_set_integer (group, "add_id3v2",
+		       OPT_FLAG_ISSET (prefs->flags, OPT_ADD_ID3V2));
 
     /* Splitpoint options */
     prefs_set_integer (group, "xs", prefs->sp_opt.xs);

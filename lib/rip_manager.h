@@ -88,33 +88,6 @@
 #define GET_ADD_ID3V1(flags)			(OPT_FLAG_ISSET(flags, OPT_ADD_ID3V1))
 #define GET_ADD_ID3V2(flags)			(OPT_FLAG_ISSET(flags, OPT_ADD_ID3V2))
 
-#if defined (commentout)
-#define SET_AUTO_RECONNECT(flags)		(OPT_FLAG_SET(flags, OPT_AUTO_RECONNECT))
-#define SET_SEPERATE_DIRS(flags)		(OPT_FLAG_SET(flags, OPT_SEPERATE_DIRS))
-#define SET_OVER_WRITE_TRACKS(flags)		(OPT_FLAG_SET(flags, OPT_OVER_WRITE_TRACKS))
-#define SET_SEARCH_PORTS(flags)			(OPT_FLAG_SET(flags, OPT_SEARCH_PORTS))
-#define SET_MAKE_RELAY(flags)			(OPT_FLAG_SET(flags, OPT_MAKE_RELAY))
-#define SET_COUNT_FILES(flags)			(OPT_FLAG_SET(flags, OPT_COUNT_FILES))
-// #define SET_ADD_ID3(flags)			(OPT_FLAG_SET(flags, OPT_ADD_ID3))
-#define SET_DATE_STAMP(flags)			(OPT_FLAG_SET(flags, OPT_DATE_STAMP))
-#define SET_CHECK_MAX_BYTES(flags)		(OPT_FLAG_SET(flags, OPT_CHECK_MAX_BYTES))
-#define SET_KEEP_INCOMPLETE(flags)		(OPT_FLAG_SET(flags, OPT_KEEP_INCOMPLETE))
-#define SET_SINGLE_FILE_OUTPUT(flags)		(OPT_FLAG_SET(flags, OPT_SINGLE_FILE_OUTPUT))
-#define SET_TRUNCATE_DUPS(flags)		(OPT_FLAG_SET(flags, OPT_TRUNCATE_DUPS))
-#define SET_INDIVIDUAL_TRACKS(flags)		(OPT_FLAG_SET(flags, OPT_INDIVIDUAL_TRACKS))
-#define SET_EXTERNAL_CMD(flags)			(OPT_FLAG_SET(flags, OPT_EXTERNAL_CMD))
-#define SET_ADD_ID3V1(flags)			(OPT_FLAG_SET(flags, OPT_ADD_ID3V1))
-#define SET_ADD_ID3V2(flags)			(OPT_FLAG_SET(flags, OPT_ADD_ID3V2))
-#endif
-
-typedef struct ERROR_INFOst
-{
-    char error_str[MAX_ERROR_STR];
-    error_code error_code;
-} ERROR_INFO;
-
-
-
 /* Public functions */
 char *rip_manager_get_error_str(int code);
 //u_short rip_mananger_get_relay_port();	
