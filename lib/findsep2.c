@@ -104,9 +104,7 @@ static enum mad_flow filter (void *data, struct mad_stream const *ms,
 static enum mad_flow error(void *data, struct mad_stream *ms, 
 			   struct mad_frame *frame);
 static enum mad_flow header(void *data, struct mad_header const *pheader);
-static enum mad_flow input_get_bitrate (void *data, struct mad_stream *stream);
-static enum mad_flow header_get_bitrate (void *data, 
-					 struct mad_header const *pheader);
+
 
 /*****************************************************************************
  * Private Vars
@@ -116,7 +114,7 @@ static enum mad_flow header_get_bitrate (void *data,
  * Functions
  *****************************************************************************/
 error_code
-findsep_silence (const char* mpgbuf,
+findsep_silence_2 (const char* mpgbuf,
 		 long mpgsize,
 		 long len_to_sw,
 		 long searchwindow,
@@ -149,7 +147,7 @@ findsep_silence (const char* mpgbuf,
     ds.min_maxvolume_buffer = 0;
     INIT_LIST_HEAD (&ds.frame_list);
 
-    debug_printf ("FINDSEP: %p -> %p (%d)\n", mpgbuf, mpgbuf+mpgsize, mpgsize);
+    debug_printf ("FINDSEP 2: %p -> %p (%d)\n", mpgbuf, mpgbuf+mpgsize, mpgsize);
 
 #if defined (MAKE_DUMP_MP3)
     {
@@ -276,7 +274,7 @@ free_frame_list (DECODE_STRUCT* ds)
     }
 }
 
-enum mad_flow
+static enum mad_flow
 input(void *data, struct mad_stream *ms)
 {
     DECODE_STRUCT *ds = (DECODE_STRUCT *)data;
@@ -330,7 +328,7 @@ input(void *data, struct mad_stream *ms)
     return MAD_FLOW_CONTINUE;
 }
 
-void
+static void
 propagate_max_value (unsigned short *max_buffer, unsigned long node_pos, int depth)
 {
     unsigned long current_pos = node_pos;
@@ -353,7 +351,7 @@ propagate_max_value (unsigned short *max_buffer, unsigned long node_pos, int dep
     }
 }
 
-void
+static void
 insert_value (DECODE_STRUCT *ds, unsigned short vol, unsigned long pos)
 {
     int i;
@@ -379,7 +377,7 @@ insert_value (DECODE_STRUCT *ds, unsigned short vol, unsigned long pos)
     }
 }
 
-void
+static void
 search_for_silence (DECODE_STRUCT *ds, unsigned short vol)
 {
     unsigned long window_size = 1;
@@ -404,7 +402,7 @@ search_for_silence (DECODE_STRUCT *ds, unsigned short vol)
     }
 }
 
-signed int
+static signed int
 scale(mad_fixed_t sample)
 {
     /* round */
@@ -443,7 +441,7 @@ filter (void *data, struct mad_stream const *ms, struct mad_frame *frame)
     return MAD_FLOW_CONTINUE;
 }
 
-enum mad_flow
+static enum mad_flow
 output (void *data, struct mad_header const *header,
 	struct mad_pcm *pcm)
 {
@@ -562,7 +560,7 @@ mad_flow header(void *data, struct mad_header const *pheader)
     return MAD_FLOW_CONTINUE;
 }
 
-enum mad_flow
+static enum mad_flow
 error(void *data, struct mad_stream *ms, struct mad_frame *frame)
 {
     if (MAD_RECOVERABLE(ms->error)) {
@@ -574,54 +572,3 @@ error(void *data, struct mad_stream *ms, struct mad_frame *frame)
     return MAD_FLOW_BREAK;
 }
 
-/* The following routines have nothing to do with finding a separation 
- * point. Instead, they have to do with finding the bitrate.  However, 
- * they are included here because they are "mad" related.
- */
-error_code
-find_bitrate (unsigned long* bitrate, const char* mpgbuf, long mpgsize)
-{
-    struct mad_decoder decoder;
-    GET_BITRATE_STRUCT gbs;
-    int result;
-    
-    /* initialize and start decoder */
-    gbs.mpgbuf = (unsigned char*) mpgbuf;
-    gbs.mpgsize = mpgsize;
-    gbs.bitrate = 0;
-    mad_decoder_init(&decoder,
-		     &gbs,
-		     input_get_bitrate /* input */,
-		     header_get_bitrate /* header */,
-		     NULL /* filter */,
-		     NULL /* output */,
-		     NULL /* error */,
-		     NULL /* message */);
-    result = mad_decoder_run(&decoder, MAD_DECODER_MODE_SYNC);
-    mad_decoder_finish(&decoder);
-    *bitrate = gbs.bitrate;
-    return SR_SUCCESS;
-}
-
-static enum mad_flow
-input_get_bitrate (void *data, struct mad_stream *stream)
-{
-    GET_BITRATE_STRUCT* gbs = (GET_BITRATE_STRUCT*) data;
-
-    if (!gbs->mpgsize)
-	return MAD_FLOW_STOP;
-
-    mad_stream_buffer(stream, gbs->mpgbuf, gbs->mpgsize);
-    gbs->mpgsize = 0;
-    return MAD_FLOW_CONTINUE;
-}
-
-static enum mad_flow
-header_get_bitrate (void *data, struct mad_header const *pheader)
-{
-    GET_BITRATE_STRUCT* gbs = (GET_BITRATE_STRUCT*) data;
-
-    gbs->bitrate = pheader->bitrate;	/* stream bitrate (bps) */
-    debug_printf ("Decoded bitrate from stream: %ld\n", gbs->bitrate);
-    return MAD_FLOW_STOP;
-}

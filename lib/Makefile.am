@@ -22,6 +22,7 @@ libstreamripper_a_SOURCES = \
 	external.c \
 	filelib.c \
 	findsep.c \
+	findsep2.c \
 	http.c \
 	iconvert.c \
 	mchar.c \

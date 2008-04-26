@@ -289,6 +289,7 @@ print_usage()
     fprintf(stderr, "      --with-id3v1                 - Add ID3V1 tags to output file\n");
     fprintf(stderr, "      --without-id3v2              - Don't add ID3V2 tags to output file\n");
     fprintf(stderr, "Splitpoint opts (mp3 only):\n");
+    fprintf(stderr, "      --xs2                        - Use new algorithm for silence detection\n");
     fprintf(stderr, "      --xs-offset=num              - Shift relative to metadata (msec)\n");
     fprintf(stderr, "      --xs-padding=num:num         - Add extra to prev:next track (msec)\n");
     fprintf(stderr, "      --xs-search-window=num:num   - Search window relative to metadata (msec)\n");
@@ -517,6 +518,11 @@ parse_extended_options (STREAM_PREFS* prefs, char* rule)
 	|| (!strcmp(rule,"xs_none"))) {
 	prefs->sp_opt.xs = 0;
 	debug_printf ("Disable silence detection");
+	return;
+    }
+    if (!strcmp(rule,"xs2")) {
+	prefs->sp_opt.xs = 2;
+	debug_printf ("Setting xs2\n");
 	return;
     }
     if ((1==sscanf(rule,"xs-min-volume=%d",&x)) 

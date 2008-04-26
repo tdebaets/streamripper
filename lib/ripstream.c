@@ -544,15 +544,27 @@ find_sep (RIP_MANAGER_INFO* rmi, u_long* pos1, u_long* pos2)
 	debug_printf ("PEEK OK\n");
 
 	/* Find silence point */
-	ret = findsep_silence (buf, 
-			       bufsize, 
-			       rmi->rw_start_to_sw_start,
-			       sp_opt->xs_search_window_1 
-				+ sp_opt->xs_search_window_2,
-			       sp_opt->xs_silence_length,
-			       sp_opt->xs_padding_1,
-			       sp_opt->xs_padding_2,
-			       pos1, pos2);
+	if (sp_opt->xs == 2) {
+	    ret = findsep_silence_2 (buf, 
+				   bufsize, 
+				   rmi->rw_start_to_sw_start,
+				   sp_opt->xs_search_window_1 
+				   + sp_opt->xs_search_window_2,
+				   sp_opt->xs_silence_length,
+				   sp_opt->xs_padding_1,
+				   sp_opt->xs_padding_2,
+				   pos1, pos2);
+	} else {
+	    ret = findsep_silence (buf, 
+				   bufsize, 
+				   rmi->rw_start_to_sw_start,
+				   sp_opt->xs_search_window_1 
+				   + sp_opt->xs_search_window_2,
+				   sp_opt->xs_silence_length,
+				   sp_opt->xs_padding_1,
+				   sp_opt->xs_padding_2,
+				   pos1, pos2);
+	}
 	*pos1 += rw_start;
 	*pos2 += rw_start;
 	free(buf);

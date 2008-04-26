@@ -559,6 +559,7 @@ prefs_get_prefs (STREAM_PREFS* prefs, char* group)
     }
 
     /* Splitpoint options */
+    prefs_get_int (&prefs->sp_opt.xs, group, "xs");
     prefs_get_int (&prefs->sp_opt.xs_offset, group, "xs_offset");
     prefs_get_int (&prefs->sp_opt.xs_silence_length, group, "xs_silence_length");
     prefs_get_int (&prefs->sp_opt.xs_search_window_1, group, "xs_search_window_1");
@@ -650,6 +651,7 @@ prefs_set_prefs (STREAM_PREFS* prefs, STREAM_PREFS* gp, char* group)
 			    OPT_FLAG_ISSET (prefs->flags, OPT_EXTERNAL_CMD));
 
     /* Splitpoint options */
+    prefs_set_integer (group, "xs", prefs->sp_opt.xs);
     prefs_set_integer (group, "xs_offset", prefs->sp_opt.xs_offset);
     prefs_set_integer (group, "xs_silence_length", 
 		       prefs->sp_opt.xs_silence_length);

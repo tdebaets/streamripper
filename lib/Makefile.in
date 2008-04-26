@@ -57,11 +57,12 @@ libstreamripper_a_AR = $(AR) $(ARFLAGS)
 libstreamripper_a_LIBADD =
 am_libstreamripper_a_OBJECTS = cbuf2.$(OBJEXT) charset.$(OBJEXT) \
 	debug.$(OBJEXT) errors.$(OBJEXT) external.$(OBJEXT) \
-	filelib.$(OBJEXT) findsep.$(OBJEXT) http.$(OBJEXT) \
-	iconvert.$(OBJEXT) mchar.$(OBJEXT) parse.$(OBJEXT) \
-	prefs.$(OBJEXT) relaylib.$(OBJEXT) rip_manager.$(OBJEXT) \
-	ripaac.$(OBJEXT) ripogg.$(OBJEXT) ripstream.$(OBJEXT) \
-	socklib.$(OBJEXT) threadlib.$(OBJEXT) utf8.$(OBJEXT)
+	filelib.$(OBJEXT) findsep.$(OBJEXT) findsep2.$(OBJEXT) \
+	http.$(OBJEXT) iconvert.$(OBJEXT) mchar.$(OBJEXT) \
+	parse.$(OBJEXT) prefs.$(OBJEXT) relaylib.$(OBJEXT) \
+	rip_manager.$(OBJEXT) ripaac.$(OBJEXT) ripogg.$(OBJEXT) \
+	ripstream.$(OBJEXT) socklib.$(OBJEXT) threadlib.$(OBJEXT) \
+	utf8.$(OBJEXT)
 libstreamripper_a_OBJECTS = $(am_libstreamripper_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -202,6 +203,7 @@ libstreamripper_a_SOURCES = \
 	external.c \
 	filelib.c \
 	findsep.c \
+	findsep2.c \
 	http.c \
 	iconvert.c \
 	mchar.c \
@@ -312,6 +314,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/external.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filelib.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/findsep.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/findsep2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/iconvert.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mchar.Po@am__quote@

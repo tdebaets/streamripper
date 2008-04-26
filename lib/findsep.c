@@ -145,7 +145,7 @@ findsep_silence (const char* mpgbuf,
     ds.silence_ms = silence_length;
     INIT_LIST_HEAD (&ds.frame_list);
 
-    debug_printf ("FINDSEP: %p -> %p (%d)\n", mpgbuf, mpgbuf+mpgsize, mpgsize);
+    debug_printf ("FINDSEP 1: %p -> %p (%d)\n", mpgbuf, mpgbuf+mpgsize, mpgsize);
 
     init_siltrackers(ds.siltrackers);
 
@@ -203,7 +203,8 @@ findsep_silence (const char* mpgbuf,
     return SR_SUCCESS;
 }
 
-void init_siltrackers(SILENCETRACKER* siltrackers)
+static void 
+init_siltrackers(SILENCETRACKER* siltrackers)
 {
     int i;
     long stepsize = (MAX_RMS_SILENCE - MIN_RMS_SILENCE) / (NUM_SILTRACKERS-1);
@@ -274,7 +275,7 @@ free_frame_list (DECODE_STRUCT* ds)
     }
 }
 
-enum mad_flow
+static enum mad_flow
 input(void *data, struct mad_stream *ms)
 {
     DECODE_STRUCT *ds = (DECODE_STRUCT *)data;
@@ -328,7 +329,7 @@ input(void *data, struct mad_stream *ms)
     return MAD_FLOW_CONTINUE;
 }
 
-void
+static void
 search_for_silence (DECODE_STRUCT *ds, double vol)
 {
     int i;
@@ -353,7 +354,7 @@ search_for_silence (DECODE_STRUCT *ds, double vol)
     }
 }
 
-signed int
+static signed int
 scale(mad_fixed_t sample)
 {
     /* round */
@@ -392,7 +393,7 @@ filter (void *data, struct mad_stream const *ms, struct mad_frame *frame)
     return MAD_FLOW_CONTINUE;
 }
 
-enum mad_flow
+static enum mad_flow
 output (void *data, struct mad_header const *header,
 	struct mad_pcm *pcm)
 {
@@ -463,7 +464,7 @@ mad_flow header(void *data, struct mad_header const *pheader)
     return MAD_FLOW_CONTINUE;
 }
 
-enum mad_flow
+static enum mad_flow
 error(void *data, struct mad_stream *ms, struct mad_frame *frame)
 {
     if (MAD_RECOVERABLE(ms->error)) {
