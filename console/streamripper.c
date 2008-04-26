@@ -52,6 +52,7 @@ static void parse_arguments (STREAM_PREFS *prefs, int argc, char **argv);
 static void rip_callback (RIP_MANAGER_INFO* rmi, int message, void *data);
 static void parse_extended_options (STREAM_PREFS *prefs, char *rule);
 static void verify_splitpoint_rules (STREAM_PREFS *prefs);
+static void print_to_console (char* fmt, ...);
 
 /*****************************************************************************
  * Private variables
@@ -88,8 +89,7 @@ main (int argc, char *argv[])
 
     parse_arguments (&prefs, argc, argv);
 
-    if (!m_dont_print)
-	fprintf (stderr, "Connecting...\n");
+    print_to_console ("Connecting...\n");
 
     
     rip_manager_init ();
@@ -109,17 +109,12 @@ main (int argc, char *argv[])
 	sleep(1);
 	time(&temp_time);
 	if (m_stop_time && (temp_time >= m_stop_time)) {
-	    if (!m_dont_print) {
-		fprintf(stderr, "\n");
-		fprintf(stderr, "Time to stop is here, bailing\n");
-	    }
+	    print_to_console ("\nTime to stop is here, bailing\n");
 	    break; 
 	}	
     }
 
-    if (!m_dont_print) {
-	fprintf(stderr, "shutting down\n");
-    }
+    print_to_console ("shutting down\n");
 
     rip_manager_stop (rmi);
     rip_manager_cleanup ();
@@ -130,11 +125,27 @@ main (int argc, char *argv[])
 void
 catch_sig(int code)
 {
-    if (!m_dont_print)
-	fprintf(stderr, "\n");
+    print_to_console ("\n");
     if (!m_started)
         exit(2);
     m_got_sig = TRUE;
+}
+
+/* In 1.63 I have changed two things: sending output to stdout 
+   instead of stderr, and adding fflush as per the sticky in the forum. */
+static void
+print_to_console (char* fmt, ...)
+{
+    va_list argptr;
+
+    if (!m_dont_print) {
+	va_start (argptr, fmt);
+
+	vfprintf (stdout, fmt, argptr);
+	fflush (stdout);
+
+	va_end (argptr);
+    }
 }
 
 /* 
@@ -167,9 +178,9 @@ print_status (RIP_MANAGER_INFO *rmi)
 	    sprintf(status_str,"buffering - %c ",
 		    m_buffer_chars[buffering_tick]);
 
-	    fprintf(stderr, "[%14s] %.50s\r",
-		    status_str,
-		    rmi->filename);
+	    print_to_console ("[%14s] %.50s\r",
+			      status_str,
+			      rmi->filename);
 	    break;
 
 	case RM_STATUS_RIPPING:
@@ -179,35 +190,34 @@ print_status (RIP_MANAGER_INFO *rmi)
 		strcpy(status_str, "ripping...    ");
 	    }
 	    format_byte_size(filesize_str, rmi->filesize);
-	    fprintf(stderr, "[%14s] %.50s [%7s]\r",
-		    status_str,
-		    rmi->filename,
-		    filesize_str);
+	    print_to_console ("[%14s] %.50s [%7s]\r",
+			      status_str,
+			      rmi->filename,
+			      filesize_str);
 	    break;
 	case RM_STATUS_RECONNECTING:
 	    strcpy(status_str, "re-connecting..");
-	    fprintf(stderr, "[%14s]\r", status_str);
+	    print_to_console ("[%14s]\r", status_str);
 	    break;
 	}
 			
     }
     if (!printed_fullinfo)
     {
-	fprintf(stderr, 
-		"stream: %s\n"
-		"server name: %s\n"
-		"bitrate: %d\n"
-		"meta interval: %d\n",
-		rmi->streamname,
-		rmi->server_name,
-		rmi->bitrate,
-		rmi->meta_interval);
+	print_to_console ("stream: %s\n"
+			  "server name: %s\n"
+			  "bitrate: %d\n"
+			  "meta interval: %d\n",
+			  rmi->streamname,
+			  rmi->server_name,
+			  rmi->bitrate,
+			  rmi->meta_interval);
 	if(GET_MAKE_RELAY(prefs->flags))
 	{
-	    fprintf(stderr, "relay port: %d\n"
-		    "[%14s]\r",
-		    prefs->relay_port,
-		    "getting track name... ");
+	    print_to_console ("relay port: %d\n"
+			      "[%14s]\r",
+			      prefs->relay_port,
+			      "getting track name... ");
 	}
 
 	printed_fullinfo = TRUE;
@@ -237,13 +247,11 @@ rip_callback (RIP_MANAGER_INFO* rmi, int message, void *data)
 	m_alldone = TRUE;
 	break;
     case RM_DONE:
-	if (!m_dont_print)
-	    fprintf(stderr, "bye..\n");
+	print_to_console ("bye..\n");
 	m_alldone = TRUE;
 	break;
     case RM_NEW_TRACK:
-	if (!m_dont_print)
-	    fprintf(stderr, "\n");
+	print_to_console ("\n");
 	break;
     case RM_STARTED:
 	m_started = TRUE;
