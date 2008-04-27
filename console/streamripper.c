@@ -284,7 +284,7 @@ print_usage()
     fprintf(stderr, "      -u useragent   - Use a different UserAgent than \"Streamripper\"\n");
     fprintf(stderr, "      -w rulefile    - Parse metadata using rules in file.\n");
     fprintf(stderr, "      -m timeout     - Number of seconds before force-closing stalled conn\n");
-    fprintf(stderr, "      -k count       - Skip over first <count> tracks before starting to rip\n");
+    fprintf(stderr, "      -k count       - Leave <count> tracks in incomplete\n");
 #if !defined (WIN32)
     fprintf(stderr, "      -I interface   - Rip from specified interface (e.g. eth0)\n");
 #endif
