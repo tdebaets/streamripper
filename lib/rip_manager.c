@@ -90,7 +90,9 @@ rip_manager_start (RIP_MANAGER_INFO **rmip,
 		   RIP_MANAGER_CALLBACK status_callback)
 {
     RIP_MANAGER_INFO* rmi;
+#if __UNIX__
     int rc;
+#endif
 
     if (!prefs || !rmip) {
 	return SR_ERROR_INVALID_PARAM;

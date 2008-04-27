@@ -241,6 +241,8 @@ http_construct_sc_request(const char *url, const char* proxyurl, char *buffer, c
     
     strcat(buffer, "\r\n");
 
+    debug_printf ("SC REQUEST:\n%s", buffer);
+
     return SR_SUCCESS;
 }
 

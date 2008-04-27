@@ -547,6 +547,9 @@ thread_accept (void* arg)
                     {
                         closesocket (newsock);
                         debug_printf ("Relay: Client %d disconnected (Unable to receive HTTP header) or cbuf2.buf is NULL\n", newsock);
+			//if (rmi->cbuf2.buf == NULL) {
+			  //  debug_printf ("In fact, cbuf2.buf is NULL\n");
+			//}
                     }
                 }
             }

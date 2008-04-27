@@ -358,10 +358,10 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 	    strncpy (prefs->showfile_pattern, argv[i], SR_MAX_PATH);
 	    break;
 	case 'A':
-	    prefs->flags ^= OPT_INDIVIDUAL_TRACKS;
+	    prefs->flags |= OPT_INDIVIDUAL_TRACKS;
 	    break;
 	case 'c':
-	    prefs->flags ^= OPT_AUTO_RECONNECT;
+	    prefs->flags |= OPT_AUTO_RECONNECT;
 	    break;
 	case 'd':
 	    i++;
@@ -386,7 +386,6 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
             exit(0);
 	    break;
 	case 'i':
-	    //	    prefs->flags ^= OPT_ADD_ID3;
 	    OPT_FLAG_SET(prefs->flags,OPT_ADD_ID3V1,0);
 	    OPT_FLAG_SET(prefs->flags,OPT_ADD_ID3V2,0);
 	    break;
@@ -435,7 +434,7 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 		    "Please use -D pattern instead.\n");
 	    exit (1);
 	case 'q':
-	    prefs->flags ^= OPT_COUNT_FILES;
+	    prefs->flags |= OPT_COUNT_FILES;
 	    prefs->count_start = -1;     /* -1 means auto-detect */
 	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
@@ -443,7 +442,7 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 	    prefs->count_start = atoi(argv[i]);
 	    break;
 	case 'r':
-	    prefs->flags ^= OPT_MAKE_RELAY;
+	    prefs->flags |= OPT_MAKE_RELAY;
 	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
 	    i++;
@@ -461,7 +460,7 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 	    prefs->max_connections = atoi(argv[i]);
 	    break;
 	case 's':
-	    prefs->flags ^= OPT_SEPERATE_DIRS;
+	    prefs->flags |= OPT_SEPERATE_DIRS;
 	    break;
 	case 't':
 	    prefs->flags |= OPT_KEEP_INCOMPLETE;
@@ -481,7 +480,7 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 	    strncpy(prefs->rules_file, argv[i], SR_MAX_PATH);
 	    break;
 	case 'z':
-	    prefs->flags ^= OPT_SEARCH_PORTS;
+	    prefs->flags |= OPT_SEARCH_PORTS;
 	    prefs->max_port = prefs->relay_port+1000;
 	    break;
 	case '-':

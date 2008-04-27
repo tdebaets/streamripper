@@ -10,6 +10,8 @@ New for 1.63-beta-8
 * Change meaning of -k <num> option.  Now <num> is the number of files 
   to leave in incomplete.  This makes it easier to rip streams where 
   the first file is known to be complete (#1821814)
+* Fix bug which disables options when specified in preference file
+  and in command line
 
 New for 1.63-beta-7
 --------------
