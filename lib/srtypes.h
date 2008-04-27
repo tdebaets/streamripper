@@ -82,6 +82,10 @@ typedef unsigned int uint32_t;
 
 #define NO_META_INTERVAL	-1
 
+/* Preference file versions */
+#define PREFS_VERSION_1_63_BETA_8           "1.63-beta-8"
+#define PREFS_VERSION_CURRENT PREFS_VERSION_1_63_BETA_8
+
 /* GCS - Grr. I don't care.  Max path is 254 until I get around to
     fixing this for other platforms. */
 #define SR_MAX_PATH		254
@@ -89,6 +93,7 @@ typedef unsigned int uint32_t;
 #define MAX_IP_LEN			3+1+3+1+3+1+3+1
 #define MAX_HEADER_LEN		8192
 #define MAX_URL_LEN		8192
+#define MAX_VERSION_LEN		256
 #define MAX_ICY_STRING		4024
 #define MAX_SERVER_LEN		1024
 //#define MAX_TRACK_LEN		MAX_PATH
@@ -492,6 +497,7 @@ struct wstreamripper_prefs
 typedef struct global_prefs GLOBAL_PREFS;
 struct global_prefs
 {
+    char version[MAX_VERSION_LEN];             // default stream
     char url[MAX_URL_LEN];                     // default stream
     STREAM_PREFS stream_prefs;                 // default prefs for new streams
     WSTREAMRIPPER_PREFS wstreamripper_prefs;   // prefs for winamp plugin

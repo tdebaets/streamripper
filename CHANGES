@@ -2,7 +2,7 @@ New for 1.63-beta-8
 --------------
 * Add Yoav's patch for parsing bitrates from streaming Apache headers
 * Activate capisce's patch for improved silence detection (use --xs2)
-* Add three missing options to preferences file
+* Add missing options, versioning to preferences file
 * Console versions (win & unix) send output to stdout instead of stderr
 * Console versions (win & unix) now fflush their output
 * Fix a bug in beta-5 where multiple tracks with identical cooked metadata 

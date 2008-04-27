@@ -35,15 +35,20 @@ static GKeyFile *m_key_file = NULL;
 /******************************************************************************
  * Private function protoypes
  *****************************************************************************/
-static void prefs_get_stream_defaults (STREAM_PREFS* prefs);
 static gchar* prefs_get_config_dir (void);
-static void prefs_get_prefs (STREAM_PREFS* prefs, char* label);
-static void prefs_set_prefs (STREAM_PREFS* prefs, STREAM_PREFS* default_prefs, 
-				char* group);
+static void prefs_get_global_defaults (GLOBAL_PREFS* global_prefs);
+
+static void prefs_get_stream_defaults (STREAM_PREFS* prefs);
+static void prefs_get_stream_prefs_keyfile (STREAM_PREFS* prefs, char* group);
+static void prefs_set_stream_prefs_keyfile (STREAM_PREFS* prefs, 
+					    STREAM_PREFS* default_prefs, 
+					    char* group);
+
 static void prefs_get_wstreamripper_defaults (WSTREAMRIPPER_PREFS* prefs);
 
 static int prefs_get_string (char* dest, gsize dest_size, char* group, char* key);
 static void prefs_get_int (int *dest, char *group, char *key);
+static int prefs_get_ulong (u_long *dest, char *group, char *key);
 static void prefs_get_long (long *dest, char *group, char *key);
 static void prefs_set_string (char* group, char* key, char* value);
 static void prefs_set_integer (char* group, char* key, gint value);
@@ -62,6 +67,7 @@ prefs_load (void)
     GError *error = NULL;
     gchar* prefs_dir;
     gchar* prefs_fn;
+    GLOBAL_PREFS global_prefs;
 
     prefs_dir = prefs_get_config_dir ();
     prefs_fn = g_build_filename (prefs_dir,
@@ -76,12 +82,23 @@ prefs_load (void)
     rc = g_key_file_load_from_file (m_key_file, prefs_fn,
 				    flags, &error);
 
-    if (!rc) {
-	GLOBAL_PREFS global_prefs;
-	memset (&global_prefs, 0, sizeof(GLOBAL_PREFS));
-	prefs_get_stream_defaults (&global_prefs.stream_prefs);
-	prefs_set_stream_prefs (&global_prefs.stream_prefs, "stream defaults");
+    /* Make sure a full set of global preferences are created in keyfile */
+    prefs_get_global_prefs (&global_prefs);
+    prefs_set_global_prefs (&global_prefs);
+
+    /* If there is no version string, then the version is "1.63-beta-2". */
+    if (rc && !global_prefs.version[0]) {
+	/* Silently update dropcount */
+	u_long dropcount;
+	rc = prefs_get_ulong (&dropcount, "stream defaults", "dropcount");
+	if (dropcount == 0) {
+	    prefs_set_integer ("stream defaults", "dropcount", 1);
+	}
     }
+
+    /* Update to current version */
+    prefs_set_string ("sripper", "version", PREFS_VERSION_CURRENT);
+
     g_free (prefs_fn);
     g_free (prefs_dir);
     return (int) rc;
@@ -135,16 +152,23 @@ prefs_save (void)
 void
 prefs_get_global_prefs (GLOBAL_PREFS *global_prefs)
 {
-    memset (global_prefs, 0, sizeof(GLOBAL_PREFS));
+    prefs_get_global_defaults (global_prefs);
+
+    prefs_get_string (global_prefs->version, MAX_VERSION_LEN, "sripper", 
+		      "version");
     prefs_get_string (global_prefs->url, MAX_URL_LEN, "sripper", "url");
-    prefs_get_prefs (&global_prefs->stream_prefs, "stream defaults");
+    prefs_get_stream_prefs (&global_prefs->stream_prefs, "stream defaults");
 }
 
 void
 prefs_set_global_prefs (GLOBAL_PREFS *global_prefs)
 {
+    /* Don't set version.  This is done in prefs_load() so we can 
+       patch old versions of prefs. */
+    prefs_set_string ("sripper", "version", global_prefs->version);
     prefs_set_string ("sripper", "url", global_prefs->url);
-    prefs_set_prefs (&global_prefs->stream_prefs, 0, "stream defaults");
+    prefs_set_stream_prefs_keyfile (&global_prefs->stream_prefs, 0, 
+				    "stream defaults");
 }
 
 void
@@ -239,15 +263,21 @@ prefs_get_stream_prefs (STREAM_PREFS* prefs, char* label)
 	g_strfreev (group_list);
     }
 
-    /* Copy info from keyfile to prefs struct */
+    /* Copy default values */
     prefs_get_stream_defaults (prefs);
-    prefs_get_prefs (prefs, "stream defaults");
+    prefs_get_stream_prefs_keyfile (prefs, "stream defaults");
+
+    /* Copy stream-specific values */
     if (group) {
-	prefs_get_prefs (prefs, group);
+	prefs_get_stream_prefs_keyfile (prefs, group);
 	g_free (group);
-    } else {
+    }
+
+    /* If no stream-specific values found, set url to input value */
+    if (!group && strcmp (label, "stream defaults")) {
 	strcpy (prefs->url, label_copy);
     }
+
     g_free (label_copy);
 
     //    printf ("Home dir is: %s\n", g_get_home_dir());
@@ -262,7 +292,7 @@ prefs_set_stream_prefs (STREAM_PREFS* prefs, char* label)
 	/* GCS FIX: Here I should assign a new (unused) label */
 	return;
     }
-    prefs_set_prefs (prefs, 0, label);
+    prefs_set_stream_prefs_keyfile (prefs, 0, label);
 }
 
 /* GCS: This is not quite complete, missing splitting & codesets */
@@ -324,6 +354,12 @@ prefs_get_config_dir (void)
 }
 
 static void
+prefs_get_global_defaults (GLOBAL_PREFS* global_prefs)
+{
+    memset (global_prefs, 0, sizeof(GLOBAL_PREFS));
+}
+
+static void
 prefs_get_stream_defaults (STREAM_PREFS* prefs)
 {
     debug_printf ("- set_rip_manager_options_defaults -\n");
@@ -362,7 +398,8 @@ prefs_get_stream_defaults (STREAM_PREFS* prefs)
     /* GCS FIX: What is the difference between this timeout 
        and the one used in setsockopt()? */
     prefs->timeout = 15;
-    prefs->dropcount = 1;
+
+    prefs->dropcount = 1;  /* Changed from 0 to 1 in version 1.63-beta-8 */
 
     // Defaults for codeset
     memset (&prefs->cs_opt, 0, sizeof(CODESET_OPTIONS));
@@ -490,7 +527,7 @@ prefs_set_integer (char* group, char* key, gint value)
 }
 
 static void
-prefs_get_prefs (STREAM_PREFS* prefs, char* group)
+prefs_get_stream_prefs_keyfile (STREAM_PREFS* prefs, char* group)
 {
 //    char* group = 0;
     char overwrite_str[128];
@@ -585,7 +622,8 @@ prefs_get_prefs (STREAM_PREFS* prefs, char* group)
 
 /* gp = global preferences */
 static void
-prefs_set_prefs (STREAM_PREFS* prefs, STREAM_PREFS* gp, char* group)
+prefs_set_stream_prefs_keyfile (STREAM_PREFS* prefs, STREAM_PREFS* gp, 
+				char* group)
 {
     if (!m_key_file) return;
 
