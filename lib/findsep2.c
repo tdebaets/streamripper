@@ -130,6 +130,7 @@ findsep_silence_2 (const char* mpgbuf,
     int result;
     int bestsil;
     int i;
+    double delta = 1;
     
     ds.mpgbuf = (unsigned char*)mpgbuf;
     ds.mpgsize = mpgsize;
@@ -178,7 +179,6 @@ findsep_silence_2 (const char* mpgbuf,
     /* Start with the highest silence-length */
     bestsil = 0;
 
-    double delta = 1;
     for (i = 1; i <= ds.max_search_depth; ++i)
     {
         unsigned long current = ds.min_maxvolume_buffer[bestsil].volume;
@@ -488,7 +488,7 @@ output (void *data, struct mad_header const *header,
 	if (ds->pcmpos > ds->len_to_sw_start_samp
 	    && ds->pcmpos < ds->len_to_sw_end_samp)
 	{
-	    search_for_silence(ds, v);
+	    search_for_silence(ds, (short) v);
 	}
 	ds->pcmpos++;
 	ds->prev_sample = sample;
@@ -512,7 +512,7 @@ init_maxvolume_buffer(DECODE_STRUCT *ds)
     unsigned long buffer_offset = 1;
     unsigned long temp = ds->silence_samples;
     unsigned long depth = 0;
-    int i;
+    unsigned long i;
     while (temp > 0) {
         ++depth;
         temp /= 2;
