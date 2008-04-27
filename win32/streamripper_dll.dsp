@@ -121,6 +121,10 @@ SOURCE=..\lib\findsep.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\lib\findsep2.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\lib\http.c
 # End Source File
 # Begin Source File
