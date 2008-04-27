@@ -644,10 +644,10 @@ end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, u_long pos2, TRACK_INFO* ti)
 
     // Only save this track if we've skipped over enough cruft 
     // at the beginning of the stream
-    debug_printf("Current track number %d (skipping if %d or less)\n", 
+    debug_printf("Current track number %d (dropcount is %d)\n", 
 		 rmi->track_count, 
 		 rmi->prefs->dropcount);
-    if (rmi->track_count > rmi->prefs->dropcount)
+    if (rmi->track_count >= rmi->prefs->dropcount)
 	if ((ret = rip_manager_end_track (rmi, ti)) != SR_SUCCESS)
 	    goto BAIL;
 

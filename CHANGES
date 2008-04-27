@@ -7,6 +7,9 @@ New for 1.63-beta-8
 * Console versions (win & unix) now fflush their output
 * Fix a bug in beta-5 where multiple tracks with identical cooked metadata 
   were not coalesced into a single track
+* Change meaning of -k <num> option.  Now <num> is the number of files 
+  to leave in incomplete.  This makes it easier to rip streams where 
+  the first file is known to be complete (#1821814)
 
 New for 1.63-beta-7
 --------------

@@ -361,11 +361,8 @@ prefs_get_stream_defaults (STREAM_PREFS* prefs)
 
     /* GCS FIX: What is the difference between this timeout 
        and the one used in setsockopt()? */
-#if defined (commentout)
-    prefs->timeout = 0;
-#endif
     prefs->timeout = 15;
-    prefs->dropcount = 0;
+    prefs->dropcount = 1;
 
     // Defaults for codeset
     memset (&prefs->cs_opt, 0, sizeof(CODESET_OPTIONS));
