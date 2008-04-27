@@ -1,5 +1,6 @@
 New for 1.63-beta-8
 --------------
+Sun Apr 27 14:57:21 EDT 2008
 * Add Yoav's patch for parsing bitrates from streaming Apache headers
 * Activate capisce's patch for improved silence detection (use --xs2)
 * Add missing options, versioning to preferences file
@@ -440,7 +441,7 @@ New for 1.60.3
 * Upgrade to libmad version 0.15.1b (unix)
 * Upgrade autoconf & automake 
 
-New for 1.60.1
+New for 1.60.2
 --------------
 * Fix bug with -t flag
 * Initial implementation -a flag (rip to single file)
