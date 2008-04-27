@@ -528,7 +528,7 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 		copy_rule_result (ti->artist, query_string, pmatch, rulep->artist_idx);
 		copy_rule_result (ti->title, query_string, pmatch, rulep->title_idx);
 		copy_rule_result (ti->album, query_string, pmatch, rulep->album_idx);
-		copy_rule_result (ti->track, query_string, pmatch, rulep->trackno_idx);
+		copy_rule_result (ti->track_p, query_string, pmatch, rulep->trackno_idx);
 		copy_rule_result (ti->year, query_string, pmatch, rulep->year_idx);
 		ti->have_track_info = 1;
 		compose_metadata (rmi, ti);
@@ -539,7 +539,7 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 			       m_("TRACK: ")  m_S m_("\n")
 			       m_("YEAR: ")  m_S m_("\n"),
 			       ti->artist, ti->title, ti->album,
-                               ti->track, ti->year);
+                               ti->track_p, ti->year);
 		return;
 	    }
 	}

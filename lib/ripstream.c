@@ -141,9 +141,20 @@ ripstream_clear(RIP_MANAGER_INFO* rmi)
 static BOOL
 is_track_changed (RIP_MANAGER_INFO* rmi)
 {
-    /* If metadata is duplicate of previous, then no change. */
-    if (!strcmp(rmi->old_track.raw_metadata, rmi->current_track.raw_metadata))
+    TRACK_INFO *old = &rmi->old_track;
+    TRACK_INFO *cur = &rmi->current_track;
+
+    /* We test the parsed fields instead of raw_metadata because the 
+       parse rules may have stripped garbage out, causing the resulting 
+       track info to be the same. */
+    if (!strcmp(old->artist, cur->artist)
+	&& !strcmp(old->title, cur->title)
+	&& !strcmp(old->album, cur->album)
+	&& !strcmp(old->track_p, cur->track_p)
+	&& !strcmp(old->year, cur->year))
+    {
 	return 0;
+    }
 
     /* Otherwise, there was a change. */
     return 1;
@@ -158,7 +169,8 @@ format_track_info (TRACK_INFO* ti, char* tag)
 		   m_("ARTIST: ") m_S m_("\n")
 		   m_("TITLE:  ") m_S m_("\n")
 		   m_("ALBUM:  ") m_S m_("\n")
-		   m_("TRACK:  ") m_S m_("\n")
+		   m_("TRACK_P:") m_S m_("\n")
+		   m_("TRACK_A:") m_S m_("\n")
 		   m_("YEAR:  ") m_S m_("\n")
 		   m_("SAVE:   %d\n"),
 		   tag,
@@ -167,7 +179,8 @@ format_track_info (TRACK_INFO* ti, char* tag)
 		   ti->artist,
 		   ti->title,
 		   ti->album,
-                   ti->track,
+                   ti->track_p,
+                   ti->track_a,
                    ti->year,
 		   ti->save_track);
 }
@@ -180,7 +193,8 @@ clear_track_info (TRACK_INFO* ti)
     ti->artist[0] = 0;
     ti->title[0] = 0;
     ti->album[0] = 0;
-    ti->track[0] = 0;
+    ti->track_p[0] = 0;
+    ti->track_a[0] = 0;
     ti->year[0] = 0;
     ti->composed_metadata[0] = 0;
     ti->save_track = TRUE;
@@ -194,7 +208,8 @@ copy_track_info (TRACK_INFO* dest, TRACK_INFO* src)
     mstrcpy (dest->artist, src->artist);
     mstrcpy (dest->title, src->title);
     mstrcpy (dest->album, src->album);
-    mstrcpy (dest->track, src->track);
+    mstrcpy (dest->track_p, src->track_p);
+    mstrcpy (dest->track_a, src->track_a);
     mstrcpy (dest->year, src->year);
     strcpy (dest->composed_metadata, src->composed_metadata);
     dest->save_track = src->save_track;
@@ -378,16 +393,12 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
 	clear_track_info (&rmi->current_track);
 	read_external (rmi, rmi->ep, &rmi->current_track);
     } else {
+	/* Otherwise, apply parse rules to raw metadata */
 	if (rmi->current_track.raw_metadata[0]) {
 	    parse_metadata (rmi, &rmi->current_track);
 	} else {
 	    clear_track_info (&rmi->current_track);
 	}
-    }
-
-    if (!rmi->current_track.track[0]) {
-        msnprintf (rmi->current_track.track, MAX_HEADER_LEN,
-		   m_("%d"), rmi->track_count + 1);
     }
 
     /* Copy the data into cbuffer */
@@ -406,6 +417,14 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
         return ret;
     }
 
+    /* Set the track number */
+    if (rmi->current_track.track_p[0]) {
+	mstrcpy (rmi->current_track.track_a, rmi->current_track.track_p);
+    } else {
+        msnprintf (rmi->current_track.track_a, MAX_HEADER_LEN,
+		   m_("%d"), rmi->track_count + 1);
+    }
+
     /* First time through, so start a track. */
     if (rmi->ripstream_first_time_through) {
 	int ret;
@@ -413,7 +432,7 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
 	if (!rmi->current_track.have_track_info) {
 	    strcpy (rmi->current_track.raw_metadata, rmi->no_meta_name);
 	}
-	msnprintf (rmi->current_track.track, MAX_HEADER_LEN, m_("0"));
+	msnprintf (rmi->current_track.track_a, MAX_HEADER_LEN, m_("0"));
 	ret = start_track_mp3 (rmi, &rmi->current_track);
 	if (ret != SR_SUCCESS) {
 	    debug_printf ("start_track_mp3 failed(#1): %d\n",ret);
@@ -734,7 +753,7 @@ start_track_mp3 (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
         ret = write_id3v2_frame(rmi, "TALB", ti->album, 0, &sent);
 
         /* Track */
-        ret = write_id3v2_frame(rmi, "TRCK", ti->track, 0, &sent);
+        ret = write_id3v2_frame(rmi, "TRCK", ti->track_a, 0, &sent);
 
         /* Year */
         ret = write_id3v2_frame(rmi, "TYER", ti->year, 0, &sent);

@@ -236,9 +236,10 @@ typedef struct TRACK_INFOst
     mchar artist[MAX_TRACK_LEN];
     mchar title[MAX_TRACK_LEN];
     mchar album[MAX_TRACK_LEN];
-    mchar track[MAX_TRACK_LEN];
+    mchar track_p[MAX_TRACK_LEN];                /* Track# parsed */
+    mchar track_a[MAX_TRACK_LEN];                /* Track# assigned to id3 */
     mchar year[MAX_TRACK_LEN];
-    char composed_metadata[MAX_METADATA_LEN+1];      /* For relay stream */
+    char composed_metadata[MAX_METADATA_LEN+1];  /* For relay stream */
     BOOL save_track;
 } TRACK_INFO;
 

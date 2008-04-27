@@ -360,7 +360,8 @@ vorbis_process (RIP_MANAGER_INFO* rmi, stream_processor *stream,
 				   || !strcmp(inf->vc.user_comments[i],"Tracknumber")) {
 			    /* GCS FIX: This is a bit funky, maybe I need 
 			       to get rid of the ogg built-in utf8 decoder */
-			    mstring_from_string (rmi, ti->track, MAX_TRACK_LEN, 
+			    mstring_from_string (rmi, ti->track_p, 
+						 MAX_TRACK_LEN, 
 						 decoded, CODESET_LOCALE);
 			}
                         free(decoded);

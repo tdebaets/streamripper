@@ -89,12 +89,6 @@ debug_printf (char* fmt, ...)
     va_list argptr;
 
     if (!debug_on) {
-	/* Uncomment to debug debug_mprintf() */
-#if defined (commentout)
-	va_start (argptr, fmt);
-        vprintf (fmt, argptr);
-	va_end (argptr);
-#endif
 	return;
     }
 
@@ -125,57 +119,6 @@ debug_printf (char* fmt, ...)
     }
     threadlib_signal_sem (&m_debug_lock);
 }
-
-#if defined (commentout)
-void
-debug_mprintf (mchar* fmt, ...)
-{
-    int was_open = 1;
-    va_list argptr;
-    int rc;
-    mchar mbuf[DEBUG_BUF_LEN];
-    char cbuf[DEBUG_BUF_LEN];
-
-    if (!debug_on) return;
-
-    if (!debug_initialized) {
-        m_debug_lock = threadlib_create_sem();
-        threadlib_signal_sem(&m_debug_lock);
-    }
-    threadlib_waitfor_sem (&m_debug_lock);
-
-    va_start (argptr, fmt);
-    if (!gcsfp) {
-	was_open = 0;
-	debug_open();
-	if (!gcsfp) return;
-    }
-    if (!debug_initialized) {
-	debug_initialized = 1;
-	fprintf (gcsfp, "=========================\n");
-	fprintf (gcsfp, "STREAMRIPPER " SRPLATFORM " " SRVERSION "\n");
-    }
-
-#if defined HAVE_WCHAR_SUPPORT
-    rc = vswprintf (mbuf, DEBUG_BUF_LEN, fmt, argptr);
-    debug_on = 0;   /* Avoid recursive call which hangs on semaphore */
-    rc = string_from_mstring (cbuf, DEBUG_BUF_LEN, mbuf, CODESET_LOCALE);
-    debug_on = 1;
-#else
-    rc = vsnprintf (cbuf, DEBUG_BUF_LEN, fmt, argptr);
-#endif
-
-    fwrite (cbuf, 1, rc, gcsfp);
-
-    fflush (gcsfp);
-
-    va_end (argptr);
-    if (!was_open) {
-	debug_close ();
-    }
-    threadlib_signal_sem (&m_debug_lock);
-}
-#endif
 
 void
 debug_print_error (void)

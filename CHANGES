@@ -5,6 +5,8 @@ New for 1.63-beta-8
 * Add three missing options to preferences file
 * Console versions (win & unix) send output to stdout instead of stderr
 * Console versions (win & unix) now fflush their output
+* Fix a bug in beta-5 where multiple tracks with identical cooked metadata 
+  were not coalesced into a single track
 
 New for 1.63-beta-7
 --------------
@@ -171,7 +173,7 @@ New for 1.61.22
 Fri Jun  2 10:17:53 EDT 2006
 * Docking now works in modern skins
 * Docking now works when windowshading winamp
-* Debuging winamp plugin through STREAMRIPPER_DEBUG environment variable
+* Debugging winamp plugin through STREAMRIPPER_DEBUG environment variable
 
 New for 1.61.21
 ---------------
