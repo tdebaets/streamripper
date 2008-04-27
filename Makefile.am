@@ -329,6 +329,7 @@ lib_manifest = \
 	lib/external.h \
 	lib/filelib.c \
 	lib/filelib.h \
+	lib/findsep2.c \
 	lib/findsep.c \
 	lib/findsep.h \
 	lib/http.c \
