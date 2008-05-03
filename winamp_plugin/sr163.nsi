@@ -71,40 +71,6 @@
 ;Installer Sections
 
 
-Section "Core Libraries" sec_core
-
-  SetOutPath "$INSTDIR"
-  
-  File "..\README"
-  File "..\COPYING"
-  File "..\CHANGES"
-  File "..\THANKS"
-  File "sripper_howto.txt"
-  SetOverwrite off
-  File "..\parse_rules.txt"
-  SetOverwrite on
-  File "..\fake_external_metadata.pl"
-  File "..\fetch_external_metadata.pl"
-  File "D:\sripper_1x\tre-0.7.2\win32\Release\tre.dll"
-  File "D:\sripper_1x\libogg-1.1.3\ogg.dll"
-  File "D:\sripper_1x\libvorbis-1.1.2\vorbis.dll"
-  File "D:\sripper_1x\win32\glib-2.12.12\bin\libglib-2.0-0.dll"
-  File "D:\sripper_1x\iconv-win32\dll\iconv.dll"
-  File "D:\sripper_1x\intl.dll"
-  File "..\win32\Release\streamripper.dll"
-  
-  ;Store installation folder(s)
-  WriteRegStr HKCU "Software\Streamripper" "" $INSTDIR
-  
-  ;Create uninstaller
-  WriteUninstaller "$INSTDIR\Uninstall.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "DisplayName" "Streamripper (Remove only)"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "UninstallString" "$INSTDIR\Uninstall.exe"
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "NoModify" 1
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "NoRepair" 1
-  
-SectionEnd
-
 Section "Winamp Plugin" sec_plugin
 
   SetOutPath "$INSTDIR"
@@ -130,6 +96,24 @@ Section "Winamp Plugin" sec_plugin
   
 SectionEnd
 
+Section "Console Application" sec_console
+
+  SetOutPath "$INSTDIR"
+
+  File "..\win32\Release\streamripper.exe"
+  
+  ;Store installation folder
+  WriteRegStr HKCU "Software\Streamripper" "" $INSTDIR
+  
+  ;Create uninstaller
+  WriteUninstaller "$INSTDIR\Uninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "DisplayName" "Streamripper (Remove only)"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "UninstallString" "$INSTDIR\Uninstall.exe"
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "NoModify" 1
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Streamripper" "NoRepair" 1
+  
+SectionEnd
+
 Section "GUI Application" sec_gui
 
   SetOutPath "$INSTDIR"
@@ -152,13 +136,29 @@ Section "GUI Application" sec_gui
   
 SectionEnd
 
-Section "Console Application" sec_console
+Section "Core Libraries" sec_core
 
   SetOutPath "$INSTDIR"
-
-  File "..\win32\Release\streamripper.exe"
   
-  ;Store installation folder
+  File "..\README"
+  File "..\COPYING"
+  File "..\CHANGES"
+  File "..\THANKS"
+  File "sripper_howto.txt"
+  SetOverwrite off
+  File "..\parse_rules.txt"
+  SetOverwrite on
+  File "..\fake_external_metadata.pl"
+  File "..\fetch_external_metadata.pl"
+  File "D:\sripper_1x\tre-0.7.2\win32\Release\tre.dll"
+  File "D:\sripper_1x\libogg-1.1.3\ogg.dll"
+  File "D:\sripper_1x\libvorbis-1.1.2\vorbis.dll"
+  File "D:\sripper_1x\win32\glib-2.12.12\bin\libglib-2.0-0.dll"
+  File "D:\sripper_1x\iconv-win32\dll\iconv.dll"
+  File "D:\sripper_1x\intl.dll"
+  File "..\win32\Release\streamripper.dll"
+  
+  ;Store installation folder(s)
   WriteRegStr HKCU "Software\Streamripper" "" $INSTDIR
   
   ;Create uninstaller
@@ -203,8 +203,8 @@ set_flags:
 
 FunctionEnd
 
-LangString TEXT_IO_TITLE ${LANG_ENGLISH} "InstallOptions page"
-LangString TEXT_IO_SUBTITLE ${LANG_ENGLISH} "This is a page created using the InstallOptions plug-in."
+LangString TEXT_IO_TITLE ${LANG_ENGLISH} "Choose directories"
+LangString TEXT_IO_SUBTITLE ${LANG_ENGLISH} "Choose the install directories for streamripper and winamp"
 
 Function CustomPage
 
