@@ -63,6 +63,7 @@ static BOOL			m_started = FALSE;
 static BOOL			m_alldone = FALSE;
 static BOOL			m_got_sig = FALSE;
 static BOOL			m_dont_print = FALSE;
+static BOOL			m_print_stderr = FALSE;
 time_t				m_stop_time = 0;
 
 /* main()
@@ -141,8 +142,13 @@ print_to_console (char* fmt, ...)
     if (!m_dont_print) {
 	va_start (argptr, fmt);
 
-	vfprintf (stdout, fmt, argptr);
-	fflush (stdout);
+	if (m_print_stderr) {
+	    vfprintf (stderr, fmt, argptr);
+	    fflush (stderr);
+	} else {
+	    vfprintf (stdout, fmt, argptr);
+	    fflush (stdout);
+	}
 
 	va_end (argptr);
     }
@@ -291,6 +297,7 @@ print_usage()
     fprintf(stderr, "      -T             - Truncate duplicated tracks in incomplete\n");
     fprintf(stderr, "      -E command     - Run external command to fetch metadata\n");
     fprintf(stderr, "      --quiet        - Don't print ripping status to console\n");
+    fprintf(stderr, "      --stderr       - Print ripping status to stderr (old behavior)\n");
     fprintf(stderr, "      --debug        - Save debugging trace\n");
     fprintf(stderr, "ID3 opts (mp3/aac/nsv):  [The default behavior is adding ID3V2.3 only]\n");
     fprintf(stderr, "      -i                           - Don't add any ID3 tags to output file\n");
@@ -513,6 +520,10 @@ parse_extended_options (STREAM_PREFS* prefs, char* rule)
     /* Logging options */
     if (!strcmp(rule,"debug")) {
 	debug_enable();
+	return;
+    }
+    if (!strcmp(rule,"stderr")) {
+	m_print_stderr = TRUE;
 	return;
     }
     if (!strcmp(rule,"quiet")) {

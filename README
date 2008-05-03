@@ -265,6 +265,9 @@ OPTIONS
            Quiet operation
        Dont write any text to the console, except error messages
 
+       --stderr
+           Write output to stderr instead of stdout
+
        --xs2
            Use capisces new algorithm (Apr 2008) for silence detection.
 
@@ -309,7 +312,7 @@ GETTING STARTED
        have the URL you can begin ripping. For example:
 
 
-           streamripper http://205.188.245.132:8038
+             streamripper http://205.188.245.132:8038
 
        This would rip Monkey Radio (as of 1/10/2001), it places the tracks
        into two directorys one called "Monkey Radio" and a sub-directory
@@ -500,4 +503,4 @@ COPYING
 
 
 
-                                  04/27/2008                   STREAMRIPPER(1)
+                                  05/03/2008                   STREAMRIPPER(1)

@@ -1,3 +1,16 @@
+
+Plans for 1.63.X
+
+(1) Fix problem with -a flag
+(2) Implement glib's PCRE
+(3) Skin improvements (fix single pixel problem) 
+(4) Skin improvements (read zip directly)
+(5) Add -o version option
+
+
+-----------------------------------------------------------------------
+
+
 -- March 1 is the last version before glib utf8 conversion --
 -- March 15 irrevocable change to mchar to use glib utf8
 
