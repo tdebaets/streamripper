@@ -23,7 +23,7 @@
 #include "errors.h"
 #include "compat.h"
 
-#define SRVERSION	"1.63.0"
+#define SRVERSION	"1.63.1"
 
 #if defined (WIN32)
 #define SRPLATFORM      "windows"
@@ -53,7 +53,7 @@
 
 // Rip manager flags options
 #define OPT_AUTO_RECONNECT	0x00000001	// reconnect automatically if dropped
-#define OPT_SEPERATE_DIRS	0x00000002	// create a directory named after the server
+#define OPT_SEPARATE_DIRS	0x00000002	// create a directory named after the server
 #define OPT_SEARCH_PORTS	0x00000008	// relay server should search for a open port
 #define OPT_MAKE_RELAY		0x00000010	// don't make a relay server
 #define OPT_COUNT_FILES		0x00000020	// add a index counter to the filenames
@@ -73,7 +73,7 @@
 #define OPT_FLAG_SET(flags, opt, val)	    (val ? (flags |= opt) : (flags &= (~opt)))
 
 #define GET_AUTO_RECONNECT(flags)		(OPT_FLAG_ISSET(flags, OPT_AUTO_RECONNECT))
-#define GET_SEPERATE_DIRS(flags)		(OPT_FLAG_ISSET(flags, OPT_SEPERATE_DIRS))
+#define GET_SEPARATE_DIRS(flags)		(OPT_FLAG_ISSET(flags, OPT_SEPARATE_DIRS))
 #define GET_SEARCH_PORTS(flags)			(OPT_FLAG_ISSET(flags, OPT_SEARCH_PORTS))
 #define GET_MAKE_RELAY(flags)			(OPT_FLAG_ISSET(flags, OPT_MAKE_RELAY))
 #define GET_COUNT_FILES(flags)			(OPT_FLAG_ISSET(flags, OPT_COUNT_FILES))

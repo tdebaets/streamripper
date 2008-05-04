@@ -357,7 +357,7 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 	{
 	case 'a':
 	    /* Create single file output + cue sheet */
-	    prefs->flags |= OPT_SINGLE_FILE_OUTPUT;
+	    OPT_FLAG_SET (prefs->flags, OPT_SINGLE_FILE_OUTPUT, 1);
 	    prefs->showfile_pattern[0] = 0;
 	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
@@ -365,10 +365,10 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 	    strncpy (prefs->showfile_pattern, argv[i], SR_MAX_PATH);
 	    break;
 	case 'A':
-	    prefs->flags |= OPT_INDIVIDUAL_TRACKS;
+	    OPT_FLAG_SET (prefs->flags, OPT_INDIVIDUAL_TRACKS, 0);
 	    break;
 	case 'c':
-	    prefs->flags |= OPT_AUTO_RECONNECT;
+	    OPT_FLAG_SET (prefs->flags, OPT_AUTO_RECONNECT, 0);
 	    break;
 	case 'd':
 	    i++;
@@ -379,7 +379,7 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 	    strncpy(prefs->output_pattern, argv[i], SR_MAX_PATH);
 	    break;
 	case 'E':
-	    prefs->flags |= OPT_EXTERNAL_CMD;
+	    OPT_FLAG_SET (prefs->flags, OPT_EXTERNAL_CMD, 1);
 	    i++;
 	    strncpy(prefs->ext_cmd, argv[i], SR_MAX_PATH);
 	    break;
@@ -393,8 +393,8 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
             exit(0);
 	    break;
 	case 'i':
-	    OPT_FLAG_SET(prefs->flags,OPT_ADD_ID3V1,0);
-	    OPT_FLAG_SET(prefs->flags,OPT_ADD_ID3V2,0);
+	    OPT_FLAG_SET(prefs->flags, OPT_ADD_ID3V1, 0);
+	    OPT_FLAG_SET(prefs->flags, OPT_ADD_ID3V2, 0);
 	    break;
 	case 'I':
 	    i++;
@@ -420,7 +420,7 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
  	case 'M':
  	    i++;
  	    prefs->maxMB_rip_size = atoi(argv[i]);
- 	    prefs->flags |= OPT_CHECK_MAX_BYTES;
+	    OPT_FLAG_SET(prefs->flags, OPT_CHECK_MAX_BYTES, 1);
  	    break;
 	case 'o':
 	    i++;
@@ -441,7 +441,7 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 		    "Please use -D pattern instead.\n");
 	    exit (1);
 	case 'q':
-	    prefs->flags |= OPT_COUNT_FILES;
+	    OPT_FLAG_SET(prefs->flags, OPT_COUNT_FILES, 1);
 	    prefs->count_start = -1;     /* -1 means auto-detect */
 	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
@@ -449,7 +449,7 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 	    prefs->count_start = atoi(argv[i]);
 	    break;
 	case 'r':
-	    prefs->flags |= OPT_MAKE_RELAY;
+	    OPT_FLAG_SET(prefs->flags, OPT_MAKE_RELAY, 1);
 	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
 	    i++;
@@ -467,13 +467,13 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 	    prefs->max_connections = atoi(argv[i]);
 	    break;
 	case 's':
-	    prefs->flags |= OPT_SEPERATE_DIRS;
+	    OPT_FLAG_SET(prefs->flags, OPT_SEPARATE_DIRS, 0);
 	    break;
 	case 't':
-	    prefs->flags |= OPT_KEEP_INCOMPLETE;
+	    OPT_FLAG_SET(prefs->flags, OPT_KEEP_INCOMPLETE, 1);
 	    break;
 	case 'T':
-	    prefs->flags |= OPT_TRUNCATE_DUPS;
+	    OPT_FLAG_SET(prefs->flags, OPT_TRUNCATE_DUPS, 1);
 	    break;
 	case 'u':
 	    i++;
@@ -487,7 +487,7 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 	    strncpy(prefs->rules_file, argv[i], SR_MAX_PATH);
 	    break;
 	case 'z':
-	    prefs->flags |= OPT_SEARCH_PORTS;
+	    OPT_FLAG_SET(prefs->flags, OPT_SEARCH_PORTS, 0);
 	    prefs->max_port = prefs->relay_port+1000;
 	    break;
 	case '-':

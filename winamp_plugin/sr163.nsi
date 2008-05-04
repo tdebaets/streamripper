@@ -14,11 +14,11 @@
 ;General
 
   ;Name and file
-  Name "Streamripper for Windows and Winamp v1.63.0"
-  OutFile "streamripper-windows-installer-1.63.0.exe"
+  Name "Streamripper for Windows and Winamp v1.63.1"
+  OutFile "streamripper-windows-installer-1.63.1.exe"
 
   ;Default installation folder
-  ;InstallDir "$PROGRAMFILES\Streamripper-1.63.0"
+  ;InstallDir "$PROGRAMFILES\Streamripper-1.63.1"
   InstallDir "$PROGRAMFILES\Streamripper"
   
   ;Get installation folder from registry if available

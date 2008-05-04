@@ -378,7 +378,7 @@ prefs_get_stream_defaults (STREAM_PREFS* prefs)
     prefs->max_connections = 1;
     prefs->maxMB_rip_size = 0;
     prefs->flags = OPT_AUTO_RECONNECT | 
-	    OPT_SEPERATE_DIRS | 
+	    OPT_SEPARATE_DIRS | 
 	    OPT_SEARCH_PORTS |
 	    /* OPT_ADD_ID3V1 | -- removed starting 1.62-beta-2 */
 	    OPT_ADD_ID3V2 |
@@ -563,7 +563,7 @@ prefs_get_stream_prefs_keyfile (STREAM_PREFS* prefs, char* group)
 	OPT_FLAG_SET (prefs->flags, OPT_AUTO_RECONNECT, temp);
     }
     if (prefs_get_ulong (&temp, group, "separate_dirs")) {
-	OPT_FLAG_SET (prefs->flags, OPT_SEPERATE_DIRS, temp);
+	OPT_FLAG_SET (prefs->flags, OPT_SEPARATE_DIRS, temp);
     }
     if (prefs_get_ulong (&temp, group, "make_relay")) {
 	OPT_FLAG_SET (prefs->flags, OPT_MAKE_RELAY, temp);
@@ -681,7 +681,7 @@ prefs_set_stream_prefs_keyfile (STREAM_PREFS* prefs, STREAM_PREFS* gp,
     prefs_set_integer (group, "auto_reconnect",
 		       OPT_FLAG_ISSET (prefs->flags, OPT_AUTO_RECONNECT));
     prefs_set_integer (group, "separate_dirs",
-		       OPT_FLAG_ISSET (prefs->flags, OPT_SEPERATE_DIRS));
+		       OPT_FLAG_ISSET (prefs->flags, OPT_SEPARATE_DIRS));
     prefs_set_integer (group, "make_relay",
 		       OPT_FLAG_ISSET (prefs->flags, OPT_MAKE_RELAY));
     prefs_set_integer (group, "add_numeric_prefix",

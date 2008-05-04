@@ -549,7 +549,7 @@ start_ripping (RIP_MANAGER_INFO* rmi)
 	     rmi->prefs->output_directory,
 	     rmi->prefs->output_pattern,
 	     rmi->prefs->showfile_pattern,
-	     GET_SEPERATE_DIRS(rmi->prefs->flags),
+	     GET_SEPARATE_DIRS(rmi->prefs->flags),
 	     GET_DATE_STAMP(rmi->prefs->flags),
 	     rmi->http_info.icy_name);
     if (ret != SR_SUCCESS) {
