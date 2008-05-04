@@ -1,5 +1,6 @@
 New for 1.63.1
 --------------
+Sun May  4 13:42:27 EDT 2008
 * Fix bug where redirected URLs with text/html were not being redirected
 * Fix bug with command line parsing (-A, -c, -s, -z)
 
