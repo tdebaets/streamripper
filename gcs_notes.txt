@@ -10,6 +10,13 @@ Plans for 1.63.X
 
 -----------------------------------------------------------------------
 
+http_sc_connect
+  http_get_sc_header
+    http_parse_sc_header
+  http_sc_connect (recursive case)
+
+-----------------------------------------------------------------------
+
 
 -- March 1 is the last version before glib utf8 conversion --
 -- March 15 irrevocable change to mchar to use glib utf8

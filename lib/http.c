@@ -96,7 +96,8 @@ http_sc_connect (RIP_MANAGER_INFO* rmi,
 	    /* RECURSIVE CASE */
 	    debug_printf ("Redirecting: %s\n", info->http_location);
 	    url = info->http_location;
-	    //http_sc_connect(sock, info->http_location, proxyurl, info, useragent, if_name);
+	    return http_sc_connect (rmi, sock, info->http_location, 
+				    proxyurl, info, useragent, if_name);
 	} else {
 	    break;
 	}
@@ -336,7 +337,8 @@ http_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
     if (!start) {
 	start = (char *)strstr(header, "HTTP/1.");
 	if (!start) {
-	    return SR_ERROR_NO_RESPOSE_HEADER;
+	    debug_printf ("Failed to find ICY or HTTP\n");
+	    return SR_ERROR_NO_RESPONSE_HEADER;
 	}
     }
     start = strstr(start, " ") + 1;
@@ -411,7 +413,9 @@ http_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
 	info->content_type = CONTENT_TYPE_PLS;
     }
     else if (strstr(stempbr,"text/html")) {
-	return SR_ERROR_NO_RESPOSE_HEADER;
+	if (!info->http_location[0]) {
+	    return SR_ERROR_NO_RESPONSE_HEADER;
+	}
     }
     else {
 	info->content_type = CONTENT_TYPE_UNKNOWN;
@@ -783,18 +787,28 @@ http_get_sc_header(RIP_MANAGER_INFO* rmi, const char* url,
     char headbuf[MAX_HEADER_LEN] = {'\0'};
 
     ret = socklib_read_header (rmi, sock, headbuf, MAX_HEADER_LEN);
-    if (ret != SR_SUCCESS)
+    if (ret != SR_SUCCESS) {
+	debug_printf ("socklib_read_header failed\n");
 	return ret;
+    }
 
-    if ((ret = http_parse_sc_header(url, headbuf, info)) != SR_SUCCESS)
+    if ((ret = http_parse_sc_header(url, headbuf, info)) != SR_SUCCESS) {
+	debug_printf ("http_parse_sc_header failed\n");
 	return ret;
+    }
 
     if (info->content_type == CONTENT_TYPE_PLS) {
 	ret = http_get_pls (rmi, sock, info);
-	if (ret != SR_SUCCESS) return ret;
+	if (ret != SR_SUCCESS) {
+	    debug_printf ("http_get_pls failed\n");
+	    return ret;
+	}
     } else if (info->content_type == CONTENT_TYPE_M3U) {
 	ret = http_get_m3u (rmi, sock, info);
-	if (ret != SR_SUCCESS) return ret;
+	if (ret != SR_SUCCESS) {
+	    debug_printf ("http_get_m3u failed\n");
+	    return ret;
+	}
     }
 
     return SR_SUCCESS;

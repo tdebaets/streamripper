@@ -25,7 +25,7 @@ typedef int error_code;
 #define SR_ERROR_RECV_FAILED			- 0x07
 #define SR_ERROR_SEND_FAILED			- 0x08
 #define SR_ERROR_PARSE_FAILURE			- 0x09
-#define SR_ERROR_NO_RESPOSE_HEADER		- 0x0a
+#define SR_ERROR_NO_RESPONSE_HEADER		- 0x0a
 #define SR_ERROR_NO_ICY_CODE			- 0x0b
 #define SR_ERROR_NO_META_INTERVAL		- 0x0c
 #define SR_ERROR_INVALID_PARAM			- 0x0d

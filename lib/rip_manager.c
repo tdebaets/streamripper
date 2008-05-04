@@ -517,6 +517,7 @@ start_ripping (RIP_MANAGER_INFO* rmi)
 			   pproxy, &rmi->http_info, 
 			   prefs->useragent, prefs->if_name);
     if (ret != SR_SUCCESS) {
+	debug_printf ("http_sc_connect() returned error\n");
 	goto RETURN_ERR;
     }
 
@@ -551,8 +552,10 @@ start_ripping (RIP_MANAGER_INFO* rmi)
 	     GET_SEPERATE_DIRS(rmi->prefs->flags),
 	     GET_DATE_STAMP(rmi->prefs->flags),
 	     rmi->http_info.icy_name);
-    if (ret != SR_SUCCESS)
+    if (ret != SR_SUCCESS) {
+	debug_printf ("filelib_init() returned error\n");
 	goto RETURN_ERR;
+    }
 
     /* Start up external program to get metadata. */
     rmi->ep = 0;
