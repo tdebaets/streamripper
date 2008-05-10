@@ -606,7 +606,8 @@ notify_dock ()
     }
 }
 
-BOOL
+/* If path found, url is filled in.  If not, url[0] is set to 0 */
+void
 winamp_poll (char url[MAX_URL_LEN])
 {
     HWND hwnd_winamp;
@@ -614,19 +615,6 @@ winamp_poll (char url[MAX_URL_LEN])
 
     url[0] = 0;
     hwnd_winamp = winamp_get_hwnd ();
-
-    /* Get winamp path */
-#if defined (commentout)
-    if (!m_winamps_path[0])
-	return FALSE;
-
-    if (!hwnd_winamp) {
-	info->is_running = FALSE;
-	return FALSE;
-    } else {
-	info->is_running = TRUE;
-    }
-#endif
 
     if (useoldway) {
 	// Send a message to winamp to save the current playlist
@@ -636,9 +624,13 @@ winamp_poll (char url[MAX_URL_LEN])
 	char buf[4096] = {'\0'};
 	FILE *fp;
 
+	/* Get winamp path */
+	if (!m_winamp_path[0])
+	    return;
+
 	sprintf (m3u_path, "%s%s", m_winamp_path, "winamp.m3u");	
 	if ((fp = fopen (m3u_path, "r")) == NULL)
-	    return FALSE;
+	    return;
 
 	while(!feof(fp) && n >= 0)
 	{
@@ -663,21 +655,16 @@ winamp_poll (char url[MAX_URL_LEN])
 
 	pos = (int)SendMessage (hwnd_winamp, WM_USER, data, get_position);
 	fname = (char*)SendMessage (hwnd_winamp, WM_USER, pos, get_filename);
-	/* GCS: This is wrong. Winamp returns null if list is empty. */
-#if defined (commentout)
-	if (fname == NULL)
-	    return FALSE;
-	purl = strstr (fname, "http://");
-	if (purl)
-	    strncpy (info->url, purl, MAX_URL_LEN);
-#endif
+
 	if (fname) {
-	    purl = strstr (fname, "http://");
-	    if (purl) {
+	    if (purl = strstr (fname, "http://")) {
 		strncpy (url, purl, MAX_URL_LEN);
+		return;
+	    }
+	    if (purl = strstr (fname, "icyx://")) {
+		strncpy (url, purl, MAX_URL_LEN);
+		return;
 	    }
 	}
     }
-
-    return TRUE;
 }
