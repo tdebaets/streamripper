@@ -121,7 +121,7 @@ unescape_pct_encoding (char* s)
 	    c[0] = *(s+1);
 	    c[1] = *(s+2);
 	    c[2] = 0;
-	    *d++ = strtol (c, 0, 16);
+	    *d++ = (char) strtol (c, 0, 16);
 	    s += 3;
 	} else {
 	    *d++ = *s++;
