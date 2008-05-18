@@ -10,7 +10,7 @@ dnl   AC_CHECK_LIB:   prepends the library to LIBS
 dnl   AC_CHECK_FUNC:  defines a shell variable
 
 AC_PREREQ(2.59)
-AC_INIT(streamripper,1.63.1)
+AC_INIT(streamripper,1.63.2)
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([lib/config.h])
