@@ -23,7 +23,7 @@
 #include "errors.h"
 #include "compat.h"
 
-#define SRVERSION	"1.63.2"
+#define SRVERSION	"1.63.3"
 
 #if defined (WIN32)
 #define SRPLATFORM      "windows"
