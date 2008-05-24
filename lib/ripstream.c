@@ -472,7 +472,7 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
 	if (ret == SR_ERROR_REQUIRED_WINDOW_EMPTY) {
 	    /* If this happens, the previous song should be truncated to 
 	       zero bytes. */
-	    pos1 = 0;
+	    pos1 = -1;
 	    pos2 = 0;
 	}
 	else if (ret != SR_SUCCESS) {
@@ -549,7 +549,7 @@ find_sep (RIP_MANAGER_INFO* rmi, u_long* pos1, u_long* pos2)
     if (rmi->http_info.content_type != CONTENT_TYPE_MP3) {
 	sw_sil = (rw_end + rw_start) / 2;
 	debug_printf ("(not mp3) taking middle: sw_sil=%d\n", sw_sil);
-	*pos1 = rw_start + sw_sil;
+	*pos1 = rw_start + sw_sil - 1;
 	*pos2 = rw_start + sw_sil;
     } else {
 	int bufsize = rw_end - rw_start;
@@ -591,8 +591,9 @@ find_sep (RIP_MANAGER_INFO* rmi, u_long* pos1, u_long* pos2)
     return SR_SUCCESS;
 }
 
-// pos1 is end of prev track
-// pos2 is beginning of next track
+// pos1 is pos of last byte in previous track
+// pos2 is pos of first byte in next track
+// These positions are relative to cbuf2->read_index
 static error_code
 end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, u_long pos2, TRACK_INFO* ti)
 {
@@ -602,13 +603,9 @@ end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, u_long pos2, TRACK_INFO* ti)
     /* GCS pos1 is byte position. Here we convert it into a "count". */
     pos1++;
 
-    // I think pos can be zero if the silence is right at the beginning
-    // i.e. it is a bug in s.r.
+    /* I think pos can be zero if the silence is right at the beginning
+       i.e. it is a bug in s.r. */
     buf = (char*) malloc (pos1);
-
-    // pos1 is end of prev track
-    // pos2 is beginning of next track
-    // positions are relative to cbuf2->read_index
 
     /* First, dump the part only in prev track */
     ret = cbuf2_peek (&rmi->cbuf2, buf, pos1);
@@ -617,8 +614,8 @@ end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, u_long pos2, TRACK_INFO* ti)
     /* Let cbuf know about the start of the next track */
     cbuf2_set_next_song (&rmi->cbuf2, pos2);
 
-    // Write that out to the current file
-    // GCS FIX: m_bytes_ripped is incorrect when there is padding
+    /* Write that out to the current file
+       GCS FIX: m_bytes_ripped is incorrect when there is padding */
     if ((ret = rip_manager_put_data (rmi, buf, pos1)) != SR_SUCCESS)
 	goto BAIL;
 
@@ -642,8 +639,8 @@ end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, u_long pos2, TRACK_INFO* ti)
 	}
     }
 
-    // Only save this track if we've skipped over enough cruft 
-    // at the beginning of the stream
+    /* Only save this track if we've skipped over enough cruft 
+       at the beginning of the stream */
     debug_printf("Current track number %d (dropcount is %d)\n", 
 		 rmi->track_count, 
 		 rmi->prefs->dropcount);
