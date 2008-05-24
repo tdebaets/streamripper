@@ -1,7 +1,11 @@
+New for 1.63.3
+--------------
+* Fix problem where byte was repeated when splitting aac or nsv
+
 New for 1.63.2
 --------------
 Sunday, May 18, 2008
-* Plugin: send icyx:// URLs from winamp to wstreamripper.
+* Plugin: send icyx:// URLs from winamp to wstreamripper
 
 New for 1.63.1
 --------------
