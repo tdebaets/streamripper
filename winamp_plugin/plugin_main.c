@@ -340,8 +340,9 @@ load_url_dialog_proc (HWND hwndDlg, UINT umsg, WPARAM wParam, LPARAM lParam)
 	{
 	case IDOK:
 	    GetDlgItemText (hwndDlg, IDC_LOAD_URL_EDIT, url, MAX_URL_LEN);
-	    set_ripping_url (url);
 	    insert_riplist (url, 0);
+	    strcpy(g_rmo.url, url);
+	    set_ripping_url (url);
 	    EndDialog(hwndDlg, 0);
 	case IDCANCEL:
 	    EndDialog(hwndDlg, 0);
