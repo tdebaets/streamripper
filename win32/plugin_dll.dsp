@@ -120,5 +120,9 @@ SOURCE=..\winamp_plugin\winamp_dll.c
 
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # End Group
+# Begin Source File
+
+SOURCE=..\winamp_plugin\sricon.ico
+# End Source File
 # End Target
 # End Project

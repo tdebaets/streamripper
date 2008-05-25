@@ -85,6 +85,10 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
 # ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ws2_32.lib comctl32.lib msvcrt.lib libmad.lib tre.lib ogg.lib vorbis.lib charset.lib iconv.lib glib-2.0.lib streamripper.lib /nologo /subsystem:console /debug /machine:I386 /out:"Debug/streamripper.exe" /pdbtype:sept /libpath:"../libmad-0.15.1b/msvc++/debug" /libpath:"../tre-0.7.2/win32/debug" /libpath:"../libogg-1.1.3" /libpath:"../libvorbis-1.1.2" /libpath:"../iconv-win32/static" /libpath:"..\win32\glib-2.12.12\lib" /libpath:"Debug"
+# Begin Special Build Tool
+SOURCE="$(InputPath)"
+PostBuild_Cmds=copy debug\streamripper.exe "C:\Program Files\Streamripper"
+# End Special Build Tool
 
 !ENDIF 
 
