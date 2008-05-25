@@ -324,6 +324,48 @@ add_url_from_winamp (char* url)
     }
 }
 
+BOOL CALLBACK
+load_url_dialog_proc (HWND hwndDlg, UINT umsg, WPARAM wParam, LPARAM lParam)
+{
+    char url[MAX_URL_LEN];
+
+    switch (umsg)
+    {
+    case WM_INITDIALOG:
+	/* Set focus to edit control */
+	SendMessage (hwndDlg, WM_NEXTDLGCTL, (WPARAM) GetDlgItem(hwndDlg, IDC_LOAD_URL_EDIT), TRUE);
+	break;
+    case WM_COMMAND:
+	switch(LOWORD(wParam))
+	{
+	case IDOK:
+	    GetDlgItemText (hwndDlg, IDC_LOAD_URL_EDIT, url, MAX_URL_LEN);
+	    set_ripping_url (url);
+	    insert_riplist (url, 0);
+	    EndDialog(hwndDlg, 0);
+	case IDCANCEL:
+	    EndDialog(hwndDlg, 0);
+	    break;
+	}
+	break;
+    case WM_CLOSE:
+	EndDialog(hwndDlg, 0);
+	break;
+    }
+
+    return 0;
+}
+
+void
+open_load_url_dialog ()
+{
+    int rc;
+    rc = DialogBox (m_hinstance, 
+	       MAKEINTRESOURCE (IDD_LOAD_URL), 
+	       m_hwnd,
+	       load_url_dialog_proc);
+}
+
 void
 UpdateNotRippingDisplay (HWND hwnd)
 {
@@ -680,6 +722,10 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
 	case ID_MENU_RESET_URL:
 	    strcpy(g_rmo.url, "");
 	    set_ripping_url (0);
+	    break;
+	case ID_MENU_LOAD_URL:
+	    debug_printf ("Load URL dialog box\n");
+	    open_load_url_dialog ();
 	    break;
 	case ID_MENU_EXIT:
 	    debug_printf ("User requested exit\n");

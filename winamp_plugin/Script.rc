@@ -170,6 +170,17 @@ BEGIN
                     WS_VSCROLL | WS_TABSTOP
 END
 
+IDD_LOAD_URL DIALOG DISCARDABLE  0, 0, 212, 45
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Load URL"
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_LOAD_URL_EDIT,20,24,140,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,167,7,38,14
+    PUSHBUTTON      "Cancel",IDCANCEL,167,24,38,14
+    LTEXT           "Type in URL to load:",IDC_STATIC,11,10,62,8
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -234,6 +245,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 147
     END
+
+    IDD_LOAD_URL, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 205
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 38
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -289,6 +308,7 @@ BEGIN
     BEGIN
         MENUITEM "E&xit",                       ID_MENU_EXIT
         MENUITEM "&Reset URL",                  ID_MENU_RESET_URL
+        MENUITEM "Load &URL",                   ID_MENU_LOAD_URL
         MENUITEM SEPARATOR
     END
 END

@@ -14,6 +14,7 @@
 #define IDD_PROPPAGE_FILE               113
 #define IDD_PROPPAGE_EXTERNAL           114
 #define IDR_HISTORY_POPUP               121
+#define IDD_LOAD_URL                    124
 #define _IDC_BASE                       1000
 #define IDC_ENABLE                      1090
 #define IDC_MAX_BYTES                   1120
@@ -53,20 +54,22 @@
 #define IDC_EXTERNAL_COMMAND            1378
 #define IDC_SKIN_PREVIEW                1378
 #define IDC_CODESET_METADATA            1379
+#define IDC_LOAD_URL_EDIT               1383
 #define ID_MENU_STARTRIPPING            40001
 #define ID_MENU_STOPRIPPING             40003
 #define ID_MENU_OPTIONS                 40004
 #define ID_MENU_OPEN                    40005
 #define ID_MENU_RESET_URL               40006
 #define ID_MENU_EXIT                    40020
+#define ID_MENU_LOAD_URL                40021
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        124
-#define _APS_NEXT_COMMAND_VALUE         40021
-#define _APS_NEXT_CONTROL_VALUE         1380
+#define _APS_NEXT_RESOURCE_VALUE        125
+#define _APS_NEXT_COMMAND_VALUE         40022
+#define _APS_NEXT_CONTROL_VALUE         1384
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

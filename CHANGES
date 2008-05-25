@@ -1,6 +1,9 @@
 New for 1.63.3
 --------------
-* Fix problem where byte was repeated when splitting aac or nsv
+Saturday, May 24, 2008
+* Fix bug where a single byte was written to both files when splitting 
+  aac or nsv streams
+* Plugin: add dialog box for manually loading the URL
 
 New for 1.63.2
 --------------
