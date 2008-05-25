@@ -1,3 +1,7 @@
+New for 1.63.4
+--------------
+* Usage information sent to stdout when not an error
+
 New for 1.63.3
 --------------
 Saturday, May 24, 2008

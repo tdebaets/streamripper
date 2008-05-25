@@ -45,7 +45,7 @@
 /*****************************************************************************
  * Private functions
  *****************************************************************************/
-static void print_usage();
+static void print_usage (FILE* stream);
 static void print_status (RIP_MANAGER_INFO *rmi);
 static void catch_sig (int code);
 static void parse_arguments (STREAM_PREFS *prefs, int argc, char **argv);
@@ -266,54 +266,54 @@ rip_callback (RIP_MANAGER_INFO* rmi, int message, void *data)
 }
 
 static void
-print_usage()
+print_usage (FILE* stream)
 {
-    fprintf(stderr, "Usage: streamripper URL [OPTIONS]\n");
-    fprintf(stderr, "Opts: -h             - Print this listing\n");
-    fprintf(stderr, "      -v             - Print version info and quit\n");
-    fprintf(stderr, "      -a [file]      - Rip to single file, default name is timestamped\n");
-    fprintf(stderr, "      -A             - Don't write individual tracks\n");
-    fprintf(stderr, "      -d dir         - The destination directory\n");
-    fprintf(stderr, "      -D pattern     - Write files using specified pattern\n");
-    fprintf(stderr, "      -s             - Don't create a directory for each stream\n");
-    fprintf(stderr, "      -r [[ip:]port] - Create relay server on base ip:port, default port 8000\n");
-    fprintf(stderr, "      -R #connect    - Max connections to relay, default 1, -R 0 is no limit\n");
-    fprintf(stderr, "      -L file        - Create a relay playlist file\n");
-    fprintf(stderr, "      -z             - Don't scan for free ports if base port is not avail\n");
-    fprintf(stderr, "      -p url         - Use HTTP proxy server at <url>\n");
-    fprintf(stderr, "      -o (always|never|larger)    - When to tracks in complete\n");
-    fprintf(stderr, "      -t             - Don't overwrite tracks in incomplete\n");
-    fprintf(stderr, "      -c             - Don't auto-reconnect\n");
-    fprintf(stderr, "      -l seconds     - Number of seconds to run, otherwise runs forever\n");
-    fprintf(stderr, "      -M megabytes   - Stop ripping after this many megabytes\n");
-    fprintf(stderr, "      -q [start]     - Add sequence number to output file\n");
-    fprintf(stderr, "      -u useragent   - Use a different UserAgent than \"Streamripper\"\n");
-    fprintf(stderr, "      -w rulefile    - Parse metadata using rules in file.\n");
-    fprintf(stderr, "      -m timeout     - Number of seconds before force-closing stalled conn\n");
-    fprintf(stderr, "      -k count       - Leave <count> tracks in incomplete\n");
+    fprintf(stream, "Usage: streamripper URL [OPTIONS]\n");
+    fprintf(stream, "Opts: -h             - Print this listing\n");
+    fprintf(stream, "      -v             - Print version info and quit\n");
+    fprintf(stream, "      -a [file]      - Rip to single file, default name is timestamped\n");
+    fprintf(stream, "      -A             - Don't write individual tracks\n");
+    fprintf(stream, "      -d dir         - The destination directory\n");
+    fprintf(stream, "      -D pattern     - Write files using specified pattern\n");
+    fprintf(stream, "      -s             - Don't create a directory for each stream\n");
+    fprintf(stream, "      -r [[ip:]port] - Create relay server on base ip:port, default port 8000\n");
+    fprintf(stream, "      -R #connect    - Max connections to relay, default 1, -R 0 is no limit\n");
+    fprintf(stream, "      -L file        - Create a relay playlist file\n");
+    fprintf(stream, "      -z             - Don't scan for free ports if base port is not avail\n");
+    fprintf(stream, "      -p url         - Use HTTP proxy server at <url>\n");
+    fprintf(stream, "      -o (always|never|larger)    - When to tracks in complete\n");
+    fprintf(stream, "      -t             - Don't overwrite tracks in incomplete\n");
+    fprintf(stream, "      -c             - Don't auto-reconnect\n");
+    fprintf(stream, "      -l seconds     - Number of seconds to run, otherwise runs forever\n");
+    fprintf(stream, "      -M megabytes   - Stop ripping after this many megabytes\n");
+    fprintf(stream, "      -q [start]     - Add sequence number to output file\n");
+    fprintf(stream, "      -u useragent   - Use a different UserAgent than \"Streamripper\"\n");
+    fprintf(stream, "      -w rulefile    - Parse metadata using rules in file.\n");
+    fprintf(stream, "      -m timeout     - Number of seconds before force-closing stalled conn\n");
+    fprintf(stream, "      -k count       - Leave <count> tracks in incomplete\n");
 #if !defined (WIN32)
-    fprintf(stderr, "      -I interface   - Rip from specified interface (e.g. eth0)\n");
+    fprintf(stream, "      -I interface   - Rip from specified interface (e.g. eth0)\n");
 #endif
-    fprintf(stderr, "      -T             - Truncate duplicated tracks in incomplete\n");
-    fprintf(stderr, "      -E command     - Run external command to fetch metadata\n");
-    fprintf(stderr, "      --quiet        - Don't print ripping status to console\n");
-    fprintf(stderr, "      --stderr       - Print ripping status to stderr (old behavior)\n");
-    fprintf(stderr, "      --debug        - Save debugging trace\n");
-    fprintf(stderr, "ID3 opts (mp3/aac/nsv):  [The default behavior is adding ID3V2.3 only]\n");
-    fprintf(stderr, "      -i                           - Don't add any ID3 tags to output file\n");
-    fprintf(stderr, "      --with-id3v1                 - Add ID3V1 tags to output file\n");
-    fprintf(stderr, "      --without-id3v2              - Don't add ID3V2 tags to output file\n");
-    fprintf(stderr, "Splitpoint opts (mp3 only):\n");
-    fprintf(stderr, "      --xs2                        - Use new algorithm for silence detection\n");
-    fprintf(stderr, "      --xs-offset=num              - Shift relative to metadata (msec)\n");
-    fprintf(stderr, "      --xs-padding=num:num         - Add extra to prev:next track (msec)\n");
-    fprintf(stderr, "      --xs-search-window=num:num   - Search window relative to metadata (msec)\n");
-    fprintf(stderr, "      --xs-silence-length=num      - Expected length of silence (msec)\n");
-    fprintf(stderr, "Codeset opts:\n");
-    fprintf(stderr, "      --codeset-filesys=codeset    - Specify codeset for the file system\n");
-    fprintf(stderr, "      --codeset-id3=codeset        - Specify codeset for id3 tags\n");
-    fprintf(stderr, "      --codeset-metadata=codeset   - Specify codeset for metadata\n");
-    fprintf(stderr, "      --codeset-relay=codeset      - Specify codeset for the relay stream\n");
+    fprintf(stream, "      -T             - Truncate duplicated tracks in incomplete\n");
+    fprintf(stream, "      -E command     - Run external command to fetch metadata\n");
+    fprintf(stream, "      --quiet        - Don't print ripping status to console\n");
+    fprintf(stream, "      --stderr       - Print ripping status to stderr (old behavior)\n");
+    fprintf(stream, "      --debug        - Save debugging trace\n");
+    fprintf(stream, "ID3 opts (mp3/aac/nsv):  [The default behavior is adding ID3V2.3 only]\n");
+    fprintf(stream, "      -i                           - Don't add any ID3 tags to output file\n");
+    fprintf(stream, "      --with-id3v1                 - Add ID3V1 tags to output file\n");
+    fprintf(stream, "      --without-id3v2              - Don't add ID3V2 tags to output file\n");
+    fprintf(stream, "Splitpoint opts (mp3 only):\n");
+    fprintf(stream, "      --xs2                        - Use new algorithm for silence detection\n");
+    fprintf(stream, "      --xs-offset=num              - Shift relative to metadata (msec)\n");
+    fprintf(stream, "      --xs-padding=num:num         - Add extra to prev:next track (msec)\n");
+    fprintf(stream, "      --xs-search-window=num:num   - Search window relative to metadata (msec)\n");
+    fprintf(stream, "      --xs-silence-length=num      - Expected length of silence (msec)\n");
+    fprintf(stream, "Codeset opts:\n");
+    fprintf(stream, "      --codeset-filesys=codeset    - Specify codeset for the file system\n");
+    fprintf(stream, "      --codeset-id3=codeset        - Specify codeset for id3 tags\n");
+    fprintf(stream, "      --codeset-metadata=codeset   - Specify codeset for metadata\n");
+    fprintf(stream, "      --codeset-relay=codeset      - Specify codeset for the relay stream\n");
 }
 
 /* 
@@ -329,7 +329,7 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
     char *c;
 
     if (argc < 2) {
-	print_usage();
+	print_usage (stdout);
 	exit(2);
     }
 
@@ -389,7 +389,7 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 		    "Please use -w parse_rules instead.\n");
 	    exit (1);
 	case 'h':
-	    print_usage();
+	    print_usage (stdout);
             exit(0);
 	    break;
 	case 'i':
