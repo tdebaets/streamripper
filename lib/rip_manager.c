@@ -498,7 +498,7 @@ start_ripping (RIP_MANAGER_INFO* rmi)
     STREAM_PREFS* prefs = rmi->prefs;
     error_code ret;
 
-    char *pproxy = prefs->proxyurl[0] ? prefs->proxyurl : NULL;
+    const char *pproxy = prefs->proxyurl[0] ? prefs->proxyurl : NULL;
     debug_printf ("start_ripping: checkpoint 1\n");
 
     /* If proxy URL not spec'd on command line (or plugin field), 
@@ -506,7 +506,7 @@ start_ripping (RIP_MANAGER_INFO* rmi)
     if (!pproxy) {
 	char const *env_http_proxy = getenv ("http_proxy");
 	if (env_http_proxy) {
-	    strncpy (prefs->proxyurl, env_http_proxy, MAX_URL_LEN);
+	    pproxy = env_http_proxy;
 	}
     }
 

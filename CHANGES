@@ -1,6 +1,7 @@
 New for 1.63.4
 --------------
-* Usage information sent to stdout when not an error
+* Usage information is now sent to stdout instead of stderr
+* Probable fix for bug where http_proxy is not respected
 
 New for 1.63.3
 --------------
