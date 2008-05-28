@@ -7,6 +7,7 @@ Plans for 1.63.X
 (4) Skin improvements (read zip directly)
 (5) Add -o version option
 (6) prefs global key file should be locked for multithreaded use
+(7) parse_rules not set for plugin
 
 
 -----------------------------------------------------------------------
@@ -143,8 +144,23 @@ main (GUI thread)
     thread_send (writes to relay clients)
     External process (reads from stdin pipe)
 
-Ripthread
-  
+ripthread (1.63.3 and earlier)
+   start_ripping
+      http_sc_connect
+      filelib_init
+      spawn_external
+      ripstream_clear
+      ripstream_init
+      relaylib_start
+   while (1)
+      ripstream_rip
+      check exit conditions
+      post_status
+      if recoverable error
+         close_stuff
+         start_ripping
+      if not recoverable
+         break
 
 Subsystem naming convention
   rip_manager_init()      // Static memory/once per process
@@ -161,8 +177,6 @@ Shutdown procedure
 Relay startup and shutdown
   rip_manager_start() calls relaylib_start()
   On reconnection, ripthread() calls relaylib_stop() and relaylib_start()
-
-
 
 Data structs:
   1) Global preferences

@@ -350,7 +350,7 @@ ripthread (void *thread_arg)
     debug_stream_prefs (rmi->prefs);
 
     /* Connect to remote server */
-    ret = start_ripping(rmi);
+    ret = start_ripping (rmi);
     if (ret != SR_SUCCESS) {
 	debug_printf ("Ripthread did start_ripping()\n");
 	threadlib_signal_sem (&rmi->started_sem);
