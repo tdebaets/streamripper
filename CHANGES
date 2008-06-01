@@ -1,5 +1,6 @@
 New for 1.63.4
 --------------
+* Fix problem where invalid metadata characters caused metadata to be lost
 * Usage information is now sent to stdout instead of stderr
 * Probable fix for bug where http_proxy is not respected
 

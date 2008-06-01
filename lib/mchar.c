@@ -181,6 +181,101 @@ sr_strncpy (char* dst, char* src, int n)
 /*****************************************************************************
  * These functions ARE mchar related
  *****************************************************************************/
+/* Convert a string, replacing unconvertable characters.
+   Returns a gchar* string, which must be freed by caller using g_free. */
+gchar*
+convert_string_with_replacement (char* instring, gsize len, 
+				 char* from_codeset, char* to_codeset,
+				 char* repl)
+{
+    GIConv giconv;
+    gsize cur = 0;              /* Current byte to convert */
+    gchar* output_string = 0;
+    GError *error = 0;
+    gssize bytes_to_convert = len;
+    int need_repl = 1;
+
+    giconv = g_iconv_open (to_codeset, from_codeset);
+    if (giconv == (GIConv)-1) {
+	/* Not sure why this would happen */
+	return output_string;
+    }
+    while (cur < len) {
+	gchar* os;
+	gsize br, bw;
+
+	br = 0;
+	os = g_convert_with_iconv (&instring[cur], bytes_to_convert, 
+				   giconv, &br, &bw, &error);
+
+	/* If the conversion was unsuccessful, usually it means that 
+	   either the input byte doesn't belong to the from_codeset, 
+	   or the code point doesn't belong to the to_codeset.
+	*/
+	if (error) {
+	    switch (error->code) {
+	    case G_CONVERT_ERROR_ILLEGAL_SEQUENCE:
+	    case G_CONVERT_ERROR_FAILED:
+	    case G_CONVERT_ERROR_PARTIAL_INPUT:
+		break;
+	    case G_CONVERT_ERROR_NO_CONVERSION:
+	    default:
+		/* This shouldn't happen, as GNU inconv guarantees 
+		   conversion to/from UTF-8. */
+		return output_string;
+	    }
+	    /* How many bytes to try next time? */
+	    switch (bytes_to_convert) {
+	    case 4:
+	    case 3:
+	    case 2:
+		bytes_to_convert --;
+		break;
+	    case 1:
+		/* Crapped out.  Drop current byte, and add "?" to string. */
+		cur ++;
+		bytes_to_convert = len - cur;
+		if (need_repl) {
+		    need_repl = 0;
+		    if (output_string) {
+			gchar *tmp;
+			tmp = g_strconcat (output_string, repl, NULL);
+			g_free (output_string);
+			output_string = tmp;
+		    } else {
+			output_string = g_strdup (repl);
+		    }
+		}
+		break;
+	    default:
+		/* Best guess based on br value returned from iconv */
+		if (br < bytes_to_convert && br > 0) {
+		    bytes_to_convert = br;
+		} else {
+		    bytes_to_convert = 4;
+		}
+	    }
+	    g_error_free (error);
+	    error = 0;
+	} else {
+	    /* Successful conversion. */
+	    need_repl = 1;
+	    if (output_string) {
+		gchar* tmp = g_strconcat (output_string, os, NULL);
+		g_free (output_string);
+		g_free (os);
+		output_string = tmp;
+	    } else {
+		output_string = os;
+	    }
+	    cur += br;
+	    bytes_to_convert = len - cur;
+	}
+    }
+    g_iconv_close (giconv);
+    return output_string;
+}
+
 #if HAVE_WCHAR_SUPPORT
 # if HAVE_ICONV
 int 
@@ -302,19 +397,6 @@ wchar_from_char (char c, const char* codeset)
 }
 #endif /* HAVE_WCHAR_SUPPORT */
 
-/* From advice of Behdad Esfahbod" <behdad@behdad.org> 
-Very good point.  I raised this here too:
-  http://bugzilla.gnome.org/show_bug.cgi?id=391261#c9
-In Pango these days I loop over the string, calling g_utf8_validate()
-and replacing any invalid bytes with -1.  The -1 byte is known to be
-safe when passed to various glib UTF-8 functions.
-*/
-#if defined (commentout)
-int
-utf8validate (gchar* s)
-{
-}
-#endif
 
 /* Assumes src is valid utf8 */
 int
@@ -360,10 +442,8 @@ mstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen,
 
 #if USE_GLIB_UTF8
     {
-	GError *error = NULL;
 	gchar* mstring;
 	char* src_codeset;
-	gsize tmp;
 	int rc;
 	
 	switch (codeset_type) {
@@ -389,11 +469,23 @@ mstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen,
 	    printf ("Program error.  Bad codeset m->c (%d)\n", codeset_type);
 	    exit (-1);
 	}
+#if defined (commentout)
+	/* This doesn't work because it will not give partially correct
+	   results for strings with bogus characters */
 	mstring = g_convert_with_fallback 
 		(c, -1, "UTF-8", src_codeset, "?", 0, &tmp, &error);
 	if (error) {
 	    debug_printf ("Error converting mstring_from_string\n");
 	    g_free (mstring);
+	    return 0;
+	}
+#endif
+	/* This is the new method */
+	mstring = convert_string_with_replacement (c, strlen(c), 
+						   src_codeset, "UTF-8", 
+						   "?");
+	if (!mstring) {
+	    debug_printf ("Error converting mstring_from_string\n");
 	    return 0;
 	}
 	rc = utf8cpy (m, mstring, mlen);

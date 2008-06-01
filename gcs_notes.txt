@@ -683,12 +683,18 @@ How to create a sjis locale
 localedef -v -c -i ja_JP -f SHIFT_JIS ja_JP.SJIS
 localedef -v -c -i ja_JP -f EUC-JP ja_JP.EUC-JP
 
-Here is how to display
+localedef -i en_US -f ISO-8859-15 en_US
 
-export LANG=ja_JP.SJIS
-## The following no longer works.  Why?
-## xterm -fn -misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-iso10646-1
-xterm
+
+Now, on debian there is also this:
+	dpkg-reconfigure locales
+
+And also:
+	Add "ja_JP.SJIS SHIFT_JIS" to /etc/locale.gen, and run locale-gen.
+
+The charmaps are in /usr/share/i18n/charmaps
+
+Here is how to display
 
 bash-3.00$ export LANG=ja_JP.EUC-JP
 bash-3.00$ xterm
