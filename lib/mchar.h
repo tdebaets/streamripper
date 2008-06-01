@@ -3,32 +3,11 @@
 
 #include "srtypes.h"
 
-#if USE_GLIB_UTF8
 #define m_(x) x
 #define m_S "%s"
 #define m_C "%c"
 #define m_s "%s"
 #define m_c "%c"
-#elif HAVE_WCHAR_SUPPORT
-#define m_(x) L##x
-#if defined (WIN32)
-#define m_S L"%s"
-#define m_C L"%c"
-#define m_s L"%S"
-#define m_c L"%C"
-#else
-#define m_S L"%ls"
-#define m_C L"%lc"
-#define m_s L"%s"
-#define m_c L"%c"
-#endif
-#else
-#define m_(x) x
-#define m_S "%s"
-#define m_C "%c"
-#define m_s "%s"
-#define m_c "%c"
-#endif
 
 char *subnstr_until(const char *str, char *until, char *newstr, int maxlen);
 char *left_str(char *str, int len);

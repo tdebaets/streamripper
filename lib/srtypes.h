@@ -17,13 +17,9 @@
 #ifndef __SRTYPES_H__
 #define __SRTYPES_H__
 
-#define USE_GLIB_UTF8 1
-
-#if (USE_GLIB_UTF8)
 #include <glib.h>
-#endif
-#include "regex.h"
 
+#include "regex.h"
 #include "srconfig.h"
 #include "compat.h"
 #include "list.h"
@@ -205,13 +201,7 @@ typedef struct CODESET_OPTIONSst
 /* 
  * Wide character support
  */
-#if USE_GLIB_UTF8
 typedef gchar mchar;
-#elif HAVE_WCHAR_SUPPORT
-typedef wchar_t mchar;
-#else
-typedef char mchar;
-#endif
 
 /* 
  * Parse_Rule is a single line of the parse rules file

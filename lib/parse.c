@@ -47,62 +47,29 @@ static Parse_Rule m_default_rule_list[] = {
       PARSERULE_SKIP,
       0, 0, 0, 0, 0,
       0, 
-#if USE_GLIB_UTF8
       "^A suivre:",
       ""
-#elif defined HAVE_WCHAR_SUPPORT
-      /* GCS FIX: L string literals are not good */
-      L"^A suivre:",
-      L""
-#else
-      "^A suivre:",
-      ""
-#endif
     },
     { PARSERULE_CMD_SUBST, 
       PARSERULE_ICASE,
       0, 0, 0, 0, 0,
       0,
-#if USE_GLIB_UTF8
       "[[:space:]]*-?[[:space:]]*mp3pro$",
       ""
-#elif defined HAVE_WCHAR_SUPPORT
-      L"[[:space:]]*-?[[:space:]]*mp3pro$",
-      L""
-#else
-      "[[:space:]]*-?[[:space:]]*mp3pro$",
-      ""
-#endif
     },
     { PARSERULE_CMD_MATCH, 
       PARSERULE_ICASE,
       1, 2, 0, 0, 0,
       0,
-#if USE_GLIB_UTF8
       "^[[:space:]]*([^-]*[^-[:space:]])[[:space:]]*-[[:space:]]*(.*)[[:space:]]*$",
       ""
-#elif defined HAVE_WCHAR_SUPPORT
-      L"^[[:space:]]*([^-]*[^-[:space:]])[[:space:]]*-[[:space:]]*(.*)[[:space:]]*$",
-      L""
-#else
-      "^[[:space:]]*([^-]*[^-[:space:]])[[:space:]]*-[[:space:]]*(.*)[[:space:]]*$",
-      ""
-#endif
     },
     { 0x00, 
       0x00,
       0, 0, 0, 0, 0,
       0,
-#if USE_GLIB_UTF8
       "",
       ""
-#elif defined HAVE_WCHAR_SUPPORT
-      L"",
-      L""
-#else
-      "",
-      ""
-#endif
     }
 };
 
@@ -114,28 +81,16 @@ static Parse_Rule m_default_rule_list[] = {
 static int
 sr_regcomp (Parse_Rule* pr, mchar* rule_string, int cflags)
 {
-#if USE_GLIB_UTF8
     /* GCS FIX: Use PCRE for utf8 */
     return regcomp(pr->reg, rule_string, cflags);
-#elif defined HAVE_WCHAR_SUPPORT
-    return regwcomp(pr->reg, rule_string, cflags);
-#else
-    return regcomp(pr->reg, rule_string, cflags);
-#endif
 }
 
 static int
 mregexec (const regex_t* preg, const mchar* string, size_t nmatch,
 	  regmatch_t pmatch[], int eflags)
 {
-#if USE_GLIB_UTF8
     /* GCS FIX: Use PCRE for utf8 */
     return regexec (preg, string, nmatch, pmatch, eflags);
-#elif defined HAVE_WCHAR_SUPPORT
-    return regwexec (preg, string, nmatch, pmatch, eflags);
-#else
-    return regexec (preg, string, nmatch, pmatch, eflags);
-#endif
 }
 
 /* Returns 1 if successful, 0 if failure */
@@ -179,6 +134,7 @@ static void
 copy_rule_result (mchar* dest, mchar* query_string, 
 		  regmatch_t* pmatch, int idx)
 {
+    debug_printf ("copy_rule_result: idx=%d\n", idx);
     if (idx > 0 && idx <= MAX_SUBMATCHES) {
 	mstrncpy (dest, query_string + pmatch[idx].rm_so,
 		  pmatch[idx].rm_eo - pmatch[idx].rm_so + 1);
@@ -452,6 +408,7 @@ compose_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 void
 parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 {
+    int i;
     int eflags;
     int rc;
     mchar query_string[MAX_TRACK_LEN];
@@ -524,6 +481,11 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 		if (rc != 0) {
 		    /* Didn't match rule. */
 		    continue;
+		}
+
+		for (i = 0; i < MAX_SUBMATCHES+1; i++) {
+		    debug_printf ("pmatch[%d]: (so,eo) = (%d,%d)\n", i, 
+				  pmatch[i].rm_so, pmatch[i].rm_eo);
 		}
 		copy_rule_result (ti->artist, query_string, pmatch, rulep->artist_idx);
 		copy_rule_result (ti->title, query_string, pmatch, rulep->title_idx);
