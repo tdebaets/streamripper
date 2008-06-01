@@ -85,13 +85,14 @@ main (int argc, char *argv[])
     STREAM_PREFS prefs;
     RIP_MANAGER_INFO *rmi = 0;
 
+    sr_set_locale ();
+
     signal (SIGINT, catch_sig);
     signal (SIGTERM, catch_sig);
 
     parse_arguments (&prefs, argc, argv);
 
     print_to_console ("Connecting...\n");
-
     
     rip_manager_init ();
 

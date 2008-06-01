@@ -19,4 +19,4 @@ EXPORTS
 	errors_get_string @16
 	sr_strncpy @17
 	string_to_overwrite_opt @18
-
+	sr_set_locale @19

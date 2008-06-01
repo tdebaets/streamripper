@@ -36,6 +36,7 @@ char *format_byte_size(char *str, long size);
 void trim(char *str);
 void sr_strncpy(char* dst, char* src, int n);
 
+void sr_set_locale (void);
 void set_codesets_default (CODESET_OPTIONS* cs_opt);
 void register_codesets (RIP_MANAGER_INFO* rmi, CODESET_OPTIONS* cs_opt);
 

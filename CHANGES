@@ -1,6 +1,8 @@
 New for 1.63.4
 --------------
+Sunday, June 1, 2008
 * Fix problem where invalid metadata characters caused metadata to be lost
+* Windows: fix problem saving prefs file in paths with non-ascii characters
 * Usage information is now sent to stdout instead of stderr
 * Probable fix for bug where http_proxy is not respected
 

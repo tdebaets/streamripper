@@ -20,6 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <glib.h>
+#include <glib/gstdio.h>
 
 #include "rip_manager.h"
 #include "mchar.h"
@@ -73,7 +75,7 @@ prefs_load (void)
     prefs_fn = g_build_filename (prefs_dir,
 				 "streamripper.ini",
 				 NULL);
-    debug_printf ("prefs_fn = %s\n", prefs_fn);
+    debug_printf ("prefs_fn [utf8] = %s\n", prefs_fn);
 
     if (!m_key_file) {
 	m_key_file = g_key_file_new ();
@@ -140,7 +142,9 @@ prefs_save (void)
     }
 
     /* Write to file */
-    fp = fopen (prefs_fn, "w");
+    /* RMK: We use glib string encoding for conversion of the filename
+	rather than --codeset-filesys here. */
+    fp = g_fopen (prefs_fn, "w");
     if (fp) {
 	fwrite (keyfile_contents, 1, keyfile_contents_len, fp);
 	fclose (fp);

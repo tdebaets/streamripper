@@ -880,6 +880,8 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     m_hinstance = hInstance;
 
+    sr_set_locale ();
+
     /* Gotta split lpCmdLine manually for win98 compatibility */
     rc = sscanf (lpCmdLine, "%d %d", &arg1, &arg2);
     if (rc == 2) {

@@ -664,12 +664,17 @@ default_codeset (void)
 }
 
 void
-set_codesets_default (CODESET_OPTIONS* cs_opt)
+sr_set_locale (void)
 {
-    const char* fromcode = 0;
     setlocale (LC_ALL, "");
     setlocale (LC_CTYPE, "");
     debug_printf ("LOCALE is %s\n",setlocale(LC_ALL,NULL));
+}
+
+void
+set_codesets_default (CODESET_OPTIONS* cs_opt)
+{
+    const char* fromcode = 0;
 
     /* Set default codesets */
     fromcode = default_codeset ();
