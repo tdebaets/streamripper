@@ -8,6 +8,7 @@ Plans for 1.63.X
 (5) Add -o version option
 (6) prefs global key file should be locked for multithreaded use
 (7) parse_rules not set for plugin
+(8) filename/directory problems on windows <cannot delete>
 
 
 -----------------------------------------------------------------------
