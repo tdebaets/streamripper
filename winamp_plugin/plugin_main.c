@@ -61,8 +61,6 @@ HWND			g_winamp_hwnd;
 WSTREAMRIPPER_PREFS	g_gui_prefs;
 
 static HINSTANCE                m_hinstance;
-//static GUI_OPTIONS		m_guiOpt;
-//static RIP_MANAGER_INFO		m_rmiInfo;
 static RIP_MANAGER_INFO		*m_rmi = 0;
 static HWND			m_hwnd;
 static BOOL			m_bRipping = FALSE;
@@ -116,17 +114,11 @@ init ()
 
     memset (&wc,0,sizeof(wc));
     wc.lpfnWndProc = WndProc;			// our window procedure
-#if defined (commentout)
-    wc.hInstance = g_plugin.hDllInstance;	// hInstance of DLL
-#endif
     wc.hInstance = m_hinstance;
     wc.lpszClassName = m_szWindowClass;		// our window class name
     wc.hCursor = LoadCursor (NULL, IDC_ARROW);
 
     // Load systray popup menu
-#if defined (commentout)
-    m_hmenu_systray = LoadMenu (g_plugin.hDllInstance, MAKEINTRESOURCE(IDR_TASKBAR_POPUP));
-#endif
     m_hmenu_systray = LoadMenu (m_hinstance, MAKEINTRESOURCE(IDR_TASKBAR_POPUP));
     m_hmenu_systray_sub = GetSubMenu (m_hmenu_systray, 0);
     SetMenuDefaultItem (m_hmenu_systray_sub, 0, TRUE);
@@ -135,14 +127,7 @@ init ()
 	MessageBox (NULL,"Error registering window class","blah",MB_OK);
 	return 1;
     }
-#if defined (commentout)
-    m_hwnd = CreateWindow (m_szWindowClass, g_plugin.description, WS_POPUP,
-			   m_guiOpt.oldpos.x, m_guiOpt.oldpos.y, WINDOW_WIDTH, WINDOW_HEIGHT, 
-			   g_plugin.hwndParent, NULL, g_plugin.hDllInstance, NULL);
-    m_hwnd = CreateWindow (m_szWindowClass, "Streamripper Plugin", WS_POPUP,
-			   g_gui_prefs.oldpos_x, g_gui_prefs.oldpos_y, WINDOW_WIDTH, WINDOW_HEIGHT, 
-			   NULL, NULL, m_hinstance, NULL);
-#endif
+
     /* Ref: http://msdn2.microsoft.com/en-us/library/bb776822.aspx */
     if (g_running_standalone) {
 	m_hwnd = CreateWindowEx (
@@ -161,9 +146,6 @@ init ()
     // Create a systray icon
     memset(&m_nid, 0, sizeof(NOTIFYICONDATA));
     m_nid.cbSize = sizeof(NOTIFYICONDATA);
-#if defined (commentout)
-    m_nid.hIcon = LoadImage(g_plugin.hDllInstance, MAKEINTRESOURCE(IDI_SR_ICON), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
-#endif
     m_nid.hIcon = LoadImage(m_hinstance, MAKEINTRESOURCE(IDI_SR_ICON), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
     m_nid.hWnd = m_hwnd;
     strcpy(m_nid.szTip, m_szToopTip);
@@ -173,9 +155,6 @@ init ()
     Shell_NotifyIcon(NIM_ADD, &m_nid);
 
     // Load main popup menu 
-#if defined (commentout)
-    m_hmenu_context = LoadMenu (g_plugin.hDllInstance, MAKEINTRESOURCE(IDR_HISTORY_POPUP));
-#endif
     m_hmenu_context = LoadMenu (m_hinstance, MAKEINTRESOURCE(IDR_HISTORY_POPUP));
     m_hmenu_context_sub = GetSubMenu (m_hmenu_context, 0);
     SetMenuDefaultItem (m_hmenu_context_sub, 0, TRUE);
@@ -215,9 +194,6 @@ quit()
     Shell_NotifyIcon(NIM_DELETE, &m_nid);
     DestroyIcon(m_nid.hIcon);
     debug_printf ("Going to UnregisterClass()...\n");
-#if defined (commentout)
-    UnregisterClass(m_szWindowClass, g_plugin.hDllInstance); // unregister window class
-#endif
     UnregisterClass(m_szWindowClass, m_hinstance); // unregister window class
     debug_printf ("Finished UnregisterClass()\n");
 }
@@ -519,7 +495,7 @@ rip_callback (RIP_MANAGER_INFO* rmi, int message, void *data)
 }
 
 void
-start_button_pressed()
+start_button_pressed (void)
 {
     int ret;
     debug_printf ("Start button pressed\n");
@@ -546,7 +522,7 @@ start_button_pressed()
 }
 
 void
-stop_button_pressed()
+stop_button_pressed (void)
 {
     debug_printf ("Stop button pressed\n");
 
@@ -564,7 +540,7 @@ stop_button_pressed()
 }
 
 void
-options_button_pressed()
+options_button_pressed (void)
 {
     debug_printf ("Options button pressed\n");
 
@@ -580,18 +556,20 @@ options_button_pressed()
 }
 
 void
-close_button_pressed()
+close_button_pressed (void)
 {
     dock_show_window (m_hwnd, SW_HIDE);
     g_gui_prefs.m_start_minimized = TRUE;
 }
 
 void
-relay_pressed()
+relay_pressed (void)
 {
-    winamp_add_relay_to_playlist (g_gui_prefs.localhost, 
-	g_rmo.relay_port, 
-	rip_manager_get_content_type (m_rmi));
+    if (m_rmi) {
+	winamp_add_relay_to_playlist (g_gui_prefs.localhost, 
+					g_rmo.relay_port, 
+					rip_manager_get_content_type (m_rmi));
+    }
 }
 
 void
