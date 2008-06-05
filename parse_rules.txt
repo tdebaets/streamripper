@@ -10,11 +10,15 @@
 #  parse_rules.txt file, because there is a [M]atch rule already there,
 #  (Artist - Title), that will prevent Streamripper from processing them.
 
-##===========================================================================
-##=====USER ADDED RULES=====
-##===========================================================================
+#####  PUT YOUR USER ADDED RULES HERE:
 
+
+#####  LEADING LETTERS:
 # Rules can start with 'm' for match or 's' for substitute.
+# m - [M]atch
+# s - [S]ubstitute
+
+#####  TRAILING LETTERS:
 # They can have the flags:
 #  e    -- drop metadata
 #  g    -- apply substitution globally
@@ -27,6 +31,7 @@
 #  T{n} -- match group N is the track title
 #  Y{n} -- match group N is the year
 
+####  EXAMPLES AND DEFAULT RULES:
 # Ignore metadata that begins with "A suivre"
 # The leading "m" says this is a match rule
 # The trailing "e" means drop the metadata
