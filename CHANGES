@@ -1,6 +1,7 @@
 New for 1.63.5
 --------------
 * Plugin: fix crash clicking on RLY button before stream is loaded
+* Fix problem ripping mp3 streams which have a URL that ends in ".ogg"
 
 New for 1.63.4
 --------------

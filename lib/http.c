@@ -458,8 +458,11 @@ http_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
     // Check for Icecast 2
     else if ((start = (char *)strstr(header, "Icecast 2")) != NULL) {
 	/* aac on icecast 2.0-2.1 declares content type of audio/mpeg */
-	if (info->content_type == CONTENT_TYPE_MP3 && 
-	    content_type_by_url != CONTENT_TYPE_UNKNOWN) {
+	/* In addition, there is at least one stream with a url 
+	   radioorenovscotia.ogg, but is actually audio/mpeg */
+	if (info->content_type == CONTENT_TYPE_MP3 
+	    && content_type_by_url != CONTENT_TYPE_UNKNOWN
+	    && content_type_by_url != CONTENT_TYPE_OGG) {
 	    info->content_type = content_type_by_url;
 	}
     }

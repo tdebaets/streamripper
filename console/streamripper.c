@@ -266,6 +266,8 @@ rip_callback (RIP_MANAGER_INFO* rmi, int message, void *data)
     }
 }
 
+/* Usage should be printed to stdout when it is not an error 
+   http://www.gnu.org/prep/standards/standards.html */
 static void
 print_usage (FILE* stream)
 {
