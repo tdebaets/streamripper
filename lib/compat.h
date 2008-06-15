@@ -51,6 +51,9 @@
 		FILE_ATTRIBUTE_NORMAL, NULL))
 //#define MoveFile(_oldfile_, _newfile_)     MoveFile(_oldfile_, _newfile_)
 #define INVALID_FHANDLE 	INVALID_HANDLE_VALUE
+
+#define close _close
+
 #elif __UNIX__
 
 #define FHANDLE	int

@@ -572,7 +572,7 @@ struct RIP_MANAGER_INFOst
     unsigned int cue_sheet_bytes;
 
     /* Keep track of how many tracks we have ripped */
-    int track_count;
+    unsigned int track_count;
 
     /* The circular buffer */
     CBUF2 cbuf2;

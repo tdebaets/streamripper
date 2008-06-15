@@ -21,6 +21,7 @@
 #include "errors.h"
 #if WIN32
 #include <windows.h>
+#include <io.h>
 #endif
 
 #if WIN32

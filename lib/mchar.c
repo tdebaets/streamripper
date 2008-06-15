@@ -192,7 +192,7 @@ convert_string_with_replacement (char* instring, gsize len,
     gsize cur = 0;              /* Current byte to convert */
     gchar* output_string = 0;
     GError *error = 0;
-    gssize bytes_to_convert = len;
+    gsize bytes_to_convert = len;
     int need_repl = 1;
 
     giconv = g_iconv_open (to_codeset, from_codeset);
