@@ -27,6 +27,7 @@
 #include <assert.h>
 #include <sys/types.h>
 #include "glib.h"
+#include "glib/gstdio.h"
 #include "uce_dirent.h"
 
 #define TEMP_STR_LEN	(SR_MAX_PATH*2)
@@ -84,8 +85,8 @@ static BOOL new_file_is_better (RIP_MANAGER_INFO* rmi, gchar *oldfile, gchar *ne
 static void delete_file (RIP_MANAGER_INFO* rmi, gchar* filename);
 static void truncate_file (RIP_MANAGER_INFO* rmi, gchar* filename);
 static void
-filelib_rename_versioned (RIP_MANAGER_INFO* rmi, gchar* directory, 
-			  gchar* fnbase, gchar* extension);
+filelib_rename_versioned (gchar** new_fn, RIP_MANAGER_INFO* rmi, 
+			  gchar* directory, gchar* fnbase, gchar* extension);
 
 
 /*****************************************************************************
@@ -256,7 +257,7 @@ filelib_start (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
     msnprintf (newfile, TEMP_STR_LEN, m_S m_S m_S, 
 	       fli->m_incomplete_directory, fnbase, fli->m_extension);
     if (fli->m_keep_incomplete) {
-	filelib_rename_versioned (rmi, fli->m_incomplete_directory, 
+	filelib_rename_versioned (0, rmi, fli->m_incomplete_directory, 
 				  fnbase, fli->m_extension);
     }
     mstrcpy (fli->m_incomplete_filename, newfile);
@@ -360,7 +361,8 @@ filelib_end (RIP_MANAGER_INFO* rmi,
 	new_dir = g_path_get_dirname (new_path);
 	new_fnbase = g_path_get_basename (new_path);
 	trim_mp3_suffix (rmi, new_fnbase);
-	filelib_rename_versioned (rmi, new_dir, new_fnbase, fli->m_extension);
+	filelib_rename_versioned (0, rmi, new_dir, new_fnbase, 
+				  fli->m_extension);
 	g_free (new_dir);
 	g_free (new_fnbase);
 	ok_to_write = TRUE;
@@ -1102,16 +1104,23 @@ filelib_write (FHANDLE fp, char *buf, u_long size)
 
 /* This function takes in a directory, filename base, and extension, 
    and renames any existing file "${directory}/${fnbase}${extensions}"
-   to a file of the form "${directory}/${fnbase} (${n}}${extensions}" */
+   to a file of the form "${directory}/${fnbase} (${n}}${extensions}" 
+
+   The new name for the file is returned in new_fn (if new_fn is not 0).
+*/
 static void
-filelib_rename_versioned (RIP_MANAGER_INFO* rmi, gchar* directory, 
-			  gchar* fnbase, gchar* extension)
+filelib_rename_versioned (gchar** new_fn, RIP_MANAGER_INFO* rmi, 
+			  gchar* directory, gchar* fnbase, gchar* extension)
 {
     /* Compose and trim filename (not including directory) */
     gint n = 1;
     gchar* tgt_file = g_strdup_printf ("%s%s", fnbase, extension);
     gchar* tgt_path = g_build_filename (directory, tgt_file, NULL);
     g_free (tgt_file);
+
+    if (new_fn) {
+	*new_fn = 0;
+    }
 
     if (!file_exists (rmi, tgt_path)) {
 	debug_printf ("filelib_rename_versioned: tgt_path doesn't exist (%s)\n",
@@ -1134,10 +1143,86 @@ filelib_rename_versioned (RIP_MANAGER_INFO* rmi, gchar* directory,
 		      tgt_path, ren_path);
 	move_file (rmi, ren_path, tgt_path);
 	g_free (ren_file);
-	g_free (ren_path);
+	if (new_fn) {
+	    *new_fn = ren_path;
+	} else {
+	    g_free (ren_path);
+	}
 	break;
     }
     g_free (tgt_path);
+}
+
+static void
+filelib_adjust_cuefile (RIP_MANAGER_INFO* rmi, gchar* new_show_name, 
+			gchar* new_cue_name)
+{
+    gchar* tmp_fn;
+    gint fd;
+    FILE *fp_in, *fp_out;
+    GError *error = NULL;
+    char cue_buf[1024];
+    gchar mcue_buf[1024];
+    gchar* show_fnbase;
+    int rc;
+    
+    /* Create temporary file */
+    fd = g_file_open_tmp ("streamripper-XXXXXX", &tmp_fn, &error);
+    if (!fd || error) {
+        debug_printf ("Error with g_file_open_tmp\n");
+        if (tmp_fn) g_free (tmp_fn);
+        return;
+    }
+    close (fd);
+    
+    /* Open temporary file as FILE* */
+    fp_out = g_fopen (tmp_fn, "w");
+    if (!fp_out) {
+        debug_printf ("Error with g_fopen (%s)\n", tmp_fn);
+        if (tmp_fn) g_free (tmp_fn);
+        return;
+    }
+
+    /* Open input file as FILE* */
+    fp_in = g_fopen (new_cue_name, "r");
+    if (!fp_in) {
+        debug_printf ("Error with g_fopen (%s)\n", new_cue_name);
+        if (tmp_fn) g_free (tmp_fn);
+	fclose (fp_out);
+        return;
+    }
+   
+    debug_printf ("Adjusting cue file=%s\n", tmp_fn);
+
+    /* Write renamed mp3 showfile to output file */
+    show_fnbase = g_path_get_basename (new_show_name);
+    rc = msnprintf (mcue_buf, 1024, m_("FILE \"") m_S m_("\" MP3\n"), 
+		    show_fnbase);
+    g_free (show_fnbase);
+    rc = string_from_mstring (rmi, cue_buf, 1024, mcue_buf, CODESET_FILESYS);
+    fwrite (cue_buf, 1, rc, fp_out);
+
+    /* Skip line in input file */
+    fgets (cue_buf, 1024, fp_in);
+
+    /* Copy remaining bytes from input file to output file */
+    while (1) {
+	rc = fgetc (fp_in);
+	if (rc == EOF) {
+	    break;
+	}
+	fputc (rc, fp_out);
+    }
+
+    fclose (fp_in);
+    fclose (fp_out);
+
+    /* Delete previous cue file */
+    delete_file (rmi, new_cue_name);
+
+    /* Move temp file to new cue file */
+    move_file (rmi, new_cue_name, tmp_fn);
+    g_free (tmp_fn);
 }
 
 static error_code
@@ -1148,6 +1233,8 @@ filelib_open_showfiles (RIP_MANAGER_INFO* rmi)
     gchar mcue_buf[1024];
     char cue_buf[1024];
     gchar* basename;
+    gchar *new_dir, *new_fnbase;
+    gchar *new_show_name, *new_cue_name;
 
     parse_and_subst_pat (rmi, fli->m_show_name, 0, fli->m_showfile_directory, 
 			 fli->m_showfile_pattern, fli->m_extension);
@@ -1156,7 +1243,26 @@ filelib_open_showfiles (RIP_MANAGER_INFO* rmi)
 			 m_(".cue"));
 
     /* Rename previously ripped files with same name */
+    new_dir = g_path_get_dirname (fli->m_show_name);
+    new_fnbase = g_path_get_basename (fli->m_show_name);
+    trim_mp3_suffix (rmi, new_fnbase);
+    filelib_rename_versioned (&new_show_name, rmi, new_dir, 
+			      new_fnbase, fli->m_extension);
+    filelib_rename_versioned (&new_cue_name, rmi, new_dir, new_fnbase, 
+			      m_(".cue"));
+    if (new_show_name && new_cue_name) {
+	/* Rewrite previous cue file to point to renamed mp3 showfile */
+	printf ("Trying to adjust cuefile\n");
+	filelib_adjust_cuefile (rmi, new_show_name, new_cue_name);
+    }
+    printf ("Trying to free\n");
+    if (new_show_name) g_free (new_show_name);
+    if (new_cue_name) g_free (new_cue_name);
+    g_free (new_dir);
+    g_free (new_fnbase);
+    printf ("Done.\n");
 
+    /* Open cue file */
     rc = filelib_open_for_write (rmi, &fli->m_cue_file, fli->m_cue_name);
     if (rc != SR_SUCCESS) {
 	fli->m_do_show = 0;
