@@ -1,11 +1,11 @@
 .\"     Title: streamripper
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 05/03/2008
+.\"      Date: 06/15/2008
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "STREAMRIPPER" "1" "05/03/2008" "" ""
+.TH "STREAMRIPPER" "1" "06/15/2008" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -117,17 +117,19 @@ Don\'t create individual tracks
 .RE
 The default mode of operation is to create one file for each track\&. But sometimes you don\'t want these files\&. For example, you might prefer a single file (using the \-a option), or you want to use streamripper as a relay (using the \-r option), without creating these files\&. Using the \-A option, the individual files for each track are not created\&.
 .PP
-\-o (always | never | larger)
+\-o (always | never | larger | version)
 .RS 4
 Overwrite tracks in complete directory
 .RE
-When streamripper rips tracks they are put into the incomplete directory until they are finished\&. Normally, they are then moved into the complete directory\&. However, when the track is already there, can use this option to tell streamripper what you want to do\&. There are three choices: always, never, and larger\&. If you don\'t include any of the \-o options on the command line, the "\-o larger" strategy is used\&.
+When streamripper rips tracks they are put into the incomplete directory until they are finished\&. Normally, they are then moved into the complete directory\&. However, when the track is already there, can use this option to tell streamripper what you want to do\&. There are three choices: always, never, and larger\&. If you don\'t include any of the \-o options on the command line, the default is "\-o larger" for version through 1\&.63\&.4, and "\-o version" starting with 1\&.63\&.5\&.
 .sp
 If you use the "\-o never" option, this tells streamripper to never overwrite any existing file in the complete directory\&.
 .sp
 If you use the "\-o always" option, this tells streamripper to always overwrite any existing file in the complete directory\&.
 .sp
 If you use the "\-o larger" option, this tells streamripper to overwrite an existing file in the complete directory if the newer file is larger\&.
+.sp
+If you use the "\-o version" option, this tells streamripper to keep both versions, renaming the existing file\&.
 .PP
 \-t
 .RS 4

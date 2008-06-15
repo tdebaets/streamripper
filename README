@@ -123,14 +123,15 @@ OPTIONS
        relay (using the -r option), without creating these files. Using the -A
        option, the individual files for each track are not created.
 
-       -o (always | never | larger)
+       -o (always | never | larger | version)
            Overwrite tracks in complete directory
        When streamripper rips tracks they are put into the incomplete
        directory until they are finished. Normally, they are then moved into
        the complete directory. However, when the track is already there, can
        use this option to tell streamripper what you want to do. There are
        three choices: always, never, and larger. If you dont include any of
-       the -o options on the command line, the "-o larger" strategy is used.
+       the -o options on the command line, the default is "-o larger" for
+       version through 1.63.4, and "-o version" starting with 1.63.5.
 
        If you use the "-o never" option, this tells streamripper to never
        overwrite any existing file in the complete directory.
@@ -140,6 +141,9 @@ OPTIONS
 
        If you use the "-o larger" option, this tells streamripper to overwrite
        an existing file in the complete directory if the newer file is larger.
+
+       If you use the "-o version" option, this tells streamripper to keep
+       both versions, renaming the existing file.
 
        -t
            Dont overwrite tracks in incomplete directory
@@ -503,4 +507,4 @@ COPYING
 
 
 
-                                  05/03/2008                   STREAMRIPPER(1)
+                                  06/15/2008                   STREAMRIPPER(1)

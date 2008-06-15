@@ -1,5 +1,6 @@
 New for 1.63.5
 --------------
+Sun Jun 15 17:11:42 EDT 2008
 * Add "-o version" option to keep multiple versions of completed files
   (#1795423 and #1294878)
 * The new default overwriting behavior is "-o version"
