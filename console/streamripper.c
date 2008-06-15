@@ -284,7 +284,7 @@ print_usage (FILE* stream)
     fprintf(stream, "      -L file        - Create a relay playlist file\n");
     fprintf(stream, "      -z             - Don't scan for free ports if base port is not avail\n");
     fprintf(stream, "      -p url         - Use HTTP proxy server at <url>\n");
-    fprintf(stream, "      -o (always|never|larger)    - When to tracks in complete\n");
+    fprintf(stream, "      -o (always|never|larger|version)    - When to tracks in complete\n");
     fprintf(stream, "      -t             - Don't overwrite tracks in incomplete\n");
     fprintf(stream, "      -c             - Don't auto-reconnect\n");
     fprintf(stream, "      -l seconds     - Number of seconds to run, otherwise runs forever\n");
@@ -388,8 +388,8 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 	    break;
 	case 'f':
 	    i++;
-	    printf ("Error: -f dropstring option is obsolete. "
-		    "Please use -w parse_rules instead.\n");
+	    fprintf (stderr, "Error: -f dropstring option is obsolete. "
+		     "Please use -w parse_rules instead.\n");
 	    exit (1);
 	case 'h':
 	    print_usage (stdout);
@@ -429,8 +429,7 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 	    i++;
 	    prefs->overwrite = string_to_overwrite_opt (argv[i]);
 	    if (prefs->overwrite == OVERWRITE_UNKNOWN) {
-		printf ("Error: -o option requires an argument\n"
-			"Please use \"-o always\" or \"-o never\"\n");
+		fprintf (stderr, "Error: -o option requires an argument\n");
 		exit (1);
 	    }
 	    break;
@@ -440,8 +439,8 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 	    break;
 	case 'P':
 	    i++;
-	    printf ("Error: -P prefix option is obsolete. "
-		    "Please use -D pattern instead.\n");
+	    fprintf (stderr, "Error: -P prefix option is obsolete. "
+		     "Please use -D pattern instead.\n");
 	    exit (1);
 	case 'q':
 	    OPT_FLAG_SET(prefs->flags, OPT_COUNT_FILES, 1);

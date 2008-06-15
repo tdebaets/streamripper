@@ -34,9 +34,27 @@
 #define DEFAULT_USER_AGENT ("streamripper/" SRVERSION)
 static GKeyFile *m_key_file = NULL;
 
+enum PrefsVersion {
+    PREFS_VERSION_1_63_BETA_2,
+    PREFS_VERSION_1_63_BETA_8,
+    PREFS_VERSION_1_63_4
+};
+
+static const char* prefs_version_strings[] = {
+    "",		         // None = "1.63-beta-2"
+    "1.63-beta-8",       // Change dropcount from 0 to 1
+    "1.63.4",            // Change overwrite from larger to version
+    0
+};
+
+/* Preference file versions */
+#define PREFS_VERSION_CURRENT "1.63.4"
+
+
 /******************************************************************************
  * Private function protoypes
  *****************************************************************************/
+static enum PrefsVersion string_to_prefs_version (char* str);
 static gchar* prefs_get_config_dir (void);
 static void prefs_get_global_defaults (GLOBAL_PREFS* global_prefs);
 
@@ -54,6 +72,10 @@ static int prefs_get_ulong (u_long *dest, char *group, char *key);
 static void prefs_get_long (long *dest, char *group, char *key);
 static void prefs_set_string (char* group, char* key, char* value);
 static void prefs_set_integer (char* group, char* key, gint value);
+
+/******************************************************************************
+ * Private Vars
+ *****************************************************************************/
 
 /******************************************************************************
  * Public functions
@@ -88,13 +110,34 @@ prefs_load (void)
     prefs_get_global_prefs (&global_prefs);
     prefs_set_global_prefs (&global_prefs);
 
-    /* If there is no version string, then the version is "1.63-beta-2". */
-    if (rc && !global_prefs.version[0]) {
-	/* Silently update dropcount */
+    /* Silently update preferences on version change */
+    if (rc) {
 	u_long dropcount;
-	rc = prefs_get_ulong (&dropcount, "stream defaults", "dropcount");
-	if (dropcount == 0) {
-	    prefs_set_integer ("stream defaults", "dropcount", 1);
+	char overwrite_str[128];
+
+	debug_printf ("Updating prefs %d\n", 
+		      string_to_prefs_version (global_prefs.version));
+	switch (string_to_prefs_version (global_prefs.version)) {
+	case PREFS_VERSION_1_63_BETA_2:
+	    /* Silently update dropcount */
+	    rc = prefs_get_ulong (&dropcount, "stream defaults", "dropcount");
+	    if (!rc || dropcount == 0) {
+		prefs_set_integer ("stream defaults", "dropcount", 1);
+	    }
+	    /* Fall through */
+	case PREFS_VERSION_1_63_BETA_8:
+	    /* Silently update overwrite behavior */
+	    rc = prefs_get_string (overwrite_str, 128, "stream defaults",
+				   "over_write_complete");
+	    if (!rc || !strcmp (overwrite_str, "larger")) {
+		prefs_set_string ("stream defaults", "over_write_complete", 
+				  "version");
+	    }
+	    /* Fall through */
+	case PREFS_VERSION_1_63_4:
+	default:
+	    /* Prefs version is up to date -- do nothing */
+	    break;
 	}
     }
 
@@ -348,6 +391,23 @@ debug_stream_prefs (STREAM_PREFS* prefs)
 /******************************************************************************
  * Private functions
  *****************************************************************************/
+static enum PrefsVersion
+string_to_prefs_version (char* str)
+{
+    int i = 0;
+
+    /* If there is no version string, then the version is "1.63-beta-2". */
+    if (!str) return 0;
+
+    while (prefs_version_strings[i]) {
+	if (strcmp(str, prefs_version_strings[i]) == 0) {
+	    return i;
+	}
+	i++;
+    }
+    return 0;
+}
+
 /* Calling routine must free returned string */
 static gchar* 
 prefs_get_config_dir (void)
@@ -410,7 +470,7 @@ prefs_get_stream_defaults (STREAM_PREFS* prefs)
     set_codesets_default (&prefs->cs_opt);
 
     prefs->count_start = 0;
-    prefs->overwrite = OVERWRITE_LARGER;
+    prefs->overwrite = OVERWRITE_VERSION;
     prefs->ext_cmd[0] = 0;
 }
 
@@ -533,9 +593,8 @@ prefs_set_integer (char* group, char* key, gint value)
 static void
 prefs_get_stream_prefs_keyfile (STREAM_PREFS* prefs, char* group)
 {
-//    char* group = 0;
-    char overwrite_str[128];
     u_long temp;
+    char overwrite_str[128];
 
     if (!m_key_file) return;
 

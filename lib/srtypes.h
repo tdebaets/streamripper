@@ -78,10 +78,6 @@ typedef unsigned int uint32_t;
 
 #define NO_META_INTERVAL	-1
 
-/* Preference file versions */
-#define PREFS_VERSION_1_63_BETA_8           "1.63-beta-8"
-#define PREFS_VERSION_CURRENT PREFS_VERSION_1_63_BETA_8
-
 /* GCS - Grr. I don't care.  Max path is 254 until I get around to
     fixing this for other platforms. */
 #define SR_MAX_PATH		254
@@ -255,7 +251,8 @@ enum OverwriteOpt {
     OVERWRITE_UNKNOWN,	// Error case
     OVERWRITE_ALWAYS,	// Always replace file in complete with newer
     OVERWRITE_NEVER,	// Never replace file in complete with newer
-    OVERWRITE_LARGER	// Replace file in complete if newer is larger
+    OVERWRITE_LARGER,	// Replace file in complete if newer is larger
+    OVERWRITE_VERSION	// Never overwrite, instead make a new version
 };
 
 /* Information extracted from the stream's HTTP header */

@@ -70,7 +70,8 @@ static const char* overwrite_opt_strings[] = {
     "",		// UNKNOWN
     "always",
     "never",
-    "larger"
+    "larger",
+    "version"
 };
 
 /******************************************************************************
@@ -623,7 +624,7 @@ enum OverwriteOpt
 string_to_overwrite_opt (char* str)
 {
     int i;
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < 5; i++) {
 	if (strcmp(str, overwrite_opt_strings[i]) == 0) {
 	    return i;
 	}

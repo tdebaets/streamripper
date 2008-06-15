@@ -1,5 +1,7 @@
 New for 1.63.5
 --------------
+* Add "-o version" option to keep multiple versions of completed files
+* The new default overwriting behavior is "-o version"
 * Plugin: fix crash clicking on RLY button before stream is loaded
 * Fix problem ripping mp3 streams which have a URL that ends in ".ogg"
 
