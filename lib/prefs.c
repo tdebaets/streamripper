@@ -105,6 +105,11 @@ prefs_load (void)
     flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
     rc = g_key_file_load_from_file (m_key_file, prefs_fn,
 				    flags, &error);
+    if (error) {
+	debug_printf ("Error with g_key_file_load_from_file: %s\n", 
+		      err->message);
+	g_error_free (error);
+    }
 
     /* Make sure a full set of global preferences are created in keyfile */
     prefs_get_global_prefs (&global_prefs);
