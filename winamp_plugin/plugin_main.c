@@ -884,6 +884,10 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     init ();
 
+    debug_printf ("command line args: %d %d %d\n",
+	    g_running_standalone, m_hpipe_exe_read,
+	    m_hpipe_exe_write);
+
     if (m_hpipe_exe_read) {
 	launch_pipe_threads ();
     }

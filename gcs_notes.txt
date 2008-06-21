@@ -1,15 +1,28 @@
 
 Plans for 1.63.X
 
-(1) Fix problem with -a flag
 (2) Implement glib's PCRE
 (3) Skin improvements (fix single pixel problem) 
 (4) Skin improvements (read zip directly)
-(5) Add -o version option
 (6) prefs global key file should be locked for multithreaded use
 (7) parse_rules not set for plugin
 (8) filename/directory problems on windows <cannot delete>
 
+-----------------------------------------------------------------------
+Prefs/debug startup
+-----------------------------------------------------------------------
+
+command line version:
+  1) Load prefs
+  2) Parse command line parms
+  3) Open debug
+  4) rip_manager_init
+
+wstreamripper:
+  1) Parse command line parms
+  2) rip_manager_init
+  3) Open debug
+  4) Load prefs
 
 -----------------------------------------------------------------------
 
@@ -17,7 +30,6 @@ http_sc_connect
   http_get_sc_header
     http_parse_sc_header
   http_sc_connect (recursive case)
-
 
 -----------------------------------------------------------------------
 cygwin version
@@ -135,7 +147,8 @@ giounix.c:511: error: `S_IROTH' undeclared (first use in this function)
 giounix.c:511: error: `S_IWOTH' undeclared (first use in this function)
 
 -----------------------------------------------------------------------
-* Multirip/main loop
+Multirip/main loop
+-----------------------------------------------------------------------
 
 Streamripper has 4 threads, and one child process.
 
@@ -193,6 +206,7 @@ Semaphore/Mutex
 
 -----------------------------------------------------------------------
 HTTP HEADERS
+-----------------------------------------------------------------------
 
 http://141.211.232.136:8000/wcbn-lo.ogg
 ===============================
@@ -351,6 +365,7 @@ http://www.mperia.com:8000/content/1569.mp3
 
 -----------------------------------------------------------------------
 * New filename output stuff
+-----------------------------------------------------------------------
 
 Pattern specifiers you can use:
 

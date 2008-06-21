@@ -105,9 +105,10 @@ prefs_load (void)
     flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
     rc = g_key_file_load_from_file (m_key_file, prefs_fn,
 				    flags, &error);
+    debug_printf ("g_key_file_load_from_file returned %d\n", rc);
     if (error) {
-	debug_printf ("Error with g_key_file_load_from_file: %s\n", 
-		      err->message);
+	debug_printf ("Error with g_key_file_load_from_data: %s\n",
+		error->message);
 	g_error_free (error);
     }
 
@@ -117,6 +118,7 @@ prefs_load (void)
 
     /* Silently update preferences on version change */
     if (rc) {
+	int rc1;
 	u_long dropcount;
 	char overwrite_str[128];
 
@@ -125,16 +127,16 @@ prefs_load (void)
 	switch (string_to_prefs_version (global_prefs.version)) {
 	case PREFS_VERSION_1_63_BETA_2:
 	    /* Silently update dropcount */
-	    rc = prefs_get_ulong (&dropcount, "stream defaults", "dropcount");
-	    if (!rc || dropcount == 0) {
+	    rc1 = prefs_get_ulong (&dropcount, "stream defaults", "dropcount");
+	    if (!rc1 || dropcount == 0) {
 		prefs_set_integer ("stream defaults", "dropcount", 1);
 	    }
 	    /* Fall through */
 	case PREFS_VERSION_1_63_BETA_8:
 	    /* Silently update overwrite behavior */
-	    rc = prefs_get_string (overwrite_str, 128, "stream defaults",
+	    rc1 = prefs_get_string (overwrite_str, 128, "stream defaults",
 				   "over_write_complete");
-	    if (!rc || !strcmp (overwrite_str, "larger")) {
+	    if (!rc1 || !strcmp (overwrite_str, "larger")) {
 		prefs_set_string ("stream defaults", "over_write_complete", 
 				  "version");
 	    }
@@ -184,7 +186,9 @@ prefs_save (void)
 					   &keyfile_contents_len, 
 					   &error);
     if (error) {
-	debug_printf ("Error with g_key_file_to_data\n");
+	debug_printf ("Error with g_key_file_to_data: %s\n",
+		error->message);
+	g_error_free (error);
 	g_free (prefs_fn);
 	return;
     }
@@ -507,6 +511,7 @@ prefs_get_string (char* dest, gsize dest_size, char* group, char* key)
     value = g_key_file_get_string (m_key_file, group, key, &error);
     if (error) {
 	/* Key doesn't exist, do nothing */
+	g_error_free (error);
 	return 0;
     }
     if (g_strlcpy (dest, value, dest_size) >= dest_size) {
@@ -525,7 +530,7 @@ prefs_get_ushort (u_short *dest, char *group, char *key)
     value = g_key_file_get_integer (m_key_file, group, key, &error);
     if (error) {
 	/* Key doesn't exist, do nothing */
-	// g_error (error->message);
+	g_error_free (error);
 	return;
     }
     if (value < 0 || value > G_MAXUSHORT) {
@@ -545,6 +550,7 @@ prefs_get_ulong (u_long *dest, char *group, char *key)
     value = g_key_file_get_integer (m_key_file, group, key, &error);
     if (error) {
 	/* Key doesn't exist, do nothing */
+	g_error_free (error);
 	return 0;
     }
     if (value < 0) {
@@ -564,6 +570,7 @@ prefs_get_long (long *dest, char *group, char *key)
     value = g_key_file_get_integer (m_key_file, group, key, &error);
     if (error) {
 	/* Key doesn't exist, do nothing */
+	g_error_free (error);
 	return;
     }
     *dest = (long) value;
@@ -578,6 +585,7 @@ prefs_get_int (int *dest, char *group, char *key)
     value = g_key_file_get_integer (m_key_file, group, key, &error);
     if (error) {
 	/* Key doesn't exist, do nothing */
+	g_error_free (error);
 	return;
     }
     *dest = (u_long) value;

@@ -63,27 +63,15 @@ socklib_init()
     WORD wVersionRequested;
     WSADATA wsaData;
     int err;
-#endif
 
-#if defined (commentout)
-    if (m_done_init)
-	return SR_SUCCESS;
-#endif
-
-#if WIN32
     wVersionRequested = MAKEWORD( 2, 2 );
     err = WSAStartup( wVersionRequested, &wsaData );
     if ( err != 0 )
         return SR_ERROR_WIN32_INIT_FAILURE;
 #endif
 
-#if defined (commentout)
-    m_done_init = TRUE;
-#endif
-
     return SR_SUCCESS;
 }
-
 
 /* Try to find the local interface to bind to */
 error_code
@@ -202,9 +190,6 @@ void
 socklib_cleanup()
 {
     WSACleanup();
-#if defined (commentout)
-    m_done_init = FALSE;
-#endif
 }
 
 void
