@@ -24,8 +24,6 @@
 #include "debug.h"
 #include "srtypes.h"
 
-/* GCS FIX: figure out function prototypes for regwcomp, regwexec */
-
 /*****************************************************************************
  * Private global variables
  *****************************************************************************/
@@ -78,13 +76,16 @@ static Parse_Rule m_default_rule_list[] = {
 /*****************************************************************************
  * Public functions
  *****************************************************************************/
+#if !defined (USE_GLIB_REGEX)
 static int
 sr_regcomp (Parse_Rule* pr, mchar* rule_string, int cflags)
 {
     /* GCS FIX: Use PCRE for utf8 */
     return regcomp(pr->reg, rule_string, cflags);
 }
+#endif
 
+#if !defined (USE_GLIB_REGEX)
 static int
 mregexec (const regex_t* preg, const mchar* string, size_t nmatch,
 	  regmatch_t pmatch[], int eflags)
@@ -92,11 +93,27 @@ mregexec (const regex_t* preg, const mchar* string, size_t nmatch,
     /* GCS FIX: Use PCRE for utf8 */
     return regexec (preg, string, nmatch, pmatch, eflags);
 }
+#endif
 
 /* Returns 1 if successful, 0 if failure */
 static int
 compile_rule (Parse_Rule* pr, mchar* rule_string)
 {
+#if defined (USE_GLIB_REGEX)
+    GError *error = NULL;
+
+    pr->reg = g_regex_new (rule_string, 
+			   0, 
+			   0, 
+			   &error);
+    if (error) {
+	debug_printf ("Error g_regex_new: %s\n", error->message);
+	g_error_free (error);
+	return 0;
+    }
+    return 1;
+
+#else
     int rc;
     int cflags;
 
@@ -113,6 +130,7 @@ compile_rule (Parse_Rule* pr, mchar* rule_string)
 	return 0;
     }
     return 1;
+#endif
 }
 
 static void
@@ -130,6 +148,19 @@ use_default_rules (RIP_MANAGER_INFO* rmi)
     }
 }
 
+#if defined (USE_GLIB_REGEX)
+static void
+copy_rule_result (mchar* dest, GMatchInfo* match_info, int idx)
+{
+    gchar* match = g_match_info_fetch (match_info, idx);
+    if (!match) return;
+
+    debug_printf ("copy_rule_result: idx=%d\n", idx);
+    if (idx > 0 && idx <= MAX_SUBMATCHES) {
+	mstrncpy (dest, match, MAX_METADATA_LEN);
+    }
+}
+#else
 static void
 copy_rule_result (mchar* dest, mchar* query_string, 
 		  regmatch_t* pmatch, int idx)
@@ -140,6 +171,7 @@ copy_rule_result (mchar* dest, mchar* query_string,
 		  pmatch[idx].rm_eo - pmatch[idx].rm_so + 1);
     }
 }
+#endif
 
 /* Return 1 if successful, or 0 for failure */
 static int
@@ -411,6 +443,7 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
     int i;
     int eflags;
     int rc;
+    int matched;
     mchar query_string[MAX_TRACK_LEN];
     Parse_Rule* rulep;
 
@@ -438,27 +471,39 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
     mstring_from_string (rmi, query_string, MAX_TRACK_LEN, 
 			 ti->raw_metadata, CODESET_METADATA);
     for (rulep = rmi->parse_rules; rulep->cmd; rulep++) {
+#if !defined (USE_GLIB_REGEX)
 	regmatch_t pmatch[MAX_SUBMATCHES+1];
-
+#endif
 	eflags = 0;
 	if (rulep->cmd == PARSERULE_CMD_MATCH) {
 	    debug_mprintf (m_("Testing match rule: ") m_S m_(" vs. ") m_S m_("\n"),
-			    query_string, rulep->match);
+			   query_string, rulep->match);
 	    if (rulep->flags & PARSERULE_SKIP) {
+#if defined (USE_GLIB_REGEX)
+		rc = g_regex_match (rulep->reg, query_string, 0, NULL);
+		matched = rc;
+#else
 		rc = mregexec (rulep->reg, query_string, 0, NULL, eflags);
-		if (rc != 0) {
-		    /* Didn't match rule. */
+		matched = !rc;
+#endif
+		if (!matched) {
 		    continue;
 		}
 		/* GCS FIX: We need to return to the 
-		    caller that the metadata should be dropped. */
+		   caller that the metadata should be dropped. */
+		debug_printf ("Skip rule matched\n");
 		ti->save_track = FALSE;
 		ti->have_track_info = 0;
 		return;
 	    } else if (rulep->flags & PARSERULE_SAVE) {
+#if defined (USE_GLIB_REGEX)
+		rc = g_regex_match (rulep->reg, query_string, 0, NULL);
+		matched = rc;
+#else
 		rc = mregexec (rulep->reg, query_string, 0, NULL, eflags);
-		if (rc != 0) {
-		    /* Didn't match rule. */
+		matched = !rc;
+#endif
+		if (!matched) {
 		    if (!save_track_matched)
 		        ti->save_track = FALSE;
 		    continue;
@@ -468,13 +513,42 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 		    save_track_matched = TRUE;
 		}
 	    } else if (rulep->flags & PARSERULE_EXCLUDE) {
+#if defined (USE_GLIB_REGEX)
+		rc = g_regex_match (rulep->reg, query_string, 0, NULL);
+		matched = rc;
+#else
 		rc = mregexec (rulep->reg, query_string, 0, NULL, eflags);
-		if (rc == 0 && !save_track_matched) {
+		matched = !rc;
+#endif
+		if (matched && !save_track_matched) {
 		    /* Rule matched => Exclude track */
 		    ti->save_track = FALSE;
 		    exclude_track_matched = TRUE;
 		}
 	    } else {
+#if defined (USE_GLIB_REGEX)
+		GMatchInfo* match_info;
+		gint nmatch;
+
+		rc = g_regex_match (rulep->reg, query_string, 0, &match_info);
+		if (rc == 0) {
+		    /* Didn't match rule. */
+		    continue;
+		}
+		nmatch = g_match_info_get_match_count (match_info);
+		debug_printf ("Got %d matches\n", nmatch);
+		for (i = 0; i < nmatch; i++) {
+		    gchar* match = g_match_info_fetch (match_info, i);
+		    debug_printf ("[%d] = %s\n", i, match);
+		    g_free (match);
+		}
+		copy_rule_result (ti->artist, match_info, rulep->artist_idx);
+		copy_rule_result (ti->title, match_info, rulep->title_idx);
+		copy_rule_result (ti->album, match_info, rulep->album_idx);
+		copy_rule_result (ti->track_p, match_info, rulep->trackno_idx);
+		copy_rule_result (ti->year, match_info, rulep->year_idx);
+		g_match_info_free (match_info);
+#else
     		eflags = 0;
 		rc = mregexec (rulep->reg, query_string, MAX_SUBMATCHES+1, 
 			       pmatch, eflags);
@@ -492,6 +566,7 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 		copy_rule_result (ti->album, query_string, pmatch, rulep->album_idx);
 		copy_rule_result (ti->track_p, query_string, pmatch, rulep->trackno_idx);
 		copy_rule_result (ti->year, query_string, pmatch, rulep->year_idx);
+#endif
 		ti->have_track_info = 1;
 		compose_metadata (rmi, ti);
 		debug_mprintf (m_("Parsed track info.\n")
@@ -506,10 +581,41 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 	    }
 	}
 	else if (rulep->cmd == PARSERULE_CMD_SUBST) {
+#if defined (USE_GLIB_REGEX)
+	    GMatchInfo* match_info;
+	    gint start_pos, end_pos;
+	    gchar *tmp, *subst_string;
+
+	    debug_mprintf (m_("Testing subst rule: ") m_S m_(" vs. ") m_S m_("\n"),
+			   query_string, rulep->match);
+	    rc = g_regex_match (rulep->reg, query_string, 0, &match_info);
+	    if (rc == 0) {
+		/* Didn't match rule. */
+		continue;
+	    }
+	    rc = g_match_info_fetch_pos (match_info, 0, &start_pos, &end_pos);
+	    if (!rc) {
+		debug_printf ("g_match_info_fetch_pos returned 0\n");
+		g_match_info_free (match_info);
+		continue;
+	    }
+	    debug_printf ("Matched at (%d,%d)\n", start_pos, end_pos);
+	    if (start_pos == -1) {
+		g_match_info_free (match_info);
+		continue;
+	    }
+	    tmp = g_strndup (query_string, start_pos);
+	    subst_string = g_strconcat (tmp, rulep->subst, 
+					&query_string[end_pos+1],
+					NULL);
+	    g_free (tmp);
+	    mstrncpy (query_string, subst_string, MAX_TRACK_LEN);
+	    g_free (query_string);
+#else
 	    mchar subst_string[MAX_TRACK_LEN];
 	    int used, left;
 	    debug_mprintf (m_("Testing subst rule: ") m_S m_(" vs. ") m_S m_("\n"),
-			    query_string, rulep->match);
+			   query_string, rulep->match);
 	    rc = mregexec (rulep->reg, query_string, 1, pmatch, eflags);
 	    if (rc != 0) {
 		/* Didn't match rule. */
@@ -517,7 +623,7 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 	    }
 	    /* Update the query string and continue. */
 	    debug_printf ("Matched at (%d,%d)\n", 
-			    pmatch[0].rm_so, pmatch[0].rm_eo);
+			  pmatch[0].rm_so, pmatch[0].rm_eo);
 	    mstrncpy (subst_string, query_string, pmatch[0].rm_so + 1);
 	    debug_mprintf (m_("(1) subst_string = ") m_S m_("\n"), subst_string);
 	    used = pmatch[0].rm_so;
@@ -531,6 +637,7 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 	    debug_mprintf (m_("(3) subst_string = ") m_S m_("\n"), subst_string);
 	    mstrncpy (query_string, subst_string, MAX_TRACK_LEN);
 	    debug_mprintf (m_("(4) query_string = ") m_S m_("\n"), query_string);
+#endif
 	}
     }
     debug_printf ("Fell through while parsing data...\n");
@@ -545,4 +652,3 @@ parser_free (RIP_MANAGER_INFO* rmi)
     free (rmi->parse_rules);
     rmi->parse_rules = 0;
 }
-

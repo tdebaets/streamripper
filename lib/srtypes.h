@@ -76,6 +76,8 @@ typedef unsigned int uint32_t;
 #define FALSE	0
 #endif
 
+#define USE_GLIB_REGEX          1   /* New PCRE regex */
+
 #define NO_META_INTERVAL	-1
 
 /* GCS - Grr. I don't care.  Max path is 254 until I get around to
@@ -210,7 +212,11 @@ struct parse_rule {
     int album_idx;
     int trackno_idx;
     int year_idx;
+#if defined (USE_GLIB_REGEX)
+    GRegex* reg;
+#else
     regex_t* reg;
+#endif
     mchar* match;
     mchar* subst;
 };
