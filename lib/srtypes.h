@@ -76,7 +76,7 @@ typedef unsigned int uint32_t;
 #define FALSE	0
 #endif
 
-#define USE_GLIB_REGEX          1   /* New PCRE regex */
+//#define USE_GLIB_REGEX          1   /* New PCRE regex */
 
 #define NO_META_INTERVAL	-1
 
