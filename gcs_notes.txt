@@ -847,41 +847,48 @@ http://l4hq.org/
 Bootleg sites
 
 Torrent/web sites:
-www.archive.org
-bt.etree.org
-purelivegigs.com
 http://www.thetradersden.org/
-www.filesoup.com
+http://bt.etree.org
 http://www.dimeadozen.org/
+http://purelivegigs.com
+http://www.filesoup.com
 http://www.bootcity.org
 http://www.shnflac.net/
 http://www.pinkrobert.net
 http://oink.cd
-tc
+http://zombtracker.the-zomb.com/
+http://www.tapecity.org/
 
 Band specific sites:
-trading.countingcrows.com (Counting crows, B&P)
-antsmarching.org (Dave Matthews)
+http://trading.countingcrows.com (Counting crows, B&P)
+http://antsmarching.org (Dave Matthews)
 http://royal-orleans.com/ (Led Zeppelin)
 http://www.rustradio.org (Neil Young)
 http://digitalpanic.org (Widespred Panic)
-http://redcorvertte.free.fr/livemusic.htm (Prince)
 http://pj.sidewalkcrusaders.com/ (Perl Jam)
 http://tracker.hipfans.com/ (Tragically Hip)
 http://www.gdlive.com/ (Grateful Dead, others)
 http://u2torrents.com/ (U2)
+http://www.heretodaygonetohell.com (GNR)
 
-Links to BT sites:
-Smiler's links (http://smiler.no-ip.org/BT/BTlinks.php
-http://launch.groups.yahoo.com/group/bt-dimeadozen-org/links
-http://scottgill.com/ (d/l sites)
-
-Downloads
+Lossless Downloads
+www.archive.org
 http://www.nyctaper.com
+
+MP3 Downloads
 http://tela.sugarmegs.org/
 http://www.ting-mp3.com/
 http://www.baidu.com/
-verycd
+http://verycd
+
+Links to sites:
+http://launch.groups.yahoo.com/group/bt-dimeadozen-org/links
+http://scottgill.com/ (d/l sites)
+http://forums.etree.org/viewtopic.php?f=15&t=4451
+
+Dead sites:
+http://www.sharingthegroove.org/ (DEAD)
+
 
 -----------------------------------------------------------------------
 Misc music:
