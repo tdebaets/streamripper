@@ -184,22 +184,34 @@ sr_strncpy (char* dst, char* src, int n)
 /* Convert a string, replacing unconvertable characters.
    Returns a gchar* string, which must be freed by caller using g_free. */
 gchar*
-convert_string_with_replacement (char* instring, gsize len, 
-				 char* from_codeset, char* to_codeset,
-				 char* repl)
+convert_string_with_replacement
+(
+    char* instring,	    /* String to convert */
+    gsize len,		    /* Length of instring in bytes */
+    char* from_codeset,	    /* Codeset of instring */
+    char* to_codeset,	    /* Codeset to convert to */
+    char* repl		    /* Replacement character (zero terminated,
+				in to_codeset) */
+)
 {
     GIConv giconv;
     gsize cur = 0;              /* Current byte to convert */
-    gchar* output_string = 0;
+    gchar* output_string = g_strdup ("");
     GError *error = 0;
     gsize bytes_to_convert = len;
     int need_repl = 1;
 
     giconv = g_iconv_open (to_codeset, from_codeset);
-    if (giconv == (GIConv)-1) {
+    if (giconv == (GIConv) -1) {
 	/* Not sure why this would happen */
+	debug_printf ("g_iconv_open returned zero\n");
 	return output_string;
     }
+
+    if (!strcmp (to_codeset, "CP1252") && len >= 1) {
+	*instring = 'A';
+    }
+
     while (cur < len) {
 	gchar* os;
 	gsize br, bw;
@@ -207,6 +219,8 @@ convert_string_with_replacement (char* instring, gsize len,
 	br = 0;
 	os = g_convert_with_iconv (&instring[cur], bytes_to_convert, 
 				   giconv, &br, &bw, &error);
+	debug_printf ("cur=%d, btc=%d, br=%d, bw=%d\n", 
+	    cur, bytes_to_convert, br, bw);
 
 	/* If the conversion was unsuccessful, usually it means that 
 	   either the input byte doesn't belong to the from_codeset, 
@@ -217,11 +231,15 @@ convert_string_with_replacement (char* instring, gsize len,
 	    case G_CONVERT_ERROR_ILLEGAL_SEQUENCE:
 	    case G_CONVERT_ERROR_FAILED:
 	    case G_CONVERT_ERROR_PARTIAL_INPUT:
+		debug_printf ("g_convert_with_iconv returned error: %d (%s)\n",
+			error->code, error->message);
 		break;
 	    case G_CONVERT_ERROR_NO_CONVERSION:
 	    default:
 		/* This shouldn't happen, as GNU inconv guarantees 
 		   conversion to/from UTF-8. */
+		debug_printf ("g_convert_with_iconv returned error: %d (%s)\n",
+			error->code, error->message);
 		return output_string;
 	    }
 	    /* How many bytes to try next time? */
@@ -259,144 +277,20 @@ convert_string_with_replacement (char* instring, gsize len,
 	    error = 0;
 	} else {
 	    /* Successful conversion. */
-	    need_repl = 1;
-	    if (output_string) {
-		gchar* tmp = g_strconcat (output_string, os, NULL);
-		g_free (output_string);
-		g_free (os);
-		output_string = tmp;
-	    } else {
-		output_string = os;
-	    }
+	    gchar* tmp = g_strconcat (output_string, os, NULL);
+	    g_free (output_string);
+	    g_free (os);
+	    output_string = tmp;
 	    cur += br;
 	    bytes_to_convert = len - cur;
+	    need_repl = 1;
 	}
     }
     g_iconv_close (giconv);
+    debug_printf ("convert_string_with_replacement |%s| -> |%s| (%s -> %s)\n",
+	instring, output_string, from_codeset, to_codeset);
     return output_string;
 }
-
-#if HAVE_WCHAR_SUPPORT
-# if HAVE_ICONV
-int 
-iconv_convert_string (char* dst, int dst_len, char* src, int src_len, 
-		      const char* dst_codeset, const char* src_codeset)
-{
-    size_t rc;
-    iconv_t ict;
-    size_t src_left, dst_left;
-    char *src_ptr, *dst_ptr;
-
-    /* First try to convert using iconv. */
-    ict = iconv_open (dst_codeset, src_codeset);
-    if (ict == (iconv_t)(-1)) {
-	printf ("Error on iconv_open(\"%s\",\"%s\")\n",
-		      dst_codeset, src_codeset);
-	perror ("Error string is: ");
-	return -1;
-    }
-    src_left = src_len;
-    dst_left = dst_len;
-    src_ptr = src;
-    dst_ptr = dst;
-    rc = iconv (ict,&src_ptr,&src_left,&dst_ptr,&dst_left);
-    if (rc == -1) {
-	if (errno == EINVAL) {
-	    /* EINVAL means the last character was truncated 
-	       Declare success and try to continue... */
-	    debug_printf ("ICONV: EINVAL\n");
-	    printf ("ICONV: EINVAL\n\n");
-	} else if (errno == E2BIG) {
-	    /* E2BIG means the output buffer was too small.  This can 
-	       happen, for example, when converting for id3v1 tags */
-	    debug_printf ("ICONV: E2BIG\n");
-	} else if (errno == EILSEQ) {
-	    /* Here I should advance cptr and try to continue, right? */
-	    debug_printf ("ICONV: EILSEQ\n");
-	    printf ("ICONV: EILSEQ\n\n");
-	} else {
-	    debug_printf ("ICONV: ERROR %d\n", errno);
-	    printf ("ICONV:ERROR %d\n\n", errno);
-	}
-    }
-    iconv_close (ict);
-    return dst_len - dst_left;
-}
-# endif
-
-/* Return value is the number of char occupied by the converted string, 
-   not including the null character. */
-int 
-string_from_wstring (char* c, int clen, wchar_t* w, const char* codeset)
-{
-    int rc;
-
-# if HAVE_ICONV
-    int wlen, clen_out;
-    wlen = wcslen (w) * sizeof(wchar_t);
-    debug_printf ("ICONV: c <- w (len=%d,tgt=%s)\n", wlen, codeset);
-    rc = iconv_convert_string (c, clen, (char*) w, wlen, codeset, ICONV_WCHAR);
-    debug_printf ("rc = %d\n", rc);
-    clen_out = rc;
-    if (clen_out == clen) clen_out--;
-    c[clen_out] = 0;
-    return clen_out;
-# endif
-
-    rc = wcstombs(c,w,clen);
-    if (rc == -1) {
-	/* Do something smart here */
-    }
-    return rc;
-}
-
-/* Return value is the number of wchar_t occupied by the converted string, 
-   not including the null character. */
-int 
-wstring_from_string (wchar_t* w, int wlen, char* c, const char* codeset)
-{
-    int rc;
-
-# if HAVE_ICONV
-    int clen, wlen_out;
-    clen = strlen (c);  // <----<<<<  GCS FIX. String is arbitrarily encoded.
-    debug_printf ("ICONV: w <- c (%s)\n", c);
-    rc = iconv_convert_string ((char*) w, wlen * sizeof(wchar_t), 
-			       c, clen, ICONV_WCHAR, codeset);
-    debug_printf ("rc = %d\n", rc);
-    //    debug_mprintf (m("val = ") mS m("\n"), w);
-    wlen_out = rc / sizeof(wchar_t);
-    if (wlen_out == wlen) wlen_out--;
-    w[wlen_out] = 0;
-    return wlen_out;
-# endif
-
-    /* Currently this never happens, because now iconv is required. */
-    rc = mbstowcs(w,c,wlen);
-    if (rc == -1) {
-	/* Do something smart here */
-    }
-    return 0;
-}
-
-int 
-wchar_from_char (char c, const char* codeset)
-{
-    wchar_t w[1];
-    int rc;
-
-# if HAVE_ICONV
-    rc = iconv_convert_string ((char*) w, sizeof(wchar_t), &c, 1, 
-			       ICONV_WCHAR, codeset);
-    if (rc == 1) return w[0];
-    /* Otherwise, fall through to mbstowcs method */
-# endif
-
-    /* Do something smart here */
-    return 0;
-}
-#endif /* HAVE_WCHAR_SUPPORT */
-
 
 /* Assumes src is valid utf8 */
 int
@@ -482,37 +376,19 @@ mstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen,
     }
 }
 
-/* Replacement for mstring_from_string using dynamic allocation */
-gchar*
-utf8_string_from_string (char* src, char* codeset)
-{
-    GError *error = NULL;
-    gchar* utf8_string;
-    gsize tmp;
-	
-    utf8_string = g_convert_with_fallback 
-	    (src, -1, "UTF-8", codeset, "?", 0, &tmp, &error);
-    if (error) {
-	debug_printf ("Error converting utf8_string_from_string\n");
-	/* If there's an error, return partial string */
-    }
-    return utf8_string;
-}
-
 /* Return value is the number of char occupied by the converted string, 
    not including the null character. */
 int
 string_from_mstring (RIP_MANAGER_INFO* rmi, char* c, int clen, mchar* m, int codeset_type)
 {
     CODESET_OPTIONS* mchar_cs = &rmi->mchar_cs;
-    if (clen < 0) return 0;
+    if (clen <= 0) return 0;
     *c = 0;
     if (!m) return 0;
     {
 	GError *error = NULL;
 	gchar* cstring;
 	char* tgt_codeset;
-	gsize tmp;
 	int rc;
 	
 	switch (codeset_type) {
@@ -538,18 +414,20 @@ string_from_mstring (RIP_MANAGER_INFO* rmi, char* c, int clen, mchar* m, int cod
 	    printf ("Program error.  Bad codeset m->c (%d)\n", codeset_type);
 	    exit (-1);
 	}
-	cstring = g_convert_with_fallback 
-		(m, -1, tgt_codeset, "UTF-8", "?", 0, &tmp, &error);
-	if (error) {
+	/* This is the new method */
+	cstring = convert_string_with_replacement (m, strlen(m), 
+						   "UTF-8", 
+						   tgt_codeset, 
+						   "?");
+	if (!cstring) {
 	    debug_printf ("Error converting string_from_mstring\n");
-	    g_free (cstring);
 	    return 0;
 	}
 	/* GCS FIX: truncation can chop multibyte string */
 	/* This will be fixed by using dynamic memory here... */
 	rc = g_strlcpy (c, cstring, clen);
 	g_free (cstring);
-	return strlen(c);
+	return rc;
     }
 }
 

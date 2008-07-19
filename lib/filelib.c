@@ -404,6 +404,7 @@ mkdir_if_needed (RIP_MANAGER_INFO* rmi, gchar *str)
 {
     char s[SR_MAX_PATH];
     string_from_mstring (rmi, s, SR_MAX_PATH, str, CODESET_FILESYS);
+    debug_printf ("mkdir = %s -> %s\n", str, s);
 #if WIN32
     mkdir (s);
 #else
