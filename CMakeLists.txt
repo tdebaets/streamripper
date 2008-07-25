@@ -20,7 +20,7 @@ ENDIF(UNIX)
 ######################################################
 ##  SOURCE FILES
 ######################################################
-SET(STREAMRIPPER_SRC
+SET(STREAMRIPPER_LIB_SRC
 	console/streamripper.c
 #	lib/argv.c
 	lib/cbuf2.c
@@ -32,7 +32,6 @@ SET(STREAMRIPPER_SRC
 	lib/http.c
 	lib/iconvert.c
 	lib/mchar.c
-	lib/mpeg.c
 	lib/parse.c
 	lib/prefs.c
 	lib/relaylib.c
@@ -55,7 +54,6 @@ SET(STREAMRIPPER_SRC
 	lib/http.h
 	lib/list.h
 	lib/mchar.h
-	lib/mpeg.h
 	lib/parse.h
 	lib/prefs.h
 	lib/relaylib.h
@@ -69,6 +67,11 @@ SET(STREAMRIPPER_SRC
 	lib/uce_dirent.h
 	lib/utf8.h
 	)
+
+SET(STREAMRIPPER_SRC
+	console/streamripper.c
+	)
+
 
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.12.12/include/glib-2.0)
@@ -97,9 +100,14 @@ SET(STREAMRIPPER_LIBS libmad iconv tre glib-2.0 ws2_32 ogg vorbis)
 ######################################################
 ##  LINKING
 ######################################################
-ADD_EXECUTABLE(streamripper ${STREAMRIPPER_SRC} ${CMAKE_CURRENT_SOURCE_DIR}/chkstk.o)
 
-TARGET_LINK_LIBRARIES(streamripper ${MY_MATH_LIB} ${STREAMRIPPER_LIBS})
+## chkstk.o may be required for mingw
+#SET(STREAMRIPPER_SRC ${STREAMRIPPER_SRC} ${CMAKE_CURRENT_SOURCE_DIR}/chkstk.o)
+
+ADD_LIBRARY(streamripper1 ${STREAMRIPPER_LIB_SRC})
+ADD_EXECUTABLE(streamripper ${STREAMRIPPER_SRC})
+
+TARGET_LINK_LIBRARIES(streamripper ${MY_MATH_LIB} streamripper1 ${STREAMRIPPER_LIBS})
 
 ######################################################
 ##  INSTALL
