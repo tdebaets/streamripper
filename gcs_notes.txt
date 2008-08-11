@@ -1,5 +1,30 @@
+-----------------------------------------------------------------------
+GLIB FAILURE ON WIN98
+-----------------------------------------------------------------------
 
+OK, another step sideways for streamripper.  See the problem on 
+the glib bug site:
+
+http://bugzilla.gnome.org/show_bug.cgi?id=543789
+
+Tor states that Wide character API is not fully implemented 
+on windows 98.  But maybe enough of it is implemented such that 
+GLIB can work.  Here is MS's take on the matter:
+
+http://support.microsoft.com/kb/q210341/
+
+Maybe also this one:
+
+http://blogs.msdn.com/michkap/archive/2006/12/27/1368334.aspx
+
+Since streamripper requires unicows, things might not be so bad
+as Tor thinks.  But anyway, at least I have to stuff gnu iconv 
+back into 2.16.
+
+
+-----------------------------------------------------------------------
 Plans for 1.63.X
+-----------------------------------------------------------------------
 
 (2) Implement glib's PCRE
 (3) Skin improvements (fix single pixel problem) 
