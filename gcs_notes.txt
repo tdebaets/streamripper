@@ -21,6 +21,9 @@ Since streamripper requires unicows, things might not be so bad
 as Tor thinks.  But anyway, at least I have to stuff gnu iconv 
 back into 2.16.
 
+Note also that the new winiconv is not fully implemented in glib.
+Specifically, setting $WINICONV_LIBICONV_DLL does not override 
+the default iconv.
 
 -----------------------------------------------------------------------
 Plans for 1.63.X
