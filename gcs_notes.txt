@@ -37,6 +37,27 @@ Plans for 1.63.X
 (8) filename/directory problems on windows <cannot delete>
 
 -----------------------------------------------------------------------
+Glib mess
+-----------------------------------------------------------------------
+
+This is about recompiling glib 2.16 on mingw/msys.
+
+1) Running ./configure on mingw
+
+a) pkg-config not found
+   FIX: 
+   1) comment out appropriate lines in configure.in
+   2) I had to rerun autoconf on cygwin because my mingw autoconf was 
+      too old
+
+b) gettext not found
+   FIX:
+   1) Install libiconv by unzipping it into mingw directory
+   2) Don't unpack gtk+ gettext binaries, since they don't contain msgfmt
+   3) Instead, compile gettext from source (except this doesn't work)
+
+
+-----------------------------------------------------------------------
 Prefs/debug startup
 -----------------------------------------------------------------------
 
