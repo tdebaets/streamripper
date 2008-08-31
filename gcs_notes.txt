@@ -37,24 +37,455 @@ Plans for 1.63.X
 (8) filename/directory problems on windows <cannot delete>
 
 -----------------------------------------------------------------------
-Glib mess
+MSYS quick links
 -----------------------------------------------------------------------
+Cf. wiki link on manual install.
 
-This is about recompiling glib 2.16 on mingw/msys.
+http://www.mingw.org/node/24
 
-1) Running ./configure on mingw
+Cf. wiki link on msys.
 
-a) pkg-config not found
-   FIX: 
-   1) comment out appropriate lines in configure.in
-   2) I had to rerun autoconf on cygwin because my mingw autoconf was 
-      too old
+http://www.mingw.org/wiki/msys
 
-b) gettext not found
-   FIX:
-   1) Install libiconv by unzipping it into mingw directory
-   2) Don't unpack gtk+ gettext binaries, since they don't contain msgfmt
-   3) Instead, compile gettext from source (except this doesn't work)
+Cf. recent email exchange on this very topic.
+
+http://sourceforge.net/mailarchive/message.php?msg_id=4889219E.2010403%40gmail.com
+
+Cf. enlightenment wiki
+
+http://wiki.enlightenment.org/index.php/EFL_Windows_XP
+
+-----------------------------------------------------------------------
+MSYS madness
+-----------------------------------------------------------------------
+MinGW/MSYS is a poorly documented and poorly packaged mess.
+My notes for understanding.
+
+Part 1.  MSYS and MinGW
+-----------------------
+
+(1) A MSYS binary is a binary which depends on msys-1.0.dll.
+These tend to be small utilites such as "rm" and "mv".
+The MSYS binaries belong in msys directory.  For example:
+
+$ pwd
+/c/msys/1.0/bin
+$ cygcheck ./grep.exe
+.\grep.exe
+  .\msys-1.0.dll
+    C:\Windows\system32\KERNEL32.dll
+      C:\Windows\system32\ntdll.dll
+
+(2) A MinGW binary does not depend on msys-1.0.dll.  Instead they 
+seem to depend on msvcrt.dll.  
+These tend to be development tools, such as "gcc" and "ar".
+For example:
+
+$ pwd
+/c/MinGW/bin
+$ cygcheck ./gcc.exe
+.\gcc.exe
+  C:\Windows\system32\KERNEL32.dll
+    C:\Windows\system32\ntdll.dll
+  C:\Windows\system32\msvcrt.dll
+
+(3) Pre-built packages.  Some GNU utils come pre-built.  Use at your 
+own risk.
+
+
+Part 2.  Sourceforge FRS
+------------------------
+
+The packages are all found in the sourceforge FRS.  I will divide 
+them into subgroups that make sense to me.
+
+(*) MSYS packages:
+MSYS Base System
+MSYS System Builder
+
+(*) MinGW packages:
+Automated MinGW Installer
+GCC Version 2
+GCC Version 3
+GCC Version 4
+GNU Binutils
+GNU Make 
+GNU Source-Level Debugger
+MinGW API for MS-Windows
+MinGW Runtime
+MinGW Utilities
+MinGW Utilities: TclTk
+MinGW Utilities: wget
+Previous
+Snapshot
+User Contributed: catgets
+User Contributed: execwrap
+User Contributed: mingwPORT
+User Contributed: Miscellany
+User Contributed: pdcurses
+User Contributed: regex
+
+(*) Mixed:
+MSYS Supplementary Tools
+  - This replaces DTK.
+  - autoconf has no exe files.  Is it mingw or msys?  It has path /usr/local.
+  - gettext has both mingw and msys versions.  msys version has path /, 
+    mingw version is /usr/local.
+
+(*) Other:
+Cross-Hosted MinGW Build Tool
+
+
+Part 3.  How to install?
+------------------------
+
+You will get a lot of conflicting advice about what to install, 
+and how to do it.  
+
+(*) Install MSYS using installer.  Install msysDTK using installer.
+
+(**) The msysDTK yields wacked permissions.  Fix them.
+
+(**) Be sure to update coreutils.  There is a problem with /bin/install.
+But it has a wacked directory structure, so you can't just overwrite 
+things. <Left off here...>
+
+(**) Manually install m4 from binary.  Note that the directory is 
+usr/bin, so you should install it in the msys shell (or manually 
+move it).
+
+(*) Install MinGW manually.  Follow the directions on node 24, so no 
+need to repeat here.  I put them in /c/msys/1.0/mingw to keep things tidy.
+
+(**) I use cygwin to unpackage these.  MSYS doesn't seem to set 
+the permission bits correctly.
+
+(**) The package gcc-4.3.0-20080502-mingw32-alpha-bin.tar.gz 
+doesn't have the correct permission bits anyway.  Here is what to fix:
+
+$ chmod a+rx bin/*.exe
+$ chmod a+rx bin/*.dll
+$ chmod a+rx libexec/gcc/mingw32/4.3.0/*.exe
+$ chmod a+rx libexec/gcc/mingw32/4.3.0/*/*.exe
+
+(*) Upgrade autoconf, etc., from source.  Use the msys shell for this.
+
+(**) These will be MinGW executables, but they will be installed 
+in /usr/local (a.k.a. c:/msys/1.0/local) instead of /mingw.
+
+(*) Gtk website doesn't distribute a proper gettext (it does not 
+contain binaries that glib requires.  Instead, install these 
+from the mingw binaries: libiconf & gettext.
+
+(*) Install pkg-config from gtk binary.  Be sure to set executable 
+bits after extraction.
+
+  http://www.gtk.org/download-windows.html
+
+(*) Set the path for building glib.  I put these in /etc/profile
+as per Enlightenment wiki
+
+CPPFLAGS="-I/usr/local/include"
+LDFLAGS="-L/usr/local/lib"
+PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
+CVS_RSH=ssh
+export CPPFLAGS LDFLAGS PKG_CONFIG_PATH CVS_RSH
+
+
+-----------------------------------------------------------------------
+Glib references to win32 api 2.16.5
+(built)
+-----------------------------------------------------------------------
+_AddAtomA@4
+_CloseHandle@4
+_CoTaskMemFree@4
+x _ConvertINetMultiByteToUnicode
+x _ConvertINetString
+x _ConvertINetUnicodeToMultiByte
+_CreateEventA@16
+_CreateFileMappingA@24
+_CreateSemaphoreA@16
+_DeleteCriticalSection@4
+x _DllMain@12
+x _DllMainCRTStartup@12
+_DuplicateHandle@28
+_EnterCriticalSection@4
+_ExpandEnvironmentStringsW@12
+_FindAtomA@4
+_FormatMessageW@28
+_FreeEnvironmentStringsW@4
+_GetACP@0
+_GetAtomNameA@12
+x _GetCPInfoExA@12
+_GetComputerNameA@8
+_GetConsoleCursorInfo@8
+_GetCurrentDirectoryW@8
+_GetCurrentProcess@0
+_GetDateFormatW@24
+_GetEnvironmentStringsW@0
+_GetEnvironmentVariableW@12
+_GetExitCodeProcess@8
+_GetFileAttributesA@4
+_GetFileAttributesW@4
+_GetLastError@0
+_GetLocaleInfoA@16
+_GetLocaleInfoW@16
+_GetModuleFileNameW@12
+_GetModuleHandleA@4
+_GetModuleHandleW@4
+_GetProcAddress@8
+_GetShortPathNameW@12
+_GetStdHandle@4
+_GetSystemDirectoryW@8
+_GetSystemInfo@4
+_GetSystemTimeAsFileTime@4
+_GetThreadLocale@0
+_GetTimeFormatW@24
+_GetTimeZoneInformation@4
+_GetUserNameW@8
+_GetVersion@0
+_GetWindowsDirectoryW@8
+_InitializeCriticalSection@4
+x _IsConvertINetStringAvailable
+x _IsDBCSLeadByteEx@8
+_IsDebuggerPresent@0
+_IsValidCodePage@4
+_IsWindow@4
+x _LcidToRfc1766A
+_LeaveCriticalSection@4
+_LoadLibraryA@4
+_LocalFree@4
+_MapViewOfFile@20
+_MessageBoxA@16
+_MirLev0
+_MirLev1
+_MirLev2
+_MirLev3
+_MoveFileExW@12
+_MsgWaitForMultipleObjectsEx@20
+x _MultiByteToWideChar@24
+x _PeekConsoleInputA@16
+_PeekMessageA@20
+_PeekNamedPipe@24
+_PostMessageA@16
+x _ReadConsoleInputA@16
+_ReadFile@20
+_RegCloseKey@4
+_RegOpenKeyExW@20
+_RegQueryValueExW@24
+_ReleaseSemaphore@12
+_ResetEvent@4
+x _Rfc1766ToLcidA
+_SHGetPathFromIDListW@8
+_SHGetSpecialFolderLocation@12
+_SetEnvironmentVariableW@8
+_SetEvent@4
+_Sleep@4
+_SleepEx@8
+_UnmapViewOfFile@4
+_VirtualQuery@12
+_WSACreateEvent@0
+_WSAEnumNetworkEvents@12
+_WSAEventSelect@12
+_WSAGetLastError@0
+_WaitForMultipleObjectsEx@20
+_WaitForSingleObject@8
+x _WideCharToMultiByte@32
+_WriteFile@20
+
+-----------------------------------------------------------------------
+Glib references to win32 api 2.16.5 (reference)
+-----------------------------------------------------------------------
+_AddAtomA@4
+_CloseHandle@4
+_CoTaskMemFree@4
+_ConvertINetMultiByteToUnicode
+_ConvertINetString
+_ConvertINetUnicodeToMultiByte
+_CreateEventA@16
+_CreateFileMappingA@24
+_CreateSemaphoreA@16
+_DeleteCriticalSection@4
+_DllMain@12
+_DllMainCRTStartup@12
+_DuplicateHandle@28
+_EnterCriticalSection@4
+_ExpandEnvironmentStringsW@12
+_FindAtomA@4
+_FormatMessageW@28
+_FreeEnvironmentStringsW@4
+_GetACP@0
+_GetAtomNameA@12
+_GetCPInfoExA@12
+_GetComputerNameA@8
+_GetConsoleCursorInfo@8
+_GetCurrentDirectoryW@8
+_GetCurrentProcess@0
+_GetDateFormatW@24
+_GetEnvironmentStringsW@0
+_GetEnvironmentVariableW@12
+_GetExitCodeProcess@8
+_GetFileAttributesA@4
+_GetFileAttributesW@4
+_GetLastError@0
+_GetLocaleInfoA@16
+_GetLocaleInfoW@16
+_GetModuleFileNameW@12
+_GetModuleHandleA@4
+_GetModuleHandleW@4
+_GetProcAddress@8
+_GetShortPathNameW@12
+_GetStdHandle@4
+_GetSystemDirectoryW@8
+_GetSystemInfo@4
+_GetSystemTimeAsFileTime@4
+_GetThreadLocale@0
+_GetTimeFormatW@24
+_GetTimeZoneInformation@4
+_GetUserNameW@8
+_GetVersion@0
+_GetWindowsDirectoryW@8
+_InitializeCriticalSection@4
+_IsConvertINetStringAvailable
+_IsDBCSLeadByteEx@8
+_IsDebuggerPresent@0
+_IsValidCodePage@4
+_IsWindow@4
+_LcidToRfc1766A
+_LeaveCriticalSection@4
+_LoadLibraryA@4
+_LocalFree@4
+_MapViewOfFile@20
+_MessageBoxA@16
+_MirLev0
+_MirLev1
+_MirLev2
+_MirLev3
+_MoveFileExW@12
+_MsgWaitForMultipleObjectsEx@20
+_MultiByteToWideChar@24
+_PeekConsoleInputA@16
+_PeekMessageA@20
+_PeekNamedPipe@24
+_PostMessageA@16
+_ReadConsoleInputA@16
+_ReadFile@20
+_RegCloseKey@4
+_RegOpenKeyExW@20
+_RegQueryValueExW@24
+_ReleaseSemaphore@12
+_ResetEvent@4
+_Rfc1766ToLcidA
+_SHGetPathFromIDListW@8
+_SHGetSpecialFolderLocation@12
+_SetEnvironmentVariableW@8
+_SetEvent@4
+_Sleep@4
+_SleepEx@8
+_UnmapViewOfFile@4
+_VirtualQuery@12
+_WSACreateEvent@0
+_WSAEnumNetworkEvents@12
+_WSAEventSelect@12
+_WSAGetLastError@0
+_WaitForMultipleObjectsEx@20
+_WaitForSingleObject@8
+_WideCharToMultiByte@32
+_WriteFile@20
+
+-----------------------------------------------------------------------
+Glib references to win32 api 2.12.12
+-----------------------------------------------------------------------
+_AddAtomA@4
+_CloseHandle@4
+_CoTaskMemFree@4
+_CreateEventA@16
+_CreateFileMappingA@24
+_CreateSemaphoreA@16
+_DeleteCriticalSection@4
+_DuplicateHandle@28
+_EnterCriticalSection@4
+_ExpandEnvironmentStringsA@12
+_ExpandEnvironmentStringsW@12
+_FindAtomA@4
+_FormatMessageA@28
+_FormatMessageW@28
+_FreeEnvironmentStringsW@4
+_GetACP@0
+_GetAtomNameA@12
+_GetComputerNameA@8
+_GetConsoleCursorInfo@8
+_GetCurrentDirectoryA@8
+_GetCurrentDirectoryW@8
+_GetCurrentProcess@0
+_GetDateFormatW@24
+_GetEnvironmentStringsW@0
+_GetEnvironmentVariableA@12
+_GetEnvironmentVariableW@12
+_GetExitCodeProcess@8
+_GetFileAttributesA@4
+_GetFileAttributesW@4
+_GetLastError@0
+_GetLocaleInfoA@16
+_GetLocaleInfoW@16
+_GetModuleFileNameA@12
+_GetModuleFileNameW@12
+_GetModuleHandleA@4
+_GetModuleHandleW@4
+_GetProcAddress@8
+_GetShortPathNameW@12
+_GetStdHandle@4
+_GetSystemDirectoryA@8
+_GetSystemDirectoryW@8
+_GetSystemInfo@4
+_GetSystemTimeAsFileTime@4
+_GetThreadLocale@0
+_GetTimeFormatW@24
+_GetTimeZoneInformation@4
+_GetUserNameA@8
+_GetUserNameW@8
+_GetVersion@0
+_GetWindowsDirectoryA@8
+_GetWindowsDirectoryW@8
+_InitializeCriticalSection@4
+_IsDebuggerPresent@0
+_IsWindow@4
+_KillTimer@8
+_LeaveCriticalSection@4
+_LoadLibraryA@4
+_LocalFree@4
+_MapViewOfFile@20
+_MessageBoxA@16
+_MoveFileExW@12
+_MsgWaitForMultipleObjects@20
+_PeekMessageA@20
+_PeekNamedPipe@24
+_PostMessageA@16
+_ReadFile@20
+_RegCloseKey@4
+_RegOpenKeyExA@20
+_RegOpenKeyExW@20
+_RegQueryValueExA@24
+_RegQueryValueExW@24
+_ReleaseSemaphore@12
+_ResetEvent@4
+_SHGetPathFromIDListA@8
+_SHGetPathFromIDListW@8
+_SHGetSpecialFolderLocation@12
+_SetEnvironmentVariableW@8
+_SetEvent@4
+_SetTimer@16
+_Sleep@4
+_UnmapViewOfFile@4
+_VirtualQuery@12
+_WSACreateEvent@0
+_WSAEnumNetworkEvents@12
+_WSAEventSelect@12
+_WSAGetLastError@0
+_WaitForMultipleObjects@16
+_WaitForSingleObject@8
+_WaitMessage@0
+_WriteFile@20
 
 
 -----------------------------------------------------------------------
