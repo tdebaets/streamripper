@@ -26,9 +26,11 @@ SET(STREAMRIPPER_LIB_SRC
 	lib/cbuf2.c
 	lib/charset.c
 	lib/debug.c
+	lib/errors.c
 	lib/external.c
 	lib/filelib.c
 	lib/findsep.c
+	lib/findsep2.c
 	lib/http.c
 	lib/iconvert.c
 	lib/mchar.c
@@ -74,14 +76,16 @@ SET(STREAMRIPPER_SRC
 
 
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/lib)
-INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.12.12/include/glib-2.0)
-INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.12.12/lib/glib-2.0/include)
+# INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.12.12/include/glib-2.0)
+# INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.12.12/lib/glib-2.0/include)
+INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.16.3/include/glib-2.0)
+INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.16.3/lib/glib-2.0/include)
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/libmad-0.15.1b/msvc++)
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/iconv-win32/static)
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/tre-0.7.2/lib)
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/tre-0.7.2/win32)
-INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/libogg-1.1.3)
-INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/libvorbis-1.1.2)
+INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/win32/libogg-1.1.3)
+INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/win32/libvorbis-1.1.2)
 
 
 ######################################################
@@ -91,11 +95,14 @@ LINK_DIRECTORIES(
 	"${CMAKE_CURRENT_SOURCE_DIR}/libmad-0.15.1b/msvc++/Release"
 	"${CMAKE_CURRENT_SOURCE_DIR}/iconv-win32/static"
 	"${CMAKE_CURRENT_SOURCE_DIR}/tre-0.7.2/win32/Release"
-	"${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.12.12/lib"
-	"${CMAKE_CURRENT_SOURCE_DIR}/libogg-1.1.3"
-	"${CMAKE_CURRENT_SOURCE_DIR}/libvorbis-1.1.2"
+#	"${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.12.12/lib"
+	"${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.16.3/lib"
+	"${CMAKE_CURRENT_SOURCE_DIR}/win32/libogg-1.1.3"
+	"${CMAKE_CURRENT_SOURCE_DIR}/win32/libvorbis-1.1.2"
 	)
-SET(STREAMRIPPER_LIBS libmad iconv tre glib-2.0 ws2_32 ogg vorbis)
+#SET(STREAMRIPPER_LIBS libmad iconv tre glib-2.0 ws2_32 ogg vorbis)
+#SET(STREAMRIPPER_LIBS libmad iconv glib-2.0 ws2_32 ogg vorbis)
+SET(STREAMRIPPER_LIBS libmad iconv glib-2.0 ws2_32 ogg vorbis)
 
 ######################################################
 ##  LINKING
@@ -106,8 +113,12 @@ SET(STREAMRIPPER_LIBS libmad iconv tre glib-2.0 ws2_32 ogg vorbis)
 
 ADD_LIBRARY(streamripper1 ${STREAMRIPPER_LIB_SRC})
 ADD_EXECUTABLE(streamripper ${STREAMRIPPER_SRC})
+TARGET_LINK_LIBRARIES(streamripper ${MY_MATH_LIB} 
+				   streamripper1 ${STREAMRIPPER_LIBS})
 
-TARGET_LINK_LIBRARIES(streamripper ${MY_MATH_LIB} streamripper1 ${STREAMRIPPER_LIBS})
+ADD_EXECUTABLE(glib_iconv_test lib/glib_iconv_test.c)
+TARGET_LINK_LIBRARIES(glib_iconv_test ${STREAMRIPPER_LIBS})
+
 
 ######################################################
 ##  INSTALL

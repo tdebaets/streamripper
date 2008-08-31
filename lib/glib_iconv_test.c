@@ -16,6 +16,10 @@ int main (int argc, char* argv[]) {
     char* from_codeset = argv[1];
     char* to_codeset = argv[2];
 
+    if (argc != 3) {
+	printf ("Usage: glib_iconv_test from_codeset to_codeset\n");
+	exit (0);
+    }
     giconv = g_iconv_open (to_codeset, from_codeset);
     if (giconv == (GIConv) -1) {
 	printf ("g_iconv_open error\n");

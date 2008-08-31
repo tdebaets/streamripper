@@ -487,6 +487,12 @@ _WaitForSingleObject@8
 _WaitMessage@0
 _WriteFile@20
 
+-----------------------------------------------------------------------
+Code changes required
+-----------------------------------------------------------------------
+configure.in
+glib/gconvert.c
+	Commentout win_iconv
 
 -----------------------------------------------------------------------
 Prefs/debug startup
