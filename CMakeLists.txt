@@ -96,13 +96,16 @@ LINK_DIRECTORIES(
 	"${CMAKE_CURRENT_SOURCE_DIR}/iconv-win32/static"
 	"${CMAKE_CURRENT_SOURCE_DIR}/tre-0.7.2/win32/Release"
 #	"${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.12.12/lib"
-	"${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.16.3/lib"
+#	"${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.16.3/lib"
+	"c:/gcs6/projects/sripper_1x/glib-gcs/no-unicows"
+	"c:/gcs6/pkg/libunicows/libunicows-1.1.2-msvc6"
+#	"c:/gcs6/pkg/libunicows/libunicows-1.1.1-mingw"
 	"${CMAKE_CURRENT_SOURCE_DIR}/win32/libogg-1.1.3"
 	"${CMAKE_CURRENT_SOURCE_DIR}/win32/libvorbis-1.1.2"
 	)
 #SET(STREAMRIPPER_LIBS libmad iconv tre glib-2.0 ws2_32 ogg vorbis)
 #SET(STREAMRIPPER_LIBS libmad iconv glib-2.0 ws2_32 ogg vorbis)
-SET(STREAMRIPPER_LIBS libmad iconv glib-2.0 ws2_32 ogg vorbis)
+SET(STREAMRIPPER_LIBS libmad iconv unicows glib-2.0 unicows ws2_32 ogg vorbis)
 
 ######################################################
 ##  LINKING
@@ -114,10 +117,13 @@ SET(STREAMRIPPER_LIBS libmad iconv glib-2.0 ws2_32 ogg vorbis)
 ADD_LIBRARY(streamripper1 ${STREAMRIPPER_LIB_SRC})
 ADD_EXECUTABLE(streamripper ${STREAMRIPPER_SRC})
 TARGET_LINK_LIBRARIES(streamripper ${MY_MATH_LIB} 
-				   streamripper1 ${STREAMRIPPER_LIBS})
+	   		   streamripper1 ${STREAMRIPPER_LIBS})
 
 ADD_EXECUTABLE(glib_iconv_test lib/glib_iconv_test.c)
 TARGET_LINK_LIBRARIES(glib_iconv_test ${STREAMRIPPER_LIBS})
+
+ADD_EXECUTABLE(glib_win98_test lib/glib_win98_test.c)
+TARGET_LINK_LIBRARIES(glib_win98_test ${STREAMRIPPER_LIBS})
 
 
 ######################################################

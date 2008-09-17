@@ -191,10 +191,17 @@ PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
 CVS_RSH=ssh
 export CPPFLAGS LDFLAGS PKG_CONFIG_PATH CVS_RSH
 
+-----------------------------------------------------------------------
+Win32 API compatibility
+-----------------------------------------------------------------------
+The MSDN site no longer lists which Win32 API calls are compatible 
+with which OS revision (95/98/ME/31/35/40/2K/XP/VI).
+
+This site might help.
+http://win32.freetechsecrets.com
 
 -----------------------------------------------------------------------
-Glib references to win32 api 2.16.5
-(built)
+Glib references to win32 api 2.16.5 (built)
 -----------------------------------------------------------------------
 _AddAtomA@4
 _CloseHandle@4
@@ -488,11 +495,31 @@ _WaitMessage@0
 _WriteFile@20
 
 -----------------------------------------------------------------------
-Code changes required
+How to build glib win32 for streamripper
 -----------------------------------------------------------------------
-configure.in
-glib/gconvert.c
-	Commentout win_iconv
+
+1) Edit configure.in.  Commentout this part 
+
+     if test x"$glib_native_win32" = xyes; then
+        with_libiconv=native
+      else
+
+2) Edit glib/gconvert.c.  It should include iconv.h instead of win_iconv.c.
+
+3) Workaround bug in GetCurrentDirectoryW in unicows.dll.  Change
+
+     len = GetCurrentDirectoryW (2, dummy);
+
+   to
+
+     len = GetCurrentDirectoryW (0, dummy);
+
+4) Build glib
+
+5) Manually re-link with libunicows.  Just do a make -n, to get the 
+   original command line, and add this to the beginning of the 
+
+     -L/usr/local/lib -lunicows 
 
 -----------------------------------------------------------------------
 Prefs/debug startup
@@ -510,6 +537,8 @@ wstreamripper:
   3) Open debug
   4) Load prefs
 
+-----------------------------------------------------------------------
+Basic connection code
 -----------------------------------------------------------------------
 
 http_sc_connect
@@ -906,6 +935,7 @@ missing    missing      Use: pwd/default_pat
 
 -----------------------------------------------------------------------
 * How to upgrade the version number
+-----------------------------------------------------------------------
 
 1)  configure.ac
 2)  lib/rip_manager.h
@@ -915,6 +945,7 @@ missing    missing      Use: pwd/default_pat
 
 -----------------------------------------------------------------------
 * Generated files
+-----------------------------------------------------------------------
 
 I deleted the automatically generated files from CVS.  The people 
 who download from CVS should be advanced enough to figure out 
@@ -930,6 +961,7 @@ CVS: 	libmad-0.15.1b/msvc++/Makefile.in
 
 -----------------------------------------------------------------------
 * Compile farms
+-----------------------------------------------------------------------
 
 http://www.testdrive.hp.com	hpux, freebsd
 http://powerdev.osuosl.org	linux
@@ -941,6 +973,7 @@ td191.testdrive.hp.com
 
 -----------------------------------------------------------------------
 * How to build streamripper on hp testdrive host
+-----------------------------------------------------------------------
 
 1) pkg-config
 2) gettext
@@ -951,7 +984,8 @@ CFLAGS=-I$HOME/LOCAL-td191/include LDFLAGS=-L$HOME/LOCAL-td191/lib ./configure -
 
 -----------------------------------------------------------------------
 * MP3 utilities
-~~~~~~~~~~~~~~~
+-----------------------------------------------------------------------
+
 MP3TRIM
 ~~~~~~~
 http://www.logiccell.com/~mp3trim/
@@ -973,11 +1007,13 @@ mp3_check
 
 -----------------------------------------------------------------------
 How to tag a new version (e.g. for version 1.60)
+-----------------------------------------------------------------------
 
   cvs rtag -r HEAD sripper-1_60 sripper_1x
 
 -----------------------------------------------------------------------
 How to revise libmad
+-----------------------------------------------------------------------
 
 First, match the auto* versions used by libmad.  For libmad-0.15.1b, 
 this is :
@@ -1005,6 +1041,7 @@ libmad distro.
 
 -----------------------------------------------------------------------
 How to revise libtre
+-----------------------------------------------------------------------
 
 Check to make sure my versions work.  Here is what I use for tre-0.7.0:
 
@@ -1042,35 +1079,8 @@ Still need to figure out how to disable "make install" for tre,
 since we don't actually need to install it.
 
 -----------------------------------------------------------------------
-MinGW problems
-
-Seems that 1.0.11 doesn't play well with windows 98.  
-
-1.0.11-2004.04.03
------------------
-1) Rxvt fails when run from the batch file, though it works 
-   from the command line.
-
-snapshot
---------
-1) The snapshot has a .bat file with unix EOL
-2) Rxvt fails (flashes then closes) from either batch file or 
-   command line.
-3) sh fails.  For example:
-
-C:\msys\1.0>bin\sh
-SH-2.04$ ls
- - Cannot openSH-2.04$
-SH-2.04$
-
-
-There are good doc on installing msys here:
-
-http://www.swig.org/Doc1.3/Windows.html
-http://mldonkey.sourceforge.net/Windows
-
------------------------------------------------------------------------
 How to compile cdk
+-----------------------------------------------------------------------
 
 * Using binary distro of pdcurses, and compile under MSYS/MinGW.
   Use full path for CFLAGS/LDFLAGS, or else examples don't build.
@@ -1111,6 +1121,7 @@ RMK: Can't comment out boolean, because it is required by fn protos
 
 -----------------------------------------------------------------------
 Computing bps
+-----------------------------------------------------------------------
 
 http://www.hydrogenaudio.org/index.php?showtopic=12633&
 --
@@ -1147,6 +1158,7 @@ http://www.unrelatedinventions.com/Audiotools/Help/thejargonbehindmp3.htm
 
 -----------------------------------------------------------------------
 What are some locales?  
+-----------------------------------------------------------------------
 
 Here is what my win2k box says...
 
@@ -1181,6 +1193,7 @@ CP1252 is a superset of ISO-8859-1
 
 -----------------------------------------------------------------------
 How to create a sjis locale
+-----------------------------------------------------------------------
 
 localedef -v -c -i ja_JP -f SHIFT_JIS ja_JP.SJIS
 localedef -v -c -i ja_JP -f EUC-JP ja_JP.EUC-JP
@@ -1207,14 +1220,15 @@ bash-3.00$ xterm
 
 -----------------------------------------------------------------------
 How do strings pass through the program?
+-----------------------------------------------------------------------
 
 ripstream_rip_mp3
   get_stream_data --> fill in m_current_track.raw_metadata
   parse_metadata  --> fill in m_current_track.artist,title,album
 
-
 -----------------------------------------------------------------------
 For Windows
+-----------------------------------------------------------------------
 
 Unicows:
 http://www.microsoft.com/downloads/details.aspx?FamilyID=73ba7bd7-ed06-4f0d-80a4-2a7eeaee17e2&DisplayLang=en
@@ -1222,11 +1236,13 @@ http://www.microsoft.com/globaldev/handson/dev/mslu_announce.mspx
 
 -----------------------------------------------------------------------
 For Mac OSX 10.3
+-----------------------------------------------------------------------
 
 1) Use wopen with utf8 (?)
 
 -----------------------------------------------------------------------
 How to build libiconv on windows
+-----------------------------------------------------------------------
 
 STEP 1: Make changes to config.h.msvc
 
@@ -1262,6 +1278,7 @@ move /y libcharset\lib\charset.lib iconv-win32-1.11
 
 -----------------------------------------------------------------------
 A possible macro for detecting locale_charset()
+-----------------------------------------------------------------------
 
 I'm going to call mine "HAVE_LOCALE_CHARSET"
 
@@ -1289,11 +1306,15 @@ fi
 
 -----------------------------------------------------------------------
 Other MP3 libraries
+-----------------------------------------------------------------------
 
 mpglib
 xaudio_sdk
 
 -----------------------------------------------------------------------
+Relay clients
+-----------------------------------------------------------------------
+
 Clients (windows)
 winamp 5
 foobar2000
@@ -1322,7 +1343,8 @@ if I am connecting directly to the stream (i.e. without
 using streamripper).
 
 -----------------------------------------------------------------------
-Other OS's
+Exotic OS's
+-----------------------------------------------------------------------
 
 http://www.yellowtab.com/products/   (commercial BeOS)
 http://www.haiku-os.org/             (free, BeOS-compatible)
@@ -1331,6 +1353,7 @@ http://l4hq.org/
 
 -----------------------------------------------------------------------
 Bootleg sites
+-----------------------------------------------------------------------
 
 Torrent/web sites:
 http://www.thetradersden.org/
@@ -1378,10 +1401,13 @@ http://www.sharingthegroove.org/ (DEAD)
 
 -----------------------------------------------------------------------
 Misc music:
+-----------------------------------------------------------------------
+
 Jamendo, Magnatune
 
 -----------------------------------------------------------------------
 Shoutcast lists
+-----------------------------------------------------------------------
 
 shoutcast.com (mp3)
 icecast.org (mp3/ogg)
@@ -1403,6 +1429,7 @@ http://www.wwitv.com/portal.htm?http://www.wwitv.com/television/index.html
 
 -----------------------------------------------------------------------
 Improving winamp plugin.  Implement some combination of these.
+-----------------------------------------------------------------------
 
 Type A
 a) Use "send to:" to get URL without playing first
@@ -1418,6 +1445,7 @@ a) Internal caching of recent streams (not releated to winamp)
 
 -----------------------------------------------------------------------
 AAC goop. Ugh (:P), but here we go...
+-----------------------------------------------------------------------
 
 
 Definitions

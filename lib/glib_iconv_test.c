@@ -7,34 +7,44 @@
 
 #if (MINIMAL)
 
-int main (int argc, char* argv[]) {
+void
+run_test (char* from_codeset, char* to_codeset) {
     GIConv giconv;
     GError *error = 0;
     gchar* out;
 
-//    char* from_codeset = "UTF-8";
-//    char* to_codeset = "CP1252";
-    char* from_codeset = argv[1];
-    char* to_codeset = argv[2];
-
-    if (argc != 3) {
-	printf ("Usage: glib_iconv_test from_codeset to_codeset\n");
-	exit (0);
-    }
+    printf ("Converting %s -> %s\n", from_codeset, to_codeset);
     giconv = g_iconv_open (to_codeset, from_codeset);
     if (giconv == (GIConv) -1) {
 	printf ("g_iconv_open error\n");
-	return 0;
+	return;
     }
 
     out = g_convert_with_iconv ("A", 1, giconv, 0, 0, &error);
 
     if (error && error->code == G_CONVERT_ERROR_ILLEGAL_SEQUENCE) {
 	printf ("Illegal sequence\n");
-	return 0;
+    } else {
+	printf ("Successful conversion: %s\n", out);
     }
     g_iconv_close (giconv);
-    printf ("Successful conversion: %s\n", out);
+}
+
+int main (int argc, char* argv[]) {
+
+    if (argc == 1) {
+	run_test ("CP1252", "UTF-8");
+	run_test ("UTF-8", "CP1252");
+	run_test ("UTF-8", "US-ASCII");
+    } else if (argc == 3) {
+	char* from_codeset = argv[1];
+	char* to_codeset = argv[2];
+	run_test (from_codeset, to_codeset);
+    } else {
+	printf ("Usage: glib_iconv_test [from_codeset to_codeset]\n");
+	exit (0);
+    }
+
     return 0;
 }
 
