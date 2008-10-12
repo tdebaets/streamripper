@@ -208,10 +208,6 @@ convert_string_with_replacement
 	return output_string;
     }
 
-    if (!strcmp (to_codeset, "CP1252") && len >= 1) {
-	*instring = 'A';
-    }
-
     while (cur < len) {
 	gchar* os;
 	gsize br, bw;
