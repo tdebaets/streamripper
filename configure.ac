@@ -10,7 +10,7 @@ dnl   AC_CHECK_LIB:   prepends the library to LIBS
 dnl   AC_CHECK_FUNC:  defines a shell variable
 
 AC_PREREQ(2.59)
-AC_INIT(streamripper,1.63.5)
+AC_INIT(streamripper,1.64.0-beta-1)
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([lib/config.h])
@@ -35,7 +35,7 @@ AC_CHECK_LIB(m, main)
 dnl Yummy alloca()
 AC_FUNC_ALLOCA
 
-AM_PATH_GLIB_2_0(2.8.0,,[AC_MSG_ERROR([glib 2.8 or newer is required])])
+AM_PATH_GLIB_2_0(2.16.0,,[AC_MSG_ERROR([glib 2.16 or newer is required])])
 
 dnl Configure options
 

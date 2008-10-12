@@ -382,7 +382,6 @@ string_from_mstring (RIP_MANAGER_INFO* rmi, char* c, int clen, mchar* m, int cod
     *c = 0;
     if (!m) return 0;
     {
-	GError *error = NULL;
 	gchar* cstring;
 	char* tgt_codeset;
 	int rc;
@@ -525,6 +524,7 @@ register_codesets (RIP_MANAGER_INFO* rmi, CODESET_OPTIONS* cs_opt)
 int
 is_id3_unicode (RIP_MANAGER_INFO* rmi)
 {
+    /* GCS FIX */
     CODESET_OPTIONS* mchar_cs = &rmi->mchar_cs;
 #if HAVE_WCHAR_SUPPORT
     if (!strcmp ("UTF-16", mchar_cs->codeset_id3)) {
