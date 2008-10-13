@@ -13,7 +13,7 @@ endif
 
 AM_CPPFLAGS += -I@abs_top_srcdir@/lib
 
-SUBDIRS = $(MAYBE_LIBMAD) $(MAYBE_LIBTRE) $(MAYBE_CDK) lib
+SUBDIRS = $(MAYBE_LIBMAD) $(MAYBE_CDK) lib
 
 bin_PROGRAMS = streamripper
 if WANT_CSTREAMRIPPER
@@ -98,7 +98,7 @@ libmad_dont_need_these = \
 	libmad-0.15.1b/msvc++/config.h \
 	libmad-0.15.1b/msvc++/libmad.dsp
 
-tre_manifest = \
+tre072_manifest = \
 	tre-0.7.2/m4/tre_prog_cc_optimizations.m4 \
 	tre-0.7.2/m4/ax_check_sign.m4 \
 	tre-0.7.2/m4/Makefile.am \
@@ -365,7 +365,6 @@ EXTRA_DIST = \
 	fetch_external_metadata.pl \
 	$(lib_manifest) \
 	$(libmad_manifest) \
-	$(tre_manifest) \
 	$(man_MANS)
 
 DIST_SUBDIRS = 
