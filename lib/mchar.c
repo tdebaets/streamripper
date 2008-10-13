@@ -31,17 +31,17 @@
 #include <unistd.h>
 #endif
 #include <ctype.h>
-#if defined HAVE_WCHAR_SUPPORT
-#if defined HAVE_WCHAR_H
-#include <wchar.h>
-#endif
-#if defined HAVE_WCTYPE_H
-#include <wctype.h>
-#endif
-#if defined HAVE_ICONV
-#include <iconv.h>
-#endif
-#endif
+// #if defined HAVE_WCHAR_SUPPORT
+// #if defined HAVE_WCHAR_H
+// #include <wchar.h>
+// #endif
+// #if defined HAVE_WCTYPE_H
+// #include <wctype.h>
+// #endif
+// #if defined HAVE_ICONV
+// #include <iconv.h>
+// #endif
+// #endif
 #if defined HAVE_LOCALE_CHARSET
 #include <localcharset.h>
 #elif defined HAVE_LANGINFO_CODESET
@@ -57,11 +57,11 @@
 #if WIN32
     #define ICONV_WCHAR "UCS-2-INTERNAL"
     #define vsnprintf _vsnprintf
-    #define vswprintf _vsnwprintf
+//    #define vswprintf _vsnwprintf
 #else
     #define ICONV_WCHAR "WCHAR_T"
     /* This prototype is missing in some systems */
-    int vswprintf (wchar_t * ws, size_t n, const wchar_t * format, va_list arg);
+//    int vswprintf (wchar_t * ws, size_t n, const wchar_t * format, va_list arg);
 #endif
 
 
@@ -186,13 +186,13 @@ sr_strncpy (char* dst, char* src, int n)
 gchar*
 convert_string_with_replacement
 (
-    char* instring,	    /* String to convert */
-    gsize len,		    /* Length of instring in bytes */
-    char* from_codeset,	    /* Codeset of instring */
-    char* to_codeset,	    /* Codeset to convert to */
-    char* repl		    /* Replacement character (zero terminated,
-				in to_codeset) */
-)
+ char* instring,	    /* String to convert */
+ gsize len,		    /* Length of instring in bytes */
+ char* from_codeset,	    /* Codeset of instring */
+ char* to_codeset,	    /* Codeset to convert to */
+ char* repl		    /* Replacement character (zero terminated,
+			       in to_codeset) */
+ )
 {
     GIConv giconv;
     gsize cur = 0;              /* Current byte to convert */
@@ -211,12 +211,13 @@ convert_string_with_replacement
     while (cur < len) {
 	gchar* os;
 	gsize br, bw;
+	int drop_byte = 0;    /* Should we drop a byte? */
 
 	br = 0;
 	os = g_convert_with_iconv (&instring[cur], bytes_to_convert, 
 				   giconv, &br, &bw, &error);
-	debug_printf ("cur=%d, btc=%d, br=%d, bw=%d\n", 
-	    cur, bytes_to_convert, br, bw);
+	debug_printf ("cur=%d, btc=%d, br=%d, bw=%d (b1=0x%02x)\n", 
+		      cur, bytes_to_convert, br, bw, instring[cur]);
 
 	/* If the conversion was unsuccessful, usually it means that 
 	   either the input byte doesn't belong to the from_codeset, 
@@ -228,14 +229,14 @@ convert_string_with_replacement
 	    case G_CONVERT_ERROR_FAILED:
 	    case G_CONVERT_ERROR_PARTIAL_INPUT:
 		debug_printf ("g_convert_with_iconv returned error: %d (%s)\n",
-			error->code, error->message);
+			      error->code, error->message);
 		break;
 	    case G_CONVERT_ERROR_NO_CONVERSION:
 	    default:
 		/* This shouldn't happen, as GNU inconv guarantees 
 		   conversion to/from UTF-8. */
 		debug_printf ("g_convert_with_iconv returned error: %d (%s)\n",
-			error->code, error->message);
+			      error->code, error->message);
 		return output_string;
 	    }
 	    /* How many bytes to try next time? */
@@ -247,19 +248,7 @@ convert_string_with_replacement
 		break;
 	    case 1:
 		/* Crapped out.  Drop current byte, and add "?" to string. */
-		cur ++;
-		bytes_to_convert = len - cur;
-		if (need_repl) {
-		    need_repl = 0;
-		    if (output_string) {
-			gchar *tmp;
-			tmp = g_strconcat (output_string, repl, NULL);
-			g_free (output_string);
-			output_string = tmp;
-		    } else {
-			output_string = g_strdup (repl);
-		    }
-		}
+		drop_byte = 1;
 		break;
 	    default:
 		/* Best guess based on br value returned from iconv */
@@ -272,19 +261,47 @@ convert_string_with_replacement
 	    g_error_free (error);
 	    error = 0;
 	} else {
-	    /* Successful conversion. */
-	    gchar* tmp = g_strconcat (output_string, os, NULL);
-	    g_free (output_string);
-	    g_free (os);
-	    output_string = tmp;
-	    cur += br;
+	    if (br == 0) {
+		/* glib 2.16.5 (and probably other versions) doesn't properly 
+		   return G_CONVERT_ERROR_PARTIAL_INPUT with partially 
+		   translated characters.  We'll detect this condition 
+		   when there is no error, but br is 0.	*/
+		drop_byte = 1;
+	    } else {
+		/* A successful conversion. */
+		gchar* tmp = g_strconcat (output_string, os, NULL);
+		debug_printf ("Successful conversion: %d bytes read\n", br);
+		g_free (output_string);
+		g_free (os);
+		output_string = tmp;
+		cur += br;
+		bytes_to_convert = len - cur;
+		need_repl = 1;
+	    }
+	}
+
+	/* Check for conversion failure.  Drop current byte from input, 
+	   append replacement character into output.  But only use 
+	   a single replacement character for each group of dropped bytes. */
+	if (drop_byte) {
+	    cur ++;
 	    bytes_to_convert = len - cur;
-	    need_repl = 1;
+	    if (need_repl) {
+		need_repl = 0;
+		if (output_string) {
+		    gchar *tmp;
+		    tmp = g_strconcat (output_string, repl, NULL);
+		    g_free (output_string);
+		    output_string = tmp;
+		} else {
+		    output_string = g_strdup (repl);
+		}
+	    }
 	}
     }
     g_iconv_close (giconv);
     debug_printf ("convert_string_with_replacement |%s| -> |%s| (%s -> %s)\n",
-	instring, output_string, from_codeset, to_codeset);
+		  instring, output_string, from_codeset, to_codeset);
     return output_string;
 }
 
@@ -458,11 +475,11 @@ default_codeset (void)
     }
 #endif
 
-#if defined HAVE_ICONV
-    debug_printf ("Have iconv.\n");
-#else
-    debug_printf ("No iconv.\n");
-#endif
+    // #if defined HAVE_ICONV
+    //     debug_printf ("Have iconv.\n");
+    // #else
+    //     debug_printf ("No iconv.\n");
+    // #endif
 
     return fromcode;
 }
@@ -524,13 +541,10 @@ register_codesets (RIP_MANAGER_INFO* rmi, CODESET_OPTIONS* cs_opt)
 int
 is_id3_unicode (RIP_MANAGER_INFO* rmi)
 {
-    /* GCS FIX */
     CODESET_OPTIONS* mchar_cs = &rmi->mchar_cs;
-#if HAVE_WCHAR_SUPPORT
     if (!strcmp ("UTF-16", mchar_cs->codeset_id3)) {
 	return 1;
     }
-#endif
     return 0;
 }
 

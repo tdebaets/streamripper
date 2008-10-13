@@ -42,8 +42,8 @@ dnl Configure options
 AC_ARG_WITH(included-libmad,
  [  --with-included-libmad use the libmad library included with streamripper])
 
-AC_ARG_WITH(included-tre,
-  [  --with-included-tre use the tre library included with streamripper])
+dnl AC_ARG_WITH(included-tre,
+dnl   [  --with-included-tre use the tre library included with streamripper])
 
 AC_ARG_WITH(included-argv,
   [  --with-included-argv use argv.c included with streamripper])
@@ -156,44 +156,44 @@ dnl   3)  Use included tre
 dnl Note: If using included tre, it's not easy to know whether or not 
 dnl   it will compile with regwcomp() or not.  We will assume it does.
 dnl Note: Solaris now has a regwcomp() in system regex.  Is it compatible?
-LIBREGEX=""
-AC_SUBST(LIBREGEX)
-use_included_tre=no
-if test "$with_included_tre" = "yes"; then
-  use_included_tre=yes
-else
-  AC_CHECK_LIB(tre,regwcomp)
-  if test "$ac_cv_lib_tre_regwcomp" = "no"; then
-    if test "$have_wchar" = "yes"; then
-      if test "$with_included_tre" = "no"; then
-        AC_CHECK_FUNC(regwcomp,,have_wchar=no)
-      else
-        AC_CHECK_FUNC(regwcomp,,use_included_tre=yes)
-      fi
-    fi
-    if test "$have_wchar" = "no"; then
-      AC_CHECK_LIB(tre,regcomp)
-      if test "$ac_cv_lib_tre_regcomp" = "no"; then
-        if test "$with_included_tre" = "no"; then
-          AC_CHECK_FUNC(regcomp,,AC_MSG_ERROR([cannot find regular expression library]))
-        else
-          AC_CHECK_FUNC(regcomp,use_included_tre=no)
-        fi
-      fi
-    fi
-  fi
-fi
-AM_CONDITIONAL(SUBDIR_TRE, test "$use_included_tre" = yes)
-if test "$use_included_tre" = "yes"; then
-  LIBREGEX="tre-0.7.2/lib/.libs/libtre.a"
-  AC_SUBST(LIBREGEX)
-  AC_CONFIG_SUBDIRS(tre-0.7.2)
-fi
+dnl LIBREGEX=""
+dnl AC_SUBST(LIBREGEX)
+dnl use_included_tre=no
+dnl if test "$with_included_tre" = "yes"; then
+dnl   use_included_tre=yes
+dnl else
+dnl   AC_CHECK_LIB(tre,regwcomp)
+dnl   if test "$ac_cv_lib_tre_regwcomp" = "no"; then
+dnl     if test "$have_wchar" = "yes"; then
+dnl       if test "$with_included_tre" = "no"; then
+dnl         AC_CHECK_FUNC(regwcomp,,have_wchar=no)
+dnl       else
+dnl         AC_CHECK_FUNC(regwcomp,,use_included_tre=yes)
+dnl       fi
+dnl     fi
+dnl     if test "$have_wchar" = "no"; then
+dnl       AC_CHECK_LIB(tre,regcomp)
+dnl       if test "$ac_cv_lib_tre_regcomp" = "no"; then
+dnl         if test "$with_included_tre" = "no"; then
+dnl           AC_CHECK_FUNC(regcomp,,AC_MSG_ERROR([cannot find regular expression library]))
+dnl         else
+dnl           AC_CHECK_FUNC(regcomp,use_included_tre=no)
+dnl         fi
+dnl       fi
+dnl     fi
+dnl   fi
+dnl fi
+dnl AM_CONDITIONAL(SUBDIR_TRE, test "$use_included_tre" = yes)
+dnl if test "$use_included_tre" = "yes"; then
+dnl   LIBREGEX="tre-0.7.2/lib/.libs/libtre.a"
+dnl   AC_SUBST(LIBREGEX)
+dnl   AC_CONFIG_SUBDIRS(tre-0.7.2)
+dnl fi
 
 dnl -------- WCHAR support revisited
-if test "$have_wchar" = yes; then
-  AC_DEFINE(HAVE_WCHAR_SUPPORT,1,[Define to 1 if you have wide characters, iconv, and regwcomp])
-fi
+dnl if test "$have_wchar" = yes; then
+dnl   AC_DEFINE(HAVE_WCHAR_SUPPORT,1,[Define to 1 if you have wide characters, iconv, and regwcomp])
+dnl fi
 
 dnl -------- Tests for using libiberty or argv.c
 use_included_argv=yes
@@ -331,8 +331,6 @@ AC_OUTPUT(lib/Makefile Makefile)
 cat <<EOF
 * Streamripper configuration
 
-  Wide character support?            $have_wchar
-  Using included TRE library?        $use_included_tre
   Using included MAD library?        $use_included_libmad
   Using included CDK library?        $use_included_cdk
   Ogg/vorbis support?                $sr_have_ogg

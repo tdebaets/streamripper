@@ -64,9 +64,6 @@
 /* Define to 1 if you have the `socket' library (-lsocket). */
 #undef HAVE_LIBSOCKET
 
-/* Define to 1 if you have the `tre' library (-ltre). */
-#undef HAVE_LIBTRE
-
 /* Define if you have locale_charset() in <localcharset.h>. */
 #undef HAVE_LOCALE_CHARSET
 
@@ -140,9 +137,6 @@
 
 /* Define to 1 if you have the <wchar.h> header file. */
 #undef HAVE_WCHAR_H
-
-/* Define to 1 if you have wide characters, iconv, and regwcomp */
-#undef HAVE_WCHAR_SUPPORT
 
 /* Define to 1 if the system has the type `wchar_t'. */
 #undef HAVE_WCHAR_T

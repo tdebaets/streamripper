@@ -1,8 +1,10 @@
-New for 1.63.6
---------------
-* Transition from TRE or native regex to glib PCRE
-* Windows: update glib version to 2.16.3
+New for 1.64.0-beta-1
+---------------------
+* Transition from TRE (or native regex) to glib PCRE
+* Update windows glib version to custom build of 2.16.5
 * Add Florian Stoehr's patch for better http header compatibility
+* Fix erroneous display of -68 error on unix
+* Better character substitution for invalid charset conversions
 
 New for 1.63.5
 --------------

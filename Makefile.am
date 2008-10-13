@@ -7,11 +7,6 @@ if SUBDIR_LIBMAD
   AM_CPPFLAGS += -I@abs_top_srcdir@/libmad-0.15.1b
 endif
 
-if SUBDIR_TRE
-  MAYBE_LIBTRE = tre-0.7.2
-  AM_CPPFLAGS += -I@abs_top_srcdir@/tre-0.7.2
-endif
-
 if SUBDIR_CDK
   MAYBE_CDK = cdk-5.0-20060507
 endif
@@ -379,7 +374,6 @@ streamripper_LDADD = \
 	lib/libstreamripper.a \
 	@FAAD_LIBS@ \
 	@LIBMAD@ \
-	@LIBREGEX@ \
 	@THREADLIBS@ \
 	@LTLIBICONV@ @LIBCHARSET@ \
 	@LIBIBERTY_LIBS@ \
@@ -391,7 +385,6 @@ cstreamripper_LDADD = \
 	lib/libstreamripper.a \
 	@FAAD_LIBS@ \
 	@LIBMAD@ \
-	@LIBREGEX@ \
 	@THREADLIBS@ \
 	@LTLIBICONV@ @LIBCHARSET@ \
 	@LIBIBERTY_LIBS@ \

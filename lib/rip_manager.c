@@ -369,34 +369,20 @@ ripthread (void *thread_arg)
         ret = ripstream_rip(rmi);
 	debug_printf ("Did ripstream_rip\n");
 
-	/* If the user told us to stop, well, then we bail */
-	if (!rmi->started)
-	    break;
-
-	/* 
-	 * Added 8/4/2001 jc --
-	 * for max number of MB ripped stuff
-	 * At the time of writting this, i honestly 
-	 * am not sure i understand what happens 
-	 * when once trys to stop the ripping from the lib and
-	 * the interface it's a weird combonation of threads
-	 * wnd locks, etc.. all i know is that this appeared to work
-	 */
-        /* GCS Aug 23, 2003: bytes_ripped can still overflow */
-	if (rmi->bytes_ripped/1000000 >= (rmi->prefs->maxMB_rip_size) &&
-		GET_CHECK_MAX_BYTES (rmi->prefs->flags)) {
-	    socklib_close (&rmi->stream_sock);
-	    destroy_subsystems (rmi);
-	    post_error (rmi, SR_ERROR_MAX_BYTES_RIPPED);
+	if (!rmi->started) {
 	    break;
 	}
-
-	/*
-	 * If the error was anything but a connection failure
-	 * then we need to report it and bail
-	 */
-	if (ret == SR_SUCCESS_BUFFERING) {
+	else if (rmi->bytes_ripped/1000000 >= (rmi->prefs->maxMB_rip_size) &&
+		GET_CHECK_MAX_BYTES (rmi->prefs->flags)) {
+	    /* GCS Aug 23, 2003: bytes_ripped can still overflow */
+	    socklib_close (&rmi->stream_sock);
+	    destroy_subsystems (rmi);
+	    //post_error (rmi, SR_ERROR_MAX_BYTES_RIPPED);
+	    break;
+	}
+	else if (ret == SR_SUCCESS_BUFFERING) {
 	    post_status (rmi, RM_STATUS_BUFFERING);
+	    /* Fall through */
 	}
 	else if (ret == SR_ERROR_CANT_DECODE_MP3) {
 	    post_error (rmi, ret);
@@ -407,18 +393,9 @@ ripthread (void *thread_arg)
 		  ret == SR_ERROR_NO_TRACK_INFO || 
 		  ret == SR_ERROR_SELECT_FAILED) && 
 		 GET_AUTO_RECONNECT (rmi->prefs->flags)) {
-	    /* Try to reconnect, if thats what the user wants */
+	    /* Try to reconnect */
 	    post_status (rmi, RM_STATUS_RECONNECTING);
 	    while (rmi->started) {
-		// Hopefully this solves a lingering bug 
-		// with auto-reconnects failing to bind to the relay port
-		// (a long with other unknown problems)
-		// it seems that maybe we need two levels of shutdown and startup
-		// functions. init_system, init_rip, shutdown_system and shutdown_rip
-		// this would be a shutdown_rip, which only lacks the filelib and socklib
-		// shutdowns
-		// because filelib needs to keep track of it's file counters, and socklib.. umm..
-		// not sure about. no reasdon to i imagine.
 		socklib_close(&rmi->stream_sock);
 		if (rmi->ep) {
 		    debug_printf ("Close external\n");
@@ -428,14 +405,17 @@ ripthread (void *thread_arg)
 		ret = start_ripping (rmi);
 		if (ret == SR_SUCCESS)
 		    break;
-
-		/*
-		 * Should send a message that we are trying 
-		 * .. or something
-		 */
 		Sleep(1000);
 	    }
-	    if (!rmi->started) break;
+	    if (!rmi->started) {
+		break;
+	    }
+	    /* Fall through */
+	}
+	else if (ret == SR_ERROR_ABORT_PIPE_SIGNALLED) {
+	    /* Normal exit condition CTRL-C on unix */
+	    destroy_subsystems (rmi);
+	    break;
 	}
 	else if (ret != SR_SUCCESS) {
 	    destroy_subsystems (rmi);
@@ -443,8 +423,10 @@ ripthread (void *thread_arg)
 	    break;
 	}
 
-	if (rmi->filesize > 0)
+	/* All systems go.  Caller should update GUI that it is ripping */
+	if (rmi->filesize > 0) {
 	    post_status (rmi, RM_STATUS_RIPPING);
+	}
     }
 
     // We get here when there was either a fatal error

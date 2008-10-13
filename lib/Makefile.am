@@ -6,10 +6,6 @@ if SUBDIR_LIBMAD
   AM_CPPFLAGS += -I@abs_top_srcdir@/libmad-0.15.1b
 endif
 
-if SUBDIR_TRE
-  AM_CPPFLAGS += -I@abs_top_srcdir@/tre-0.7.2
-endif
-
 AM_CPPFLAGS += -I@abs_top_srcdir@/lib
 
 noinst_LIBRARIES = libstreamripper.a

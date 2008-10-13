@@ -33,7 +33,6 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @SUBDIR_LIBMAD_TRUE@am__append_1 = -I@abs_top_srcdir@/libmad-0.15.1b
-@SUBDIR_TRE_TRUE@am__append_2 = -I@abs_top_srcdir@/tre-0.7.2
 subdir = lib
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/config.h.in
@@ -115,7 +114,6 @@ LIBIBERTY_LIBS = @LIBIBERTY_LIBS@
 LIBICONV = @LIBICONV@
 LIBMAD = @LIBMAD@
 LIBOBJS = @LIBOBJS@
-LIBREGEX = @LIBREGEX@
 LIBS = @LIBS@
 LTLIBICONV = @LTLIBICONV@
 LTLIBOBJS = @LTLIBOBJS@
@@ -193,7 +191,7 @@ target_alias = @target_alias@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = @OGG_CFLAGS@ @VORBIS_CFLAGS@ @GLIB_CFLAGS@ \
-	$(am__append_1) $(am__append_2) -I@abs_top_srcdir@/lib
+	$(am__append_1) -I@abs_top_srcdir@/lib
 noinst_LIBRARIES = libstreamripper.a
 libstreamripper_a_SOURCES = \
 	cbuf2.c \
