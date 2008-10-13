@@ -100,7 +100,11 @@ prefs_load (void)
     debug_printf ("prefs_fn [utf8] = %s\n", prefs_fn);
 
     if (!m_key_file) {
+	debug_printf ("Trying g_key_file_new()...\n");
 	m_key_file = g_key_file_new ();
+	if (!m_key_file) {
+	    debug_printf ("Error creating key file with g_key_file_new()\n");
+	}
     }
     flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
     rc = g_key_file_load_from_file (m_key_file, prefs_fn,
@@ -166,6 +170,7 @@ prefs_save (void)
     gchar* keyfile_contents;
     gsize keyfile_contents_len;
 
+    debug_printf ("Saving preferences.\n");
     prefs_dir = prefs_get_config_dir ();
     if (g_mkdir_with_parents (prefs_dir, 0755)) {
 	debug_printf ("Couldn't make config dir: %s\n", prefs_dir);
@@ -177,6 +182,7 @@ prefs_save (void)
 				 "streamripper.ini",
 				 NULL);
     g_free (prefs_dir);
+    debug_printf ("Filename: %s\n", prefs_fn);
 
     /* Insert from prefs into keyfile */
     // prefs_copy_to_keyfile (prefs);
@@ -198,8 +204,11 @@ prefs_save (void)
 	rather than --codeset-filesys here. */
     fp = g_fopen (prefs_fn, "w");
     if (fp) {
+	debug_printf ("Writing, len = %d\n", keyfile_contents_len);
 	fwrite (keyfile_contents, 1, keyfile_contents_len, fp);
 	fclose (fp);
+    } else {
+	debug_printf ("Error opening prefs file for write\n");
     }
     g_free (keyfile_contents);
     g_free (prefs_fn);

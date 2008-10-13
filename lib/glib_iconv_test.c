@@ -2,10 +2,25 @@
 #include <stdio.h>
 #include <string.h>
 #include <glib.h>
+#include <glib/gstdio.h>
 
-#define MINIMAL 1
+int main (int argc, char* argv[])
+{
+    FILE* fp;
+    
+    fp = fopen ("testme.txt", "w");
+    //fp = _wfopen (L"testme.txt", L"w");
+    //fp = g_fopen ("testme.txt", "w");
+    if (!fp) {
+	printf ("Error opening file.\n");
+	return 1;
+    }
+    fclose (fp);
 
-#if (MINIMAL)
+    return 0;
+}
+
+#if defined (TEST2)
 
 void
 run_test (char* from_codeset, char* to_codeset) {
@@ -48,7 +63,8 @@ int main (int argc, char* argv[]) {
     return 0;
 }
 
-#else
+#endif
+#if defined (TEST1)
 
 /* Convert a string, replacing unconvertable characters.
    Returns a gchar* string, which must be freed by caller using g_free. */

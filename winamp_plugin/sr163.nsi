@@ -150,12 +150,15 @@ Section "Core Libraries" sec_core
   SetOverwrite on
   File "..\fake_external_metadata.pl"
   File "..\fetch_external_metadata.pl"
-  File "D:\sripper_1x\tre-0.7.2\win32\Release\tre.dll"
+  ;File "D:\sripper_1x\tre-0.7.2\win32\Release\tre.dll"
+  ;File "D:\sripper_1x\win32\glib-2.12.12\bin\libglib-2.0-0.dll"
+  ;File "D:\sripper_1x\iconv-win32\dll\iconv.dll"
+  ;File "D:\sripper_1x\intl.dll"
   File "D:\sripper_1x\win32\libogg-1.1.3\ogg.dll"
   File "D:\sripper_1x\win32\libvorbis-1.1.2\vorbis.dll"
-  File "D:\sripper_1x\win32\glib-2.12.12\bin\libglib-2.0-0.dll"
-  File "D:\sripper_1x\iconv-win32\dll\iconv.dll"
-  File "D:\sripper_1x\intl.dll"
+  File "D:\sripper_1x\win32\mingw\libiconv-2.dll"
+  File "D:\sripper_1x\win32\mingw\libintl-8.dll"
+  File "D:\sripper_1x\win32\glib-2.16.5\bin\libglib-2.0-0.dll"
   File "..\win32\Release\streamripper.dll"
   
   ;Store installation folder(s)
@@ -287,6 +290,8 @@ Section "Uninstall"
   Delete $INSTDIR\streamripper.exe
   Delete $INSTDIR\wstreamripper.exe
   Delete $INSTDIR\gen_sripper.dll
+  Delete $INSTDIR\libiconv-2.dll
+  Delete $INSTDIR\libintl-8.dll
   Delete $INSTDIR\iconv.dll
   Delete $INSTDIR\intl.dll
   Delete $INSTDIR\libglib-2.0-0.dll
