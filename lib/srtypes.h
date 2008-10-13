@@ -19,7 +19,7 @@
 
 #include <glib.h>
 
-#include "regex.h"
+//#include "regex.h"
 #include "srconfig.h"
 #include "compat.h"
 #include "list.h"

@@ -212,16 +212,14 @@ swallow_receive (int sock)
 void
 make_nonblocking (int sock)
 {
-    int opt;
-
-#ifndef WIN32
-    opt = fcntl(sock, F_GETFL);
+#if defined (WIN32)
+    long opt = 1;
+    ioctlsocket(sock, FIONBIO, &opt);
+#else
+    int opt = fcntl(sock, F_GETFL);
     if (opt != SOCKET_ERROR) {
         fcntl(sock, F_SETFL, opt | O_NONBLOCK);
     }
-#else
-    opt = 1;
-    ioctlsocket(sock, FIONBIO, &opt);
 #endif
 }
 
@@ -305,7 +303,7 @@ relaylib_start (RIP_MANAGER_INFO* rmi,
         max_port = relay_port;
 
     for(;relay_port <= max_port; relay_port++) {
-        ret = try_port (rli, (u_short)relay_port, if_name, relay_ip);
+        ret = try_port (rli, (u_short) relay_port, if_name, relay_ip);
         if (ret == SR_ERROR_CANT_BIND_ON_PORT)
             continue;           // Keep searching.
 

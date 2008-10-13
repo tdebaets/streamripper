@@ -75,7 +75,7 @@ socklib_init()
 
 /* Try to find the local interface to bind to */
 error_code
-read_interface(char *if_name, uint32_t *addr)
+read_interface (char *if_name, uint32_t *addr)
 {
 #if defined (WIN32)
     return -1;
@@ -126,7 +126,7 @@ socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_name)
     }
 
     if (if_name) {
-	if (read_interface(if_name,&local.sin_addr.s_addr) != 0)
+	if (read_interface (if_name, &local.sin_addr.s_addr) != 0)
 	    local.sin_addr.s_addr = htonl(INADDR_ANY);
 	local.sin_family = AF_INET;
 	local.sin_port = htons(0);
