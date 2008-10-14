@@ -24,9 +24,10 @@
 
 #include "glib.h"
 
-#ifndef G_OS_WIN32
+/* GCS Remove win_iconv */
+//#ifndef G_OS_WIN32
 #include <iconv.h>
-#endif
+//#endif
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -36,9 +37,9 @@
 #include "gthreadprivate.h"
 #include "gunicode.h"
 
-#ifdef G_OS_WIN32
-#include "win_iconv.c"
-#endif
+//#ifdef G_OS_WIN32
+//#include "win_iconv.c"
+//#endif
 
 #ifdef G_PLATFORM_WIN32
 #define STRICT

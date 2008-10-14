@@ -534,6 +534,7 @@ g_win32_get_package_installation_subdirectory (const gchar *package,
 
 static guint windows_version;
 
+/* GCS Revert to 2.12.13 */
 static void 
 g_win32_windows_version_init (void)
 {
@@ -542,10 +543,10 @@ g_win32_windows_version_init (void)
   if (!beenhere)
     {
       beenhere = TRUE;
-      windows_version = GetVersion ();
-
-      if (windows_version & 0x80000000)
-	g_error ("This version of GLib requires NT-based Windows.");
+      if (getenv ("G_WIN32_PRETEND_WIN9X"))
+	windows_version = 0x80000004;
+      else
+	windows_version = GetVersion ();
     }
 }
 

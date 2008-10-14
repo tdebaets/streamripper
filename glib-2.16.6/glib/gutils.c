@@ -957,7 +957,10 @@ g_get_current_dir (void)
   wchar_t dummy[2], *wdir;
   int len;
 
-  len = GetCurrentDirectoryW (2, dummy);
+  /* GCS Sep 1, 2008.  Apparently there is a bug (undocumented) 
+     limitation in unicows implementation of GetCurrentDirectoryW */
+  // len = GetCurrentDirectoryW (2, dummy);
+  len = GetCurrentDirectoryW (0, dummy);
   wdir = g_new (wchar_t, len);
 
   if (GetCurrentDirectoryW (len, wdir) == len - 1)

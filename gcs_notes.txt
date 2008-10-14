@@ -506,18 +506,30 @@ How to build glib win32 for streamripper
 
 2) Edit glib/gconvert.c.  It should include iconv.h instead of win_iconv.c.
 
-3) Workaround bug in GetCurrentDirectoryW in unicows.dll.  Change
+3a) Workaround bug in GetCurrentDirectoryW in unicows.dll.  
+    File: gutils.h
+    Change
+       len = GetCurrentDirectoryW (2, dummy);
+    To
+       len = GetCurrentDirectoryW (0, dummy);
 
-     len = GetCurrentDirectoryW (2, dummy);
+3b) Workaround missing _w* API in 9x by re-enabling runtime check
+    File: gwin32.h
+    Change    
+       #define G_WIN32_IS_NT_BASED() TRUE
+       #define G_WIN32_HAVE_WIDECHAR_API() TRUE
+    To
+       #define G_WIN32_IS_NT_BASED() (g_win32_get_windows_version () < 0x80000000)
+       #define G_WIN32_HAVE_WIDECHAR_API() (G_WIN32_IS_NT_BASED ())
 
-   to
+    File: gstdio.h
+    Revert g_fopen() to previous version (2.12.12)
 
-     len = GetCurrentDirectoryW (0, dummy);
 
 4) Build glib
 
 5) Manually re-link with libunicows.  Just do a make -n, to get the 
-   original command line, and add this to the beginning of the 
+   original command line, and add this to the beginning of the link 
 
      -L/usr/local/lib -lunicows 
 
