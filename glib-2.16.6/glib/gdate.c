@@ -1809,12 +1809,15 @@ g_date_strftime (gchar       *s,
   g_date_to_struct_tm (d, &tm);
 
 #ifdef G_OS_WIN32
+  if (G_WIN32_HAVE_WIDECHAR_API ())
+    {
   if (!g_utf8_validate (format, -1, NULL))
     {
       s[0] = '\0';
       return 0;
     }
   return win32_strftime_helper (d, format, &tm, s, slen);
+    }
 #else
 
   locale_format = g_locale_from_utf8 (format, -1, NULL, &locale_format_len, &error);

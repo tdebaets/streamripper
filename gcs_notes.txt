@@ -506,14 +506,14 @@ How to build glib win32 for streamripper
 
 2) Edit glib/gconvert.c.  It should include iconv.h instead of win_iconv.c.
 
-3a) Workaround bug in GetCurrentDirectoryW in unicows.dll.  
+3) Workaround bug in GetCurrentDirectoryW in unicows.dll.  
     File: gutils.h
     Change
        len = GetCurrentDirectoryW (2, dummy);
     To
        len = GetCurrentDirectoryW (0, dummy);
 
-3b) Workaround missing _w* API in 9x by re-enabling runtime check
+4) Re-enable runtime check
     File: gwin32.h
     Change    
        #define G_WIN32_IS_NT_BASED() TRUE
@@ -522,16 +522,66 @@ How to build glib win32 for streamripper
        #define G_WIN32_IS_NT_BASED() (g_win32_get_windows_version () < 0x80000000)
        #define G_WIN32_HAVE_WIDECHAR_API() (G_WIN32_IS_NT_BASED ())
 
-    File: gstdio.h
-    Revert g_fopen() to previous version (2.12.12)
+5) Re-implement checks for missing or buggy _w* or win32 API
 
+    Buggy Windows API implementations (e.g. MoveFileExW) are worked 
+    around in OOo as uwinapi.dll
+    http://lxr.go-oo.org/source/porting/sal/systools/win32/uwinapi/
 
-4) Build glib
+    Files: 
+      gdate.c
+      gfileutils.c
+      gstdio.c
+      gwin32.c
 
-5) Manually re-link with libunicows.  Just do a make -n, to get the 
+    I skipped these, since the logic changed slightly, but I'm not 
+    using them anyway.
+      gspawn-win32.c
+      gspawn-win32-helper.c
+
+    I don't think I need to modify gwin32.c, because I am using unicows.
+      gwin32.c
+
+6) Build glib
+
+7) Manually re-link with libunicows.  Just do a make -n, to get the 
    original command line, and add this to the beginning of the link 
 
      -L/usr/local/lib -lunicows 
+
+   It would look like the below.  This is found in "relink-unicows.sh"
+
+gcc -shared .libs/libglib-2.0-0.dll.def \
+     -L/usr/local/lib -lunicows \
+     .libs/garray.o \
+     .libs/gasyncqueue.o .libs/gatomic.o .libs/gbacktrace.o \
+     .libs/gbase64.o .libs/gbookmarkfile.o .libs/gcache.o \
+     .libs/gchecksum.o .libs/gcompletion.o .libs/gconvert.o \
+     .libs/gdataset.o .libs/gdate.o .libs/gdir.o \
+     .libs/gerror.o .libs/gfileutils.o .libs/ghash.o \
+     .libs/ghook.o .libs/giochannel.o .libs/gkeyfile.o \
+     .libs/glist.o .libs/gmain.o .libs/gmappedfile.o \
+     .libs/gmarkup.o .libs/gmem.o .libs/gmessages.o \
+     .libs/gnode.o .libs/goption.o .libs/gpattern.o \
+     .libs/gprimes.o .libs/gqsort.o .libs/gqueue.o \
+     .libs/grel.o .libs/grand.o .libs/gregex.o \
+     .libs/gscanner.o .libs/gsequence.o .libs/gshell.o \
+     .libs/gslice.o .libs/gslist.o .libs/gstdio.o \
+     .libs/gstrfuncs.o .libs/gstring.o .libs/gtestutils.o \
+     .libs/gthread.o .libs/gthreadpool.o .libs/gtimer.o \
+     .libs/gtree.o .libs/guniprop.o .libs/gutf8.o \
+     .libs/gunibreak.o .libs/gunicollate.o .libs/gunidecomp.o \
+     .libs/gurifuncs.o .libs/gutils.o .libs/gprintf.o \
+     .libs/giowin32.o .libs/gspawn-win32.o .libs/gwin32.o \
+     -Wl,--whole-archive libcharset/.libs/libcharset.a \
+     gnulib/.libs/libgnulib.a pcre/.libs/libpcre.a \
+     -Wl,--no-whole-archive \
+     -L/usr/local/lib -lws2_32 -lole32 \
+     /usr/local/lib/libiconv.dll.a \
+     /usr/local/lib/libintl.dll.a -mms-bitfields \
+     -Wl,glib-win32-res.o -o .libs/libglib-2.0-0.dll \
+     -Wl,--enable-auto-image-base -Xlinker --out-implib \
+     -Xlinker .libs/libglib-2.0.dll.a
 
 -----------------------------------------------------------------------
 Prefs/debug startup

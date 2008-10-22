@@ -191,6 +191,9 @@ g_file_test (const gchar *filename,
 #    define FILE_ATTRIBUTE_DEVICE 64
 #  endif
   int attributes;
+
+  if (G_WIN32_HAVE_WIDECHAR_API ())
+    {
   wchar_t *wfilename = g_utf8_to_utf16 (filename, -1, NULL, NULL, NULL);
 
   if (wfilename == NULL)
@@ -199,6 +202,18 @@ g_file_test (const gchar *filename,
   attributes = GetFileAttributesW (wfilename);
 
   g_free (wfilename);
+    }
+  else
+    {
+      gchar *cpfilename = g_locale_from_utf8 (filename, -1, NULL, NULL, NULL);
+
+      if (cpfilename == NULL)
+	return FALSE;
+      
+      attributes = GetFileAttributesA (cpfilename);
+      
+      g_free (cpfilename);
+    }
 
   if (attributes == INVALID_FILE_ATTRIBUTES)
     return FALSE;
