@@ -1253,7 +1253,7 @@ filelib_open_showfiles (RIP_MANAGER_INFO* rmi)
 			      m_(".cue"));
     if (new_show_name && new_cue_name) {
 	/* Rewrite previous cue file to point to renamed mp3 showfile */
-	printf ("Trying to adjust cuefile\n");
+	debug_printf ("Trying to adjust cuefile\n");
 	filelib_adjust_cuefile (rmi, new_show_name, new_cue_name);
     }
     if (new_show_name) g_free (new_show_name);
