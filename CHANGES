@@ -1,5 +1,11 @@
-New for 1.64.0-beta-1
----------------------
+New for 1.64.0-beta-2 (windows only)
+------------------------------------
+Sat 10-25-2008
+* Patch glib 2.16 to support win9x
+* Fix a memory leak in PCRE parsing
+
+New for 1.64.0-beta-1 (unix only)
+---------------------------------
 Sun Oct 12 23:03:39 EDT 2008
 * Transition from TRE (or native regex) to glib PCRE
 * Update windows glib version to custom build of 2.16.5

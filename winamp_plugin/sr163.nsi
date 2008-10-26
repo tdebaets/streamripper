@@ -158,7 +158,8 @@ Section "Core Libraries" sec_core
   File "D:\sripper_1x\win32\libvorbis-1.1.2\vorbis.dll"
   File "D:\sripper_1x\win32\mingw\libiconv-2.dll"
   File "D:\sripper_1x\win32\mingw\libintl-8.dll"
-  File "D:\sripper_1x\win32\glib-2.16.5\bin\libglib-2.0-0.dll"
+  File "D:\sripper_1x\win32\microsoft\unicows.dll"
+  File "D:\sripper_1x\win32\glib-2.16.6-1\bin\libglib-2.0-0.dll"
   File "..\win32\Release\streamripper.dll"
   
   ;Store installation folder(s)
@@ -286,19 +287,22 @@ FunctionEnd
 
 Section "Uninstall"
 
+  ;; We still delete things like tre.dll in case someone 
+  ;; installed on top of an old version.
   Delete $WADIR\Plugins\gen_sripper.dll
   Delete $INSTDIR\streamripper.exe
   Delete $INSTDIR\wstreamripper.exe
   Delete $INSTDIR\gen_sripper.dll
-  Delete $INSTDIR\libiconv-2.dll
-  Delete $INSTDIR\libintl-8.dll
   Delete $INSTDIR\iconv.dll
   Delete $INSTDIR\intl.dll
   Delete $INSTDIR\libglib-2.0-0.dll
+  Delete $INSTDIR\libiconv-2.dll
+  Delete $INSTDIR\libintl-8.dll
   Delete $INSTDIR\ogg.dll
-  Delete $INSTDIR\tre.dll
-  Delete $INSTDIR\vorbis.dll
   Delete $INSTDIR\streamripper.dll
+  Delete $INSTDIR\tre.dll
+  Delete $INSTDIR\unicows.dll
+  Delete $INSTDIR\vorbis.dll
   Delete $INSTDIR\README
   Delete $INSTDIR\COPYING
   Delete $INSTDIR\THANKS

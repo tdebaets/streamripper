@@ -4,26 +4,35 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 
-int main (int argc, char* argv[])
+void
+fopen_test (void)
 {
     FILE* fp;
     
     fp = fopen ("testme.txt", "w");
-    //fp = _wfopen (L"testme.txt", L"w");
-    //fp = g_fopen ("testme.txt", "w");
     if (!fp) {
-	printf ("Error opening file.\n");
-	return 1;
+	printf ("fopen failed.\n");
+    } else {
+        fclose (fp);
     }
-    fclose (fp);
 
-    return 0;
+    fp = _wfopen (L"testme.txt", L"w");
+    if (!fp) {
+	printf ("_wfopen failed.\n");
+    } else {
+        fclose (fp);
+    }
+
+    fp = g_fopen ("testme.txt", "w");
+    if (!fp) {
+	printf ("g_fopen failed.\n");
+    } else {
+        fclose (fp);
+    }
 }
 
-#if defined (TEST2)
-
 void
-run_test (char* from_codeset, char* to_codeset) {
+run_codeset_test (char* from_codeset, char* to_codeset) {
     GIConv giconv;
     GError *error = 0;
     gchar* out;
@@ -45,26 +54,13 @@ run_test (char* from_codeset, char* to_codeset) {
     g_iconv_close (giconv);
 }
 
-int main (int argc, char* argv[]) {
-
-    if (argc == 1) {
-	run_test ("CP1252", "UTF-8");
-	run_test ("UTF-8", "CP1252");
-	run_test ("UTF-8", "US-ASCII");
-    } else if (argc == 3) {
-	char* from_codeset = argv[1];
-	char* to_codeset = argv[2];
-	run_test (from_codeset, to_codeset);
-    } else {
-	printf ("Usage: glib_iconv_test [from_codeset to_codeset]\n");
-	exit (0);
-    }
-
-    return 0;
+void
+codeset_test (void) 
+{
+    run_codeset_test ("CP1252", "UTF-8");
+    run_codeset_test ("UTF-8", "CP1252");
+    run_codeset_test ("UTF-8", "US-ASCII");
 }
-
-#endif
-#if defined (TEST1)
 
 /* Convert a string, replacing unconvertable characters.
    Returns a gchar* string, which must be freed by caller using g_free. */
@@ -119,12 +115,13 @@ test_library (void)
 01094         }
 #endif
 
-main () {
+void
+g_iconv_test () {
     char instring[] = { 'A', '\0' };
     gchar* os;
+    char *to_codeset, *from_codeset;
 
     // "ISO-8859-15", "US-ASCII"
-    char *to_codeset, *from_codeset;
     to_codeset = "US-ASCII";
     to_codeset = "UTF-8";
     to_codeset = "CP1252";
@@ -138,4 +135,11 @@ main () {
 	g_free (os);
     }
 }
-#endif
+
+int main (int argc, char* argv[])
+{
+    fopen_test ();
+    codeset_test ();
+    return 0;
+}
+

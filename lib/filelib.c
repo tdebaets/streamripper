@@ -1256,12 +1256,10 @@ filelib_open_showfiles (RIP_MANAGER_INFO* rmi)
 	printf ("Trying to adjust cuefile\n");
 	filelib_adjust_cuefile (rmi, new_show_name, new_cue_name);
     }
-    printf ("Trying to free\n");
     if (new_show_name) g_free (new_show_name);
     if (new_cue_name) g_free (new_cue_name);
     g_free (new_dir);
     g_free (new_fnbase);
-    printf ("Done.\n");
 
     /* Open cue file */
     rc = filelib_open_for_write (rmi, &fli->m_cue_file, fli->m_cue_name);
