@@ -610,7 +610,6 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 					NULL);
 	    g_free (tmp);
 	    mstrncpy (query_string, subst_string, MAX_TRACK_LEN);
-	    g_free (query_string);
 #else
 	    mchar subst_string[MAX_TRACK_LEN];
 	    int used, left;
