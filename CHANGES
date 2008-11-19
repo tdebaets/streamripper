@@ -2,7 +2,9 @@ New for 1.64.0
 ------------------------------------
 Wed Nov 19 09:00:06 EST 2008
 * Security patch for CVE-2008-4829, multiple buffer overflows in http.c
-  that could result in remote exploit.
+  that could result in remote exploit
+* Fix winamp plugin failure when requested skin (from prefs file) 
+  does not exist
 
 New for 1.64.0-beta-2 (windows only)
 ------------------------------------

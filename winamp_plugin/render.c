@@ -137,14 +137,18 @@ BOOL
 render_init(HINSTANCE hInst, HWND hWnd, LPCTSTR szBmpFile)
 {
     debug_printf ("Render_init looking for skin: %s\n", szBmpFile);
-    if (!skindata_from_file(szBmpFile, &m_offscreenskind))
-	return FALSE;
+    /* Look for requested skin */
+    if (!skindata_from_file (szBmpFile, &m_offscreenskind)) {
+	/* If not found, look for default skin file */
+	if (!skindata_from_file ("srskin.bmp", &m_offscreenskind)) {
+	    return FALSE;
+	}
+    }
 
-    //	m_num_buttons = 0;
     m_tempdc.hdc = NULL;
     m_tempdc.bm = NULL;
 	
-    // Set a timer for mouseovers
+    /* Set a timer for mouseovers */
     SetTimer(hWnd, TIMER_ID, 100, (TIMERPROC)on_timer);
     m_hwnd = hWnd;
 
@@ -561,13 +565,22 @@ bitmapdc_from_file(const char* skinfile, BITMAPDC* bmdc)
 #endif
     strcat(tempfile, SKIN_PATH);
     strcat(tempfile, skinfile);
+
+    {
+	char *cwd = _getcwd (NULL, 0);
+	debug_printf ("CWD = %s\n", cwd);
+	free (cwd);
+    }
+
     debug_printf ("bitmapdc_from_file: %s\n", tempfile);
 
     bmdc->bm = (HBITMAP) LoadImage(0, tempfile, IMAGE_BITMAP, 
 				   BIG_IMAGE_WIDTH, BIG_IMAGE_HEIGHT, 
 				   LR_CREATEDIBSECTION | LR_LOADFROMFILE);
-    if (bmdc->bm == NULL)
+    if (bmdc->bm == NULL) {
+	debug_printf ("Error.  LoadImage returned NULL\n");
 	return FALSE;
+    }
 
     bmdc->hdc = CreateCompatibleDC(NULL);
     SelectObject(bmdc->hdc, bmdc->bm);
