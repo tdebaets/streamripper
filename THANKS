@@ -1,5 +1,10 @@
 Thanks to all the people who have contributed to streamripper!
 
+THANKS (1.64)
+---------------------
+"Stefan Cornelius" <vuln a@t secunia.com> at Secunia Research for 
+finding buffer overflows.
+
 THANKS (1.62 & 1.63)
 ---------------------
 "Chris Rohlf" <chris.rohlf@gmail.com> for finding buffer overflow.

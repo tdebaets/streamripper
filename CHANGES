@@ -1,3 +1,9 @@
+New for 1.64.0
+------------------------------------
+Wed Nov 19 09:00:06 EST 2008
+* Security patch for CVE-2008-4829, multiple buffer overflows in http.c
+  that could result in remote exploit.
+
 New for 1.64.0-beta-2 (windows only)
 ------------------------------------
 Sat 10-25-2008
