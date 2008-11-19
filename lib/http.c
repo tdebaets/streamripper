@@ -148,7 +148,8 @@ http_parse_url(const char *url, URLINFO *urlinfo)
 
     /* search for a login '@' token */
     if (strchr(url, '@') != NULL) {
-	ret = sscanf(url, "%[^:]:%[^@]", urlinfo->username, urlinfo->password);
+	ret = sscanf(url, "%1023[^:]:%1023[^@]", 
+		     urlinfo->username, urlinfo->password);
 	if (ret < 1) {
 	    return SR_ERROR_PARSE_FAILURE;
 	} else if (ret == 1) {
@@ -169,14 +170,14 @@ http_parse_url(const char *url, URLINFO *urlinfo)
     /* search for a port seperator */
     if (strchr(url, ':') != NULL) {
 	debug_printf ("Branch 1 (%s)\n", url);
-	ret = sscanf(url, "%[^:]:%hu/%s", urlinfo->host, 
+	ret = sscanf(url, "%511[^:]:%hu/%252s", urlinfo->host, 
 		     (short unsigned int*)&urlinfo->port, urlinfo->path+1);
 	if (urlinfo->port < 1) return SR_ERROR_PARSE_FAILURE;
 	ret -= 1;
     } else {
 	debug_printf ("Branch 2 (%s)\n", url);
 	urlinfo->port = 80;
-	ret = sscanf(url, "%[^/]/%s", urlinfo->host, urlinfo->path+1);
+	ret = sscanf(url, "%511[^/]/%252s", urlinfo->host, urlinfo->path+1);
     }
     if (ret < 1) return SR_ERROR_INVALID_URL;
 
@@ -483,6 +484,7 @@ http_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
 	    info->content_type = content_type_by_url;
 	}
     }
+
     // Check for Icecast 1
     else if ((start = (char *)strstr(header, "icecast")) != NULL) {
 	if (!info->server[0]) {
@@ -508,7 +510,6 @@ http_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
 	}
     }
 
-
     // Check for Apache
     else if (((start = (char *)strstr(header, "Apache")) != NULL) &&
 	     ((start = (char *)strstr(header, "x-audiocast-name")) != NULL)) {
@@ -525,11 +526,6 @@ http_parse_sc_header (const char *url, char *header, SR_HTTP_HEADER *info)
 	if (rc) {
 	    info->icy_bitrate = atoi(stempbr);
 	}
-    }
-
-    // WTF is Zwitterion?
-    else if ((start = (char *)strstr(header, "Zwitterion v")) != NULL) {
-	sscanf(start, "%[^<]<", info->server);
     }
 
     /* Last chance to deduce content type */
@@ -731,7 +727,7 @@ http_get_pls (RIP_MANAGER_INFO* rmi, HSOCKET *sock, SR_HTTP_HEADER *info)
 	    break;
 	}
 	if (s == 1) {
-	    strcpy (info->http_location, location_buf);
+	    sr_strncpy (info->http_location, location_buf, MAX_HOST_LEN);
 	    rc = SR_SUCCESS;
 	}
 	
@@ -745,12 +741,12 @@ http_get_pls (RIP_MANAGER_INFO* rmi, HSOCKET *sock, SR_HTTP_HEADER *info)
 	}
 	open = total - used;
 	if (open > best_open) {
-	    strcpy (info->http_location, location_buf);
+	    sr_strncpy (info->http_location, location_buf, MAX_HOST_LEN);
 	    best_open = open;
 	}
     }
 
-    strcpy (info->http_location, location_buf);
+    sr_strncpy (info->http_location, location_buf, MAX_HOST_LEN);
 
     return rc;
 }
@@ -790,7 +786,7 @@ http_get_m3u (RIP_MANAGER_INFO* rmi, HSOCKET *sock, SR_HTTP_HEADER *info)
 	if (len > 4 && !strcmp (&p[len-4], ".mp3")) {
 	    continue;
 	}
-	strcpy (info->http_location, p);
+	sr_strncpy (info->http_location, p, MAX_HOST_LEN);
 	debug_printf ("Redirecting from M3U to: %s\n", p);
 	return SR_SUCCESS;
     }

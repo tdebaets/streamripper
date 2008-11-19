@@ -9,20 +9,20 @@ fopen_test (void)
 {
     FILE* fp;
     
+#if defined (commentout)
     fp = fopen ("testme.txt", "w");
     if (!fp) {
 	printf ("fopen failed.\n");
     } else {
         fclose (fp);
     }
-
     fp = _wfopen (L"testme.txt", L"w");
     if (!fp) {
 	printf ("_wfopen failed.\n");
     } else {
         fclose (fp);
     }
-
+#endif
     fp = g_fopen ("testme.txt", "w");
     if (!fp) {
 	printf ("g_fopen failed.\n");
@@ -138,8 +138,9 @@ g_iconv_test () {
 
 int main (int argc, char* argv[])
 {
+    printf ("Hello world\n");
     fopen_test ();
-    codeset_test ();
+//    codeset_test ();
     return 0;
 }
 

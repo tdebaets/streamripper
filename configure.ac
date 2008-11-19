@@ -35,12 +35,13 @@ AC_CHECK_LIB(m, main)
 dnl Yummy alloca()
 AC_FUNC_ALLOCA
 
-AM_PATH_GLIB_2_0(2.16.0,,[AC_MSG_ERROR([glib 2.16 or newer is required])])
-
 dnl Configure options
 
 AC_ARG_WITH(included-libmad,
  [  --with-included-libmad use the libmad library included with streamripper])
+
+AC_ARG_WITH(included-glib,
+ [  --with-included-glib use the glib library included with streamripper])
 
 dnl AC_ARG_WITH(included-tre,
 dnl   [  --with-included-tre use the tre library included with streamripper])
@@ -54,23 +55,21 @@ AC_ARG_WITH(included-cdk,
 CPPFLAGS="-D__UNIX__"
 AC_SUBST(CPPFLAGS)
 
-dnl -------- Tests for threading library ----------
-THREADLIBS=no
-AC_CHECK_LIB(pthread,pthread_create,THREADLIBS="-lpthread",)
-if test "$THREADLIBS" = no; then
-        AC_CHECK_LIB(c_r,pthread_create,THREADLIBS="-pthread",)
+
+dnl -------- Tests for using included glib ------
+
+LIBGLIB=""
+AC_SUBST(LIBGLIB)
+use_included_glib=yes
+if test "x$with_included_glib" != xyes; then
+  AM_PATH_GLIB_2_0(2.16.0,use_included_glib=no)
 fi
-if test "$THREADLIBS" = no; then
-        AC_CHECK_LIB(dce,pthread_create,THREADLIBS="-ldce",)
+AM_CONDITIONAL(SUBDIR_GLIB, test "$use_included_glib" = yes)
+if test "$use_included_glib" = yes; then
+  LIBGLIB="glib-0.15.1b/.libs/glib.a"
+  AC_SUBST(LIBGLIB)
+  AC_CONFIG_SUBDIRS(glib-2.16.6)
 fi
-if test "$THREADLIBS" = no; then
-        AC_CHECK_LIB(pthreads,pthread_create,THREADLIBS="-lpthreads",)
-fi
-if test "$THREADLIBS" = no; then
-        AC_MSG_ERROR(Your system doesn't seem to support posix threads)
-        exit
-fi
-AC_SUBST(THREADLIBS)
 
 dnl -------- Tests for using included libmad ------
 LIBMAD=""
@@ -95,6 +94,24 @@ else
   LIBMAD=-lmad
   AC_SUBST(LIBMAD)
 fi
+
+dnl -------- Tests for threading library ----------
+THREADLIBS=no
+AC_CHECK_LIB(pthread,pthread_create,THREADLIBS="-lpthread",)
+if test "$THREADLIBS" = no; then
+        AC_CHECK_LIB(c_r,pthread_create,THREADLIBS="-pthread",)
+fi
+if test "$THREADLIBS" = no; then
+        AC_CHECK_LIB(dce,pthread_create,THREADLIBS="-ldce",)
+fi
+if test "$THREADLIBS" = no; then
+        AC_CHECK_LIB(pthreads,pthread_create,THREADLIBS="-lpthreads",)
+fi
+if test "$THREADLIBS" = no; then
+        AC_MSG_ERROR(Your system doesn't seem to support posix threads)
+        exit
+fi
+AC_SUBST(THREADLIBS)
 
 dnl Socklen
 TYPE_SOCKLEN_T
@@ -332,6 +349,7 @@ cat <<EOF
 * Streamripper configuration
 
   Using included MAD library?        $use_included_libmad
+  Using included GLIB library?       $use_included_glib
   Using included CDK library?        $use_included_cdk
   Ogg/vorbis support?                $sr_have_ogg
 EOF
