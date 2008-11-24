@@ -1,6 +1,21 @@
+/* render.h
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
 #ifndef __RENDER_H__
 #define __RENDER_H__
-
 
 #define REN_STATUS_BUFFERING	0x01
 #define REN_STATUS_RIPPING	0x02
@@ -20,33 +35,23 @@
 
 typedef int	HBUTTON;
 
-BOOL render_init(HINSTANCE hInst, HWND hWnd, LPCTSTR szBmpFile);
-VOID render_clear_all_data();
-
-extern BOOL		render_set_display_data(int idr, char *format, ...);
-extern BOOL		render_set_display_data_pos(int idr, RECT *rt);
-extern VOID		render_clear_all_data();
-extern BOOL		render_set_background(RECT *rt, POINT *rgn_points, int num_points);
-extern VOID		render_set_prog_rects(RECT *imagert, POINT dest, COLORREF line_color);
-extern VOID		render_set_prog_bar(BOOL on_off);
-extern VOID		render_set_button_enabled(HBUTTON hbut, BOOL enabled);
-extern VOID		render_set_text_color(POINT pt);
-
-extern HBUTTON	render_add_button(RECT *normal, RECT *pressed, RECT *hot, RECT *grayed, RECT *dest, void (*clicked)());
-extern BOOL		render_do_paint(HDC hdc);
-extern VOID		render_do_mousemove(HWND hWnd, LONG wParam, LONG lParam);
-extern VOID		render_do_lbuttonup(HWND hWnd, LONG wParam, LONG lParam);
-extern VOID		render_do_lbuttondown(HWND hWnd, LONG wParam, LONG lParam);
-extern BOOL		render_destroy();
+BOOL render_init (HWND hWnd, LPCTSTR szBmpFile);
+BOOL render_change_skin (LPCTSTR szBmpFile);
+BOOL render_destroy ();
 BOOL render_create_preview (char* skinfile, HDC hdc, long left, long top,
 			    long width, long height);
-extern BOOL		render_change_skin(LPCTSTR szBmpFile);
+VOID render_set_prog_bar (BOOL on_off);
+VOID render_do_mousemove (HWND hWnd, LONG wParam, LONG lParam);
+VOID render_do_lbuttonup (HWND hWnd, LONG wParam, LONG lParam);
+VOID render_do_lbuttondown (HWND hWnd, LONG wParam, LONG lParam);
+VOID render_clear_all_data ();
+BOOL render_set_display_data (int idr, char *format, ...);
+BOOL render_do_paint (HDC hdc);
 void render_start_button_enable ();
 void render_start_button_disable ();
 void render_stop_button_enable ();
 void render_stop_button_disable ();
-void render_relay_button_enable();
-void render_relay_button_disable();
-void render_create (void);
+void render_relay_button_enable ();
+void render_relay_button_disable ();
 
 #endif //__RENDER_H__

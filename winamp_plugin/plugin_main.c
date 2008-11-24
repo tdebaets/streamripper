@@ -28,6 +28,7 @@
 #include "shellapi.h"
 #include "wstreamripper.h"
 #include "render.h"
+#include "render_2.h"
 #include "mchar.h"
 #include "dock.h"
 #include "filelib.h"
@@ -652,11 +653,10 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
     switch (umsg)
     {
     case WM_CREATE:
-	if (!render_init(m_hinstance, hwnd, g_gui_prefs.default_skin)) {
+	if (!render_init (hwnd, g_gui_prefs.default_skin)) {
 	    MessageBox(hwnd, "Failed to find the skin bitmap", "Error", 0);
 	    break;
 	}
-	render_create (); 
 	stop_button_disable();
 	if (OPT_FLAG_ISSET(g_rmo.flags, OPT_MAKE_RELAY)) {
 	    render_relay_button_enable ();

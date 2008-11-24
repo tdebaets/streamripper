@@ -108,22 +108,14 @@ options_get_desktop_folder (char *path)
     }
 }
 
-BOOL
-get_skin_list()
+/* Append files which match pattern to skin list */
+static BOOL
+add_skin_list (char* pattern)
 {
-    WIN32_FIND_DATA	filedata; 
-    HANDLE			hsearch = NULL;
-    char			temppath[MAX_PATH];
+    WIN32_FIND_DATA filedata; 
+    HANDLE hsearch = NULL;
 
-    m_skin_list_size = 0;
-    memset(m_pskin_list, 0, sizeof(m_pskin_list));
-
-    temppath[0] = 0;
-    strcat(temppath, SKIN_PATH);
-    strcat(temppath, "*.bmp");
-    debug_printf ("temppath = %s\n", temppath);
-
-    hsearch = FindFirstFile(temppath, &filedata);
+    hsearch = FindFirstFile (pattern, &filedata);
     if (hsearch == INVALID_HANDLE_VALUE) 
 	return FALSE;
 
@@ -151,6 +143,30 @@ get_skin_list()
     }
 	
     FindClose(hsearch);
+    return TRUE;
+}
+
+/* Copy file names Skins/*.bmp and Skins/*.zip to skin list */
+BOOL
+get_skin_list (void)
+{
+    char temppath[MAX_PATH];
+
+    m_skin_list_size = 0;
+    memset (m_pskin_list, 0, sizeof(m_pskin_list));
+
+    temppath[0] = 0;
+    strcat(temppath, SKIN_PATH);
+    strcat(temppath, "*.bmp");
+    debug_printf ("add_skin_path (%s)\n", temppath);
+    add_skin_list (temppath);
+
+    temppath[0] = 0;
+    strcat(temppath, SKIN_PATH);
+    strcat(temppath, "*.zip");
+    debug_printf ("add_skin_path (%s)\n", temppath);
+    add_skin_list (temppath);
+
     return TRUE;
 }
 

@@ -304,7 +304,6 @@ socklib_recvall (RIP_MANAGER_INFO* rmi, HSOCKET *socket_handle,
 	    return SR_ERROR_ABORT_PIPE_SIGNALLED;
 	}
 #endif
-
         ret = recv(socket_handle->s, &buffer[read], size, 0);
 	debug_printf ("RECV req %5d bytes, got %5d bytes\n", size, ret);
 
