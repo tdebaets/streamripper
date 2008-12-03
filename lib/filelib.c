@@ -1387,9 +1387,15 @@ replace_invalid_chars (gchar *str)
     if (!str) return NULL;
 
     for (;*oldstr; oldstr++) {
-	if (mstrchr(invalid_chars, *oldstr) == NULL) {
+	if (g_ascii_iscntrl (*oldstr)) {
+	    /* Do nothing -- skip control characters without replacement */
+	}
+	else if (mstrchr(invalid_chars, *oldstr) == NULL) {
+	    /* Ordinary case -- copy */
 	    *newstr++ = *oldstr;
-	} else {
+	}
+	else {
+	    /* Replace case -- append replacement char */
 	    *newstr++ = replacement;
 	}
     }
