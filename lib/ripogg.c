@@ -367,6 +367,12 @@ vorbis_process (RIP_MANAGER_INFO* rmi, stream_processor *stream,
                         free(decoded);
                     }
                 }
+		/* Done looping through vorbis comments.  If we didn't find 
+		    a title, give a default title. */
+		if (!ti->have_track_info) {
+		    strncpy (ti->title, "Title Unknown", MAX_TRACK_LEN);
+		    ti->have_track_info = 1;
+		}
             }
         }
     }
