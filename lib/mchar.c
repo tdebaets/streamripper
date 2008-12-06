@@ -31,17 +31,6 @@
 #include <unistd.h>
 #endif
 #include <ctype.h>
-// #if defined HAVE_WCHAR_SUPPORT
-// #if defined HAVE_WCHAR_H
-// #include <wchar.h>
-// #endif
-// #if defined HAVE_WCTYPE_H
-// #include <wctype.h>
-// #endif
-// #if defined HAVE_ICONV
-// #include <iconv.h>
-// #endif
-// #endif
 #if defined HAVE_LOCALE_CHARSET
 #include <localcharset.h>
 #elif defined HAVE_LANGINFO_CODESET

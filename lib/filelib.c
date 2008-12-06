@@ -1374,17 +1374,20 @@ get_next_sequence_number (RIP_MANAGER_INFO* rmi, gchar* fn_base)
 static gchar* 
 replace_invalid_chars (gchar *str)
 {
-# if defined (WIN32)
     gchar invalid_chars[] = m_("\\/:*?\"<>|~");
-# else
-    gchar invalid_chars[] = m_("\\/:*?\"<>|.~");
-# endif
     gchar replacement = m_('-');
 
     gchar *oldstr = str;
     gchar *newstr = str;
 
     if (!str) return NULL;
+
+    /* Skip leading "." */
+    for (;*oldstr; oldstr++) {
+	if (*oldstr != '.') {
+	    break;
+	}
+    }
 
     for (;*oldstr; oldstr++) {
 	if (g_ascii_iscntrl (*oldstr)) {
