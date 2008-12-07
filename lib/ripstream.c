@@ -900,8 +900,15 @@ compute_cbuf2_size (RIP_MANAGER_INFO* rmi,
     long mic_to_sw_start, mic_to_sw_end;
     long mic_to_rw_start, mic_to_rw_end;
     long mic_to_cb_start, mic_to_cb_end;
+    int xs_silence_length;
+    int xs_search_window_1;
+    int xs_search_window_2;
+    int xs_offset;
+    int xs_padding_1;
+    int xs_padding_2;
 
     debug_printf ("---------------------------------------------------\n");
+    debug_printf ("xs: %d\n", sp_opt->xs);
     debug_printf ("xs_search_window: %d,%d\n",
 		  sp_opt->xs_search_window_1,sp_opt->xs_search_window_2);
     debug_printf ("xs_silence_length: %d\n", sp_opt->xs_silence_length);
@@ -912,34 +919,52 @@ compute_cbuf2_size (RIP_MANAGER_INFO* rmi,
     debug_printf ("bitrate = %d, meta_inf = %d\n", bitrate, meta_interval);
     debug_printf ("---------------------------------------------------\n");
     
+    /* If xs-none, clear out the other xs options */
+    if (sp_opt->xs == 0){
+	xs_silence_length = 0;
+	xs_search_window_1 = 0;
+	xs_search_window_2 = 0;
+	xs_offset = 0;
+	xs_padding_1 = 0;
+	xs_padding_2 = 0;
+    } else {
+	xs_silence_length = sp_opt->xs_silence_length;
+	xs_search_window_1 = sp_opt->xs_search_window_1;
+	xs_search_window_2 = sp_opt->xs_search_window_2;
+	xs_offset = sp_opt->xs_offset;
+	xs_padding_1 = sp_opt->xs_padding_1;
+	xs_padding_2 = sp_opt->xs_padding_2;
+    }
+
+
     /* mi_to_mic is the "half of a meta-inf" from the meta inf 
        change to the previous (non-changed) meta inf */
     mi_to_mic = meta_interval / 2;
     debug_printf ("mi_to_mic: %d\n", mi_to_mic);
 
     /* compute the search window size (sws) */
-    sws = ms_to_bytes (sp_opt->xs_search_window_1, bitrate) 
-	    + ms_to_bytes (sp_opt->xs_search_window_2, bitrate);
+    sws = ms_to_bytes (xs_search_window_1, bitrate) 
+	    + ms_to_bytes (xs_search_window_2, bitrate);
     debug_printf ("sws: %d\n", sws);
 
     /* compute the silence length (sl) */
-    sl = ms_to_bytes (sp_opt->xs_silence_length, bitrate);
+    sl = ms_to_bytes (xs_silence_length, bitrate);
     debug_printf ("sl: %d\n", sl);
 
     /* compute padding */
-    prepad = ms_to_bytes (sp_opt->xs_padding_1, bitrate);
-    postpad = ms_to_bytes (sp_opt->xs_padding_2, bitrate);
+    prepad = ms_to_bytes (xs_padding_1, bitrate);
+    postpad = ms_to_bytes (xs_padding_2, bitrate);
     debug_printf ("padding: %d %d\n", prepad, postpad);
 
     /* compute offset */
-    offset = ms_to_bytes (sp_opt->xs_offset,bitrate);
+    offset = ms_to_bytes (xs_offset,bitrate);
     debug_printf ("offset: %d\n", offset);
 
     /* compute interval from mi to search window */
     mic_to_sw_start = - mi_to_mic + offset 
-	    - ms_to_bytes(sp_opt->xs_search_window_1,bitrate);
+	    - ms_to_bytes(xs_search_window_1,bitrate);
     mic_to_sw_end = - mi_to_mic + offset 
-	    + ms_to_bytes(sp_opt->xs_search_window_2,bitrate);
+	    + ms_to_bytes(xs_search_window_2,bitrate);
     debug_printf ("mic_to_sw_start: %d\n", mic_to_sw_start);
     debug_printf ("mic_to_sw_end: %d\n", mic_to_sw_end);
 
@@ -993,7 +1018,7 @@ compute_cbuf2_size (RIP_MANAGER_INFO* rmi,
     rmi->mic_to_cb_end = mic_to_cb_end;
     rmi->rw_start_to_cb_end = mic_to_cb_end * meta_interval - mic_to_rw_start;
     rmi->rw_end_to_cb_end = mic_to_cb_end * meta_interval - mic_to_rw_end;
-    rmi->rw_start_to_sw_start = sp_opt->xs_padding_1 - sp_opt->xs_silence_length / 2;
+    rmi->rw_start_to_sw_start = xs_padding_1 - xs_silence_length / 2;
     if (rmi->rw_start_to_sw_start < 0) {
 	rmi->rw_start_to_sw_start = 0;
     }
