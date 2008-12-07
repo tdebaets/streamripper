@@ -842,7 +842,7 @@ skin_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch(message)
     {
     case WM_INITDIALOG:
-	debug_printf( "skin:WM_INITDIALOG\n" );
+	debug_printf ("skin:WM_INITDIALOG\n");
 
 	if (!get_skin_list() || 
 	    !populate_skin_list(hWnd))	// order of exec important!
@@ -895,7 +895,8 @@ skin_dlg (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return FALSE;
 
     case WM_COMMAND: 
-	switch (LOWORD(wParam)) 
+	debug_printf ("skin:WM_COMMAND\n");
+	switch (LOWORD(wParam))
 	{ 
 	case IDC_SKIN_LIST: 
 	    switch (HIWORD(wParam)) 

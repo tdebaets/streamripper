@@ -679,8 +679,8 @@ WndProc (HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
 	return 0;
 		
     case WM_MOUSEMOVE:
-	render_do_mousemove(hwnd, wParam, lParam);
-	dock_do_mousemove(hwnd, wParam, lParam);
+	render_do_mousemove (hwnd, wParam, lParam);
+	dock_do_mousemove (hwnd, wParam, lParam);
 	break;
 
     case WM_COMMAND:

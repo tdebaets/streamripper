@@ -81,6 +81,8 @@ typedef struct SKINDATAst
     int		rgn_npoints;
     POINT*	rgn_points;
     RECT	background_rect;
+    int		m_num_buttons;
+    BUTTON	m_buttons[MAX_BUTTONS];
 } SKINDATA;
 
 
@@ -94,12 +96,11 @@ static BOOL load_skindata_from_file (const char* skinfile, SKINDATA* skind);
 static void skindata_close (SKINDATA* skind);
 static void bitmapdc_close (BITMAPDC b);
 static BOOL render_set_background (POINT *rgn_points, int num_points);
-static VOID render_set_button_enabled(HBUTTON hbut, BOOL enabled);
-static HBUTTON render_add_button(RECT *normal, RECT *pressed, RECT *hot, RECT *grayed, RECT *dest, void (*clicked)());
-static VOID render_set_prog_rects(RECT *imagert, POINT dest, COLORREF line_color);
-static BOOL render_set_display_data_pos(int idr, RECT *rt);
+static VOID render_set_button_enabled (SKINDATA* skind, HBUTTON hbut, BOOL enabled);
+static HBUTTON render_add_button (SKINDATA* skind, RECT *normal, RECT *pressed, RECT *hot, RECT *grayed, RECT *dest, void (*clicked)());
+static VOID render_set_prog_rects (RECT *imagert, POINT dest, COLORREF line_color);
+static BOOL render_set_display_data_pos (int idr, RECT *rt);
 static VOID render_set_text_color(POINT pt);
-static void render_set_default_1 (SKINDATA* skind);
 static void render_set_default (SKINDATA* skind);
 void push_rgn_point (SKINDATA* skind, LONG x, LONG y);
 void clear_rgn_points (SKINDATA* skind);
@@ -110,10 +111,10 @@ void clear_rgn_points (SKINDATA* skind);
  * Private Vars
  *********************************************************************************/
 static BITMAPDC		m_tempdc;
-static SKINDATA		m_offscreenskind;
+static SKINDATA		m_current_skin;
 static HFONT		m_tempfont;
-static int		m_num_buttons;
-static BUTTON		m_buttons[MAX_BUTTONS];
+//static int		m_num_buttons;
+//static BUTTON		m_buttons[MAX_BUTTONS];
 static RECT		m_prog_rect;
 static POINT		m_pt_color;
 static time_t		m_time_start;
@@ -135,14 +136,14 @@ render_init (HWND hWnd, LPCTSTR szBmpFile)
 {
     debug_printf ("Render_init looking for skin: %s\n", szBmpFile);
 
-    memset (&m_offscreenskind, 0, sizeof(SKINDATA));
-    render_set_default (&m_offscreenskind);
+    memset (&m_current_skin, 0, sizeof(SKINDATA));
+    render_set_default (&m_current_skin);
 
     /* Look for requested skin */
-    if (!load_skindata_from_file (szBmpFile, &m_offscreenskind)) {
+    if (!load_skindata_from_file (szBmpFile, &m_current_skin)) {
 	/* If requested skin not found, look for default skin(s) */
-	if (!load_skindata_from_file ("srskin.zip", &m_offscreenskind)) {
-	    if (!load_skindata_from_file ("srskin.bmp", &m_offscreenskind)) {
+	if (!load_skindata_from_file ("srskin.zip", &m_current_skin)) {
+	    if (!load_skindata_from_file ("srskin.bmp", &m_current_skin)) {
 		return FALSE;
 	    }
 	}
@@ -155,7 +156,7 @@ render_init (HWND hWnd, LPCTSTR szBmpFile)
     SetTimer (hWnd, TIMER_ID, 100, (TIMERPROC)on_timer);
     m_hwnd = hWnd;
 
-    render_set_background (m_offscreenskind.rgn_points, m_offscreenskind.rgn_npoints);
+    render_set_background (m_current_skin.rgn_points, m_current_skin.rgn_npoints);
 
     return TRUE;
 }
@@ -163,8 +164,8 @@ render_init (HWND hWnd, LPCTSTR szBmpFile)
 BOOL
 render_change_skin (LPCTSTR szBmpFile)
 {
-    skindata_close (&m_offscreenskind);
-    if (!load_skindata_from_file(szBmpFile, &m_offscreenskind))
+    skindata_close (&m_current_skin);
+    if (!load_skindata_from_file(szBmpFile, &m_current_skin))
 	return FALSE;
     return TRUE;
 }
@@ -174,7 +175,7 @@ render_destroy ()
 {
 
     DeleteObject (m_tempfont);
-    skindata_close (&m_offscreenskind);
+    skindata_close (&m_current_skin);
     bitmapdc_close (m_tempdc);
     return TRUE;
 }
@@ -227,13 +228,14 @@ render_set_prog_bar (BOOL on)
 VOID
 render_do_mousemove (HWND hWnd, LONG wParam, LONG lParam)
 {
+    SKINDATA* skind = &m_current_skin;
     POINT pt = {LOWORD(lParam), HIWORD(lParam)};
     BUTTON *b;
     int i;
 
-    for(i = 0; i < m_num_buttons; i++)
+    for (i = 0; i < skind->m_num_buttons; i++)
     {
-	b = &m_buttons[i];
+	b = &skind->m_buttons[i];
 	if (PtInRect(&b->dest, pt) &&
 	    b->enabled)
 	{
@@ -248,13 +250,14 @@ render_do_mousemove (HWND hWnd, LONG wParam, LONG lParam)
 VOID
 render_do_lbuttonup(HWND hWnd, LONG wParam, LONG lParam)
 {
+    SKINDATA* skind = &m_current_skin;
     POINT pt = {LOWORD(lParam), HIWORD(lParam)};
     BUTTON *b;
     int i;
 
-    for(i = 0; i < m_num_buttons; i++)
+    for (i = 0; i < skind->m_num_buttons; i++)
     {
-	b = &m_buttons[i];
+	b = &skind->m_buttons[i];
 	if (PtInRect(&b->dest, pt) &&
 	    b->enabled)
 	{
@@ -268,13 +271,14 @@ render_do_lbuttonup(HWND hWnd, LONG wParam, LONG lParam)
 VOID
 render_do_lbuttondown(HWND hWnd, LONG wParam, LONG lParam)
 {
+    SKINDATA* skind = &m_current_skin;
     POINT pt = {LOWORD(lParam), HIWORD(lParam)};
     BUTTON *b;
     int i;
 
-    for (i = 0; i < m_num_buttons; i++)
+    for (i = 0; i < skind->m_num_buttons; i++)
     {
-	b = &m_buttons[i];
+	b = &skind->m_buttons[i];
 
 	if (PtInRect(&b->dest, pt) &&
 	    b->enabled)
@@ -308,45 +312,51 @@ render_set_display_data(int idr, char *format, ...)
 }
 
 BOOL
-render_do_paint(HDC hdc)
+render_do_paint (HDC hdc)
 {
-    return internal_render_do_paint (&m_offscreenskind, hdc);
+    return internal_render_do_paint (&m_current_skin, hdc);
 }
 
 void
-render_start_button_enable()
+render_start_button_enable ()
 {
-    render_set_button_enabled (m_startbut, TRUE);
+    SKINDATA* skind = &m_current_skin;
+    render_set_button_enabled (skind, m_startbut, TRUE);
 }
 
 void
-render_start_button_disable()
+render_start_button_disable ()
 {
-    render_set_button_enabled (m_startbut, FALSE);
+    SKINDATA* skind = &m_current_skin;
+    render_set_button_enabled (skind, m_startbut, FALSE);
 }
 
 void
-render_stop_button_enable()
+render_stop_button_enable ()
 {
-    render_set_button_enabled (m_stopbut, TRUE);
+    SKINDATA* skind = &m_current_skin;
+    render_set_button_enabled (skind, m_stopbut, TRUE);
 }
 
 void
-render_stop_button_disable()
+render_stop_button_disable ()
 {
-    render_set_button_enabled (m_stopbut, FALSE);
+    SKINDATA* skind = &m_current_skin;
+    render_set_button_enabled (skind, m_stopbut, FALSE);
 }
 
 void
-render_relay_button_enable()
+render_relay_button_enable ()
 {
-    render_set_button_enabled (m_relaybut, TRUE);
+    SKINDATA* skind = &m_current_skin;
+    render_set_button_enabled (skind, m_relaybut, TRUE);
 }
 
 void
-render_relay_button_disable()
+render_relay_button_disable ()
 {
-    render_set_button_enabled (m_relaybut, FALSE);
+    SKINDATA* skind = &m_current_skin;
+    render_set_button_enabled (skind, m_relaybut, FALSE);
 }
 
 /******************************************************************************
@@ -421,7 +431,7 @@ render_set_default (SKINDATA* skind)
 	    {327, 67, 375, 87},		// Grayed
 	    {12, 123, 60, 143}		// Dest
 	};
-	m_startbut = render_add_button (&rt[0],&rt[1], &rt[2], &rt[3], &rt[4], start_button_pressed);
+	m_startbut = render_add_button (skind, &rt[0], &rt[1], &rt[2], &rt[3], &rt[4], start_button_pressed);
     }
 
     // Stop button
@@ -433,7 +443,7 @@ render_set_default (SKINDATA* skind)
 	    {327, 89, 375, 109},
 	    {68, 123, 116, 143} // dest
 	};
-	m_stopbut = render_add_button (&rt[0],&rt[1], &rt[2], &rt[3], &rt[4], stop_button_pressed);
+	m_stopbut = render_add_button (skind, &rt[0], &rt[1], &rt[2], &rt[3], &rt[4], stop_button_pressed);
     }
 
     // Options button
@@ -445,7 +455,7 @@ render_set_default (SKINDATA* skind)
 	    {327, 111, 375, 131},
 	    {215, 123, 263, 143} // dest
 	};
-	render_add_button (&rt[0],&rt[1], &rt[2], &rt[3], &rt[4], options_button_pressed);
+	render_add_button (skind, &rt[0], &rt[1], &rt[2], &rt[3], &rt[4], options_button_pressed);
     }
 
     // Min  button
@@ -457,7 +467,7 @@ render_set_default (SKINDATA* skind)
 	    {373, 133, 378, 139},	//gray
 	    {261, 4, 266, 10}
 	};
-	render_add_button (&rt[0],&rt[1], &rt[2], &rt[3], &rt[4], close_button_pressed);
+	render_add_button (skind, &rt[0], &rt[1], &rt[2], &rt[3], &rt[4], close_button_pressed);
     }
 
     // Relay button
@@ -469,7 +479,7 @@ render_set_default (SKINDATA* skind)
 	    {349, 133, 371, 148},   // Grayed
 	    {10, 24, 32, 39}
 	};
-	m_relaybut = render_add_button (&rt[0],&rt[1], &rt[2], &rt[3], &rt[4], relay_pressed);
+	m_relaybut = render_add_button (skind, &rt[0], &rt[1], &rt[2], &rt[3], &rt[4], relay_pressed);
     }
 
     // Set the progress bar
@@ -509,12 +519,12 @@ static VOID
 render_set_text_color(POINT pt)
 {
     m_pt_color = pt;
-    m_offscreenskind.textcolor = GetPixel (m_offscreenskind.bmdc.hdc, pt.x, pt.y);
+    m_current_skin.textcolor = GetPixel (m_current_skin.bmdc.hdc, pt.x, pt.y);
 
-    if (m_offscreenskind.hbrush)
-	DeleteObject (m_offscreenskind.hbrush);
-    m_offscreenskind.textcolor = GetPixel (m_offscreenskind.bmdc.hdc, pt.x, pt.y);
-    m_offscreenskind.hbrush = CreateSolidBrush (m_offscreenskind.textcolor);
+    if (m_current_skin.hbrush)
+	DeleteObject (m_current_skin.hbrush);
+    m_current_skin.textcolor = GetPixel (m_current_skin.bmdc.hdc, pt.x, pt.y);
+    m_current_skin.hbrush = CreateSolidBrush (m_current_skin.textcolor);
 }
 
 static BOOL
@@ -540,26 +550,26 @@ render_set_prog_rects (RECT *imagert, POINT dest, COLORREF line_color)
 }
 
 static VOID
-render_set_button_enabled (HBUTTON hbut, BOOL enabled)
+render_set_button_enabled (SKINDATA* skind, HBUTTON hbut, BOOL enabled)
 {
-    m_buttons[hbut].enabled = enabled;
+    skind->m_buttons[hbut].enabled = enabled;
     if (enabled) {
-	if (m_buttons[hbut].mode != BTN_MODE_HOT)
-	    m_buttons[hbut].mode = BTN_MODE_NORMAL;
+	if (skind->m_buttons[hbut].mode != BTN_MODE_HOT)
+	    skind->m_buttons[hbut].mode = BTN_MODE_NORMAL;
     } else {
-	m_buttons[hbut].mode = BTN_MODE_GRAYED;
+	skind->m_buttons[hbut].mode = BTN_MODE_GRAYED;
     }
     do_refresh(NULL);
 }
 
 static HBUTTON
-render_add_button (RECT *normal, RECT *pressed, RECT *hot, RECT *grayed, RECT *dest, void (*clicked)())
+render_add_button (SKINDATA* skind, RECT *normal, RECT *pressed, RECT *hot, RECT *grayed, RECT *dest, void (*clicked)())
 {
     BUTTON *b;
-    if (m_num_buttons > MAX_BUTTONS || !clicked)
+    if (skind->m_num_buttons > MAX_BUTTONS || !clicked)
 	return FALSE;
 
-    b = &m_buttons[m_num_buttons];
+    b = &skind->m_buttons[skind->m_num_buttons];
     memcpy (&b->rt[BTN_MODE_NORMAL], normal, sizeof(RECT));
     memcpy (&b->rt[BTN_MODE_PRESSED], pressed, sizeof(RECT));
     memcpy (&b->rt[BTN_MODE_HOT], hot, sizeof(RECT));
@@ -568,16 +578,17 @@ render_add_button (RECT *normal, RECT *pressed, RECT *hot, RECT *grayed, RECT *d
     b->mode = BTN_MODE_NORMAL;
     b->clicked = clicked;
     b->enabled = TRUE;
-    m_num_buttons++;
-    return (HBUTTON) m_num_buttons-1;
+    skind->m_num_buttons++;
+    return (HBUTTON) skind->m_num_buttons-1;
 }
 
 static VOID CALLBACK
-on_timer(HWND hWnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+on_timer (HWND hWnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
+    SKINDATA* skind = &m_current_skin;
     POINT pt;
     RECT winrt;
-    BUTTON *b = &m_buttons[0];
+    BUTTON *b = &skind->m_buttons[0];
     time_t now;
     int i;
 
@@ -590,8 +601,8 @@ on_timer(HWND hWnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
     time(&now);
 
     // Turn off a hot button if it hasn't been mouse over'd for a while 
-    for(i = 0; i < m_num_buttons; i++) {
-	b = &m_buttons[i];
+    for (i = 0; i < skind->m_num_buttons; i++) {
+	b = &skind->m_buttons[i];
 	if (!PtInRect(&b->dest, pt) && 
 	    b->hot_timeout >= now &&
 	    b->mode == BTN_MODE_HOT)
@@ -835,8 +846,8 @@ internal_render_do_paint (SKINDATA* skind, HDC outhdc)
 	   SRCCOPY);
 
     // Draw buttons
-    for (i = 0; i < m_num_buttons; i++) {
-	b = &m_buttons[i];
+    for (i = 0; i < skind->m_num_buttons; i++) {
+	b = &skind->m_buttons[i];
 	prt = &b->rt[b->mode];
 	BitBlt(m_tempdc.hdc,
 	       b->dest.left,
@@ -863,7 +874,7 @@ internal_render_do_paint (SKINDATA* skind, HDC outhdc)
 	num_bars = (now-m_time_start) % 15;	// number of bars to draw
 	FrameRect (m_tempdc.hdc, &rt, skind->hbrush);
 		
-	for(i = 0; i < num_bars; i++) {
+	//for(i = 0; i < num_bars; i++) {
 	    for(i = 0; i < num_bars; i++) {
 		BitBlt(m_tempdc.hdc,
 		       rt.left + (i * (WIDTH(m_prog_rect)+1)+2),
@@ -875,7 +886,7 @@ internal_render_do_paint (SKINDATA* skind, HDC outhdc)
 		       m_prog_rect.top,
 		       SRCCOPY);
 	    }
-	}
+	//}
     }
 
     // Draw text data on the screen
