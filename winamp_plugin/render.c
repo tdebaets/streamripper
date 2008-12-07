@@ -820,44 +820,44 @@ internal_render_do_paint (SKINDATA* skind, HDC outhdc)
     if (m_tempdc.hdc == NULL) {
 	LOGFONT ft;
 
-	m_tempdc.hdc = CreateCompatibleDC(thdc);
+	m_tempdc.hdc = CreateCompatibleDC (thdc);
 	m_tempdc.bm = CreateCompatibleBitmap (thdc, WIDTH (skind->background_rect), 
 					      HEIGHT (skind->background_rect));
-	SelectObject(m_tempdc.hdc, m_tempdc.bm);
+	SelectObject (m_tempdc.hdc, m_tempdc.bm);
 
 	// And the font
-	memset(&ft, 0, sizeof(LOGFONT));
-	//		strcpy(ft.lfFaceName, "Microsoft Sans pSerif");
-	strcpy(ft.lfFaceName, "Verdana");
+	memset (&ft, 0, sizeof(LOGFONT));
+	//strcpy(ft.lfFaceName, "Microsoft Sans pSerif");
+	strcpy (ft.lfFaceName, "Verdana");
 	ft.lfHeight = 12;
 	m_tempfont = CreateFontIndirect(&ft);
-	SelectObject(m_tempdc.hdc, m_tempfont);
+	SelectObject (m_tempdc.hdc, m_tempfont);
     }
 
     // Do the background
-    BitBlt(m_tempdc.hdc, 
-	   0, 
-	   0, 
-	   WIDTH (skind->background_rect),
-	   HEIGHT (skind->background_rect),
-	   thdc,
-	   skind->background_rect.left,
-	   skind->background_rect.top,
-	   SRCCOPY);
+    BitBlt (m_tempdc.hdc, 
+	    0, 
+	    0, 
+	    WIDTH (skind->background_rect),
+	    HEIGHT (skind->background_rect),
+	    thdc,
+	    skind->background_rect.left,
+	    skind->background_rect.top,
+	    SRCCOPY);
 
     // Draw buttons
     for (i = 0; i < skind->m_num_buttons; i++) {
 	b = &skind->m_buttons[i];
 	prt = &b->rt[b->mode];
-	BitBlt(m_tempdc.hdc,
-	       b->dest.left,
-	       b->dest.top,
-	       WIDTH(b->dest),
-	       HEIGHT(b->dest),
-	       thdc,
-	       prt->left,
-	       prt->top,
-	       SRCCOPY);
+	BitBlt (m_tempdc.hdc,
+	        b->dest.left,
+	        b->dest.top,
+	        WIDTH(b->dest),
+	        HEIGHT(b->dest),
+	        thdc,
+	        prt->left,
+	        prt->top,
+	        SRCCOPY);
     }
 	
     // Draw progress bar
@@ -874,32 +874,30 @@ internal_render_do_paint (SKINDATA* skind, HDC outhdc)
 	num_bars = (now-m_time_start) % 15;	// number of bars to draw
 	FrameRect (m_tempdc.hdc, &rt, skind->hbrush);
 		
-	//for(i = 0; i < num_bars; i++) {
-	    for(i = 0; i < num_bars; i++) {
-		BitBlt(m_tempdc.hdc,
-		       rt.left + (i * (WIDTH(m_prog_rect)+1)+2),
-		       rt.top+2,
-		       WIDTH(m_prog_rect),
-		       HEIGHT(m_prog_rect),
-		       thdc,
-		       m_prog_rect.left,
-		       m_prog_rect.top,
-		       SRCCOPY);
-	    }
-	//}
+	for(i = 0; i < num_bars; i++) {
+	    BitBlt (m_tempdc.hdc,
+		    rt.left + (i * (WIDTH(m_prog_rect)+1)+2),
+		    rt.top+2,
+		    WIDTH(m_prog_rect),
+		    HEIGHT(m_prog_rect),
+		    thdc,
+		    m_prog_rect.left,
+		    m_prog_rect.top,
+		    SRCCOPY);
+	}
     }
 
     // Draw text data on the screen
-    SetBkMode(m_tempdc.hdc, TRANSPARENT); 
+    SetBkMode (m_tempdc.hdc, TRANSPARENT); 
 	    
     // Draw text
     SetTextColor (m_tempdc.hdc, skind->textcolor);
 
     for (i = 0; i < IDR_NUMFIELDS; i++) {		
-	TrimTextOut(m_tempdc.hdc, m_ddinfo[i].rt.left, 
-		    m_ddinfo[i].rt.top, 
-		    WIDTH(m_ddinfo[i].rt), 
-		    m_ddinfo[i].str); 
+	TrimTextOut (m_tempdc.hdc, m_ddinfo[i].rt.left, 
+		     m_ddinfo[i].rt.top, 
+		     WIDTH(m_ddinfo[i].rt), 
+		     m_ddinfo[i].str); 
     }
 
     debug_printf ("bltting: (%d %d)\n", 
@@ -907,17 +905,16 @@ internal_render_do_paint (SKINDATA* skind, HDC outhdc)
 		    HEIGHT (skind->background_rect));
 
     // Onto the actual screen 
-    BitBlt(outhdc,
-	   0,
-	   0,
-	   WIDTH (skind->background_rect),
-	   HEIGHT (skind->background_rect),
-	   m_tempdc.hdc,
-	   0,
-	   0,
-	   SRCCOPY);
+    BitBlt (outhdc,
+	    0,
+	    0,
+	    WIDTH (skind->background_rect),
+	    HEIGHT (skind->background_rect),
+	    m_tempdc.hdc,
+	    0,
+	    0,
+	    SRCCOPY);
 
     debug_printf ("bltting complete\n");
     return TRUE;
 }
-

@@ -543,8 +543,9 @@ find_sep (RIP_MANAGER_INFO* rmi, u_long* pos1, u_long* pos2)
 	return SR_ERROR_REQUIRED_WINDOW_EMPTY;
     }
 
-    debug_printf ("search window (bytes): %d,%d,%d\n", rw_start, rw_end,
-		  rmi->cbuf2.item_count);
+    debug_printf ("search window (bytes): [%d,%d] within %d\n", 
+		    rw_start, rw_end,
+		    rmi->cbuf2.item_count);
 
     if (rmi->http_info.content_type != CONTENT_TYPE_MP3) {
 	sw_sil = (rw_end + rw_start) / 2;
@@ -839,12 +840,13 @@ bytes_to_secs (unsigned int bytes, int bitrate)
    we also buffer up to the latest point that can go into the 
    next song.  This is called the "required window."
 
-   The entire required window is decoded, even though 
-   we don't need the volume.  We simply mark the frame boundaries
-   so we don't chop any frames.
+   The "required window" is part that is decoded, even though 
+   we don't need volume data for all of it.  We simply mark the 
+   frame boundaries so we don't chop any frames.
 
-   The circular buffer is a bit bigger than the required window, 
-   because it contains an integer number of blocks which fall 
+   The circular buffer is a bit bigger than the required window. 
+   This includes all of the stuff which cannot be flushed out of 
+   the cbuf, because cbuf is flushed in blocks.
 
    Some abbreviations:
      mic      meta inf change
@@ -870,11 +872,14 @@ bytes_to_secs (unsigned int bytes, int bitrate)
 
          |--------------------------------|       required window
 
+                        |---------|               minimum rw (1 meta int, 
+                                                  includes sw, need not 
+                                                  be aligned to metadata)
+
     |---------------------------------------|     cbuf
 
-
-                   |<-------------+               mic_to_sw_start
-                                  +---->|         mic_to_sw_end
+                   |<-------------+               mic_to_sw_start (usu neg)
+                                  +---->|         mic_to_sw_end   (usu pos)
          |<-----------------------+               mic_to_rw_start
                                   +------>|       mic_to_rw_end
     |<----------------------------+               mic_to_cb_start
@@ -891,6 +896,7 @@ compute_cbuf2_size (RIP_MANAGER_INFO* rmi,
     long mi_to_mic;
     long prepad, postpad;
     long offset;
+    long rw_len;
     long mic_to_sw_start, mic_to_sw_end;
     long mic_to_rw_start, mic_to_rw_end;
     long mic_to_cb_start, mic_to_cb_end;
@@ -926,7 +932,7 @@ compute_cbuf2_size (RIP_MANAGER_INFO* rmi,
     debug_printf ("padding: %d %d\n", prepad, postpad);
 
     /* compute offset */
-    offset = ms_to_bytes(sp_opt->xs_offset,bitrate);
+    offset = ms_to_bytes (sp_opt->xs_offset,bitrate);
     debug_printf ("offset: %d\n", offset);
 
     /* compute interval from mi to search window */
@@ -948,6 +954,17 @@ compute_cbuf2_size (RIP_MANAGER_INFO* rmi,
     }
     debug_printf ("mic_to_rw_start: %d\n", mic_to_rw_start);
     debug_printf ("mic_to_rw_end: %d\n", mic_to_rw_end);
+
+    /* if rw is not long enough, make it longer */
+    rw_len = mic_to_rw_end - mic_to_rw_start;
+    if (rw_len < meta_interval) {
+	long start_extra = (meta_interval - rw_len) / 2;
+	long end_extra = meta_interval - start_extra;
+	mic_to_rw_start -= start_extra;
+	mic_to_rw_end += end_extra;
+	debug_printf ("mic_to_rw_start (2): %d\n", mic_to_rw_start);
+	debug_printf ("mic_to_rw_end (2): %d\n", mic_to_rw_end);
+    }
 
     /* This code replaces the 3 cases (see OBSOLETE in gcs_notes.txt) */
     mic_to_cb_start = mic_to_rw_start;

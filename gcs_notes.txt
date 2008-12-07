@@ -9,6 +9,17 @@ Plans for 1.64.X
 (8) filename/directory problems on windows <cannot delete>
 
 -----------------------------------------------------------------------
+Splitpoint development
+-----------------------------------------------------------------------
+
+Current status (1.64.0)
+
+1) compute (rw_end_to_cb_start, rw_end_to_cb_end) at initialization, 
+2) find bufsize from rw_*, could be 0
+3) run findsep with zero bufsize
+
+
+-----------------------------------------------------------------------
 GLIB FAILURE ON WIN98
 -----------------------------------------------------------------------
 
