@@ -64,10 +64,11 @@ http_sc_connect (RIP_MANAGER_INFO* rmi,
 	debug_printf ("***** URL = %s *****\n", url);
 	debug_printf("http_sc_connect(): calling http_parse_url\n");
 	if (proxyurl) {
-	    if ((ret = http_parse_url(proxyurl, &url_info)) != SR_SUCCESS) {
+	    debug_printf ("***** PROXY = %s *****\n", proxyurl);
+	    if ((ret = http_parse_url (proxyurl, &url_info)) != SR_SUCCESS) {
 		return ret;
 	    }
-	} else if ((ret = http_parse_url(url, &url_info)) != SR_SUCCESS) {
+	} else if ((ret = http_parse_url (url, &url_info)) != SR_SUCCESS) {
 	    return ret;
 	}
 
@@ -139,6 +140,9 @@ http_parse_url(const char *url, URLINFO *urlinfo)
 { 
     int ret;
     char *s;
+
+
+    printf ("http_parse_url: %s\n", url);
 
     /* if we have a proto, just skip it. should we care about 
        the proto? like fail if it's not http? */
