@@ -2,22 +2,14 @@
 Plans for 1.64.X
 -----------------------------------------------------------------------
 
-(3) Skin improvements (fix single pixel problem) 
-(4) Skin improvements (read zip directly)
 (6) prefs global key file should be locked for multithreaded use
 (7) parse_rules not set for plugin
-(8) filename/directory problems on windows <cannot delete>
 
 -----------------------------------------------------------------------
-Splitpoint development
------------------------------------------------------------------------
 
-Current status (1.64.0)
+How to sync the web site:
 
-1) compute (rw_end_to_cb_start, rw_end_to_cb_end) at initialization, 
-2) find bufsize from rw_*, could be 0
-3) run findsep with zero bufsize
-
+   rsync -av --del htdocs gregsharp,streamripper@web.sourceforge.net:
 
 -----------------------------------------------------------------------
 GLIB FAILURE ON WIN98

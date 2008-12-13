@@ -105,7 +105,7 @@ read_interface (char *if_name, uint32_t *addr)
  * socket_handle gets assigned to the handle for the connection
  */
 error_code 
-socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_name)
+socklib_open (HSOCKET *socket_handle, char *host, int port, char *if_name, int timeout)
 {
     int rc;
     struct sockaddr_in address, local;
@@ -169,9 +169,9 @@ socklib_open(HSOCKET *socket_handle, char *host, int port, char *if_name)
 
 #ifdef WIN32
     {
-	struct timeval timeout = {DEFAULT_TIMEOUT, 0};
+	struct timeval tv = {timeout, 0};
 	rc = setsockopt (socket_handle->s, SOL_SOCKET,  SO_RCVTIMEO, 
-			 (char *)&timeout, sizeof(timeout));
+			 (char *)&tv, sizeof(struct timeval));
 	if (rc == SOCKET_ERROR) {
 	    debug_printf("setsockopt failed\n");
 	    /* GCS Added... */
@@ -205,7 +205,7 @@ socklib_read_header(RIP_MANAGER_INFO* rmi, HSOCKET *socket_handle,
 {
     int i;
 #ifdef WIN32
-    struct timeval timeout = {FIRST_READ_TIMEOUT, 0};
+    struct timeval timeout;
 #endif
     int ret;
     char *t;
@@ -214,12 +214,14 @@ socklib_read_header(RIP_MANAGER_INFO* rmi, HSOCKET *socket_handle,
 	return SR_ERROR_SOCKET_CLOSED;
 
 #ifdef WIN32
-    if (setsockopt(socket_handle->s, SOL_SOCKET,  SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) == SOCKET_ERROR)
+    memset (&timeout, 0, sizeof (struct timeval));
+    timeout.tv_sec = 2 * rmi->prefs->timeout;
+    if (setsockopt (socket_handle->s, SOL_SOCKET,  SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) == SOCKET_ERROR)
 	return SR_ERROR_CANT_SET_SOCKET_OPTIONS;
 #endif
 
     memset(buffer, 0, size);
-    for(i = 0; i < size; i++)
+    for (i = 0; i < size; i++)
     {
 	ret = socklib_recvall (rmi, socket_handle, &buffer[i], 1, 0);
 	if (ret < 0) {
@@ -257,8 +259,7 @@ socklib_read_header(RIP_MANAGER_INFO* rmi, HSOCKET *socket_handle,
     buffer[i] = '\0';
 
 #ifdef WIN32
-    timeout.tv_sec = DEFAULT_TIMEOUT;
-    if (setsockopt(socket_handle->s, SOL_SOCKET,  SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) == SOCKET_ERROR)
+    if (setsockopt (socket_handle->s, SOL_SOCKET,  SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) == SOCKET_ERROR)
 	return SR_ERROR_CANT_SET_SOCKET_OPTIONS;
 #endif
 
@@ -289,7 +290,7 @@ socklib_recvall (RIP_MANAGER_INFO* rmi, HSOCKET *socket_handle,
 	    FD_SET(sock, &fds);
 	    tv.tv_sec = timeout;
 	    tv.tv_usec = 0;
-	    ret = select(sock + 1, &fds, NULL, NULL, &tv);
+	    ret = select (sock + 1, &fds, NULL, NULL, &tv);
 	    if (ret == SOCKET_ERROR) {
 		/* This happens when I kill winamp while ripping */
 		return SR_ERROR_SELECT_FAILED;

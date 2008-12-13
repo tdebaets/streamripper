@@ -78,7 +78,7 @@ http_sc_connect (RIP_MANAGER_INFO* rmi,
 
 	debug_printf("http_sc_connect(): calling socklib_open: host=%s, port=%d\n",
 	    url_info.host, url_info.port);
-	if ((ret = socklib_open(sock, url_info.host, url_info.port, if_name)) != SR_SUCCESS)
+	if ((ret = socklib_open(sock, url_info.host, url_info.port, if_name, rmi->prefs->timeout)) != SR_SUCCESS)
 	    return ret;
 
 	debug_printf("http_sc_connect(): calling http_construct_sc_request\n");
@@ -142,7 +142,7 @@ http_parse_url(const char *url, URLINFO *urlinfo)
     char *s;
 
 
-    printf ("http_parse_url: %s\n", url);
+    debug_printf ("http_parse_url: %s\n", url);
 
     /* if we have a proto, just skip it. should we care about 
        the proto? like fail if it's not http? */
@@ -704,10 +704,9 @@ http_get_pls (RIP_MANAGER_INFO* rmi, HSOCKET *sock, SR_HTTP_HEADER *info)
     char buf[MAX_PLS_LEN];
     char location_buf[MAX_PLS_LEN];
     char title_buf[MAX_PLS_LEN];
-    const int timeout = 30;
 
     debug_printf ("Reading pls\n");
-    bytes = socklib_recvall (rmi, sock, buf, MAX_PLS_LEN, timeout);
+    bytes = socklib_recvall (rmi, sock, buf, MAX_PLS_LEN, rmi->prefs->timeout);
     if (bytes < SR_SUCCESS) return bytes;
     if (bytes == 0 || bytes == MAX_PLS_LEN) {
 	debug_printf("Failed in getting PLS (%d bytes)\n", bytes);
@@ -765,11 +764,10 @@ http_get_m3u (RIP_MANAGER_INFO* rmi, HSOCKET *sock, SR_HTTP_HEADER *info)
 {
     int bytes;
     char buf[MAX_M3U_LEN];
-    const int timeout = 30;
     char* p;
 
     debug_printf ("Reading m3u\n");
-    bytes = socklib_recvall (rmi, sock, buf, MAX_M3U_LEN, timeout);
+    bytes = socklib_recvall (rmi, sock, buf, MAX_M3U_LEN, rmi->prefs->timeout);
     if (bytes < SR_SUCCESS) return bytes;
     if (bytes == 0 || bytes == MAX_M3U_LEN) {
 	debug_printf("Failed in getting M3U (%d bytes)\n", bytes);

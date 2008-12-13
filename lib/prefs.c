@@ -477,10 +477,7 @@ prefs_get_stream_defaults (STREAM_PREFS* prefs)
     prefs->sp_opt.xs_padding_1 = 300;
     prefs->sp_opt.xs_padding_2 = 300;
 
-    /* GCS FIX: What is the difference between this timeout 
-       and the one used in setsockopt()? */
     prefs->timeout = 15;
-
     prefs->dropcount = 1;  /* Changed from 0 to 1 in version 1.63-beta-8 */
 
     // Defaults for codeset

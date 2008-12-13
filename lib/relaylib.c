@@ -67,7 +67,6 @@ static error_code relaylib_start_threads (RIP_MANAGER_INFO* rmi);
 
 #define BUFSIZE (1024)
 
-#define HTTP_HEADER_TIMEOUT 2
 #define HTTP_HEADER_DELIM "\n"
 #define ICY_METADATA_TAG "Icy-MetaData:"
 
@@ -110,7 +109,7 @@ tag_compare (char *str, char *tag)
 }
 
 static int
-header_receive (int sock, int *icy_metadata)
+header_receive (int sock, int *icy_metadata, int timeout)
 {
     fd_set fds;
     struct timeval tv;
@@ -125,9 +124,9 @@ header_receive (int sock, int *icy_metadata)
 	// that lacks CRLF delimiter
 	FD_ZERO(&fds);
         FD_SET(sock, &fds);
-        tv.tv_sec = HTTP_HEADER_TIMEOUT;
+        tv.tv_sec = timeout;
         tv.tv_usec = 0;
-        r = select(sock + 1, &fds, NULL, NULL, &tv);
+        r = select (sock + 1, &fds, NULL, NULL, &tv);
         if (r != 1) {
 	    debug_printf ("header_receive: could not select\n");
 	    break;
@@ -510,7 +509,7 @@ thread_accept (void* arg)
                     // Socket is new and its buffer had better have 
 		    // room to hold the entire HTTP header!
                     good = FALSE;
-                    if (header_receive (newsock, &icy_metadata) == 0 && rmi->cbuf2.buf != NULL) {
+                    if (header_receive (newsock, &icy_metadata, rmi->prefs->timeout) == 0 && rmi->cbuf2.buf != NULL) {
 			int header_len;
 			make_nonblocking (newsock);
 			client_http_header = client_relay_header_generate (rmi, icy_metadata);

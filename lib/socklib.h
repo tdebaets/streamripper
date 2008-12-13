@@ -9,7 +9,7 @@
 #endif
 
 error_code socklib_init ();
-error_code socklib_open (HSOCKET *socket_handle, char *host, int port, char *if_name);
+error_code socklib_open (HSOCKET *socket_handle, char *host, int port, char *if_name, int timeout);
 void socklib_close (HSOCKET *socket_handle);
 void socklib_cleanup ();
 error_code
