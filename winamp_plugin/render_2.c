@@ -105,6 +105,7 @@ render2_load (void** bmp,           /* output */
         unz_file_info file_info;
         err = unzGetCurrentFileInfo (uf, &file_info, filename_inzip, 
 		sizeof(filename_inzip), NULL, 0, NULL, 0);
+	debug_printf ("Loading zipped file: %s\n", filename_inzip);
 	if (err != UNZ_OK) {
 	    /* Error during header read */
 	    return;

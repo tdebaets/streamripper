@@ -2,6 +2,8 @@ New for 1.64.1
 ------------------------------------
 Sat, Dec 13, 2008
 * Plugin: Streamripper can now load zipped skins
+* Plugin: Streamripper skins can be (slightly) configured to use different
+  image regions.  This fixes the "extra pixel" bug.
 * Streamripper again skips leading dots "." when making files & directories
 * Fix problem with control characters in metadata
 * Fix crash when splitting without padding and without search window

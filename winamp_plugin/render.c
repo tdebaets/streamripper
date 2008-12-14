@@ -165,8 +165,10 @@ BOOL
 render_change_skin (LPCTSTR szBmpFile)
 {
     skindata_close (&m_current_skin);
-    if (!load_skindata_from_file(szBmpFile, &m_current_skin))
+    if (!load_skindata_from_file (szBmpFile, &m_current_skin))
 	return FALSE;
+
+    render_set_background (m_current_skin.rgn_points, m_current_skin.rgn_npoints);
     return TRUE;
 }
 
