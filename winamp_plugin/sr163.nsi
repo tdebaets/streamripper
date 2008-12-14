@@ -11,6 +11,12 @@
   !insertmacro DirState
 
 ;--------------------------------
+; Script preprocessing
+  !execute "zip -j srskin.zip skins\srskin.bmp skins\srskin.txt"
+  !execute "zip -j srskin_winamp.zip skins\srskin_winamp.bmp skins\srskin_winamp.txt"
+  !execute "zip -j srskin_XP.zip skins\srskin_XP.bmp skins\srskin_XP.txt"
+
+;--------------------------------
 ;General
 
   ;Name and file
@@ -120,10 +126,15 @@ Section "GUI Application" sec_gui
   File "..\win32\Release\wstreamripper.exe"
 
   SetOutPath $INSTDIR\Skins
-  File srskin.bmp
-  File srskin_winamp.bmp
-  File srskin_XP.bmp
-  
+  ;; We delete these .bmp's because user may be installing over 
+  ;; an existing install
+  Delete srskin.bmp
+  Delete srskin_winamp.bmp
+  Delete srskin_XP.bmp
+  File srskin.zip
+  File srskin_winamp.zip
+  File srskin_XP.zip
+
   ;Store installation folder
   WriteRegStr HKCU "Software\Streamripper" "" $INSTDIR
   
