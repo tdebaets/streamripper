@@ -1,20 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <locale.h>
 #include <iconv.h>
-#include <wchar.h>
-#include <wctype.h>
+#include "util.h"
 
 
 int
 main (int argc, char* argv[])
 {
-    wchar_t buf[1024];
+    char* kanji_sjis = "\x8a\xbf\x8e\x9a";
+    char cvt_buf[1024];
+    initialize_default_locale ();
+    set_codeset ("CODESET_ALL", "SHIFT-JIS");
 
-    setlocale (LC_CTYPE, "");
-    swprintf (buf, 1024, L"%ls", L"HiHi");
-    printf ("%d wide chars in arg\n", wcslen(L"HiHi"));
-    printf ("%d wide chars in buf\n", wcslen(buf));
+    iconv_convert_string (utf_buf, 1023, kanji_sjis, 
+			  "EUCJP", "SJIS");
+
+    printf ("ori=%s\n", kanji_sjis);
+    printf ("cvt=%s\n", utf_buf);
     return 0;
 }
 

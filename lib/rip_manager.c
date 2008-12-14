@@ -1,4 +1,5 @@
-/* rip_manager.c
+/* rip_manager.c - jonclegg@yahoo.com
+ * ties together lots of shit, main entry point for clients to call
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,38 +15,31 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-/******************************************************************************
- * Rip Manager API
+  
+/*
+ * This is the top level for the streamripper library. The it handles the 
+ * connecting the rippers (ripstream, ripshout, riplive) to the sockets 
+ * (socklib), the output stuff (filelib) and the relay server thing (relaylib)
+ * and also all the "features" like auto connecting, directory names.
  *
- *   Callback Function
- *     void (*status_callback)(RIP_MANAGER_INFO* rmi, 
- *                              int message, void *data));
- *   Functions
- *     void rip_manager_init (void);
- *     error_code rip_manager_start (RIP_MANAGER_INFO **rmi, 
- *	  STREAM_PREFS *prefs, RIP_MANAGER_CALLBACK status_callback);
- *     void rip_manager_stop (RIP_MANAGER_INFO *rmi);
- *     void rip_manager_cleanup (void);
- *
- *****************************************************************************/
+ * Lots of stuff, and in retrospect it should probably be more splite up. My 
+ * excuss is that this grew from a bunch of unit tests for the various 
+ * "sub-systems". In the end i just called it "rip_mananger".
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#include <errno.h>
-#include <sys/types.h>
-#if !defined (WIN32)
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#endif
-
-#include "errors.h"
 #include "filelib.h"
 #include "socklib.h"
-#include "mchar.h"
+#include "http.h"
+#include "util.h"
+#include "riplive365.h"
+#include "ripshout.h"
 #include "findsep.h"
+#include "inet.h"
 #include "relaylib.h"
 #include "rip_manager.h"
 #include "ripstream.h"
@@ -53,174 +47,167 @@
 #include "debug.h"
 #include "compat.h"
 #include "parse.h"
-#include "http.h"
-
-/******************************************************************************
- * Private functions
- *****************************************************************************/
-static void ripthread (void *thread_arg);
-static void post_status (RIP_MANAGER_INFO* rmi, int status);
-static error_code start_ripping (RIP_MANAGER_INFO* rmi);
-void destroy_subsystems (RIP_MANAGER_INFO* rmi);
-
-/******************************************************************************
- * Private Vars
- *****************************************************************************/
-static const char* overwrite_opt_strings[] = {
-    "",		// UNKNOWN
-    "always",
-    "never",
-    "larger",
-    "version"
-};
 
 /******************************************************************************
  * Public functions
  *****************************************************************************/
-void
-rip_manager_init (void)
-{
-    errors_init ();
-    socklib_init();
-}
-
-/* Create a RMI structure and start the ripping thread */
-error_code
-rip_manager_start (RIP_MANAGER_INFO **rmip,
-		   STREAM_PREFS *prefs,
-		   RIP_MANAGER_CALLBACK status_callback)
-{
-    RIP_MANAGER_INFO* rmi;
-#if __UNIX__
-    int rc;
-#endif
-
-    if (!prefs || !rmip) {
-	return SR_ERROR_INVALID_PARAM;
-    }
-
-    rmi = (*rmip) = (RIP_MANAGER_INFO*) malloc (sizeof(RIP_MANAGER_INFO));
-    memset (rmi, 0, sizeof(RIP_MANAGER_INFO));
-    rmi->prefs = prefs;
-
-    rmi->started_sem = threadlib_create_sem();
-
-    register_codesets (rmi, &prefs->cs_opt);
-
-    /* From select() man page:
-       On systems that lack pselect() reliable (and more
-       portable)  signal  trapping  can  be achieved using the self-pipe trick
-       (where a signal handler writes a byte to a pipe whose other end is mon-
-       itored by select() in the main program.
-    */
-#if __UNIX__
-    rc = pipe (rmi->abort_pipe);
-    if (rc != 0) {
-	return SR_ERROR_CREATE_PIPE_FAILED;
-    }
-#endif
-
-    rmi->status_callback = status_callback;
-    rmi->bytes_ripped = 0;
-    rmi->write_data = 1;
-
-    /* Initialize the parsing rules */
-    /* GCS FIX: parser_free() would need to be freed by the caller.  
-       But he has no cleanup routine to call! */
-    init_metadata_parser (rmi, prefs->rules_file);
-
-    /* Start the ripping thread */
-    debug_printf ("Pre ripthread: %s\n", rmi->prefs->url);
-    rmi->started = 1;
-    return threadlib_beginthread (&rmi->hthread_ripper, 
-				  ripthread, (void*) rmi);
-}
-
-void
-rip_manager_stop (RIP_MANAGER_INFO *rmi)
-{
-    // Make sure this function isn't getting called twice
-    if (!rmi->started) {
-	debug_printf ("rip_manager_stop() called while not started\n");
-	return;
-    }
-    
-    /* Write to pipe so ripping thread will exit select() */
-#if __UNIX__
-    debug_printf ("Writing to abort_pipe.\n");
-    write (rmi->abort_pipe[1], "0", 1);
-#endif
-
-    // Make sure the ripping started before we try to stop
-    debug_printf ("Waiting for m_started_sem...\n");
-    threadlib_waitfor_sem(&rmi->started_sem);
-    rmi->started = 0;
-
-    // Causes the code running in the thread to bail
-    debug_printf ("Closing stream_sock...\n");
-    socklib_close(&rmi->stream_sock);
-
-    // Kill external process
-    if (rmi->ep) {
-	debug_printf ("Close external\n");
-	close_external (&rmi->ep);
-    }
-
-    // blocks until everything is ok and closed
-    debug_printf ("Waiting for hthread_ripper to close...\n");
-    threadlib_waitforclose(&rmi->hthread_ripper);
-    debug_printf ("Destroying subsystems...\n");
-    destroy_subsystems (rmi);
-    debug_printf ("Destroying m_started_sem\n");
-    threadlib_destroy_sem(&rmi->started_sem);
-    debug_printf ("Done with rip_manager_stop\n");
-
-    /* Close pipes */
-#if __UNIX__
-    debug_printf ("Closing abort_pipe.\n");
-    close (rmi->abort_pipe[0]);
-    close (rmi->abort_pipe[1]);
-#endif
-}
-
-
-void
-rip_manager_cleanup (void)
-{
-    socklib_cleanup();
-}
-
+error_code		rip_manager_start(void (*status_callback)(int message, void *data), RIP_MANAGER_OPTIONS *options);
+void			rip_manager_stop();
+char *			rip_manager_get_error_str(error_code code);
+u_short			rip_mananger_get_relay_port();	
 
 /******************************************************************************
  * Private functions
- *****************************************************************************/
-static void
-post_error (RIP_MANAGER_INFO* rmi, error_code err)
+ ******************************************************************************/
+static void			ripthread(void *bla);
+static int			myrecv(char* buffer, int size);
+static error_code		start_relay(int content_type);
+static void			post_status(int status);
+static int			set_output_directory();
+//static error_code		start_track(char *track);
+//static error_code		rip_manager_end_track(char *track);
+//static error_code		rip_manager_put_data(char *buf, int size);
+static error_code		start_ripping();
+static void			destroy_subsystems();
+
+
+/******************************************************************************
+ * Private Vars
+ ******************************************************************************/
+static SR_HTTP_HEADER		m_info;
+static HSOCKET			m_sock;
+static void			(*m_destroy_func)();
+static RIP_MANAGER_INFO		m_ripinfo;		// used for UPDATE callback messages
+static RIP_MANAGER_OPTIONS	m_options;		// local copy of the options passed to rip_manager_start()
+static THREAD_HANDLE		m_hthread;		// rip thread handle
+static IO_DATA_INPUT		m_in;			// Gets raw stream data
+static IO_GET_STREAM		m_ripin;		// Raw stream data + song information
+//static IO_PUT_STREAM		m_ripout;		// Generic output interface
+static void			(*m_status_callback)(int message, void *data);
+static BOOL			m_ripping = FALSE;
+static u_long			m_bytes_ripped;
+static HSEM			m_started_sem;	// to prevent deadlocks when ripping is stopped before its
+													// started.
+
+/*
+ * Needs english type messages, just copy pasted for now
+ */
+static char m_error_str[NUM_ERROR_CODES][MAX_ERROR_STR];
+#define SET_ERR_STR(str, code)	strncpy(m_error_str[code], str, MAX_ERROR_STR);
+
+void init_error_strings()
+{
+    SET_ERR_STR("SR_SUCCESS",				0x00);
+    SET_ERR_STR("SR_ERROR_CANT_FIND_TRACK_SEPERATION",	0x01);
+    SET_ERR_STR("SR_ERROR_DECODE_FAILURE",			0x02);
+    SET_ERR_STR("SR_ERROR_INVALID_URL",			0x03);
+    SET_ERR_STR("SR_ERROR_WIN32_INIT_FAILURE",		0x04);
+    SET_ERR_STR("Could not connect to the stream. Try checking that the stream is up\n"
+		"and that your proxy settings are correct.",0x05);
+    SET_ERR_STR("SR_ERROR_CANT_RESOLVE_HOSTNAME",		0x06);
+    SET_ERR_STR("SR_ERROR_RECV_FAILED",				0x07);
+    SET_ERR_STR("SR_ERROR_SEND_FAILED",				0x08);
+    SET_ERR_STR("SR_ERROR_PARSE_FAILURE",			0x09);
+    SET_ERR_STR("SR_ERROR_NO_RESPOSE_HEADER",			0x0a);
+    SET_ERR_STR("Server returned an unknown error code",0x0b);
+    SET_ERR_STR("SR_ERROR_NO_META_INTERVAL",			0x0c);
+    SET_ERR_STR("SR_ERROR_INVALID_PARAM",			0x0d);
+    SET_ERR_STR("SR_ERROR_NO_HTTP_HEADER",			0x0e);
+    SET_ERR_STR("SR_ERROR_CANT_GET_LIVE365_ID",			0x0f);
+    SET_ERR_STR("SR_ERROR_CANT_ALLOC_MEMORY",			0x10);
+    SET_ERR_STR("SR_ERROR_CANT_FIND_IP_PORT",			0x11);
+    SET_ERR_STR("SR_ERROR_CANT_FIND_MEMBERNAME",		0x12);
+    SET_ERR_STR("SR_ERROR_CANT_FIND_TRACK_NAME",		0x13);
+    SET_ERR_STR("SR_ERROR_NULL_MEMBER_NAME",			0x14);
+    SET_ERR_STR("SR_ERROR_CANT_FIND_TIME_TAG",			0x15);
+    SET_ERR_STR("SR_ERROR_BUFFER_EMPTY",			0x16);
+    SET_ERR_STR("SR_ERROR_BUFFER_FULL",				0x17);
+    SET_ERR_STR("SR_ERROR_CANT_INIT_XAUDIO",			0x18);
+    SET_ERR_STR("SR_ERROR_BUFFER_TOO_SMALL",			0x19);
+    SET_ERR_STR("SR_ERROR_CANT_CREATE_THREAD",			0x1A);
+    SET_ERR_STR("SR_ERROR_CANT_FIND_MPEG_HEADER",		0x1B);
+    SET_ERR_STR("SR_ERROR_INVALID_METADATA",			0x1C);
+    SET_ERR_STR("SR_ERROR_NO_TRACK_INFO",			0x1D);
+    SET_ERR_STR("SR_EEROR_CANT_FIND_SUBSTR",			0x1E);
+    SET_ERR_STR("SR_ERROR_CANT_BIND_ON_PORT",			0x1F);
+    SET_ERR_STR("SR_ERROR_HOST_NOT_CONNECTED",			0x20);
+    SET_ERR_STR("HTTP:404 Not Found",				0x21);
+    SET_ERR_STR("HTTP:401 Unauthorized",			0x22);
+    SET_ERR_STR("HTTP:502 Bad Gateway",				0x23);	// Connection Refused
+    SET_ERR_STR("SR_ERROR_CANT_CREATE_FILE",			0x24);
+    SET_ERR_STR("SR_ERROR_CANT_WRITE_TO_FILE",			0x25);
+    SET_ERR_STR("SR_ERROR_CANT_CREATE_DIR",			0x26);
+    SET_ERR_STR("HTTP:400 Bad Request ",			0x27);	// Server Full
+    SET_ERR_STR("SR_ERROR_CANT_SET_SOCKET_OPTIONS",		0x28);
+    SET_ERR_STR("SR_ERROR_SOCK_BASE",				0x29);
+    SET_ERR_STR("SR_ERROR_INVALID_DIRECTORY",			0x2a);
+    SET_ERR_STR("SR_ERROR_FAILED_TO_MOVE_FILE",			0x2b);
+    SET_ERR_STR("SR_ERROR_CANT_LOAD_MPGLIB",			0x2c);
+    SET_ERR_STR("SR_ERROR_CANT_INIT_MPGLIB",			0x2d);
+    SET_ERR_STR("SR_ERROR_CANT_UNLOAD_MPGLIB",			0x2e);
+    SET_ERR_STR("SR_ERROR_PCM_BUFFER_TO_SMALL",			0x2f);
+    SET_ERR_STR("SR_ERROR_CANT_DECODE_MP3",			0x30);
+    SET_ERR_STR("SR_ERROR_SOCKET_CLOSED",			0x31);
+    SET_ERR_STR("Due to legal reasons Streamripper can no longer work with Live365(tm).\r\n"
+		"See streamripper.sourceforge.net for more on this matter.", 0x32);
+    SET_ERR_STR("The maximum number of bytes ripped has been reached", 0x33);
+    SET_ERR_STR("SR_ERROR_CANT_WAIT_ON_THREAD",			0x34);
+    SET_ERR_STR("SR_ERROR_CANT_CREATE_EVENT",			0x35);
+    SET_ERR_STR("SR_ERROR_NOT_SHOUTCAST_STREAM",		0x36);
+    SET_ERR_STR("HTTP:407 - Proxy Authentication Required",	0x37);
+    SET_ERR_STR("HTTP:403 - Access Forbidden (try changing the UserAgent)", 0x38);
+    SET_ERR_STR("The output directory length is too long", 0x39);
+    SET_ERR_STR("SR_ERROR_PROGRAM_ERROR", 0x3a);
+    SET_ERR_STR("SR_ERROR_TIMEOUT", 0x3b);
+    SET_ERR_STR("SR_ERROR_SELECT_FAILED", 0x3c);
+}
+
+char*
+rip_manager_get_error_str(error_code code)
+{
+    if (code > 0 || code < -NUM_ERROR_CODES)
+        return NULL;
+    return m_error_str[-code];
+}
+
+u_short
+rip_mananger_get_relay_port()
+{
+    return m_options.relay_port;
+}
+
+void
+post_error(int err)
 {
     ERROR_INFO err_info;
     err_info.error_code = err;
-    strcpy(err_info.error_str, errors_get_string (err));
-    debug_printf ("post_error: %d %s\n", err_info.error_code, 
-		  err_info.error_str);
-    rmi->status_callback (rmi, RM_ERROR, &err_info);
+    strcpy(err_info.error_str, m_error_str[abs(err)]);
+    m_status_callback(RM_ERROR, &err_info);
 }
 
-static void
-post_status (RIP_MANAGER_INFO* rmi, int status)
+
+void
+post_status(int status)
 {
     if (status != 0)
-        rmi->status = status;
-    rmi->status_callback (rmi, RM_UPDATE, 0);
+        m_ripinfo.status = status;
+    m_status_callback(RM_UPDATE, &m_ripinfo);
 }
 
-static void
-compose_console_string (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
+
+int
+myrecv(char* buffer, int size)
 {
-    mchar console_string[SR_MAX_PATH];
-    msnprintf (console_string, SR_MAX_PATH, m_S m_(" - ") m_S, 
-	       ti->artist, ti->title);
-    string_from_mstring (rmi, rmi->filename, SR_MAX_PATH, console_string,
-			 CODESET_LOCALE);
+    int ret;
+    /* GCS: Jun 5, 2004.  Here is where I think we are getting aussie's 
+       problem with the SR_ERROR_INVALID_METADATA or SR_ERROR_NO_TRACK_INFO
+       messages */
+    ret = socklib_recvall(&m_sock, buffer, size, m_options.timeout);
+    if (ret >= 0 && ret != size) {
+	debug_printf ("rip_manager_recv: expected %d, got %d\n",size,ret);
+	ret = SR_ERROR_RECV_FAILED;
+    }
+    return ret;
 }
 
 /* 
@@ -230,32 +217,24 @@ compose_console_string (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
  * update via the callback 
  */
 error_code
-rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
+rip_manager_start_track (TRACK_INFO* ti, int track_count)
 {
     int ret;
 
-#if defined (commmentout)
-    /* GCS FIX -- here is where i would compose the incomplete filename */
+    /* GCS FIX */
     char* trackname = ti->raw_metadata;
+
     debug_printf("rip_manager_start_track: %s\n", trackname);
-    if (rmi->write_data && (ret = filelib_start(trackname)) != SR_SUCCESS) {
-        return ret;
-    }
-#endif
 
-    rmi->write_data = ti->save_track;
-
-    if (rmi->write_data && (ret = filelib_start (rmi, ti)) != SR_SUCCESS) {
+    if ((ret = filelib_start(trackname)) != SR_SUCCESS) {
         return ret;
     }
 
-    rmi->filesize = 0;
-
-    /* Compose the string for the console output */
-    compose_console_string (rmi, ti);
-    rmi->filename[SR_MAX_PATH-1] = '\0';
-    rmi->status_callback (rmi, RM_NEW_TRACK, (void*) rmi->filename);
-    post_status(rmi, 0);
+    strcpy(m_ripinfo.filename, trackname);
+    m_ripinfo.filesize = 0;
+    m_ripinfo.track_count = track_count;
+    m_status_callback(RM_NEW_TRACK, (void *)trackname);
+    post_status(0);
 
     return SR_SUCCESS;
 }
@@ -266,357 +245,417 @@ rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
  * the first track is *never* complete.
  */
 error_code
-rip_manager_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
+rip_manager_end_track(TRACK_INFO* ti)
 {
-    mchar mfullpath[SR_MAX_PATH];
     char fullpath[SR_MAX_PATH];
 
-    if (rmi->write_data) {
-        filelib_end (rmi, ti, rmi->prefs->overwrite,
-		     GET_TRUNCATE_DUPS(rmi->prefs->flags),
-		     mfullpath);
-    }
-    post_status(rmi, 0);
-
-    string_from_mstring (rmi, fullpath, SR_MAX_PATH, mfullpath, CODESET_FILESYS);
-    rmi->status_callback (rmi, RM_TRACK_DONE, (void*)fullpath);
+    /* GCS FIX */
+    filelib_end(ti->raw_metadata, GET_OVER_WRITE_TRACKS(m_options.flags), GET_TRUNCATE_DUPS(m_options.flags), fullpath, m_options.szPrefix);
+    post_status(0);
+    m_status_callback(RM_TRACK_DONE, (void*)fullpath);
 
     return SR_SUCCESS;
 }
 
 error_code
-rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
+rip_manager_put_data(char *buf, int size)
 {
-    int ret;
+    filelib_write_track(buf, size);
 
-    if (GET_INDIVIDUAL_TRACKS(rmi->prefs->flags)) {
-	if (rmi->write_data) {
-	    ret = filelib_write_track (rmi, buf, size);
-	    if (ret != SR_SUCCESS) {
-		debug_printf ("filelib_write_track returned: %d\n",ret);
-		return ret;
-	    }
-	}
-    }
-
-    rmi->filesize += size;	/* This is used by the GUI */
-    rmi->bytes_ripped += size;	/* This is used to determine when to quit */
+    m_ripinfo.filesize += size;
+    m_bytes_ripped += size;
 
     return SR_SUCCESS;
 }
 
-char *
-client_relay_header_generate (RIP_MANAGER_INFO* rmi, int icy_meta_support)
+error_code
+rip_manager_put_raw_data(char *buf, int size)
 {
-    int ret;
-    char *headbuf;
-
-    headbuf = (char *) malloc (MAX_HEADER_LEN);
-    ret = http_construct_sc_response (&rmi->http_info, headbuf, MAX_HEADER_LEN,
-				      icy_meta_support);
-    if (ret != SR_SUCCESS) {
-	headbuf[0] = 0;
-    }
-    
-    return headbuf;
+    relaylib_send(buf, size, 1);
+    filelib_write_show (buf, size);
+    return SR_SUCCESS;
 }
+
+
+/* GCS - Honestly, the filename code needs to be ripped out and rewritten.
+   Problems include: (1) no wchar support, (2) truncation and stripping
+   should not be applied to ID3 data, (3) MAX_PATH and NAME_MAX should 
+   be properly used, or even better pathconf (see glibc manual for example),
+   (4) why is it smeared across rip_manager.c and filelib.c ?
+
+   But "for now", I've hacked it to do better truncation at least in this 
+   limited circumstance: ASCII streams with MAX_PATH == NAME_MAX.
+*/
+int
+set_output_directory()
+{
+    int rc;
+    rc = filelib_set_output_directory (m_options.output_directory, 
+	GET_SEPERATE_DIRS(m_options.flags),
+	GET_DATE_STAMP(m_options.flags),
+	m_info.icy_name);
+    if (rc != SR_SUCCESS)
+	return rc;
+//    m_status_callback(RM_OUTPUT_DIR, (void*)newpath);
+    m_status_callback(RM_OUTPUT_DIR, (void*)filelib_get_output_directory);
+    return rc;
+}
+
+/* 
+ * Fires up the relaylib stuff. Most of it is so relaylib 
+ * knows what to call the stream which is what the 'construct_sc_repsonse()'
+ * call is about.
+ */
+error_code
+start_relay(int content_type)
+{	
+    int ret;
+    SR_HTTP_HEADER info = m_info;
+    char temp_icyname[MAX_SERVER_LEN];
+
+    char headbuf[MAX_HEADER_LEN];
+//    info.meta_interval = NO_META_INTERVAL;
+    sprintf(temp_icyname, "[%s] %s", "relay stream", info.icy_name);
+    strcpy(info.icy_name, temp_icyname);
+    info.content_type = content_type;
+
+    if ((ret = httplib_construct_sc_response(&info, headbuf, MAX_HEADER_LEN)) != SR_SUCCESS)
+	return ret;
+
+    if (!relaylib_isrunning())
+	if ((ret = relaylib_start()) != SR_SUCCESS)
+	    return ret;
+
+    if ((ret = relaylib_set_response_header(headbuf)) != SR_SUCCESS)
+	return ret;
+
+    return SR_SUCCESS;
+}
+
 
 void
-client_relay_header_release (char *ch)
-{
-    free (ch);
-}
-
-static void
-debug_ripthread (RIP_MANAGER_INFO* rmi)
-{
-    debug_printf ("------ RIP_MANAGER_INFO -------\n");
-    debug_printf ("streamname = %s\n", rmi->streamname);
-    debug_printf ("server_name = %s\n", rmi->server_name);
-    debug_printf ("bitrate = %d\n", rmi->bitrate);
-    debug_printf ("meta_interval = %d\n", rmi->meta_interval);
-    debug_printf ("filename = %s\n", rmi->filename);
-    debug_printf ("filesize = %d\n", rmi->filesize);
-    debug_printf ("status = %d\n", rmi->status);
-    debug_printf ("track_count = %d\n", rmi->track_count);
-    debug_printf ("external_process = %p\n", rmi->ep);
-}
-
-static void
-ripthread (void *thread_arg)
+ripthread(void *notused)
 {
     error_code ret;
-    RIP_MANAGER_INFO* rmi = (RIP_MANAGER_INFO*) thread_arg;
-    debug_ripthread (rmi);
-    debug_stream_prefs (rmi->prefs);
 
-    /* Connect to remote server */
-    ret = start_ripping (rmi);
-    if (ret != SR_SUCCESS) {
-	debug_printf ("Ripthread did start_ripping()\n");
-	threadlib_signal_sem (&rmi->started_sem);
-	post_error (rmi, ret);
+    if ((ret = start_ripping()) != SR_SUCCESS) {
+	threadlib_signel_sem(&m_started_sem);
+	post_error(ret);
 	goto DONE;
     }
+    m_status_callback(RM_STARTED, (void *)NULL);
+    post_status(RM_STATUS_BUFFERING);
+    threadlib_signel_sem(&m_started_sem);
 
-    rmi->status_callback (rmi, RM_STARTED, (void *)NULL);
-    post_status (rmi, RM_STATUS_BUFFERING);
-    debug_printf ("Ripthread did initialization\n");
-    threadlib_signal_sem(&rmi->started_sem);
+    while(TRUE) {
+        ret = ripstream_rip();
 
-    while (TRUE) {
-	debug_printf ("Gonna ripstream_rip\n");
-        ret = ripstream_rip(rmi);
-	debug_printf ("Did ripstream_rip\n");
+	/* If the user told use to stop, well, then we bail */
+	if (!m_ripping)
+	    break;
 
-	if (!rmi->started) {
+	/* 
+	 * Added 8/4/2001 jc --
+	 * for max number of MB ripped stuff
+	 * At the time of writting this, i honestly 
+	 * am not sure i understand what happens 
+	 * when once trys to stop the ripping from the lib and
+	 * the interface it's a weird combonation of threads
+	 * wnd locks, etc.. all i know is that this appeared to work
+	 */
+	if (m_bytes_ripped >= (m_options.maxMB_rip_size*1000000) &&
+	    GET_CHECK_MAX_BYTES(m_options.flags)) {
+	    socklib_close(&m_sock);
+	    destroy_subsystems();
+	    post_error(SR_ERROR_MAX_BYTES_RIPPED);
 	    break;
 	}
-	else if (rmi->bytes_ripped/1000000 >= (rmi->prefs->maxMB_rip_size) &&
-		GET_CHECK_MAX_BYTES (rmi->prefs->flags)) {
-	    /* GCS Aug 23, 2003: bytes_ripped can still overflow */
-	    socklib_close (&rmi->stream_sock);
-	    destroy_subsystems (rmi);
-	    //post_error (rmi, SR_ERROR_MAX_BYTES_RIPPED);
-	    break;
-	}
-	else if (ret == SR_SUCCESS_BUFFERING) {
-	    post_status (rmi, RM_STATUS_BUFFERING);
-	    /* Fall through */
+
+	/*
+	 * If the error was anything but a connection failure
+	 * then we need to report it and bail
+	 */
+	if (ret == SR_SUCCESS_BUFFERING) {
+	    post_status(RM_STATUS_BUFFERING);
 	}
 	else if (ret == SR_ERROR_CANT_DECODE_MP3) {
-	    post_error (rmi, ret);
+	    post_error(ret);
 	    continue;
 	}
 	else if ((ret == SR_ERROR_RECV_FAILED || 
 		  ret == SR_ERROR_TIMEOUT || 
 		  ret == SR_ERROR_NO_TRACK_INFO || 
 		  ret == SR_ERROR_SELECT_FAILED) && 
-		 GET_AUTO_RECONNECT (rmi->prefs->flags)) {
-	    /* Try to reconnect */
-	    post_status (rmi, RM_STATUS_RECONNECTING);
-	    while (rmi->started) {
-		socklib_close(&rmi->stream_sock);
-		if (rmi->ep) {
-		    debug_printf ("Close external\n");
-		    close_external (&rmi->ep);
-		}
-		destroy_subsystems (rmi);
-		ret = start_ripping (rmi);
+		 GET_AUTO_RECONNECT(m_options.flags)) {
+	    /*
+	     * Try to reconnect, if thats what the user wants
+	     */
+	    post_status(RM_STATUS_RECONNECTING);
+	    while(m_ripping) {
+
+		// Hopefully this solves a lingering bug 
+		// with auto-reconnects failing to bind to the relay port
+		// (a long with other unknown problems)
+		// it seems that maybe we need two levels of shutdown and startup
+		// functions. init_system, init_rip, shutdown_system and shutdown_rip
+		// this would be a shutdown_rip, which only lacks the filelib and socklib
+		// shutdowns
+		// because filelib needs to keep track of it's file counters, and socklib.. umm..
+		// not sure about. no reasdon to i imagine.
+		socklib_close(&m_sock);
+		relaylib_shutdown();
+		// GCS testing...
+		filelib_shutdown();
+		ripstream_destroy();
+		if (m_destroy_func)
+		    m_destroy_func();
+
+		ret = start_ripping();
 		if (ret == SR_SUCCESS)
 		    break;
+
+		/*
+		 * Should send a message that we are trying 
+		 * .. or something
+		 */
 		Sleep(1000);
 	    }
-	    if (!rmi->started) {
-		break;
-	    }
-	    /* Fall through */
-	}
-	else if (ret == SR_ERROR_ABORT_PIPE_SIGNALLED) {
-	    /* Normal exit condition CTRL-C on unix */
-	    destroy_subsystems (rmi);
-	    break;
 	}
 	else if (ret != SR_SUCCESS) {
-	    destroy_subsystems (rmi);
-	    post_error (rmi, ret);
+	    destroy_subsystems();
+	    post_error(ret);
 	    break;
 	}
 
-	/* All systems go.  Caller should update GUI that it is ripping */
-	if (rmi->filesize > 0) {
-	    post_status (rmi, RM_STATUS_RIPPING);
-	}
+	if (m_ripinfo.filesize > 0)
+	    post_status(RM_STATUS_RIPPING);
     }
 
     // We get here when there was either a fatal error
     // or we we're not auto-reconnecting and the stream just stopped
-    // or when we have been told to stop, via the rmi->started flag
+    // or when we have been told to stop, via the m_ripping flag
  DONE:
-    rmi->status_callback (rmi, RM_DONE, 0);
-    rmi->started = 0;
-    debug_printf ("ripthread() exiting!\n");
+    m_status_callback(RM_DONE, &m_ripinfo);
+    m_ripping = FALSE;
+}
+
+
+void
+rip_manager_stop()
+{
+    // Make sure this function isn't getting called twice
+    if (!m_ripping)
+	    return;
+    
+    // Make sure the ripping started before we try to stop
+    threadlib_waitfor_sem(&m_started_sem);
+    m_ripping = FALSE;
+
+    /* Destroy the parsing rules */
+    /* destroy_metadata_parser (); */
+
+    // Causes the code running in the thread to bail
+    socklib_close(&m_sock);
+
+    // blocks until everything is ok and closed
+    threadlib_waitforclose(&m_hthread);
+    destroy_subsystems();
+    threadlib_destroy_sem(&m_started_sem);
 }
 
 void
-destroy_subsystems (RIP_MANAGER_INFO* rmi)
+destroy_subsystems()
 {
-    ripstream_clear (rmi);
-    relaylib_stop (rmi);
-    /* GCS Feb 17,2008.  The socklib_cleanup() is done at program 
-       shutdown, not rip_manager shutdown. */
-    // socklib_cleanup();
-    filelib_shutdown (rmi);
+    ripstream_destroy();
+    if (m_destroy_func) {
+	m_destroy_func();
+    }
+    relaylib_shutdown();
+    socklib_cleanup();
+    filelib_shutdown();
 }
 
-static int
-create_pls_file (RIP_MANAGER_INFO* rmi)
+error_code
+start_ripping()
 {
-    FILE *fid;
-
-    if  ('\0' == rmi->prefs->relay_ip[0]) {
-	fprintf(stderr, "can not determine relaying ip, pass ip to -r \n");
-	return -1;
-    }
-
-    fid = fopen (rmi->prefs->pls_file, "w");
-
-    if (NULL == fid) {
-	fprintf(stderr, "could not create playlist file '%s': %d '%s'\n",
-		rmi->prefs->pls_file, errno, strerror(errno));
-    } else {
-	fprintf(fid, "[playlist]\n");
-	fprintf(fid, "NumberOfEntries=1\n");
-	fprintf(fid, "File1=http://%s:%d\n", rmi->prefs->relay_ip, 
-		rmi->prefs->relay_port);
-	fclose(fid);
-    }
-
-    return 0;
-}
-
-static error_code
-start_ripping (RIP_MANAGER_INFO* rmi)
-{
-    STREAM_PREFS* prefs = rmi->prefs;
     error_code ret;
+    char *pproxy = m_options.proxyurl[0] ? m_options.proxyurl : NULL;
 
-    const char *pproxy = prefs->proxyurl[0] ? prefs->proxyurl : NULL;
-    debug_printf ("start_ripping: checkpoint 1\n");
-
-    /* If proxy URL not spec'd on command line (or plugin field), 
-       check the environment variable */
-    if (!pproxy) {
-	char const *env_http_proxy = getenv ("http_proxy");
-	if (env_http_proxy) {
-	    pproxy = env_http_proxy;
-	    debug_printf ("Getting proxy from $http_proxy: %s\n", pproxy);
-	}
-    }
-
-    debug_printf ("start_ripping: checkpoint 2\n");
-
-    /* Connect to the stream */
-    ret = http_sc_connect (rmi, &rmi->stream_sock, prefs->url, 
-			   pproxy, &rmi->http_info, 
-			   prefs->useragent, prefs->if_name);
+    /*
+     * Connect to the stream
+     */
+    ret = inet_sc_connect(&m_sock, m_options.url, pproxy, &m_info, 
+			  m_options.useragent, m_options.if_name);
     if (ret != SR_SUCCESS) {
-	debug_printf ("http_sc_connect() returned error\n");
 	goto RETURN_ERR;
     }
+
+#if defined (COMMENTOUT_FOR_OGG)
+    /* GCS 09/10/04 - I wonder if this is worth doing */
+    if (!m_info.have_icy_name) {
+	ret = SR_ERROR_NOT_SHOUTCAST_STREAM;
+	goto RETURN_ERR;
+    }
+#endif
 
     /* If the icy_name exists, but is empty, set to a bogus name so 
        that we can create the directory correctly, etc. */
-    if (strlen(rmi->http_info.icy_name) == 0) {
-	strcpy (rmi->http_info.icy_name, "Streamripper_rips");
+    if (strlen(m_info.icy_name) == 0) {
+	strcpy (m_info.icy_name, "Streamripper_rips");
     }
 
-    /* Set the ripinfo struct from the data we now know about the 
+    /*
+     * Set the ripinfo struct from the data we now know about the 
      * stream, this info are things like server name, type, 
-     * bitrate etc.. */
-    rmi->meta_interval = rmi->http_info.meta_interval;
-    rmi->http_bitrate = rmi->http_info.icy_bitrate;
-    rmi->detected_bitrate = -1;
-    rmi->bitrate = -1;
-    strcpy (rmi->streamname, rmi->http_info.icy_name);
-    strcpy (rmi->server_name, rmi->http_info.server);
+     * bitrate etc.. 
+     */
+    memset(&m_ripinfo, 0, sizeof(RIP_MANAGER_INFO));
+    m_ripinfo.meta_interval = m_info.meta_interval;
+    m_ripinfo.bitrate = m_info.icy_bitrate;
+    strcpy(m_ripinfo.streamname, m_info.icy_name);
+    strcpy(m_ripinfo.server_name, m_info.server);
 
-    /* Initialize file writing code. */
-    ret = filelib_init
-	    (rmi, 
-	     GET_INDIVIDUAL_TRACKS(rmi->prefs->flags),
-	     GET_COUNT_FILES(rmi->prefs->flags),
-	     rmi->prefs->count_start,
-	     GET_KEEP_INCOMPLETE(rmi->prefs->flags),
-	     GET_SINGLE_FILE_OUTPUT(rmi->prefs->flags),
-	     rmi->http_info.content_type, 
-	     rmi->prefs->output_directory,
-	     rmi->prefs->output_pattern,
-	     rmi->prefs->showfile_pattern,
-	     GET_SEPARATE_DIRS(rmi->prefs->flags),
-	     GET_DATE_STAMP(rmi->prefs->flags),
-	     rmi->http_info.icy_name);
+    /* GCS testing... moved from rip_manager_start() */
+    filelib_init(GET_COUNT_FILES(m_options.flags),
+		 GET_KEEP_INCOMPLETE(m_options.flags),
+		 GET_SINGLE_FILE_OUTPUT(m_options.flags),
+		 m_info.content_type, 
+		 m_options.output_file);
+
+    ret = set_output_directory();
     if (ret != SR_SUCCESS) {
-	debug_printf ("filelib_init() returned error\n");
 	goto RETURN_ERR;
     }
 
-    /* Start up external program to get metadata. */
-    rmi->ep = 0;
-    if (GET_EXTERNAL_CMD(rmi->prefs->flags)) {
-	debug_printf ("Spawn external: %s\n", rmi->prefs->ext_cmd);
-	rmi->ep = spawn_external (rmi->prefs->ext_cmd);
-	if (rmi->ep) {
-	    debug_printf ("Spawn external succeeded\n");
-	} else {
-	    debug_printf ("Spawn external failed\n");
-	}
-    }
+    /* prepares the ripshout lib for ripping */
+    ret = ripshout_init(&m_in, &m_ripin, m_info.meta_interval);
+    if (ret != SR_SUCCESS)
+	goto RETURN_ERR;
+    m_destroy_func = ripshout_destroy;
 
-    /* Allocate buffers for ripstream */
-    strcpy(rmi->no_meta_name, rmi->http_info.icy_name);
-    rmi->getbuffer = 0;
-    ripstream_clear (rmi);
-    ret = ripstream_init(rmi);
+    /*
+     * ripstream is good to go, it knows how to get data, and where
+     * it's sending it to
+     */
+    ripstream_destroy();
+    ret = ripstream_init(&m_ripin, 
+			 m_info.icy_name, m_options.dropcount,
+			 &m_options.sp_opt, m_ripinfo.bitrate, 
+			 m_info.content_type, 
+			 GET_ADD_ID3(m_options.flags));
     if (ret != SR_SUCCESS) {
-	ripstream_clear (rmi);
+	ripstream_destroy();
 	goto RETURN_ERR;
     }
 
-    /* Launch relay server threads */
-    if (GET_MAKE_RELAY (rmi->prefs->flags)) {
-	u_short new_port = 0;
-	ret = relaylib_start (rmi, 
-			      GET_SEARCH_PORTS(rmi->prefs->flags), 
-			      rmi->prefs->relay_port,
-			      rmi->prefs->max_port, 
-			      &new_port,
-			      rmi->prefs->if_name, 
-			      rmi->prefs->max_connections,
-			      rmi->prefs->relay_ip,
-			      rmi->http_info.meta_interval != NO_META_INTERVAL);
+    /*
+     * tells the socket relay to start, this local wrapper is for 
+     * setting the respond header, it needs to know server info to 
+     * give winamp any usfull information about
+     * the stream we are relaying.. this just sets the header to 
+     * something very simulare to what we got from the stream.
+     */
+    if (GET_MAKE_RELAY(m_options.flags)) {
+	int new_port = 0;
+	ret = relaylib_init(GET_SEARCH_PORTS(m_options.flags), 
+			    m_options.relay_port, m_options.max_port, 
+			    &new_port, m_options.if_name, 
+			    m_options.max_connections);
 	if (ret != SR_SUCCESS) {
-	    goto RETURN_ERR;
+		goto RETURN_ERR;
 	}
-
-	rmi->prefs->relay_port = new_port;
-
-	/* Create pls file with address of relay stream */
-	if (0 != rmi->prefs->pls_file[0]) {
-	    create_pls_file (rmi);
-	}
+	m_options.relay_port = new_port;
+	start_relay(m_info.content_type);
     }
-
-    /* Done. */
-    post_status (rmi, RM_STATUS_BUFFERING);
+    post_status(RM_STATUS_BUFFERING);
     return SR_SUCCESS;
 
- RETURN_ERR:
-    socklib_close(&rmi->stream_sock);
+RETURN_ERR:
+    socklib_close(&m_sock);
+    if (m_destroy_func)
+	m_destroy_func();
     return ret;	
 }
 
-/* Winamp plugin needs to get content type */
-int
-rip_manager_get_content_type (RIP_MANAGER_INFO* rmi)
+error_code
+rip_manager_start(void (*status_callback)(int message, void *data), 
+			     RIP_MANAGER_OPTIONS *options)
 {
-    return rmi->http_info.content_type;
+    int ret = 0;
+    m_started_sem = threadlib_create_sem();
+    if (m_ripping)
+	return SR_SUCCESS;		// to prevent reentrenty
+
+    m_ripping = TRUE;
+
+    initialize_default_locale(&options->cs_opt);
+
+    if (!options)
+	return SR_ERROR_INVALID_PARAM;
+
+#if defined (commentout)
+    filelib_init(GET_COUNT_FILES(options->flags),
+		 GET_KEEP_INCOMPLETE(options->flags),
+		 GET_SINGLE_FILE_OUTPUT(options->flags),
+		 options->output_file);
+#endif
+    socklib_init();
+
+    init_error_strings();
+    m_in.get_input_data = myrecv;
+    m_status_callback = status_callback;
+    m_destroy_func = NULL;
+    m_bytes_ripped = 0;
+
+    /* Initialize the parsing rules */
+    init_metadata_parser (options->rules_file);
+
+    /* Get a local copy of the options passed */
+    memcpy(&m_options, options, sizeof(RIP_MANAGER_OPTIONS));
+
+    /* Start the ripping thread */
+    m_ripping = TRUE;
+    if ((ret = threadlib_beginthread(&m_hthread, ripthread)) != SR_SUCCESS)
+	return ret;
+    return SR_SUCCESS;
 }
 
-enum OverwriteOpt
-string_to_overwrite_opt (char* str)
+void
+set_rip_manager_options_defaults (RIP_MANAGER_OPTIONS *m_opt)
 {
-    int i;
-    for (i = 0; i < 5; i++) {
-	if (strcmp(str, overwrite_opt_strings[i]) == 0) {
-	    return i;
-	}
-    }
-    return OVERWRITE_UNKNOWN;
-}
+    m_opt->relay_port = 8000;
+    m_opt->max_port = 18000;
+    m_opt->flags = OPT_AUTO_RECONNECT | 
+	    OPT_SEPERATE_DIRS | 
+	    OPT_SEARCH_PORTS |
+	    OPT_ADD_ID3;
 
-const char*
-overwrite_opt_to_string (enum OverwriteOpt oo)
-{
-    return overwrite_opt_strings[(int) oo];
+    /* GCS FIX: What is the difference between this timeout 
+       and the one used in setsockopt()? */
+#if defined (commentout)
+    m_opt->timeout = 0;
+#endif
+    m_opt->timeout = 15;
+    m_opt->max_connections = 1;
+
+    strcpy(m_opt->output_directory, "./");
+    m_opt->proxyurl[0] = 0;
+    m_opt->url[0] = 0;
+    m_opt->output_file[0] = 0;
+    m_opt->rules_file[0] = 0;
+    strcpy(m_opt->useragent, "sr-POSIX/" SRVERSION);
+
+    // Defaults for splitpoint
+    // Times are in ms
+    m_opt->sp_opt.xs = 1;
+    m_opt->sp_opt.xs_min_volume = 1;
+    m_opt->sp_opt.xs_silence_length = 1000;
+    m_opt->sp_opt.xs_search_window_1 = 6000;
+    m_opt->sp_opt.xs_search_window_2 = 6000;
+    m_opt->sp_opt.xs_offset = 0;
+    m_opt->sp_opt.xs_padding_1 = 300;
+    m_opt->sp_opt.xs_padding_2 = 300;
+
+    // Defaults for codeset
+    memset (&m_opt->cs_opt, 0, sizeof(CODESET_OPTIONS));
 }

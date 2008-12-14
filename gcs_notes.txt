@@ -1,683 +1,8 @@
------------------------------------------------------------------------
-Plans for 1.64.X
------------------------------------------------------------------------
+Greg's notes
+-----------------------------------------
 
-(6) prefs global key file should be locked for multithreaded use
-(7) parse_rules not set for plugin
-
------------------------------------------------------------------------
-
-How to sync the web site:
-
-   rsync -av --del htdocs gregsharp,streamripper@web.sourceforge.net:
-
------------------------------------------------------------------------
-
-Adding locales on debian: dpkg-reconfigure locales
-
-
-Russian locales: ru_RU.CP1251, ru_RU.UTF-8
-
------------------------------------------------------------------------
-GLIB FAILURE ON WIN98
------------------------------------------------------------------------
-
-OK, another step sideways for streamripper.  See the problem on 
-the glib bug site:
-
-http://bugzilla.gnome.org/show_bug.cgi?id=543789
-
-Tor states that Wide character API is not fully implemented 
-on windows 98.  But maybe enough of it is implemented such that 
-GLIB can work.  Here is MS's take on the matter:
-
-http://support.microsoft.com/kb/q210341/
-
-Maybe also this one:
-
-http://blogs.msdn.com/michkap/archive/2006/12/27/1368334.aspx
-
-Since streamripper requires unicows, things might not be so bad
-as Tor thinks.  But anyway, at least I have to stuff gnu iconv 
-back into 2.16.
-
-Note also that the new winiconv is not fully implemented in glib.
-Specifically, setting $WINICONV_LIBICONV_DLL does not override 
-the default iconv.
-
------------------------------------------------------------------------
-MSYS quick links
------------------------------------------------------------------------
-Cf. wiki link on manual install.
-
-http://www.mingw.org/node/24
-
-Cf. wiki link on msys.
-
-http://www.mingw.org/wiki/msys
-
-Cf. recent email exchange on this very topic.
-
-http://sourceforge.net/mailarchive/message.php?msg_id=4889219E.2010403%40gmail.com
-
-Cf. enlightenment wiki
-
-http://wiki.enlightenment.org/index.php/EFL_Windows_XP
-
------------------------------------------------------------------------
-MSYS madness
------------------------------------------------------------------------
-MinGW/MSYS is a poorly documented and poorly packaged mess.
-My notes for understanding.
-
-Part 1.  MSYS and MinGW
------------------------
-
-(1) A MSYS binary is a binary which depends on msys-1.0.dll.
-These tend to be small utilites such as "rm" and "mv".
-The MSYS binaries belong in msys directory.  For example:
-
-$ pwd
-/c/msys/1.0/bin
-$ cygcheck ./grep.exe
-.\grep.exe
-  .\msys-1.0.dll
-    C:\Windows\system32\KERNEL32.dll
-      C:\Windows\system32\ntdll.dll
-
-(2) A MinGW binary does not depend on msys-1.0.dll.  Instead they 
-seem to depend on msvcrt.dll.  
-These tend to be development tools, such as "gcc" and "ar".
-For example:
-
-$ pwd
-/c/MinGW/bin
-$ cygcheck ./gcc.exe
-.\gcc.exe
-  C:\Windows\system32\KERNEL32.dll
-    C:\Windows\system32\ntdll.dll
-  C:\Windows\system32\msvcrt.dll
-
-(3) Pre-built packages.  Some GNU utils come pre-built.  Use at your 
-own risk.
-
-
-Part 2.  Sourceforge FRS
-------------------------
-
-The packages are all found in the sourceforge FRS.  I will divide 
-them into subgroups that make sense to me.
-
-(*) MSYS packages:
-MSYS Base System
-MSYS System Builder
-
-(*) MinGW packages:
-Automated MinGW Installer
-GCC Version 2
-GCC Version 3
-GCC Version 4
-GNU Binutils
-GNU Make 
-GNU Source-Level Debugger
-MinGW API for MS-Windows
-MinGW Runtime
-MinGW Utilities
-MinGW Utilities: TclTk
-MinGW Utilities: wget
-Previous
-Snapshot
-User Contributed: catgets
-User Contributed: execwrap
-User Contributed: mingwPORT
-User Contributed: Miscellany
-User Contributed: pdcurses
-User Contributed: regex
-
-(*) Mixed:
-MSYS Supplementary Tools
-  - This replaces DTK.
-  - autoconf has no exe files.  Is it mingw or msys?  It has path /usr/local.
-  - gettext has both mingw and msys versions.  msys version has path /, 
-    mingw version is /usr/local.
-
-(*) Other:
-Cross-Hosted MinGW Build Tool
-
-
-Part 3.  How to install?
-------------------------
-
-You will get a lot of conflicting advice about what to install, 
-and how to do it.  
-
-(*) Install MSYS using installer.  Install msysDTK using installer.
-
-(**) The msysDTK yields wacked permissions.  Fix them.
-
-(**) Be sure to update coreutils.  There is a problem with /bin/install.
-But it has a wacked directory structure, so you can't just overwrite 
-things. <Left off here...>
-
-(**) Manually install m4 from binary.  Note that the directory is 
-usr/bin, so you should install it in the msys shell (or manually 
-move it).
-
-(*) Install MinGW manually.  Follow the directions on node 24, so no 
-need to repeat here.  I put them in /c/msys/1.0/mingw to keep things tidy.
-
-(**) I use cygwin to unpackage these.  MSYS doesn't seem to set 
-the permission bits correctly.
-
-(**) The package gcc-4.3.0-20080502-mingw32-alpha-bin.tar.gz 
-doesn't have the correct permission bits anyway.  Here is what to fix:
-
-$ chmod a+rx bin/*.exe
-$ chmod a+rx bin/*.dll
-$ chmod a+rx libexec/gcc/mingw32/4.3.0/*.exe
-$ chmod a+rx libexec/gcc/mingw32/4.3.0/*/*.exe
-
-(*) Upgrade autoconf, etc., from source.  Use the msys shell for this.
-
-(**) These will be MinGW executables, but they will be installed 
-in /usr/local (a.k.a. c:/msys/1.0/local) instead of /mingw.
-
-(*) Gtk website doesn't distribute a proper gettext (it does not 
-contain binaries that glib requires.  Instead, install these 
-from the mingw binaries: libiconf & gettext.
-
-(*) Install pkg-config from gtk binary.  Be sure to set executable 
-bits after extraction.
-
-  http://www.gtk.org/download-windows.html
-
-(*) Set the path for building glib.  I put these in /etc/profile
-as per Enlightenment wiki
-
-CPPFLAGS="-I/usr/local/include"
-LDFLAGS="-L/usr/local/lib"
-PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
-CVS_RSH=ssh
-export CPPFLAGS LDFLAGS PKG_CONFIG_PATH CVS_RSH
-
------------------------------------------------------------------------
-Win32 API compatibility
------------------------------------------------------------------------
-The MSDN site no longer lists which Win32 API calls are compatible 
-with which OS revision (95/98/ME/31/35/40/2K/XP/VI).
-
-This site might help.
-http://win32.freetechsecrets.com
-
------------------------------------------------------------------------
-Glib references to win32 api 2.16.5 (built)
------------------------------------------------------------------------
-_AddAtomA@4
-_CloseHandle@4
-_CoTaskMemFree@4
-x _ConvertINetMultiByteToUnicode
-x _ConvertINetString
-x _ConvertINetUnicodeToMultiByte
-_CreateEventA@16
-_CreateFileMappingA@24
-_CreateSemaphoreA@16
-_DeleteCriticalSection@4
-x _DllMain@12
-x _DllMainCRTStartup@12
-_DuplicateHandle@28
-_EnterCriticalSection@4
-_ExpandEnvironmentStringsW@12
-_FindAtomA@4
-_FormatMessageW@28
-_FreeEnvironmentStringsW@4
-_GetACP@0
-_GetAtomNameA@12
-x _GetCPInfoExA@12
-_GetComputerNameA@8
-_GetConsoleCursorInfo@8
-_GetCurrentDirectoryW@8
-_GetCurrentProcess@0
-_GetDateFormatW@24
-_GetEnvironmentStringsW@0
-_GetEnvironmentVariableW@12
-_GetExitCodeProcess@8
-_GetFileAttributesA@4
-_GetFileAttributesW@4
-_GetLastError@0
-_GetLocaleInfoA@16
-_GetLocaleInfoW@16
-_GetModuleFileNameW@12
-_GetModuleHandleA@4
-_GetModuleHandleW@4
-_GetProcAddress@8
-_GetShortPathNameW@12
-_GetStdHandle@4
-_GetSystemDirectoryW@8
-_GetSystemInfo@4
-_GetSystemTimeAsFileTime@4
-_GetThreadLocale@0
-_GetTimeFormatW@24
-_GetTimeZoneInformation@4
-_GetUserNameW@8
-_GetVersion@0
-_GetWindowsDirectoryW@8
-_InitializeCriticalSection@4
-x _IsConvertINetStringAvailable
-x _IsDBCSLeadByteEx@8
-_IsDebuggerPresent@0
-_IsValidCodePage@4
-_IsWindow@4
-x _LcidToRfc1766A
-_LeaveCriticalSection@4
-_LoadLibraryA@4
-_LocalFree@4
-_MapViewOfFile@20
-_MessageBoxA@16
-_MirLev0
-_MirLev1
-_MirLev2
-_MirLev3
-_MoveFileExW@12
-_MsgWaitForMultipleObjectsEx@20
-x _MultiByteToWideChar@24
-x _PeekConsoleInputA@16
-_PeekMessageA@20
-_PeekNamedPipe@24
-_PostMessageA@16
-x _ReadConsoleInputA@16
-_ReadFile@20
-_RegCloseKey@4
-_RegOpenKeyExW@20
-_RegQueryValueExW@24
-_ReleaseSemaphore@12
-_ResetEvent@4
-x _Rfc1766ToLcidA
-_SHGetPathFromIDListW@8
-_SHGetSpecialFolderLocation@12
-_SetEnvironmentVariableW@8
-_SetEvent@4
-_Sleep@4
-_SleepEx@8
-_UnmapViewOfFile@4
-_VirtualQuery@12
-_WSACreateEvent@0
-_WSAEnumNetworkEvents@12
-_WSAEventSelect@12
-_WSAGetLastError@0
-_WaitForMultipleObjectsEx@20
-_WaitForSingleObject@8
-x _WideCharToMultiByte@32
-_WriteFile@20
-
------------------------------------------------------------------------
-Glib references to win32 api 2.16.5 (reference)
------------------------------------------------------------------------
-_AddAtomA@4
-_CloseHandle@4
-_CoTaskMemFree@4
-_ConvertINetMultiByteToUnicode
-_ConvertINetString
-_ConvertINetUnicodeToMultiByte
-_CreateEventA@16
-_CreateFileMappingA@24
-_CreateSemaphoreA@16
-_DeleteCriticalSection@4
-_DllMain@12
-_DllMainCRTStartup@12
-_DuplicateHandle@28
-_EnterCriticalSection@4
-_ExpandEnvironmentStringsW@12
-_FindAtomA@4
-_FormatMessageW@28
-_FreeEnvironmentStringsW@4
-_GetACP@0
-_GetAtomNameA@12
-_GetCPInfoExA@12
-_GetComputerNameA@8
-_GetConsoleCursorInfo@8
-_GetCurrentDirectoryW@8
-_GetCurrentProcess@0
-_GetDateFormatW@24
-_GetEnvironmentStringsW@0
-_GetEnvironmentVariableW@12
-_GetExitCodeProcess@8
-_GetFileAttributesA@4
-_GetFileAttributesW@4
-_GetLastError@0
-_GetLocaleInfoA@16
-_GetLocaleInfoW@16
-_GetModuleFileNameW@12
-_GetModuleHandleA@4
-_GetModuleHandleW@4
-_GetProcAddress@8
-_GetShortPathNameW@12
-_GetStdHandle@4
-_GetSystemDirectoryW@8
-_GetSystemInfo@4
-_GetSystemTimeAsFileTime@4
-_GetThreadLocale@0
-_GetTimeFormatW@24
-_GetTimeZoneInformation@4
-_GetUserNameW@8
-_GetVersion@0
-_GetWindowsDirectoryW@8
-_InitializeCriticalSection@4
-_IsConvertINetStringAvailable
-_IsDBCSLeadByteEx@8
-_IsDebuggerPresent@0
-_IsValidCodePage@4
-_IsWindow@4
-_LcidToRfc1766A
-_LeaveCriticalSection@4
-_LoadLibraryA@4
-_LocalFree@4
-_MapViewOfFile@20
-_MessageBoxA@16
-_MirLev0
-_MirLev1
-_MirLev2
-_MirLev3
-_MoveFileExW@12
-_MsgWaitForMultipleObjectsEx@20
-_MultiByteToWideChar@24
-_PeekConsoleInputA@16
-_PeekMessageA@20
-_PeekNamedPipe@24
-_PostMessageA@16
-_ReadConsoleInputA@16
-_ReadFile@20
-_RegCloseKey@4
-_RegOpenKeyExW@20
-_RegQueryValueExW@24
-_ReleaseSemaphore@12
-_ResetEvent@4
-_Rfc1766ToLcidA
-_SHGetPathFromIDListW@8
-_SHGetSpecialFolderLocation@12
-_SetEnvironmentVariableW@8
-_SetEvent@4
-_Sleep@4
-_SleepEx@8
-_UnmapViewOfFile@4
-_VirtualQuery@12
-_WSACreateEvent@0
-_WSAEnumNetworkEvents@12
-_WSAEventSelect@12
-_WSAGetLastError@0
-_WaitForMultipleObjectsEx@20
-_WaitForSingleObject@8
-_WideCharToMultiByte@32
-_WriteFile@20
-
------------------------------------------------------------------------
-Glib references to win32 api 2.12.12
------------------------------------------------------------------------
-_AddAtomA@4
-_CloseHandle@4
-_CoTaskMemFree@4
-_CreateEventA@16
-_CreateFileMappingA@24
-_CreateSemaphoreA@16
-_DeleteCriticalSection@4
-_DuplicateHandle@28
-_EnterCriticalSection@4
-_ExpandEnvironmentStringsA@12
-_ExpandEnvironmentStringsW@12
-_FindAtomA@4
-_FormatMessageA@28
-_FormatMessageW@28
-_FreeEnvironmentStringsW@4
-_GetACP@0
-_GetAtomNameA@12
-_GetComputerNameA@8
-_GetConsoleCursorInfo@8
-_GetCurrentDirectoryA@8
-_GetCurrentDirectoryW@8
-_GetCurrentProcess@0
-_GetDateFormatW@24
-_GetEnvironmentStringsW@0
-_GetEnvironmentVariableA@12
-_GetEnvironmentVariableW@12
-_GetExitCodeProcess@8
-_GetFileAttributesA@4
-_GetFileAttributesW@4
-_GetLastError@0
-_GetLocaleInfoA@16
-_GetLocaleInfoW@16
-_GetModuleFileNameA@12
-_GetModuleFileNameW@12
-_GetModuleHandleA@4
-_GetModuleHandleW@4
-_GetProcAddress@8
-_GetShortPathNameW@12
-_GetStdHandle@4
-_GetSystemDirectoryA@8
-_GetSystemDirectoryW@8
-_GetSystemInfo@4
-_GetSystemTimeAsFileTime@4
-_GetThreadLocale@0
-_GetTimeFormatW@24
-_GetTimeZoneInformation@4
-_GetUserNameA@8
-_GetUserNameW@8
-_GetVersion@0
-_GetWindowsDirectoryA@8
-_GetWindowsDirectoryW@8
-_InitializeCriticalSection@4
-_IsDebuggerPresent@0
-_IsWindow@4
-_KillTimer@8
-_LeaveCriticalSection@4
-_LoadLibraryA@4
-_LocalFree@4
-_MapViewOfFile@20
-_MessageBoxA@16
-_MoveFileExW@12
-_MsgWaitForMultipleObjects@20
-_PeekMessageA@20
-_PeekNamedPipe@24
-_PostMessageA@16
-_ReadFile@20
-_RegCloseKey@4
-_RegOpenKeyExA@20
-_RegOpenKeyExW@20
-_RegQueryValueExA@24
-_RegQueryValueExW@24
-_ReleaseSemaphore@12
-_ResetEvent@4
-_SHGetPathFromIDListA@8
-_SHGetPathFromIDListW@8
-_SHGetSpecialFolderLocation@12
-_SetEnvironmentVariableW@8
-_SetEvent@4
-_SetTimer@16
-_Sleep@4
-_UnmapViewOfFile@4
-_VirtualQuery@12
-_WSACreateEvent@0
-_WSAEnumNetworkEvents@12
-_WSAEventSelect@12
-_WSAGetLastError@0
-_WaitForMultipleObjects@16
-_WaitForSingleObject@8
-_WaitMessage@0
-_WriteFile@20
-
------------------------------------------------------------------------
-How to build glib win32 for streamripper
------------------------------------------------------------------------
-
-1) Edit configure.in.  Commentout this part 
-
-     if test x"$glib_native_win32" = xyes; then
-        with_libiconv=native
-      else
-
-2) Edit glib/gconvert.c.  It should include iconv.h instead of win_iconv.c.
-
-3) Workaround bug in GetCurrentDirectoryW in unicows.dll.  
-    File: gutils.h
-    Change
-       len = GetCurrentDirectoryW (2, dummy);
-    To
-       len = GetCurrentDirectoryW (0, dummy);
-
-4) Re-enable runtime check
-    File: gwin32.h
-    Change    
-       #define G_WIN32_IS_NT_BASED() TRUE
-       #define G_WIN32_HAVE_WIDECHAR_API() TRUE
-    To
-       #define G_WIN32_IS_NT_BASED() (g_win32_get_windows_version () < 0x80000000)
-       #define G_WIN32_HAVE_WIDECHAR_API() (G_WIN32_IS_NT_BASED ())
-
-5) Re-implement checks for missing or buggy _w* or win32 API
-
-    Buggy Windows API implementations (e.g. MoveFileExW) are worked 
-    around in OOo as uwinapi.dll
-    http://lxr.go-oo.org/source/porting/sal/systools/win32/uwinapi/
-
-    Files: 
-      gdate.c
-      gfileutils.c
-      gstdio.c
-      gwin32.c
-
-    I skipped these, since the logic changed slightly, but I'm not 
-    using them anyway.
-      gspawn-win32.c
-      gspawn-win32-helper.c
-
-    I don't think I need to modify gwin32.c, because I am using unicows.
-      gwin32.c
-
-6) Build glib
-
-7) Manually re-link with libunicows.  Just do a make -n, to get the 
-   original command line, and add this to the beginning of the link 
-
-     -L/usr/local/lib -lunicows 
-
-   It would look like the below.  This is found in "relink-unicows.sh"
-
-gcc -shared .libs/libglib-2.0-0.dll.def \
-     -L/usr/local/lib -lunicows \
-     .libs/garray.o \
-     .libs/gasyncqueue.o .libs/gatomic.o .libs/gbacktrace.o \
-     .libs/gbase64.o .libs/gbookmarkfile.o .libs/gcache.o \
-     .libs/gchecksum.o .libs/gcompletion.o .libs/gconvert.o \
-     .libs/gdataset.o .libs/gdate.o .libs/gdir.o \
-     .libs/gerror.o .libs/gfileutils.o .libs/ghash.o \
-     .libs/ghook.o .libs/giochannel.o .libs/gkeyfile.o \
-     .libs/glist.o .libs/gmain.o .libs/gmappedfile.o \
-     .libs/gmarkup.o .libs/gmem.o .libs/gmessages.o \
-     .libs/gnode.o .libs/goption.o .libs/gpattern.o \
-     .libs/gprimes.o .libs/gqsort.o .libs/gqueue.o \
-     .libs/grel.o .libs/grand.o .libs/gregex.o \
-     .libs/gscanner.o .libs/gsequence.o .libs/gshell.o \
-     .libs/gslice.o .libs/gslist.o .libs/gstdio.o \
-     .libs/gstrfuncs.o .libs/gstring.o .libs/gtestutils.o \
-     .libs/gthread.o .libs/gthreadpool.o .libs/gtimer.o \
-     .libs/gtree.o .libs/guniprop.o .libs/gutf8.o \
-     .libs/gunibreak.o .libs/gunicollate.o .libs/gunidecomp.o \
-     .libs/gurifuncs.o .libs/gutils.o .libs/gprintf.o \
-     .libs/giowin32.o .libs/gspawn-win32.o .libs/gwin32.o \
-     -Wl,--whole-archive libcharset/.libs/libcharset.a \
-     gnulib/.libs/libgnulib.a pcre/.libs/libpcre.a \
-     -Wl,--no-whole-archive \
-     -L/usr/local/lib -lws2_32 -lole32 \
-     /usr/local/lib/libiconv.dll.a \
-     /usr/local/lib/libintl.dll.a -mms-bitfields \
-     -Wl,glib-win32-res.o -o .libs/libglib-2.0-0.dll \
-     -Wl,--enable-auto-image-base -Xlinker --out-implib \
-     -Xlinker .libs/libglib-2.0.dll.a
-
------------------------------------------------------------------------
-Prefs/debug startup
------------------------------------------------------------------------
-
-command line version:
-  1) Load prefs
-  2) Parse command line parms
-  3) Open debug
-  4) rip_manager_init
-
-wstreamripper:
-  1) Parse command line parms
-  2) rip_manager_init
-  3) Open debug
-  4) Load prefs
-
------------------------------------------------------------------------
-Basic connection code
------------------------------------------------------------------------
-
-http_sc_connect
-  http_get_sc_header
-    http_parse_sc_header
-  http_sc_connect (recursive case)
-
------------------------------------------------------------------------
-Multirip/main loop
------------------------------------------------------------------------
-
-Streamripper has 4 threads, and one child process.
-
-main (GUI thread)
-  ripthread (reads from server)
-    thread_accept (waits for new relay connections)
-    thread_send (writes to relay clients)
-    External process (reads from stdin pipe)
-
-ripthread (1.63.3 and earlier)
-   start_ripping
-      http_sc_connect
-      filelib_init
-      spawn_external
-      ripstream_clear
-      ripstream_init
-      relaylib_start
-   while (1)
-      ripstream_rip
-      check exit conditions
-      post_status
-      if recoverable error
-         close_stuff
-         start_ripping
-      if not recoverable
-         break
-
-Subsystem naming convention
-  rip_manager_init()      // Static memory/once per process
-    rip_manager_start()   //   Dynamic memory/once per stream
-    rip_manager_stop()    //   Dynamic memory/once per stream
-  rip_manager_cleanup()   // Static memory/once per process
-
-Shutdown procedure
-  signal handler sets m_got_sig on (CTL-C)
-  callback sets m_alldone on ??
-  gui thread polls m_got_sig and m_alldone
-    call rip_manager_stop() if either flags are seen
-
-Relay startup and shutdown
-  rip_manager_start() calls relaylib_start()
-  On reconnection, ripthread() calls relaylib_stop() and relaylib_start()
-
-Data structs:
-  1) Global preferences
-  2) Stream preferences
-  3) Stream state variables (rmi)
-
-Semaphore/Mutex
-  1) cbuf2->cbuf_sem
-  2) m_debug_lock
-  3) m_started_sem
-  4) m_sem_not_connected
-  5) g_relay_list_sem
-
------------------------------------------------------------------------
 HTTP HEADERS
------------------------------------------------------------------------
+~~~~~~~~~~~~
 
 http://141.211.232.136:8000/wcbn-lo.ogg
 ===============================
@@ -807,6 +132,7 @@ Connection: close
 Content-Length: 44000000
 ---------------
 
+
 Shoutcast vs streamripper headers
 =================================
 ICY 200 OK
@@ -819,7 +145,7 @@ content-type:audio/mpeg
 icy-pub:1
 icy-metaint:8192
 icy-br:32
-
+---------
 HTTP/1.0 200 OK
 Server:SHOUTcast/Linux v1.9.4
 icy-name:[relay stream] [JAPANESE R&B, HIPHOP, JROCK, JPOP & NEW RELEASES] SeiyaUsagi.Net Radio wo kiite kudasai!: SeiyaUsagi.Net Radio
@@ -827,82 +153,19 @@ icy-url:http://www.seiyausagi.net
 icy-br:32
 icy-metaint:8192
 Content-Type: audio/mpeg
-
-* More problems
-
-Bitrate = 0 stuff:
-http://www.mperia.com:8000/content/1569.mp3
+---------
 
 
------------------------------------------------------------------------
-* New filename output stuff
------------------------------------------------------------------------
-
-Pattern specifiers you can use:
-
-%S     Stream
-%A     Artist
-%T     Title
-%a     Album
-%D     Date and time (per song)
-%d     Date and time (per execution)
-%Q     Sequence number (parsing files to find it)
-%q     Sequence number (starting from zero)
-%0203q Sequence number (starting from 203)
-%V     Song version number (?)
-%%     Percent sign
-
-The default pattern is:
-
-%S/%A - %T
-
-Extensions, such as ".mp3", ".aac", ".ogg", or ".nsv" are 
-automatically appended.
-
-Incomplete directory will be the most deeply nested directory 
-that doesn't depend on the pattern specifiers %A, %T, %a, %D, 
-%q, or %Q.  The directory may depend on %d and %S.
-
-Thus, the default incomplete directory is:
-
-%S/incomplete
-
-The filename within the incomplete directory is ??
-
-For showfile, the idea is similar, but some patterns don't apply. Thus, 
-the default pattern is:
-
-%S/sr_program_%d
-
-
-HERE IS HOW THE -d and -D FLAGS INTERACT:
-
--d dir     -D pat        Action
---------   --------     ---------
-absolute   absolute     Use: pat
-relative   absolute     Use: pat
-missing    absolute     Use: pat
-absolute   relative     Concatinate: dir/pat
-relative   relative     Concatinate: pwd/dir/pat
-missing    relative     Concatinate: pwd/pat
-absolute   missing      Concatinate: dir/default_pat
-relative   missing      Concatinate: pwd/dir/default_pat
-missing    missing      Use: pwd/default_pat
-
------------------------------------------------------------------------
 * How to upgrade the version number
------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1)  configure.ac
 2)  lib/rip_manager.h
 3)  winamp_plugin/sr2x.nsi
 4)  makedist_win.bat
-5)  streamripper.1.asc
 
------------------------------------------------------------------------
 * Generated files
------------------------------------------------------------------------
-
+~~~~~~~~~~~~~~~~~
 I deleted the automatically generated files from CVS.  The people 
 who download from CVS should be advanced enough to figure out 
 how to build.  Just in case, I included a config.sh file to show 
@@ -915,33 +178,14 @@ CVS: 	Makefile.in configure libmad/Makefile.in
 CVS: 	libmad-0.15.1b/Makefile.in libmad-0.15.1b/mad.h 
 CVS: 	libmad-0.15.1b/msvc++/Makefile.in 
 
------------------------------------------------------------------------
-* Compile farms
------------------------------------------------------------------------
 
-http://www.testdrive.hp.com	hpux, freebsd
-http://powerdev.osuosl.org	linux
-http://www.blastwave.org	solaris
-http://freeshell.org		netbsd
+* More problems
+~~~~~~~~~~~~~~~
+Bitrate = 0 stuff:
+http://www.mperia.com:8000/content/1569.mp3
 
-For HP-UX, I'm testing on this one:
-td191.testdrive.hp.com
-
------------------------------------------------------------------------
-* How to build streamripper on hp testdrive host
------------------------------------------------------------------------
-
-1) pkg-config
-2) gettext
-3) glib
-
-CFLAGS=-I$HOME/LOCAL-td191/include LDFLAGS=-L$HOME/LOCAL-td191/lib ./configure --prefix=$HOME/LOCAL-td191
-
-
------------------------------------------------------------------------
 * MP3 utilities
------------------------------------------------------------------------
-
+~~~~~~~~~~~~~~~
 MP3TRIM
 ~~~~~~~
 http://www.logiccell.com/~mp3trim/
@@ -961,15 +205,75 @@ mp3_check
 ~~~~~~~~~
 (unix command line/see freshmeat)
 
------------------------------------------------------------------------
+* The dependencies for version 1.54
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Dump of file gen_sripper.dll
+
+File Type: DLL
+
+  Image has the following dependencies:
+
+    KERNEL32.dll
+    USER32.dll
+    GDI32.dll
+    ADVAPI32.dll
+    SHELL32.dll
+    WS2_32.dll
+    COMCTL32.dll
+    MSVCRT.dll
+
+Dump of file consolewin32.exe
+
+File Type: EXECUTABLE IMAGE
+
+  Image has the following dependencies:
+
+    KERNEL32.dll
+    WS2_32.dll
+
+* The dependencies for version 1.60 plugin, 1.60.5 console
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Dump of file gen_sripper.dll
+
+File Type: DLL
+
+  Image has the following dependencies:
+
+    WS2_32.dll
+    COMCTL32.dll
+    KERNEL32.dll
+    USER32.dll
+    GDI32.dll
+    ADVAPI32.dll
+    SHELL32.dll
+    MSVCR70.dll
+
+Dump of file sripper-1.60.5.exe
+
+File Type: EXECUTABLE IMAGE
+
+  Image has the following dependencies:
+
+    KERNEL32.dll
+    WS2_32.dll
+
+* As of 1.61.1, I'm switching to MSVCRT.DLL linking (-MD)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-----------------------------------------
 How to tag a new version (e.g. for version 1.60)
------------------------------------------------------------------------
 
   cvs rtag -r HEAD sripper-1_60 sripper_1x
 
------------------------------------------------------------------------
+-----------------------------------------
+Autoconf versions
+
+Recently (Mon Feb 21 15:23:32 EST 2005) upgraded to:
+
+  - autoconf 2.59, automake 1.9.2, libtool 1.5.10.
+
+-----------------------------------------
 How to revise libmad
------------------------------------------------------------------------
 
 First, match the auto* versions used by libmad.  For libmad-0.15.1b, 
 this is :
@@ -995,9 +299,8 @@ Finally, in the top level Makefile.am, replace the define for
 libmad_manifest with the latest list of original files from the 
 libmad distro.
 
------------------------------------------------------------------------
+-----------------------------------------
 How to revise libtre
------------------------------------------------------------------------
 
 Check to make sure my versions work.  Here is what I use for tre-0.7.0:
 
@@ -1009,76 +312,171 @@ dnl AM_DISABLE_STATIC
 
 Next rebuild the auto* files.  Test it all out and make sure it works.
 
-Edit these files in sripper_1x to change the directory location:
-    config.sh
-    Makefile.am
-    configure.ac
-
 To be finished:
 
 a) which files to remove from cvs?  (e.g. configure)
 b) get rid of installation from Makefile.am's
 c) add manifest to distro
 
-Note Apr 15, 2007:
-  - autoconf 2.60, automake 1.9.6, libtool 1.5.22.
+-----------------------------------------
+Console mode:
 
-Note Sep 1, 2007
-Found that make install failed for libtre
-Add to configure.ac: 
-  AC_PROG_MKDIR_P
-Add po/Makefile.in.in:
-  datarootdir = @datarootdir@
-  MKINSTALLDIRS = @MKDIR_P@
-  mkinstalldirs = @MKDIR_P@
-Still need to figure out how to disable "make install" for tre, 
-since we don't actually need to install it.
+main				(streamripper.c)
+rip_manager_start	(rip_manager.c)
+	rip_manager::m_in.get_data <- myrecv
+threadlib_beginthread
+ripthread			(rip_manager.c)
+	start_ripping
+		rip_manager::m_in    == ripshout::m_in
+		rip_manager::m_ripin == ripstream::m_in
+		ripshout_init
+			rip_manager::m_ripin::get_data <- ripshout::getdata
+		ripstream_init
+			cbuffer_init
+	ripstream_rip
+		m_in->get_data
+		end_track
 
------------------------------------------------------------------------
-How to compile cdk
------------------------------------------------------------------------
+ripstream::m_in::get_data == ripshout::getdata
+	ripshout::m_in::get_data == myrecv (for m_buffersize)
+	ripshout::m_in::get_data == myrecv (for metadata)
 
-* Using binary distro of pdcurses, and compile under MSYS/MinGW.
-  Use full path for CFLAGS/LDFLAGS, or else examples don't build.
+The first byte of the (signed char) metadata is the length
+of the metadata string (1-127)*16.
 
-1) CFLAGS=-I/d/sripper_1x/pdcurses-win32-3.2 LDFLAGS=-L/d/sripper_1x/pdcurses-win32-3.2 ./configure
+Note that rip_manager_start, console streamripper.c sets up a
+callback so that it can display track changes to console.
+	m_status_callback <- rip_callback
 
-* Additional changes after patch sent to Tim Dickey
+There are two places for the bitrate/samplerate:
+	(1) In the http header
+		getsize == meta_interval ~~ 8192 (bytes)
+		bitrate = 24
+	(2) From the mp3 data
+		samplesize = 22050 (cpm data bps)
 
-1) Guards in cdk.h
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_DIRENT_H
-#include <dirent.h>
-#endif
+---------------------------------------
 
+For n seconds, we need buffersize of b bytes:
+	b = bitrate * 1000 * n
 
-Old notes:
-
-1) Copy curses header files to /mingw/include, and libraries to 
-   /mingw/lib.
-2) Be sure to rename pdcurses.lib to curses.lib (but don't rename 
-   the dll).
-3) Configure the cdk package.
-4) Comment out <pwd.h> and <grp.h> in include/cdk.h
-5) Edit these files, and workaround missing defines and functions
-     include/cdk.h
-     fselect.c
-6) Build
-7) Comment out <cdk_config.h> in cdk.h
-8) Comment out <unistd.h>, <dirent.h> in cdk.h
-9) Comment out mode2Filetype, mode2Char, Beep in cdk_util.h
-10) Commentout DELETE in curdefs.h
-11) Commentout boolean in cdk.h
-
-RMK: Can't comment out boolean, because it is required by fn protos
+*** Default splitting
 
 
------------------------------------------------------------------------
-Computing bps
------------------------------------------------------------------------
+	    /mi
+	    |           /ts
+	    |-----------|
+	      xs_offset |
+			|
+			|
+	      |---------|---------|
+		prepad    postpad
 
+
+*** Silence splitting
+
+	    /mi
+	    |  
+	    |-----------|
+	      xs_offset |
+			|
+		    ts\ |
+	      |-------+-|---------|
+	       pre_sw |   post_sw
+		      |
+		  |---+---| *silence_win
+		      |
+	|-------------|---------|
+	      prepad    postpad
+
+
+We may flush the circular buffer as soon as the earliest
+point that needs to go into the next song has passed.
+For simplicity, we also buffer up to the latest point 
+that can go into the next song.  This interval looks 
+like this for the silence splitting case.
+
+
+			|
+	      |---+-----+-----+---| search window
+		  |           |   
+		  |           |
+	      |---+---|   |---+---|
+		  |           |
+    |-------------|           |---------|
+	  prepad                postpad
+
+
+    |-----------------------------------|
+        this window will be cbuffered
+
+The circular buffer is actually extended a bit so that 
+it contains an integer number of blocks which fall 
+along meta-inf boundaries.
+
+Now, depending on the value of xs_offset, we have 3 cases.
+The mi point can be before, during or after the 
+buffer window.  
+
+
+ (1)            (2)                       (3)
+  x              x                         x
+
+    |-----------------------------------|
+    above this window will be cbuffered
+
+
+  |-------------------------------------|         (case 1)
+    |-----------------------------------|         (case 2)
+    |--------------------------------------|      (case 3)
+    but now one of these windows will be cbuffered
+
+
+Case 1:
+  mi to beginning     pos
+  mi to end           pos
+Case 2:
+  mi to beginning     neg
+  mi to end           pos
+Case 3:
+  mi to beginning     neg
+  mi to end           neg
+
+Thus, we need 3 variables:
+  m_cbuffer_size
+  m_mi_to_cbuffer_start
+  m_mi_to_cbuffer_end
+
+
+-------- OBSOLETE STUFF
+Default case, the preceding portion needs to be:
+	prepad + -xd_offset
+Default case, the subsequent portion needs to be:
+	postpad + -xd_offset
+Silence case, the preceding portion needs to be:
+	prepad + -sp + -xs_offset
+	prepad + (pre_sw-sil_win/2) + -xs_offset
+Silence case, the subsequent portion needs to be:
+	postpad + -sp + -xs_offset
+	postpad + (post_sw-sil_win/2) + -xs_offset
+
+Therefore, the buffersize is the sum of the above 2 
+portions.
+
+    /*  Compute the buffer size needed:
+	    pre_padding + (splitpoint+xs_silence_offset) + post_padding
+	Where splitpoint is within:
+	    search_win
+	Or exactly at:
+	    xd_offset
+	Question: where is getsize set?
+	Question: how to know the bitrate?
+     */
+-------- END OBSOLETE STUFF
+
+
+
+---------------------------------------
 http://www.hydrogenaudio.org/index.php?showtopic=12633&
 --
 (1) The equation:
@@ -1113,128 +511,77 @@ Also see,
 http://www.unrelatedinventions.com/Audiotools/Help/thejargonbehindmp3.htm
 
 -----------------------------------------------------------------------
-What are some locales?  
------------------------------------------------------------------------
-
-Here is what my win2k box says...
-
-STREAMRIPPER windows 1.62-beta-2
-LOCALE is English_United States.1252
-Using locale_charset() to get system codeset.
-SystemDefaultLCID: 0411
-UserDefaultLCID: 0409
-Have iconv.
-Locale codeset: CP932
-Filesys codeset: CP932
-ID3 codeset: CP932
-Metadata codeset: CP932
-Relay codeset: CP932
-
-Here is what my win98 box says...
-
-STREAMRIPPER windows 1.62-beta-2
-LOCALE is English_United States.1252
-Using locale_charset() to get system codeset.
-SystemDefaultLCID: 0409
-UserDefaultLCID: 0409
-Have iconv.
-Locale codeset: CP1252
-Filesys codeset: CP1252
-ID3 codeset: CP1252
-Metadata codeset: CP1252
-Relay codeset: CP1252
-
-CP932 is shift-jis
-CP1252 is a superset of ISO-8859-1
-
------------------------------------------------------------------------
 How to create a sjis locale
------------------------------------------------------------------------
 
 localedef -v -c -i ja_JP -f SHIFT_JIS ja_JP.SJIS
 localedef -v -c -i ja_JP -f EUC-JP ja_JP.EUC-JP
 
-localedef -i en_US -f ISO-8859-15 en_US
-
-
-Now, on debian there is also this:
-	dpkg-reconfigure locales
-
-And also:
-	Add "ja_JP.SJIS SHIFT_JIS" to /etc/locale.gen, and run locale-gen.
-
-The charmaps are in /usr/share/i18n/charmaps
-
 Here is how to display
 
-bash-3.00$ export LANG=ja_JP.EUC-JP
-bash-3.00$ xterm
-bash-3.00$ export LANG=ja_JP.SJIS
-bash-3.00$ xterm
-bash-3.00$ export LANG=ja_JP.UTF-8
-bash-3.00$ xterm
+export LANG=ja_JP.SJIS
+xterm -fn -misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-iso10646-1
+
 
 -----------------------------------------------------------------------
-How do strings pass through the program?
------------------------------------------------------------------------
+How to open a new file (start track)
 
-ripstream_rip_mp3
-  get_stream_data --> fill in m_current_track.raw_metadata
-  parse_metadata  --> fill in m_current_track.artist,title,album
-
------------------------------------------------------------------------
-For Windows
------------------------------------------------------------------------
-
-Unicows:
-http://www.microsoft.com/downloads/details.aspx?FamilyID=73ba7bd7-ed06-4f0d-80a4-2a7eeaee17e2&DisplayLang=en
-http://www.microsoft.com/globaldev/handson/dev/mslu_announce.mspx
-
------------------------------------------------------------------------
-For Mac OSX 10.3
------------------------------------------------------------------------
-
-1) Use wopen with utf8 (?)
+1) Use wfopen with utf8
+2) Use open with local encoding
+3) Use open with utf8
+4) Recoded
 
 -----------------------------------------------------------------------
 How to build libiconv on windows
------------------------------------------------------------------------
 
-STEP 1: Make changes to config.h.msvc
 
+STEP 1: Make config.h.msvc
+--------------------------
+
+/* Define as good substitute value for EILSEQ. */
+/* #undef EILSEQ */
 #define      EILSEQ          42
+
+/* Define to 1 if the package shall run at any location in the filesystem. */
+/* #define ENABLE_RELOCATABLE 1 */
 #undef ENABLE_RELOCATABLE
+
+/* Define to the value of ${prefix}, as a string. */
+#define INSTALLPREFIX "c:\\usr"
+
+/* Define as const if the declaration of iconv() needs const. */
+/* #undef ICONV_CONST */
 #define ICONV_CONST const
-#define HAVE_WCHAR_H 1
-#define HAVE_WCHAR_T 1
 
 
 STEP 2: Build dll's
+-------------------
 
 copy /y config.h.msvc config.h
 copy /y config.h libcharset
 copy /y config.h lib
-
-erase lib\*.obj
-erase srclib\*.obj
-erase libcharset\lib\*.obj
-
 //nmake -f Makefile.msvc NO_NLS=1 DLL=1 MFLAGS=-MD
 nmake -f Makefile.msvc NO_NLS=1 MFLAGS=-MD
 
-step 3: gather files
+STEP 3: Gather files
+--------------------
 
-mkdir iconv-win32-1.11
-copy /y libcharset\include\localcharset.h iconv-win32-1.11
-copy /y include\iconv.h iconv-win32-1.11
+mkdir iconv-win32
 
-move /y lib\iconv.lib iconv-win32-1.11
-move /y libcharset\lib\charset.lib iconv-win32-1.11
+//copy lib\iconv.lib iconv-win32
+//copy lib\iconv.dll iconv-win32
+//copy libcharset\lib\charset.lib iconv-win32
+//copy libcharset\lib\charset.dll iconv-win32
+//copy libcharset\include\localcharset.h iconv-win32
+//copy include\iconv.h iconv-win32
+
+copy /y lib\iconv.lib iconv-win32
+copy /y libcharset\lib\charset.lib iconv-win32
+copy /y libcharset\include\localcharset.h iconv-win32
+copy /y include\iconv.h iconv-win32
 
 
 -----------------------------------------------------------------------
 A possible macro for detecting locale_charset()
------------------------------------------------------------------------
 
 I'm going to call mine "HAVE_LOCALE_CHARSET"
 
@@ -1261,235 +608,38 @@ fi
 ])
 
 -----------------------------------------------------------------------
-Other MP3 libraries
------------------------------------------------------------------------
+How to connect to cf servers:
 
-mpglib
-xaudio_sdk
+(UNIX)
+roy@mesmer ~ $ eval `ssh-agent`
+Agent pid 4760
+roy@mesmer ~ $ ssh-add .ssh/sf_dsa
+Enter passphrase for .ssh/sf_dsa:
+Identity added: .ssh/sf_dsa (.ssh/sf_dsa)
+roy@mesmer ~ $ ssh cf.sourceforge.net -l codewhacker
 
------------------------------------------------------------------------
-Relay clients
------------------------------------------------------------------------
+(PUTTY)
+C:\gsharp\my_putty_key\3>plink -v -i cf.ppk -l gregsharp -2 cf-shell.sf.net ls
 
-Clients (windows)
-winamp 5
-foobar2000
-windows media player
-media player classic
-itunes player
-sonique (sonique.lycos.com)
-
-Clients (unix)
-xmms w/ and w/o metadata
-mpg123
-mpg321
-ogg123
-bmp, bmpx (http://bmp.beep-media-player.org)
-lamip (http://fondriest.frederic.free.fr/realisations/lamip/index.html)
-RhythmBox (gnome)
-Amarok (KDE)
-Juk (KDE)
-Zinf
-Audacious (http://audacious-media-player.org)
-wget -O - http://stream:8000 | madplay -
-Quod Libet (http://www.sacredchao.net/quodlibet/wiki/Download)
-
-Mostly things work, except mpg321 which seems to glitch even
-if I am connecting directly to the stream (i.e. without
-using streamripper).
-
------------------------------------------------------------------------
-Exotic OS's
------------------------------------------------------------------------
-
-http://www.yellowtab.com/products/   (commercial BeOS)
-http://www.haiku-os.org/             (free, BeOS-compatible)
-http://www.syllable.org/
-http://l4hq.org/
 
 -----------------------------------------------------------------------
 Bootleg sites
------------------------------------------------------------------------
 
 Torrent/web sites:
-http://www.thetradersden.org/
-http://bt.etree.org
-http://www.dimeadozen.org/
-http://purelivegigs.com
-http://www.filesoup.com
-http://www.bootcity.org
-http://www.shnflac.net/
-http://www.pinkrobert.net
-http://oink.cd
-http://zombtracker.the-zomb.com/
-http://www.tapecity.org/
+www.archive.org
+bt.etree.org
+www.easytree.org
+purelivegigs.com
+http://www.thetradersden.org/index.php?
+www.filesoup.com
+www.sharingthegroove.org (couldn't connect)
 
 Band specific sites:
-http://trading.countingcrows.com (Counting crows, B&P)
-http://antsmarching.org (Dave Matthews)
+trading.countingcrows.com (Counting crows, B&P)
+antsmarching.org (Dave Matthews)
 http://royal-orleans.com/ (Led Zeppelin)
-http://www.rustradio.org (Neil Young)
-http://digitalpanic.org (Widespred Panic)
-http://pj.sidewalkcrusaders.com/ (Perl Jam)
-http://tracker.hipfans.com/ (Tragically Hip)
-http://www.gdlive.com/ (Grateful Dead, others)
-http://u2torrents.com/ (U2)
-http://www.heretodaygonetohell.com (GNR)
 
-Lossless Downloads
-www.archive.org
-http://www.nyctaper.com
-
-MP3 Downloads
-http://tela.sugarmegs.org/
-http://www.ting-mp3.com/
-http://www.baidu.com/
-http://verycd
-
-Links to sites:
-http://launch.groups.yahoo.com/group/bt-dimeadozen-org/links
-http://scottgill.com/ (d/l sites)
-http://forums.etree.org/viewtopic.php?f=15&t=4451
-
-Dead sites:
-http://www.sharingthegroove.org/ (DEAD)
-
+Links to BT sites:
+Smiler's links (http://smiler.no-ip.org/BT/BTlinks.php
 
 -----------------------------------------------------------------------
-Misc music:
------------------------------------------------------------------------
-
-Jamendo, Magnatune
-
------------------------------------------------------------------------
-Shoutcast lists
------------------------------------------------------------------------
-
-shoutcast.com (mp3)
-icecast.org (mp3/ogg)
-oddsock.org
-http://www.steamcast.com
-jetcast/jetaudio (mp3)
-peercast (relay-to-shoutcast)
-www.tuner2.com (aac)
-live365
-bee.fm (Russian)
-inlive.co.kr (korean)
-http://www.mukulcast.com (korean)
-http://live.ladio.livedoor.com (japanese)
-
-mostly non-shoutcast
-http://www.radio-locator.com/cgi-bin/home
-http://www.wwitv.com/portal.htm?http://www.wwitv.com/television/index.html
-
-
------------------------------------------------------------------------
-Improving winamp plugin.  Implement some combination of these.
------------------------------------------------------------------------
-
-Type A
-a) Use "send to:" to get URL without playing first
-b) Like send to, but with keystroke or top level menu
-c) Auto detect selection
-
-Type B
-a) Intercept double click, enter, dragndrop, etc
-b) Get a callback before start of play
-
-Type C
-a) Internal caching of recent streams (not releated to winamp)
-
------------------------------------------------------------------------
-AAC goop. Ugh (:P), but here we go...
------------------------------------------------------------------------
-
-
-Definitions
-===========
-mpeg-1		A container format.  Most commonly mpeg-1 audio layer 3.
-
-mpeg-2		A container format.  For audio, it extends mpeg-1 to 
-		three new bitrates: (16 kHz, 22.05 kHz and 24 kHz)
-		It also introduces AAC encoding.
-
-mpeg-4		A container format. Aac may be used with mpeg-2 or mpeg-4.
-
-		Mpeg-4 is patented, and it is hard to know who owns 
-		patents for the subset you are interested in.  For example,
-		AT&T is suing Apple over this.  Apparently, mpeg-4 is 
-		an extension of the quicktime format.
-
-aac		This would be mpeg-2 part 7 or mpeg-4 part 3.
-
-		No license fees are required for transmission of aac. 
-		Operations such as encoding, extraction from an mpeg 
-		container, or decoding may require licenses.
-
-		http://wiki.multimedia.cx/index.php?title=Understanding_AAC
-
-aac-lc		Low complexity, one of four default "profiles" or algorithms.
-		This exists in mpeg-2 or mpeg-4.
-
-he-aac		(aacPlus v1 or aac+) High efficiency. This is an extension.
-		It is a combination of SBR (Spectral Band Replication) 
-		and AAC.  This exists only in mpeg-4.  It seems to be 
-		proprietary.
-
-		http://www.codingtechnologies.com
-
-he-aac v2	(aacPlus v2) Combines parametric stereo and HE-AAC.
-		This also seems to be proprietary.
-
-		http://www.codingtechnologies.com
-
-
-Software
-========
-FAAD2
-	AAC decoder
-	The last GPL-compatible version is apparently 2005-01-30.
-	http://www.rarewares.org/rja/faad2-2005-01-30.rar
-	http://www.hydrogenaudio.org/forums/lofiversion/index.php/t35535.html
-
-FAAD
-	Any reason to use this over the GPL-compatible version of FAAD2
-
-FAAD2
-	There are some forks of this that are GPL licensed.
-	Useful? Xine-lib, mplayer, others?
-
-MPEG4IP
-	This can let you extract an AAC source stream from an mpeg4 container
-	http://mpeg4ip.sourceforge.net
-
-hz
-	This is a AAC source client for icecast.
-	http://aeons-back.livejournal.com/8714.html
-
-mp4tools
-	This is an alternative to faad.  It contains its own AAC converter.
-	http://teknoraver.campuslife.it/software/mp4tools/
-
-neroaacenc
-	I think this a binary, windows-only.  It does work on Wine though.
-	http://www.nero.com/enu/nero-aac-codec.html
-
-	There are two tricks to getting the neroAacEnc to run.  First, 
-	the input shouldn't be something like 16000Hz mono, which causes 
-	the program to choke.  Standard 44100Hz stereo does seem to work.
-	Second, it doesn't like it if you run (under wine) from a normal 
-	directory.  You have to put it in ~/.wine/drive_c/windows/temp 
-	or such.
-
-mencoder
-	This is part of mplayer, which can transcode.
-	http://www.mplayerhq.hu
-
-Debian Multimedia
-========
-Note, there seems to be two debian multimedia projects.  The second one 
-has all the packages for patent-encrusted formats such as AAC & MP4.
-
-  1) http://wiki.debian.org/DebianMultimedia
-  2) http://debian-multimedia.org
-

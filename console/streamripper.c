@@ -1,4 +1,4 @@
-/* streamripper.c
+/* streamripper.c -
  * This little app should be seen as a demo for how to use the stremripper lib. 
  * The only file you need from the /lib dir is rip_mananger.h, and perhapes 
  * util.h (for stuff like formating the number of bytes).
@@ -7,23 +7,10 @@
  * and rip_callback, which is a how you find out whats going on with the rip.
  * the rest of this file is really just boring command line parsing code.
  * and a signal handler for when the user hits CTRL+C
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+
 #if WIN32
-//#define sleep	Sleep
+#define sleep	Sleep
 #include <windows.h>
 #else
 #include <unistd.h>
@@ -35,35 +22,33 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
-#include "srtypes.h"
+#include "types.h"
 #include "rip_manager.h"
-#include "prefs.h"
-#include "mchar.h"
+#include "util.h"
 #include "filelib.h"
 #include "debug.h"
 
-/*****************************************************************************
+/*******************************************************************************
  * Private functions
- *****************************************************************************/
-static void print_usage (FILE* stream);
-static void print_status (RIP_MANAGER_INFO *rmi);
-static void catch_sig (int code);
-static void parse_arguments (STREAM_PREFS *prefs, int argc, char **argv);
-static void rip_callback (RIP_MANAGER_INFO* rmi, int message, void *data);
-static void parse_extended_options (STREAM_PREFS *prefs, char *rule);
-static void verify_splitpoint_rules (STREAM_PREFS *prefs);
-static void print_to_console (char* fmt, ...);
+ ******************************************************************************/
+static void print_usage();
+static void print_status();
+static void catch_sig(int code);
+static void parse_arguments(int argc, char **argv);
+static void rip_callback(int message, void *data);
+static void parse_extended_options (char* rule);
+static void verify_splitpoint_rules (void);
 
-/*****************************************************************************
- * Private variables
- *****************************************************************************/
+/*******************************************************************************
+ * Private Vars 
+ ******************************************************************************/
 static char m_buffer_chars[] = {'\\', '|', '/', '-', '*'}; /* for formating */
-//static RIP_MANAGER_INFO 	m_curinfo; /* from the rip_manager callback */
+static RIP_MANAGER_INFO 	m_curinfo; /* from the rip_manager callback */
 static BOOL			m_started = FALSE;
 static BOOL			m_alldone = FALSE;
 static BOOL			m_got_sig = FALSE;
-static BOOL			m_dont_print = FALSE;
-static BOOL			m_print_stderr = FALSE;
+static BOOL 			m_dont_print = FALSE;
+RIP_MANAGER_OPTIONS 		m_opt;
 time_t				m_stop_time = 0;
 
 /* main()
@@ -77,82 +62,49 @@ time_t				m_stop_time = 0;
  * call as well, but i needed this for window'd apps.
  */
 
-int
-main (int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-    int ret;
-    time_t temp_time;
-    STREAM_PREFS prefs;
-    RIP_MANAGER_INFO *rmi = 0;
+	int ret;
+	time_t temp_time;
+	signal(SIGINT, catch_sig);
+	signal(SIGTERM, catch_sig);
 
-    sr_set_locale ();
-
-    signal (SIGINT, catch_sig);
-    signal (SIGTERM, catch_sig);
-
-    parse_arguments (&prefs, argc, argv);
-
-    print_to_console ("Connecting...\n");
-    
-    rip_manager_init ();
-
-    /* Launch the ripping thread */
-    if ((ret = rip_manager_start (&rmi, &prefs, rip_callback)) != SR_SUCCESS) {
-	fprintf(stderr, "Couldn't connect to %s\n", prefs.url);
-	exit(1);
-    }
-
-    /* 
-     * The m_got_sig thing is because you can't call into a thread 
-     * (i.e. rip_manager_stop) from a signal handler.. or at least not
-     * in FreeBSD 3.4, i don't know about linux or NT.
-     */
-    while (!m_got_sig && !m_alldone) {
-	sleep(1);
-	time(&temp_time);
-	if (m_stop_time && (temp_time >= m_stop_time)) {
-	    print_to_console ("\nTime to stop is here, bailing\n");
-	    break; 
-	}	
-    }
-
-    print_to_console ("shutting down\n");
-
-    rip_manager_stop (rmi);
-    rip_manager_cleanup ();
-
-    return 0;
-}
-
-void
-catch_sig(int code)
-{
-    print_to_console ("\n");
-    if (!m_started)
-        exit(2);
-    m_got_sig = TRUE;
-}
-
-/* In 1.63 I have changed two things: sending output to stdout 
-   instead of stderr, and adding fflush as per the sticky in the forum. */
-static void
-print_to_console (char* fmt, ...)
-{
-    va_list argptr;
-
-    if (!m_dont_print) {
-	va_start (argptr, fmt);
-
-	if (m_print_stderr) {
-	    vfprintf (stderr, fmt, argptr);
-	    fflush (stderr);
-	} else {
-	    vfprintf (stdout, fmt, argptr);
-	    fflush (stdout);
+	parse_arguments(argc, argv);
+	fprintf(stderr, "Connecting...\n");
+	if ((ret = rip_manager_start(rip_callback, &m_opt)) != SR_SUCCESS)
+	{
+		fprintf(stderr, "Couldn't connect to %s\n", m_opt.url);
+		exit(1);
 	}
 
-	va_end (argptr);
-    }
+	/* 
+ 	 * The m_got_sig thing is because you can't call into a thread 
+  	 * (i.e. rip_manager_stop) from a signal handler.. or at least not
+  	 * in FreeBSD 3.4, i don't know about linux or NT.
+	 */
+	while(!m_got_sig && !m_alldone)
+	{
+		sleep(1);
+		time(&temp_time);
+		if (m_stop_time && (temp_time >= m_stop_time))
+		{
+			fprintf(stderr, "\nTime to stop is here, bailing\n");
+			break; 
+		}	
+	}
+
+	m_dont_print = TRUE;
+	fprintf(stderr, "shutting down\n");
+	rip_manager_stop();
+	return 0;
+}
+
+void catch_sig(int code)
+{
+	fprintf(stderr, "\n");
+	if (!m_started)
+		exit(2);
+	m_got_sig = TRUE;
 }
 
 /* 
@@ -161,74 +113,77 @@ print_to_console (char* fmt, ...)
  * is for handling the pretty formating stuff otherwise it could be
  * much smaller.
  */
-void
-print_status (RIP_MANAGER_INFO *rmi)
+void print_status()
 {
-    STREAM_PREFS *prefs = rmi->prefs;
-    char status_str[128];
-    char filesize_str[64];
-    static int buffering_tick = 0;
-    BOOL static printed_fullinfo = FALSE;
+	char status_str[128];
+	char filesize_str[64];
+	static int buffering_tick = 0;
+	BOOL static printed_fullinfo = FALSE;
 
-    if (m_dont_print)
-	return;
+	if (m_dont_print)
+		return;
 
-    if (printed_fullinfo && rmi->filename[0]) {
-
-	switch(rmi->status)
+	if (printed_fullinfo && m_curinfo.filename[0])
 	{
-	case RM_STATUS_BUFFERING:
-	    buffering_tick++;
-	    if (buffering_tick == 5)
-		buffering_tick = 0;
 
-	    sprintf(status_str,"buffering - %c ",
-		    m_buffer_chars[buffering_tick]);
+		switch(m_curinfo.status)
+		{
+			case RM_STATUS_BUFFERING:
+				buffering_tick++;
+				if (buffering_tick == 5)
+					buffering_tick = 0;
 
-	    print_to_console ("[%14s] %.50s\r",
-			      status_str,
-			      rmi->filename);
-	    break;
+				sprintf(status_str,"buffering - %c ",
+					m_buffer_chars[buffering_tick]);
 
-	case RM_STATUS_RIPPING:
-	    if (rmi->track_count < prefs->dropcount) {
-		strcpy(status_str, "skipping...   ");
-	    } else {
-		strcpy(status_str, "ripping...    ");
-	    }
-	    format_byte_size(filesize_str, rmi->filesize);
-	    print_to_console ("[%14s] %.50s [%7s]\r",
-			      status_str,
-			      rmi->filename,
-			      filesize_str);
-	    break;
-	case RM_STATUS_RECONNECTING:
-	    strcpy(status_str, "re-connecting..");
-	    print_to_console ("[%14s]\r", status_str);
-	    break;
-	}
+				fprintf(stderr, "[%14s] %.50s\r",
+			   			status_str,
+			   			m_curinfo.filename);
+				break;
+
+			case RM_STATUS_RIPPING:
+				if (m_curinfo.track_count < m_opt.dropcount)
+				{
+					strcpy(status_str, "skipping...   ");
+				}
+				else
+				{
+					strcpy(status_str, "ripping...    ");
+				}
+				format_byte_size(filesize_str, m_curinfo.filesize);
+                                fprintf(stderr, "[%14s] %.50s [%7s]\r",
+                                                status_str,
+                                                m_curinfo.filename,
+                                		filesize_str);
+				break;
+			case RM_STATUS_RECONNECTING:
+				strcpy(status_str, "re-connecting..");
+                                fprintf(stderr, "[%14s]\r", status_str);
+				break;
+		}
 			
-    }
-    if (!printed_fullinfo)
-    {
-	print_to_console ("stream: %s\n"
-			  "server name: %s\n"
-			  "bitrate: %d\n"
-			  "meta interval: %d\n",
-			  rmi->streamname,
-			  rmi->server_name,
-			  rmi->bitrate,
-			  rmi->meta_interval);
-	if(GET_MAKE_RELAY(prefs->flags))
-	{
-	    print_to_console ("relay port: %d\n"
-			      "[%14s]\r",
-			      prefs->relay_port,
-			      "getting track name... ");
 	}
+	if (!printed_fullinfo)
+	{
+		fprintf(stderr, 
+			   "stream: %s\n"
+			   "server name: %s\n"
+			   "bitrate: %d\n"
+			   "meta interval: %d\n",
+			   m_curinfo.streamname,
+			   m_curinfo.server_name,
+			   m_curinfo.bitrate,
+			   m_curinfo.meta_interval);
+		if(GET_MAKE_RELAY(m_opt.flags))
+		{
+			fprintf(stderr, "relay port: %d\n"
+					"[%14s]\r",
+					m_opt.relay_port,
+					"getting track name... ");
+		}
 
-	printed_fullinfo = TRUE;
-    }
+		printed_fullinfo = TRUE;
+	}
 }
 
 /*
@@ -239,84 +194,68 @@ print_status (RIP_MANAGER_INFO *rmi)
  * for the most part this function just checks what kind of message we got
  * and prints out stuff to the screen.
  */
-void
-rip_callback (RIP_MANAGER_INFO* rmi, int message, void *data)
+void rip_callback(int message, void *data)
 {
-    ERROR_INFO *err;
-    switch(message)
-    {
-    case RM_UPDATE:
-	print_status (rmi);
-	break;
-    case RM_ERROR:
-	err = (ERROR_INFO*)data;
-	fprintf(stderr, "\nerror %d [%s]\n", err->error_code, err->error_str);
-	m_alldone = TRUE;
-	break;
-    case RM_DONE:
-	print_to_console ("bye..\n");
-	m_alldone = TRUE;
-	break;
-    case RM_NEW_TRACK:
-	print_to_console ("\n");
-	break;
-    case RM_STARTED:
-	m_started = TRUE;
-	break;
-    }
+	RIP_MANAGER_INFO *info;
+	ERROR_INFO *err;
+	switch(message)
+	{
+		case RM_UPDATE:
+			info = (RIP_MANAGER_INFO*)data;
+			memcpy(&m_curinfo, info, sizeof(RIP_MANAGER_INFO));
+			print_status();
+			break;
+		case RM_ERROR:
+			err = (ERROR_INFO*)data;
+			fprintf(stderr, "\nerror %d [%s]\n", err->error_code, err->error_str);
+			m_alldone = TRUE;
+			break;
+		case RM_DONE:
+			fprintf(stderr, "bye..\n");
+			m_alldone = TRUE;
+			break;
+		case RM_NEW_TRACK:
+			fprintf(stderr, "\n");
+			break;
+		case RM_STARTED:
+			m_started = TRUE;
+			break;
+	}
 }
 
-/* Usage should be printed to stdout when it is not an error 
-   http://www.gnu.org/prep/standards/standards.html */
-static void
-print_usage (FILE* stream)
+void print_usage()
 {
-    fprintf(stream, "Usage: streamripper URL [OPTIONS]\n");
-    fprintf(stream, "Opts: -h             - Print this listing\n");
-    fprintf(stream, "      -v             - Print version info and quit\n");
-    fprintf(stream, "      -a [file]      - Rip to single file, default name is timestamped\n");
-    fprintf(stream, "      -A             - Don't write individual tracks\n");
-    fprintf(stream, "      -d dir         - The destination directory\n");
-    fprintf(stream, "      -D pattern     - Write files using specified pattern\n");
-    fprintf(stream, "      -s             - Don't create a directory for each stream\n");
-    fprintf(stream, "      -r [[ip:]port] - Create relay server on base ip:port, default port 8000\n");
-    fprintf(stream, "      -R #connect    - Max connections to relay, default 1, -R 0 is no limit\n");
-    fprintf(stream, "      -L file        - Create a relay playlist file\n");
-    fprintf(stream, "      -z             - Don't scan for free ports if base port is not avail\n");
-    fprintf(stream, "      -p url         - Use HTTP proxy server at <url>\n");
-    fprintf(stream, "      -o (always|never|larger|version)    - When to tracks in complete\n");
-    fprintf(stream, "      -t             - Don't overwrite tracks in incomplete\n");
-    fprintf(stream, "      -c             - Don't auto-reconnect\n");
-    fprintf(stream, "      -l seconds     - Number of seconds to run, otherwise runs forever\n");
-    fprintf(stream, "      -M megabytes   - Stop ripping after this many megabytes\n");
-    fprintf(stream, "      -q [start]     - Add sequence number to output file\n");
-    fprintf(stream, "      -u useragent   - Use a different UserAgent than \"Streamripper\"\n");
-    fprintf(stream, "      -w rulefile    - Parse metadata using rules in file.\n");
-    fprintf(stream, "      -m timeout     - Number of seconds before force-closing stalled conn\n");
-    fprintf(stream, "      -k count       - Leave <count> tracks in incomplete\n");
-#if !defined (WIN32)
-    fprintf(stream, "      -I interface   - Rip from specified interface (e.g. eth0)\n");
+    fprintf(stderr, "Usage: streamripper URL [OPTIONS]\n");
+    fprintf(stderr, "Opts:  -h            - Print this listing\n");
+    fprintf(stderr, "       -v            - Print version info and quit\n");
+    fprintf(stderr, "       -a [file]     - Rip to single file, default name is timestamped\n");
+    fprintf(stderr, "       -d dir        - The destination directory\n");
+    fprintf(stderr, "       -s            - Don't create a directory for each stream\n");
+    fprintf(stderr, "       -r [port]     - Create relay server on base port, default port 8000\n");
+    fprintf(stderr, "       -R #connect   - Max connections to relay, default 1, -R 0 is no limit\n");
+    fprintf(stderr, "       -z            - Don't scan for free ports if base port is not avail\n");
+    fprintf(stderr, "       -p url        - Use HTTP proxy server at <url>\n");
+    fprintf(stderr, "       -o            - Overwrite tracks in complete\n");
+    fprintf(stderr, "       -t            - Don't overwrite tracks in incomplete\n");
+    fprintf(stderr, "       -c            - Don't auto-reconnect\n");
+    fprintf(stderr, "       -l seconds    - Number of seconds to run, otherwise runs forever\n");
+    fprintf(stderr, "       -M megabytes  - Stop ripping after this many megabytes\n");
+    fprintf(stderr, "       -q            - Add sequence number to output file\n");
+    fprintf(stderr, "       -i            - Don't add ID3V1 Tags to output file\n");
+    fprintf(stderr, "       -u useragent  - Use a different UserAgent than \"Streamripper\"\n");
+#if defined (commentout)
+    fprintf(stderr, "       -f <dstring>  - Don't create new track if metainfo contains <dstring>\n");
 #endif
-    fprintf(stream, "      -T             - Truncate duplicated tracks in incomplete\n");
-    fprintf(stream, "      -E command     - Run external command to fetch metadata\n");
-    fprintf(stream, "      --quiet        - Don't print ripping status to console\n");
-    fprintf(stream, "      --stderr       - Print ripping status to stderr (old behavior)\n");
-    fprintf(stream, "      --debug        - Save debugging trace\n");
-    fprintf(stream, "ID3 opts (mp3/aac/nsv):  [The default behavior is adding ID3V2.3 only]\n");
-    fprintf(stream, "      -i                           - Don't add any ID3 tags to output file\n");
-    fprintf(stream, "      --with-id3v1                 - Add ID3V1 tags to output file\n");
-    fprintf(stream, "      --without-id3v2              - Don't add ID3V2 tags to output file\n");
-    fprintf(stream, "Splitpoint opts (mp3 only):\n");
-    fprintf(stream, "      --xs2                        - Use new algorithm for silence detection\n");
-    fprintf(stream, "      --xs-offset=num              - Shift relative to metadata (msec)\n");
-    fprintf(stream, "      --xs-padding=num:num         - Add extra to prev:next track (msec)\n");
-    fprintf(stream, "      --xs-search-window=num:num   - Search window relative to metadata (msec)\n");
-    fprintf(stream, "      --xs-silence-length=num      - Expected length of silence (msec)\n");
-    fprintf(stream, "Codeset opts:\n");
-    fprintf(stream, "      --codeset-filesys=codeset    - Specify codeset for the file system\n");
-    fprintf(stream, "      --codeset-id3=codeset        - Specify codeset for id3 tags\n");
-    fprintf(stream, "      --codeset-metadata=codeset   - Specify codeset for metadata\n");
-    fprintf(stream, "      --codeset-relay=codeset      - Specify codeset for the relay stream\n");
+    fprintf(stderr, "       -w rulefile   - Parse metadata using rules in file.\n");
+    fprintf(stderr, "       -m timeout    - Number of seconds before force-closing stalled conn\n");
+    fprintf(stderr, "       -k count      - Skip over first <count> tracks before starting to rip\n");
+#if !defined (WIN32)
+    fprintf(stderr, "       -I interface  - Rip from specified interface (e.g. eth0)\n");
+#endif
+    fprintf(stderr, "       -T            - Truncate duplicated tracks in incomplete\n");
+    fprintf(stderr, "       -P text       - Add a Prefix to each ripped file (Not shown on stdout).\n");
+    fprintf(stderr, "       --debug       - Save debugging trace\n");
+    fprintf(stderr, "       --x           - Invoke splitpoint detection rules (see online guide)\n");
 }
 
 /* 
@@ -325,31 +264,28 @@ print_usage (FILE* stream)
  * port of it under Win32.. there probably is one, maybe i didn't look 
  * hard enough. 
  */
-static void
-parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
+void parse_arguments(int argc, char **argv)
 {
     int i;
     char *c;
 
     if (argc < 2) {
-	print_usage (stdout);
+	print_usage();
 	exit(2);
     }
 
-    // Get URL
-    strncpy (prefs->url, argv[1], MAX_URL_LEN);
+    // Set default options
+    set_rip_manager_options_defaults (&m_opt);
 
-    // Load prefs
-    prefs_load ();
-    prefs_get_stream_prefs (prefs, prefs->url);
-    prefs_save ();
+    // Get URL
+    strncpy(m_opt.url, argv[1], MAX_URL_LEN);
 
     // Parse arguments
-    for (i = 1; i < argc; i++) {
+    for(i = 1; i < argc; i++) {
 	if (argv[i][0] != '-')
 	    continue;
 
-	c = strchr ("dDEfIklLmMopRuw", argv[i][1]);
+	c = strchr("dRplufmkIw", argv[i][1]);
         if (c != NULL) {
             if ((i == (argc-1)) || (argv[i+1][0] == '-')) {
 		fprintf(stderr, "option %s requires an argument\n", argv[i]);
@@ -360,146 +296,114 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 	{
 	case 'a':
 	    /* Create single file output + cue sheet */
-	    OPT_FLAG_SET (prefs->flags, OPT_SINGLE_FILE_OUTPUT, 1);
-	    prefs->showfile_pattern[0] = 0;
+	    m_opt.flags |= OPT_SINGLE_FILE_OUTPUT;
+	    m_opt.output_file[0] = 0;
 	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
 	    i++;
-	    strncpy (prefs->showfile_pattern, argv[i], SR_MAX_PATH);
-	    break;
-	case 'A':
-	    OPT_FLAG_SET (prefs->flags, OPT_INDIVIDUAL_TRACKS, 0);
+	    strncpy (m_opt.output_file, argv[i], SR_MAX_PATH);
 	    break;
 	case 'c':
-	    OPT_FLAG_SET (prefs->flags, OPT_AUTO_RECONNECT, 0);
+	    m_opt.flags ^= OPT_AUTO_RECONNECT;
 	    break;
 	case 'd':
 	    i++;
-	    strncpy(prefs->output_directory, argv[i], SR_MAX_PATH);
-	    break;
-	case 'D':
-	    i++;
-	    strncpy(prefs->output_pattern, argv[i], SR_MAX_PATH);
-	    break;
-	case 'E':
-	    OPT_FLAG_SET (prefs->flags, OPT_EXTERNAL_CMD, 1);
-	    i++;
-	    strncpy(prefs->ext_cmd, argv[i], SR_MAX_PATH);
+	    strncpy(m_opt.output_directory, argv[i], SR_MAX_PATH);
 	    break;
 	case 'f':
 	    i++;
-	    fprintf (stderr, "Error: -f dropstring option is obsolete. "
-		     "Please use -w parse_rules instead.\n");
-	    exit (1);
+#if defined (commentout)
+	    strncpy(m_opt.dropstring, argv[i], MAX_DROPSTRING_LEN);
+#endif
+	    printf ("Error: -f dropstring option is obsolete. "
+		    "Please use -w parse_rules instead.\n");
+	    break;
 	case 'h':
-	    print_usage (stdout);
+	    print_usage();
             exit(0);
 	    break;
 	case 'i':
-	    OPT_FLAG_SET(prefs->flags, OPT_ADD_ID3V1, 0);
-	    OPT_FLAG_SET(prefs->flags, OPT_ADD_ID3V2, 0);
-	    break;
-	case 'I':
-	    i++;
-	    strncpy(prefs->if_name, argv[i], SR_MAX_PATH);
+	    m_opt.flags ^= OPT_ADD_ID3;
 	    break;
 	case 'k':
 	    i++;
-	    prefs->dropcount = atoi(argv[i]);
+	    m_opt.dropcount = atoi(argv[i]);
 	    break;
 	case 'l':
 	    i++;
 	    time(&m_stop_time);
 	    m_stop_time += atoi(argv[i]);
 	    break;
-	case 'L':
-	    i++;
-	    strncpy(prefs->pls_file, argv[i], SR_MAX_PATH);
-	    break;
 	case 'm':
 	    i++;
-	    prefs->timeout = atoi(argv[i]);
+	    m_opt.timeout = atoi(argv[i]);
 	    break;
- 	case 'M':
- 	    i++;
- 	    prefs->maxMB_rip_size = atoi(argv[i]);
-	    OPT_FLAG_SET(prefs->flags, OPT_CHECK_MAX_BYTES, 1);
- 	    break;
 	case 'o':
-	    i++;
-	    prefs->overwrite = string_to_overwrite_opt (argv[i]);
-	    if (prefs->overwrite == OVERWRITE_UNKNOWN) {
-		fprintf (stderr, "Error: -o option requires an argument\n");
-		exit (1);
-	    }
+	    m_opt.flags |= OPT_OVER_WRITE_TRACKS;
 	    break;
 	case 'p':
 	    i++;
-	    strncpy(prefs->proxyurl, argv[i], MAX_URL_LEN);
+	    strncpy(m_opt.proxyurl, argv[i], MAX_URL_LEN);
 	    break;
 	case 'P':
 	    i++;
-	    fprintf (stderr, "Error: -P prefix option is obsolete. "
-		     "Please use -D pattern instead.\n");
-	    exit (1);
+	    strncpy(m_opt.szPrefix, argv[i], MAX_PREFIX_LEN);
+	    break;
 	case 'q':
-	    OPT_FLAG_SET(prefs->flags, OPT_COUNT_FILES, 1);
-	    prefs->count_start = -1;     /* -1 means auto-detect */
-	    if (i == (argc-1) || argv[i+1][0] == '-')
-		break;
-	    i++;
-	    prefs->count_start = atoi(argv[i]);
+	    m_opt.flags ^= OPT_COUNT_FILES;
 	    break;
 	case 'r':
-	    OPT_FLAG_SET(prefs->flags, OPT_MAKE_RELAY, 1);
+	    m_opt.flags ^= OPT_MAKE_RELAY;
 	    if (i == (argc-1) || argv[i+1][0] == '-')
 		break;
 	    i++;
-	    c = strstr(argv[i], ":");
-	    if (NULL == c) {
-	    	prefs->relay_port = atoi(argv[i]);
-	    } else {
-	    	*c = '\0';
-		strncpy(prefs->relay_ip, argv[i], SR_MAX_PATH);
-		prefs->relay_port = atoi(++c);
- 	    }
-	    break;
-	case 'R':
-	    i++;
-	    prefs->max_connections = atoi(argv[i]);
+	    m_opt.relay_port = atoi(argv[i]);
 	    break;
 	case 's':
-	    OPT_FLAG_SET(prefs->flags, OPT_SEPARATE_DIRS, 0);
+	    m_opt.flags ^= OPT_SEPERATE_DIRS;
 	    break;
 	case 't':
-	    OPT_FLAG_SET(prefs->flags, OPT_KEEP_INCOMPLETE, 1);
+	    m_opt.flags |= OPT_KEEP_INCOMPLETE;
 	    break;
 	case 'T':
-	    OPT_FLAG_SET(prefs->flags, OPT_TRUNCATE_DUPS, 1);
+	    m_opt.flags |= OPT_TRUNCATE_DUPS;
 	    break;
 	case 'u':
 	    i++;
-	    strncpy(prefs->useragent, argv[i], MAX_USERAGENT_STR);
+	    strncpy(m_opt.useragent, argv[i], MAX_USERAGENT_STR);
 	    break;
 	case 'v':
-	    printf("Streamripper %s\n", SRVERSION);
+	    printf("Streamripper %s by Jon Clegg <jonclegg@yahoo.com>\n", SRVERSION);
 	    exit(0);
 	case 'w':
 	    i++;
-	    strncpy(prefs->rules_file, argv[i], SR_MAX_PATH);
+	    strncpy(m_opt.rules_file, argv[i], SR_MAX_PATH);
 	    break;
 	case 'z':
-	    OPT_FLAG_SET(prefs->flags, OPT_SEARCH_PORTS, 0);
-	    prefs->max_port = prefs->relay_port+1000;
+	    m_opt.flags ^= OPT_SEARCH_PORTS;
+	    m_opt.max_port = m_opt.relay_port+1000;
+	    break;
+	case 'I':
+	    i++;
+	    strncpy(m_opt.if_name, argv[i], SR_MAX_PATH);
+	    break;
+ 	case 'M':
+ 	    i++;
+ 	    m_opt.maxMB_rip_size = atoi(argv[i]);
+ 	    m_opt.flags |= OPT_CHECK_MAX_BYTES;
+ 	    break;
+	case 'R':
+	    i++;
+	    m_opt.max_connections = atoi(argv[i]);
 	    break;
 	case '-':
-	    parse_extended_options (prefs, &argv[i][2]);
+	    parse_extended_options(&argv[i][2]);
 	    break;
 	}
     }
 
     /* Need to verify that splitpoint rules were sane */
-    verify_splitpoint_rules (prefs);
+    verify_splitpoint_rules ();
 
     /* Verify that first parameter is URL */
     if (argv[1][0] == '-') {
@@ -509,120 +413,55 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 }
 
 static void
-parse_extended_options (STREAM_PREFS* prefs, char* rule)
+parse_extended_options (char* rule)
 {
     int x,y;
 
-    /* Version */
-    if (!strcmp(rule,"version")) {
-	printf("Streamripper %s\n", SRVERSION);
-	exit(0);
-    }
-
-    /* Logging options */
+    /* Misc options */
     if (!strcmp(rule,"debug")) {
 	debug_enable();
 	return;
     }
-    if (!strcmp(rule,"stderr")) {
-	m_print_stderr = TRUE;
-	return;
-    }
-    if (!strcmp(rule,"quiet")) {
-	m_dont_print = TRUE;
-	return;
-    }
 
     /* Splitpoint options */
-    if ((!strcmp(rule,"xs-none"))
-	|| (!strcmp(rule,"xs_none"))) {
-	prefs->sp_opt.xs = 0;
-	debug_printf ("Disable silence detection");
+    if (!strcmp(rule,"xs_none")) {
+	m_opt.sp_opt.xs = 0;
+	printf ("Disable silence detection");
 	return;
     }
-    if (!strcmp(rule,"xs2")) {
-	prefs->sp_opt.xs = 2;
-	debug_printf ("Setting xs2\n");
+    if (1==sscanf(rule,"xs_min_volume=%d",&x)) {
+	m_opt.sp_opt.xs_min_volume = x;
+	printf ("Setting minimum volume to %d\n",x);
 	return;
     }
-    if ((1==sscanf(rule,"xs-min-volume=%d",&x)) 
-	|| (1==sscanf(rule,"xs_min_volume=%d",&x))) {
-	prefs->sp_opt.xs_min_volume = x;
-	debug_printf ("Setting minimum volume to %d\n",x);
+    if (1==sscanf(rule,"xs_silence_length=%d",&x)) {
+	m_opt.sp_opt.xs_silence_length = x;
+	printf ("Setting silence length to %d\n",x);
 	return;
     }
-    if ((1==sscanf(rule,"xs-silence-length=%d",&x))
-	|| (1==sscanf(rule,"xs_silence_length=%d",&x))) {
-	prefs->sp_opt.xs_silence_length = x;
-	debug_printf ("Setting silence length to %d\n",x);
+    if (2==sscanf(rule,"xs_search_window=%d:%d",&x,&y)) {
+	m_opt.sp_opt.xs_search_window_1 = x;
+	m_opt.sp_opt.xs_search_window_2 = y;
+	printf ("Setting search window to (%d:%d)\n",x,y);
 	return;
     }
-    if ((2==sscanf(rule,"xs-search-window=%d:%d",&x,&y))
-	|| (2==sscanf(rule,"xs_search_window=%d:%d",&x,&y))) {
-	prefs->sp_opt.xs_search_window_1 = x;
-	prefs->sp_opt.xs_search_window_2 = y;
-	debug_printf ("Setting search window to (%d:%d)\n",x,y);
+    if (1==sscanf(rule,"xs_offset=%d",&x)) {
+	m_opt.sp_opt.xs_offset = x;
+	printf ("Setting silence offset to %d\n",x);
 	return;
     }
-    if ((1==sscanf(rule,"xs-offset=%d",&x))
-	|| (1==sscanf(rule,"xs_offset=%d",&x))) {
-	prefs->sp_opt.xs_offset = x;
-	debug_printf ("Setting silence offset to %d\n",x);
-	return;
-    }
-    if ((2==sscanf(rule,"xs-padding=%d:%d",&x,&y))
-	|| (2==sscanf(rule,"xs_padding=%d:%d",&x,&y))) {
-	prefs->sp_opt.xs_padding_1 = x;
-	prefs->sp_opt.xs_padding_2 = y;
-	debug_printf ("Setting file output padding to (%d:%d)\n",x,y);
-	return;
-    }
-
-    /* id3 options */
-    if (!strcmp(rule,"with-id3v2")) {
-	OPT_FLAG_SET(prefs->flags,OPT_ADD_ID3V2,1);
-	return;
-    }
-    if (!strcmp(rule,"without-id3v2")) {
-	OPT_FLAG_SET(prefs->flags,OPT_ADD_ID3V2,0);
-	return;
-    }
-    if (!strcmp(rule,"with-id3v1")) {
-	OPT_FLAG_SET(prefs->flags,OPT_ADD_ID3V1,1);
-	return;
-    }
-    if (!strcmp(rule,"without-id3v1")) {
-	OPT_FLAG_SET(prefs->flags,OPT_ADD_ID3V1,0);
+    if (2==sscanf(rule,"xs_padding=%d:%d",&x,&y)) {
+	m_opt.sp_opt.xs_padding_1 = x;
+	m_opt.sp_opt.xs_padding_2 = y;
+	printf ("Setting file output padding to (%d:%d)\n",x,y);
 	return;
     }
 
     /* codeset options */
-    x = strlen("codeset-filesys=");
-    if (!strncmp(rule,"codeset-filesys=",x)) {
-	strncpy (prefs->cs_opt.codeset_filesys, &rule[x], MAX_CODESET_STRING);
-	debug_printf ("Setting filesys codeset to %s\n",
-		      prefs->cs_opt.codeset_filesys);
-	return;
-    }
-    x = strlen("codeset-id3=");
-    if (!strncmp(rule,"codeset-id3=",x)) {
-	strncpy (prefs->cs_opt.codeset_id3, &rule[x], MAX_CODESET_STRING);
-	debug_printf ("Setting id3 codeset to %s\n",
-		      prefs->cs_opt.codeset_id3);
-	return;
-    }
-    x = strlen("codeset-metadata=");
-    if (!strncmp(rule,"codeset-metadata=",x)) {
-	strncpy (prefs->cs_opt.codeset_metadata, &rule[x], MAX_CODESET_STRING);
-	debug_printf ("Setting metadata codeset to %s\n",
-		      prefs->cs_opt.codeset_metadata);
-	return;
-    }
-    x = strlen("codeset-relay=");
-    if (!strncmp(rule,"codeset-relay=",x)) {
-	strncpy (prefs->cs_opt.codeset_relay, &rule[x], MAX_CODESET_STRING);
-	debug_printf ("Setting relay codeset to %s\n",
-		      prefs->cs_opt.codeset_relay);
+    x = strlen("codeset=");
+    if (!strncmp(rule,"codeset=",x)) {
+	m_opt.cs_opt.codeset = &rule[x];
+	printf ("Setting codeset to %s\n",m_opt.cs_opt.codeset);
 	return;
     }
 
@@ -632,7 +471,7 @@ parse_extended_options (STREAM_PREFS* prefs, char* rule)
 }
 
 static void
-verify_splitpoint_rules (STREAM_PREFS *prefs)
+verify_splitpoint_rules (void)
 {
 #if defined (commentout)
     /* This is still not complete, but the warning causes people to 
@@ -641,41 +480,41 @@ verify_splitpoint_rules (STREAM_PREFS *prefs)
 #endif
     
     /* xs_silence_length must be non-negative and divisible by two */
-    if (prefs->sp_opt.xs_silence_length < 0) {
-	prefs->sp_opt.xs_silence_length = 0;
+    if (m_opt.sp_opt.xs_silence_length < 0) {
+	m_opt.sp_opt.xs_silence_length = 0;
     }
-    if (prefs->sp_opt.xs_silence_length % 2) {
-        prefs->sp_opt.xs_silence_length ++;
+    if (m_opt.sp_opt.xs_silence_length % 2) {
+        m_opt.sp_opt.xs_silence_length ++;
     }
 
     /* search_window values must be non-negative */
-    if (prefs->sp_opt.xs_search_window_1 < 0) {
-	prefs->sp_opt.xs_search_window_1 = 0;
+    if (m_opt.sp_opt.xs_search_window_1 < 0) {
+	m_opt.sp_opt.xs_search_window_1 = 0;
     }
-    if (prefs->sp_opt.xs_search_window_2 < 0) {
-	prefs->sp_opt.xs_search_window_2 = 0;
+    if (m_opt.sp_opt.xs_search_window_2 < 0) {
+	m_opt.sp_opt.xs_search_window_2 = 0;
     }
 
     /* if silence_length is 0, then search window should be zero */
-    if (prefs->sp_opt.xs_silence_length == 0) {
-	prefs->sp_opt.xs_search_window_1 = 0;
-	prefs->sp_opt.xs_search_window_2 = 0;
+    if (m_opt.sp_opt.xs_silence_length == 0) {
+	m_opt.sp_opt.xs_search_window_1 = 0;
+	m_opt.sp_opt.xs_search_window_2 = 0;
     }
 
     /* search_window values must be longer than silence_length */
-    if (prefs->sp_opt.xs_search_window_1 + prefs->sp_opt.xs_search_window_2
-	    < prefs->sp_opt.xs_silence_length) {
+    if (m_opt.sp_opt.xs_search_window_1 + m_opt.sp_opt.xs_search_window_2
+	    < m_opt.sp_opt.xs_silence_length) {
 	/* if this happens, disable search */
-	prefs->sp_opt.xs_search_window_1 = 0;
-	prefs->sp_opt.xs_search_window_2 = 0;
-	prefs->sp_opt.xs_silence_length = 0;
+	m_opt.sp_opt.xs_search_window_1 = 0;
+	m_opt.sp_opt.xs_search_window_2 = 0;
+	m_opt.sp_opt.xs_silence_length = 0;
     }
 
     /* search window lengths must be at least 1/2 of silence_length */
-    if (prefs->sp_opt.xs_search_window_1 < prefs->sp_opt.xs_silence_length) {
-	prefs->sp_opt.xs_search_window_1 = prefs->sp_opt.xs_silence_length;
+    if (m_opt.sp_opt.xs_search_window_1 < m_opt.sp_opt.xs_silence_length) {
+	m_opt.sp_opt.xs_search_window_1 = m_opt.sp_opt.xs_silence_length;
     }
-    if (prefs->sp_opt.xs_search_window_2 < prefs->sp_opt.xs_silence_length) {
-	prefs->sp_opt.xs_search_window_2 = prefs->sp_opt.xs_silence_length;
+    if (m_opt.sp_opt.xs_search_window_2 < m_opt.sp_opt.xs_silence_length) {
+	m_opt.sp_opt.xs_search_window_2 = m_opt.sp_opt.xs_silence_length;
     }
 }

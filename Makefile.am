@@ -1,39 +1,61 @@
 ## Process this file with automake to produce Makefile.in
 
-AM_CPPFLAGS = @OGG_CFLAGS@ @VORBIS_CFLAGS@ @GLIB_CFLAGS@
+AM_CPPFLAGS = @CPPFLAGS@
 
 if SUBDIR_LIBMAD
-  MAYBE_LIBMAD = libmad-0.15.1b
-  AM_CPPFLAGS += -I@abs_top_srcdir@/libmad-0.15.1b
+MAYBE_LIBMAD = libmad-0.15.1b
 endif
 
-if SUBDIR_CDK
-  MAYBE_CDK = cdk-5.0-20060507
+if SUBDIR_TRE
+MAYBE_LIBTRE = tre-0.7.0
 endif
 
-AM_CPPFLAGS += -I@abs_top_srcdir@/lib
-
-SUBDIRS = $(MAYBE_LIBMAD) $(MAYBE_CDK) lib
+SUBDIRS = $(MAYBE_LIBMAD) $(MAYBE_LIBTRE)
 
 bin_PROGRAMS = streamripper
-if WANT_CSTREAMRIPPER
-##    bin_PROGRAMS += cstreamripper
-endif
 
-EXTRA_PROGRAMS = streamripper ictest cstreamripper
+EXTRA_PROGRAMS = streamripper ictest
 
 ictest_SOURCES = \
+	lib/util.c \
+	lib/debug.c \
 	lib/ictest.c
 
 streamripper_SOURCES = \
-	console/streamripper.c
-
-cstreamripper_SOURCES = \
-	console/cstreamripper.c
-
-if USE_INCLUDED_ARGV
-streamripper_SOURCES += lib/argv.c
-endif
+	console/streamripper.c \
+	lib/cbuffer.c \
+	lib/debug.c \
+	lib/filelib.c \
+	lib/findsep.c \
+	lib/http.c \
+	lib/inet.c \
+	lib/mpeg.c \
+	lib/parse.c \
+	lib/relaylib.c \
+	lib/rip_manager.c \
+	lib/ripshout.c \
+	lib/ripstream.c \
+	lib/socklib.c \
+	lib/threadlib.c \
+	lib/util.c \
+	lib/cbuffer.h \
+	lib/compat.h \
+	lib/debug.h \
+	lib/filelib.h \
+	lib/findsep.h \
+	lib/http.h \
+	lib/inet.h \
+	lib/mpeg.h \
+	lib/parse.h \
+	lib/relaylib.h \
+	lib/rip_manager.h \
+	lib/ripshout.h \
+	lib/ripstream.h \
+	lib/socklib.h \
+	lib/srconfig.h \
+	lib/threadlib.h \
+	lib/types.h \
+	lib/util.h
 
 libmad_manifest = \
 	libmad-0.15.1b/README \
@@ -98,114 +120,7 @@ libmad_dont_need_these = \
 	libmad-0.15.1b/msvc++/config.h \
 	libmad-0.15.1b/msvc++/libmad.dsp
 
-tre072_manifest = \
-	tre-0.7.2/m4/tre_prog_cc_optimizations.m4 \
-	tre-0.7.2/m4/ax_check_sign.m4 \
-	tre-0.7.2/m4/Makefile.am \
-	tre-0.7.2/m4/Makefile.in \
-	tre-0.7.2/m4/vl_prog_cc_warnings.m4 \
-	tre-0.7.2/m4/ac_libtool_tags.m4 \
-	tre-0.7.2/m4/ax_decl_wchar_max.m4 \
-	tre-0.7.2/m4/ax_check_funcs_comp.m4 \
-	tre-0.7.2/po/Makevars \
-	tre-0.7.2/po/fi.po \
-	tre-0.7.2/po/LINGUAS \
-	tre-0.7.2/po/en@boldquot.header \
-	tre-0.7.2/po/en@quot.header \
-	tre-0.7.2/po/Rules-quot \
-	tre-0.7.2/po/remove-potcdate.sin \
-	tre-0.7.2/po/boldquot.sed \
-	tre-0.7.2/po/POTFILES.in \
-	tre-0.7.2/po/tre.pot \
-	tre-0.7.2/po/insert-header.sin \
-	tre-0.7.2/po/quot.sed \
-	tre-0.7.2/po/Makefile.in.in \
-	tre-0.7.2/doc/tre-api.html \
-	tre-0.7.2/doc/default.css \
-	tre-0.7.2/doc/Makefile.am \
-	tre-0.7.2/doc/Makefile.in \
-	tre-0.7.2/doc/agrep.1.in \
-	tre-0.7.2/doc/tre-syntax.html \
-	tre-0.7.2/lib/tre-config.h.in \
-	tre-0.7.2/lib/regex.h \
-	tre-0.7.2/lib/tre-filter.c \
-	tre-0.7.2/lib/tre-filter.h \
-	tre-0.7.2/lib/tre-match-approx.c \
-	tre-0.7.2/lib/README \
-	tre-0.7.2/lib/tre-match-utils.h \
-	tre-0.7.2/lib/xmalloc.c \
-	tre-0.7.2/lib/xmalloc.h \
-	tre-0.7.2/lib/tre-parse.c \
-	tre-0.7.2/lib/tre-parse.h \
-	tre-0.7.2/lib/tre-match-backtrack.c \
-	tre-0.7.2/lib/tre-internal.h \
-	tre-0.7.2/lib/regerror.c \
-	tre-0.7.2/lib/tre-compile.c \
-	tre-0.7.2/lib/tre-compile.h \
-	tre-0.7.2/lib/Makefile.am \
-	tre-0.7.2/lib/Makefile.in \
-	tre-0.7.2/lib/tre-match-parallel.c \
-	tre-0.7.2/lib/gettext.h \
-	tre-0.7.2/lib/tre-ast.c \
-	tre-0.7.2/lib/tre-ast.h \
-	tre-0.7.2/lib/tre-mem.c \
-	tre-0.7.2/lib/tre-mem.h \
-	tre-0.7.2/lib/regcomp.c \
-	tre-0.7.2/lib/regexec.c \
-	tre-0.7.2/lib/tre-stack.c \
-	tre-0.7.2/lib/tre-stack.h \
-	tre-0.7.2/src/Makefile.am \
-	tre-0.7.2/src/Makefile.in \
-	tre-0.7.2/src/agrep.c \
-	tre-0.7.2/NEWS \
-	tre-0.7.2/TODO \
-	tre-0.7.2/LICENSE \
-	tre-0.7.2/aclocal.m4 \
-	tre-0.7.2/tests/test-str-source.c \
-	tre-0.7.2/tests/randtest.c \
-	tre-0.7.2/tests/retest.c \
-	tre-0.7.2/tests/Makefile.am \
-	tre-0.7.2/tests/Makefile.in \
-	tre-0.7.2/tests/build-tests.sh \
-	tre-0.7.2/tests/bench.c \
-	tre-0.7.2/utils/compile \
-	tre-0.7.2/utils/depcomp \
-	tre-0.7.2/utils/build-rpm.sh \
-	tre-0.7.2/utils/ltmain.sh \
-	tre-0.7.2/utils/config.guess \
-	tre-0.7.2/utils/config.rpath \
-	tre-0.7.2/utils/install-sh \
-	tre-0.7.2/utils/autogen.sh \
-	tre-0.7.2/utils/config.sub \
-	tre-0.7.2/utils/missing \
-	tre-0.7.2/utils/mkinstalldirs \
-	tre-0.7.2/utils/Makefile.am \
-	tre-0.7.2/utils/Makefile.in \
-	tre-0.7.2/win32/tre-config.h \
-	tre-0.7.2/win32/retest.dsp \
-	tre-0.7.2/win32/config.h \
-	tre-0.7.2/win32/tre.def \
-	tre-0.7.2/win32/tre.dsp \
-	tre-0.7.2/win32/tre.dsw \
-	tre-0.7.2/README \
-	tre-0.7.2/THANKS \
-	tre-0.7.2/configure \
-	tre-0.7.2/configure.ac \
-	tre-0.7.2/tre.spec.in \
-	tre-0.7.2/Makefile.am \
-	tre-0.7.2/Makefile.in \
-	tre-0.7.2/config.h.in \
-	tre-0.7.2/python/example.py \
-	tre-0.7.2/python/tre-python.c \
-	tre-0.7.2/python/setup.py \
-	tre-0.7.2/AUTHORS \
-	tre-0.7.2/INSTALL \
-	tre-0.7.2/tre.pc.in \
-	tre-0.7.2/ABOUT-NLS \
-	tre-0.7.2/ChangeLog \
-	tre-0.7.2/COPYING
-
-tre070_manifest = \
+tre_manifest = \
 	tre-0.7.0/m4/tre_prog_cc_optimizations.m4 \
 	tre-0.7.0/m4/ax_check_sign.m4 \
 	tre-0.7.0/m4/Makefile.am \
@@ -303,92 +218,21 @@ tre070_manifest = \
 man_MANS = \
 	streamripper.1
 
-lib_manifest = \
-	lib/Makefile.am \
-	lib/Makefile.in \
-	lib/config.h.in \
-	lib/argv.c \
-	lib/cbuf2.c \
-	lib/cbuf2.h \
-	lib/charmaps.h \
-	lib/charset.c \
-	lib/charset.h \
-	lib/compat.h \
-	lib/config.h \
-	lib/confw32.h \
-	lib/debug.c \
-	lib/debug.h \
-	lib/errors.c \
-	lib/errors.h \
-	lib/external.c \
-	lib/external.h \
-	lib/filelib.c \
-	lib/filelib.h \
-	lib/findsep2.c \
-	lib/findsep.c \
-	lib/findsep.h \
-	lib/http.c \
-	lib/http.h \
-	lib/iconvert.c \
-	lib/ictest.c \
-	lib/list.h \
-	lib/mchar.c \
-	lib/mchar.h \
-	lib/parse.c \
-	lib/parse.h \
-	lib/prefs.c \
-	lib/prefs.h \
-	lib/relaylib.c \
-	lib/relaylib.h \
-	lib/rip_manager.c \
-	lib/rip_manager.h \
-	lib/ripaac.c \
-	lib/ripogg.c \
-	lib/ripogg.h \
-	lib/ripstream.c \
-	lib/ripstream.h \
-	lib/socklib.c \
-	lib/socklib.h \
-	lib/srconfig.h \
-	lib/srtypes.h \
-	lib/threadlib.c \
-	lib/threadlib.h \
-	lib/uce_dirent.h \
-	lib/utf8.c \
-	lib/utf8.h
-
 EXTRA_DIST = \
 	config.rpath \
 	CHANGES \
+	readme_xfade.txt \
 	parse_rules.txt \
-	fake_external_metadata.pl \
-	fetch_external_metadata.pl \
-	$(lib_manifest) \
+	lib/live365info.c \
+	lib/live365info.h \
+	lib/riplive365.c \
+	lib/riplive365.h \
 	$(libmad_manifest) \
+	$(tre_manifest) \
 	$(man_MANS)
 
 DIST_SUBDIRS = 
 
-streamripper_LDADD = \
-	lib/libstreamripper.a \
-	@FAAD_LIBS@ \
-	@LIBMAD@ \
-	@THREADLIBS@ \
-	@LTLIBICONV@ @LIBCHARSET@ \
-	@LIBIBERTY_LIBS@ \
-	@OGG_LIBS@ @VORBIS_LIBS@ \
-        @CDK_LIBS@ \
-	@GLIB_LIBS@
-
-cstreamripper_LDADD = \
-	lib/libstreamripper.a \
-	@FAAD_LIBS@ \
-	@LIBMAD@ \
-	@THREADLIBS@ \
-	@LTLIBICONV@ @LIBCHARSET@ \
-	@LIBIBERTY_LIBS@ \
-	@OGG_LIBS@ @VORBIS_LIBS@ \
-        @CDK_LIBS@ \
-	@GLIB_LIBS@
+streamripper_LDADD = @LIBMAD@ @LIBREGEX@ @THREADLIBS@ @LTLIBICONV@ @LIBCHARSET@
 
 ACLOCAL_AMFLAGS = -I m4

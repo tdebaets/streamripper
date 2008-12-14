@@ -1,10 +1,9 @@
 #ifndef __PARSE_H__
 #define __PARSE_H__
 
-#include "srtypes.h"
+#include "types.h"
 
-void init_metadata_parser (RIP_MANAGER_INFO* rmi, char* rules_file);
-void parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
-void parser_free (RIP_MANAGER_INFO* rmi);
+void init_metadata_parser (char* rules_file);
+void parse_metadata (TRACK_INFO* track_info);
 
 #endif //__PARSE_H__

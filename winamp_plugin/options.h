@@ -2,11 +2,10 @@
 #define __OPTIONS_H__
 
 #include "rip_manager.h"
-#include "wstreamripper.h"
+#include "dsp_sripper.h"
 
-void options_dialog_show (HINSTANCE inst, HWND parent);
-void options_get_desktop_folder (char* path);
-BOOL options_load (void);
-BOOL options_save (void);
+extern void options_dialog_show(HINSTANCE inst, HWND parent, RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt);
+extern BOOL options_load(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt);
+extern BOOL options_save(RIP_MANAGER_OPTIONS *opt, GUI_OPTIONS *guiOpt);
 
 #endif //__OPTIONS_H__

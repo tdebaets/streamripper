@@ -1,0 +1,48 @@
+# Generated automatically from Makefile.in by configure.
+#Makefile for libmpg
+
+bindir = /usr/local/bin
+SHELL = /bin/sh
+CC = @CC@
+
+LDFLAGS = @THREADLIBS@ -lm
+INCPATHS = -I ../mpglib
+CFLAGS = @CFLAGS@
+DEFS = -D_REENTRANT -DUSE_LAYER3 -DHAVE_MPGLIB -DNOANALYSIS -D__DEBUG
+COMPILE_CFLAGS = $(CFLAGS) $(DEFS) $(INCPATHS)
+
+MPGLIBOBJS = VbrTag.o  \
+	common.o  \
+	dct64.o  \
+	decode.o \
+	interface.o  \
+	layer3.o  \
+	tabinit.o 
+
+all: mpglib
+
+mpglib: $(MPGLIBOBJS)
+
+VbrTag.o:
+	$(CC) $(COMPILE_CFLAGS) -c -o VbrTag.o VbrTag.c 
+
+common.o:
+	$(CC) $(COMPILE_CFLAGS) -c -o common.o common.c 
+
+dct64.o:
+	$(CC) $(COMPILE_CFLAGS) -c -o dct64.o dct64.c 
+
+decode.o:
+	$(CC) $(COMPILE_CFLAGS) -c -o decode.o decode.c 
+
+interface.o:
+	$(CC) $(COMPILE_CFLAGS) -c -o interface.o interface.c 
+
+layer3.o:
+	$(CC) $(COMPILE_CFLAGS) -c -o layer3.o layer3.c 
+
+tabinit.o:
+	$(CC) $(COMPILE_CFLAGS) -c -o tabinit.o tabinit.c 
+
+clean:
+	rm -f *.o

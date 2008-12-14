@@ -26,58 +26,72 @@
 #endif
 #include <stdio.h>
 #include <time.h>
-#include "srtypes.h"
+#include "types.h"
+#include "util.h"
 #include "threadlib.h"
 #include "debug.h"
 
-/******************************************************************************
+#if WIN32
+	#define beginthread(thread, callback) \
+		_beginthread((void *)callback, 0, (void *)NULL)
+#elif __UNIX__
+    #include <unistd.h>
+	#define beginthread(thread, callback) \
+		pthread_create(thread, NULL, \
+                          (void *)callback, (void *)NULL)
+#endif
+
+
+/*********************************************************************************
  * Public functions
- *****************************************************************************/
-error_code
-threadlib_beginthread (THREAD_HANDLE *thread, void (*callback)(void *), 
-		       void* arg)
-{
-    BeginThread (*thread, callback, arg);
-    //if (thread->thread_handle == NULL)	// don't feel like porting this
-    //	return SR_ERROR_CANT_CREATE_THREAD;
+ *********************************************************************************/
+error_code	threadlib_beginthread(THREAD_HANDLE *thread, void (*callback)(void *));
+BOOL		threadlib_isrunning(THREAD_HANDLE *thread);
+void		threadlib_waitforclose(THREAD_HANDLE *thread);
+void		threadlib_endthread(THREAD_HANDLE *thread);
 
-    return SR_SUCCESS;
+HSEM		threadlib_create_sem();
+error_code	threadlib_waitfor_sem(HSEM *e);
+error_code	threadlib_signel_sem(HSEM *e);
+void		threadlib_destroy_sem(HSEM *e);
+
+
+error_code threadlib_beginthread(THREAD_HANDLE *thread, void (*callback)(void *))
+{
+	BeginThread(thread->thread_handle, callback);
+	//if (thread->thread_handle == NULL)	// don't feel like porting this
+	//	return SR_ERROR_CANT_CREATE_THREAD;
+
+	return SR_SUCCESS;
 }
 
-void
-threadlib_waitforclose (THREAD_HANDLE *thread)
+void threadlib_waitforclose(THREAD_HANDLE *thread)
 {
-    WaitForThread (*thread);
+	WaitForThread(thread->thread_handle);
 }
 
-HSEM
-threadlib_create_sem ()
+HSEM threadlib_create_sem()
 {
-    HSEM s;
-    SemInit (s);
-    return s;
+	HSEM s;
+	SemInit(s);
+	return s;
 }
 
-error_code
-threadlib_waitfor_sem (HSEM *e)
+error_code threadlib_waitfor_sem(HSEM *e)
 {
-    if (!e)
-	return SR_ERROR_INVALID_PARAM;
-    SemWait (*e);
-    return SR_SUCCESS;
+	if (!e)
+		return SR_ERROR_INVALID_PARAM;
+	SemWait(*e);
+	return SR_SUCCESS;
 }
-
-error_code
-threadlib_signal_sem(HSEM *e)
+error_code threadlib_signel_sem(HSEM *e)
 {
-    if (!e)
-	return SR_ERROR_INVALID_PARAM;
-    SemPost (*e);
-    return SR_SUCCESS;
+	if (!e)
+		return SR_ERROR_INVALID_PARAM;
+	SemPost(*e);
+	return SR_SUCCESS;
 }
-
-void
-threadlib_destroy_sem (HSEM *e)
+void threadlib_destroy_sem(HSEM *e)
 {
-    DestroyThread (*e);
+	DestroyThread(*e);
 }

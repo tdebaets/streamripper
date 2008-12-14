@@ -1,35 +1,15 @@
-/* filelib.h
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
 #ifndef __FILELIB_H__
 #define __FILELIB_H__
 
-#include "srtypes.h"
-#include "errors.h"
+#include "types.h"
 #if WIN32
 #include <windows.h>
-#include <io.h>
 #endif
 
 #if WIN32
-#define PATH_SLASH m_('\\')
-#define PATH_SLASH_STR m_("\\")
+#define PATH_SLASH '\\'
 #else
-#define PATH_SLASH m_('/')
-#define PATH_SLASH_STR m_("/")
+#define PATH_SLASH '/'
 #endif
 
 
@@ -39,24 +19,34 @@
    Licence: GNU LGPL */
 /* ISSLASH(C)           tests whether C is a directory separator character.
    IS_ABSOLUTE_PATH(P)  tests whether P is an absolute path.  If it is not,
-                        it may be concatenated to a directory pathname. */
+                        it may be concatenated to a directory pathname.
+ */
 #if defined _WIN32 || defined __WIN32__ || defined __EMX__ || defined __DJGPP__
   /* Win32, OS/2, DOS */
-# define ISSLASH(C) ((C) == m_('/') || (C) == m_('\\'))
+# define ISSLASH(C) ((C) == '/' || (C) == '\\')
 # define HAS_DEVICE(P) \
-    ((((P)[0] >= m_('A') && (P)[0] <= m_('Z')) \
-      || ((P)[0] >= m_('a') && (P)[0] <= m_('z'))) \
-     && (P)[1] == m_(':'))
-/* GCS: This is not correct, because it could be c:foo which is relative */
-/* # define IS_ABSOLUTE_PATH(P) (ISSLASH ((P)[0]) || HAS_DEVICE (P)) */
-# define IS_ABSOLUTE_PATH(P) ISSLASH ((P)[0])
+    ((((P)[0] >= 'A' && (P)[0] <= 'Z') || ((P)[0] >= 'a' && (P)[0] <= 'z')) \
+     && (P)[1] == ':')
+# define IS_ABSOLUTE_PATH(P) (ISSLASH ((P)[0]) || HAS_DEVICE (P))
 #else
   /* Unix */
-# define ISSLASH(C) ((C) == m_('/'))
-# define HAS_DEVICE(P) (0)
+# define ISSLASH(C) ((C) == '/')
 # define IS_ABSOLUTE_PATH(P) ISSLASH ((P)[0])
 #endif
 
+
+
+#if defined (commentout)
+#ifndef WIN32
+#define MAX_PATH 256
+#endif
+#ifndef MAX_PATH
+#define MAX_PATH		512
+#endif
+#define MAX_PATH_LEN		255
+#define MAX_FILENAME_LEN	255
+#define MAX_FILENAME		255
+#endif
 #define SR_MIN_FILENAME		54     /* For files in incomplete */
 #define SR_MIN_COMPLETEDIR      10     /* For dir with radio station name */
 #define SR_DATE_LEN		11
@@ -68,29 +58,21 @@
 #define SR_MAX_BASE_W_DATE (SR_MAX_BASE-SR_MIN_COMPLETE_W_DATE)
 
 
-error_code
-filelib_init (RIP_MANAGER_INFO* rmi,
-	      BOOL do_individual_tracks,
-	      BOOL do_count,
-	      int count_start,
-	      BOOL keep_incomplete,
-	      BOOL do_show_file,
-	      int content_type,
-	      char* output_directory,
-	      char* output_pattern,
-	      char* showfile_pattern,
-	      int get_separate_dirs,
-	      int get_date_stamp,
-	      char* icy_name);
-error_code filelib_start (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
-error_code filelib_write_track (RIP_MANAGER_INFO* rmi, char *buf, u_long size);
-error_code
-filelib_write_show (RIP_MANAGER_INFO* rmi, char *buf, u_long size);
-error_code filelib_write_cue (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti, int secs);
-error_code
-filelib_end (RIP_MANAGER_INFO* rmi,
-	     TRACK_INFO* ti, enum OverwriteOpt overwrite,
-	     BOOL truncate_dup, mchar *fullpath);
-void filelib_shutdown (RIP_MANAGER_INFO* rmi);
+error_code filelib_init(BOOL do_count, BOOL keep_incomplete, 
+			BOOL do_single_file, 	     
+			int content_type, char* show_file_name);
+error_code filelib_start(char *filename);
+error_code filelib_end(char *filename, BOOL over_write_existing, 
+		       BOOL truncate_dup,
+		       char *fullpath,
+		       char* a_pszPrefix);
+error_code filelib_write_track(char *buf, u_long size);
+error_code filelib_write_show(char *buf, u_long size);
+void filelib_shutdown();
+error_code filelib_set_output_directory (char* output_directory, 
+		int get_separate_dirs, int get_date_stamp, char* icy_name);
+char* filelib_get_output_directory ();
+error_code filelib_remove(char *filename);
+error_code filelib_write_cue(TRACK_INFO* ti, int secs);
 
 #endif //FILELIB

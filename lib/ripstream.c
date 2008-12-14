@@ -1,4 +1,4 @@
-/* ripstream.c
+/* ripstream.c - jonclegg@yahoo.com
  * buffer stream data, when a track changes decodes the audio and 
  * finds a silent point to split the track
  *
@@ -16,6 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,49 +24,67 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #endif
-#include "srtypes.h"
-#include "cbuf2.h"
+#include "types.h"
+#include "cbuffer.h"
 #include "findsep.h"
-#include "mchar.h"
+#include "util.h"
 #include "parse.h"
 #include "rip_manager.h"
 #include "ripstream.h"
 #include "debug.h"
 #include "filelib.h"
 #include "relaylib.h"
-#include "socklib.h"
-#include "external.h"
-#include "ripogg.h"
 
-/*****************************************************************************
+/*********************************************************************************
+ * Public functions
+ *********************************************************************************/
+/* -- See ripstream.h -- */
+
+/*********************************************************************************
  * Private functions
- *****************************************************************************/
-static error_code
-find_sep (RIP_MANAGER_INFO* rmi, u_long* pos1, u_long* pos2);
-static error_code start_track_mp3 (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
-static error_code end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, 
-				 u_long pos2, TRACK_INFO* ti);
-static error_code end_track_ogg (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
-static void
-compute_cbuf2_size (RIP_MANAGER_INFO* rmi, 
-		    SPLITPOINT_OPTIONS *sp_opt, 
-		    int bitrate, 
-		    int meta_interval);
-static int ms_to_bytes (int ms, int bitrate);
-static int bytes_to_secs (unsigned int bytes, int bitrate);
-static void clear_track_info (TRACK_INFO* ti);
-static int
-ripstream_recvall (RIP_MANAGER_INFO* rmi, char* buffer, int size);
-static error_code get_track_from_metadata (RIP_MANAGER_INFO* rmi, 
-					   int size, char *newtrack);
-static error_code
-get_stream_data (RIP_MANAGER_INFO* rmi, char *data_buf, char *track_buf);
-static error_code ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi);
-static error_code ripstream_rip_ogg (RIP_MANAGER_INFO* rmi);
+ *********************************************************************************/
+static error_code find_sep (u_long *pos1, u_long *pos2);
+static error_code end_track(u_long pos1, u_long pos2, TRACK_INFO* ti);
+static error_code start_track (TRACK_INFO* ti);
 
-/*****************************************************************************
- * Private structs
- *****************************************************************************/
+static void compute_cbuffer_size (SPLITPOINT_OPTIONS *sp_opt,
+				  int bitrate, int meta_interval);
+static int ms_to_bytes (int ms, int bitrate);
+static int bytes_to_secs (unsigned int bytes);
+static void clear_track_info (TRACK_INFO* ti);
+
+/*********************************************************************************
+ * Private Vars
+ *********************************************************************************/
+static CBUFFER			m_cbuffer;
+static IO_GET_STREAM	*m_in;
+static TRACK_INFO m_old_track;	    /* The track that's being ripped now */
+static TRACK_INFO m_new_track;	    /* The track that's gonna start soon */
+static TRACK_INFO m_current_track;  /* The metadata as I'm parsing it */
+static int m_first_time_through;
+static char			m_no_meta_name[MAX_TRACK_LEN] = {'\0'};
+static char			*m_getbuffer = NULL;
+static int			m_find_silence = -1;
+static BOOL			m_addID3tag = TRUE;
+static SPLITPOINT_OPTIONS	*m_sp_opt;
+static int			m_bitrate;
+static int			m_http_bitrate;
+static int			m_meta_interval;
+static unsigned int		m_cue_sheet_bytes = 0;
+
+static int			m_cbuffer_size;
+static int			m_mi_to_cbuffer_start;
+static int			m_mi_to_cbuffer_end;
+static int			m_sw_start_to_cbuffer_end;
+static int			m_sw_end_to_cbuffer_end;
+static int			m_min_search_win;
+static int			m_drop_count;
+static int			m_track_count = 0;
+static int m_content_type;
+
+/*
+ * oddsock's id3 tags
+ */
 typedef struct ID3V1st
 {
         char    tag[3];
@@ -75,16 +94,14 @@ typedef struct ID3V1st
         char    year[4];
         char    comment[30];
         char    genre;
-} ID3V1Tag;
+} ID3Tag;
 
-#if defined (commentout)
 typedef struct ID3V2headst {
 	char	tag[3];
 	int	version;
 	char	flags;
 	int	size;
 } ID3V2head;
-#endif
 
 typedef struct ID3V2framest {
 	char	id[4];
@@ -93,68 +110,74 @@ typedef struct ID3V2framest {
 } ID3V2frame;
 
 
-/******************************************************************************
- * Public functions
- *****************************************************************************/
+
 error_code
-ripstream_init (RIP_MANAGER_INFO* rmi)
+ripstream_init (IO_GET_STREAM *in, char *no_meta_name, 
+		int drop_count,
+		SPLITPOINT_OPTIONS *sp_opt, 
+		int bitrate, 
+		int content_type, 
+		BOOL addID3tag)
 {
-    rmi->track_count = 0;
-    /* GCS RMK: Ripchunk_size is the metaint size, or default size
-       if stream doesn't have meta data */
-    rmi->cue_sheet_bytes = 0;
-    rmi->getbuffer_size = (rmi->meta_interval == NO_META_INTERVAL) 
-	    ? DEFAULT_META_INTERVAL : rmi->meta_interval;
+    if (!in || !sp_opt || !no_meta_name) {
+	printf ("Error: invalid ripstream parameters\n");
+	return SR_ERROR_INVALID_PARAM;
+    }
 
-    clear_track_info (&rmi->old_track);
-    clear_track_info (&rmi->new_track);
-    clear_track_info (&rmi->current_track);
-    rmi->ripstream_first_time_through = 1;
+    m_in = in;
+    m_sp_opt = sp_opt;
+    m_track_count = 0;
+    m_addID3tag = addID3tag;
+    strcpy(m_no_meta_name, no_meta_name);
+    m_drop_count = drop_count;
+    m_http_bitrate = bitrate;
+    m_bitrate = -1;
+    m_content_type = content_type;
+    /* GCS RMK: If no meta data, then this is the default chunk size. */
+    m_meta_interval = in->getsize;
+    m_cue_sheet_bytes = 0;
 
-    if ((rmi->getbuffer = malloc (rmi->getbuffer_size)) == NULL)
+    clear_track_info (&m_old_track);
+    clear_track_info (&m_new_track);
+    clear_track_info (&m_current_track);
+    m_first_time_through = 1;
+
+    if ((m_getbuffer = malloc(in->getsize)) == NULL)
 	return SR_ERROR_CANT_ALLOC_MEMORY;
 
     return SR_SUCCESS;
 }
 
 void
-ripstream_clear(RIP_MANAGER_INFO* rmi)
+ripstream_destroy()
 {
-    debug_printf ("RIPSTREAM_CLEAR\n");
+    if (m_getbuffer) {free(m_getbuffer); m_getbuffer = NULL;}
+    m_find_silence = -1;
+    m_in = NULL;
+    m_cbuffer_size = 0;
+    cbuffer_destroy(&m_cbuffer);
 
-    if (rmi->getbuffer) {free(rmi->getbuffer); rmi->getbuffer = NULL;}
-    rmi->getbuffer_size = 0;
+    clear_track_info (&m_old_track);
+    clear_track_info (&m_new_track);
+    clear_track_info (&m_current_track);
+    m_first_time_through = 1;
 
-    rmi->find_silence = -1;
-    rmi->cbuf2_size = 0;
-    cbuf2_destroy (&rmi->cbuf2);
-
-    clear_track_info (&rmi->old_track);
-    clear_track_info (&rmi->new_track);
-    clear_track_info (&rmi->current_track);
-    rmi->ripstream_first_time_through = 1;
-
-    rmi->no_meta_name[0] = '\0';
-    rmi->track_count = 0;
+    m_no_meta_name[0] = '\0';
+    m_track_count = 0;
+    m_addID3tag = TRUE;
 }
 
-static BOOL
-is_track_changed (RIP_MANAGER_INFO* rmi)
+BOOL is_buffer_full()
 {
-    TRACK_INFO *old = &rmi->old_track;
-    TRACK_INFO *cur = &rmi->current_track;
+    return (cbuffer_get_free(&m_cbuffer) - m_in->getsize) < m_in->getsize;
+}
 
-    /* We test the parsed fields instead of raw_metadata because the 
-       parse rules may have stripped garbage out, causing the resulting 
-       track info to be the same. */
-    if (!strcmp(old->artist, cur->artist)
-	&& !strcmp(old->title, cur->title)
-	&& !strcmp(old->album, cur->album)
-	&& !strcmp(old->track_p, cur->track_p)
-	&& !strcmp(old->year, cur->year))
-    {
+BOOL
+is_track_changed()
+{
+    /* If metadata is duplicate of previous, then no change. */
+    if (!strcmp(m_old_track.raw_metadata, m_current_track.raw_metadata))
 	return 0;
-    }
 
     /* Otherwise, there was a change. */
     return 1;
@@ -163,26 +186,18 @@ is_track_changed (RIP_MANAGER_INFO* rmi)
 static void
 format_track_info (TRACK_INFO* ti, char* tag)
 {
-    debug_mprintf (m_("----- TRACK_INFO ") m_s m_("\n")
-		   m_("HAVETI: %d\n")
-		   m_("RAW_MD: ") m_s m_("\n")
-		   m_("ARTIST: ") m_S m_("\n")
-		   m_("TITLE:  ") m_S m_("\n")
-		   m_("ALBUM:  ") m_S m_("\n")
-		   m_("TRACK_P:") m_S m_("\n")
-		   m_("TRACK_A:") m_S m_("\n")
-		   m_("YEAR:  ") m_S m_("\n")
-		   m_("SAVE:   %d\n"),
-		   tag,
-		   ti->have_track_info,
-		   ti->raw_metadata,
-		   ti->artist,
-		   ti->title,
-		   ti->album,
-                   ti->track_p,
-                   ti->track_a,
-                   ti->year,
-		   ti->save_track);
+    debug_printf ("----- TRACK_INFO %s\n"
+	"HAVETI: %d\n"
+	"RAW_MD: %s\n"
+	"ARTIST: %s\n"
+	"TITLE:  %s\n"
+	"ALBUM:  %s\n",
+	tag,
+        ti->have_track_info,
+	ti->raw_metadata,
+	ti->artist,
+	ti->title,
+	ti->album);
 }
 
 static void
@@ -193,11 +208,6 @@ clear_track_info (TRACK_INFO* ti)
     ti->artist[0] = 0;
     ti->title[0] = 0;
     ti->album[0] = 0;
-    ti->track_p[0] = 0;
-    ti->track_a[0] = 0;
-    ti->year[0] = 0;
-    ti->composed_metadata[0] = 0;
-    ti->save_track = TRUE;
 }
 
 static void
@@ -205,357 +215,198 @@ copy_track_info (TRACK_INFO* dest, TRACK_INFO* src)
 {
     dest->have_track_info = src->have_track_info;
     strcpy (dest->raw_metadata, src->raw_metadata);
-    mstrcpy (dest->artist, src->artist);
-    mstrcpy (dest->title, src->title);
-    mstrcpy (dest->album, src->album);
-    mstrcpy (dest->track_p, src->track_p);
-    mstrcpy (dest->track_a, src->track_a);
-    mstrcpy (dest->year, src->year);
-    strcpy (dest->composed_metadata, src->composed_metadata);
-    dest->save_track = src->save_track;
+    strcpy (dest->artist, src->artist);
+    strcpy (dest->title, src->title);
+    strcpy (dest->album, src->album);
 }
 
-/**** The main loop for ripping ****/
 error_code
-ripstream_rip (RIP_MANAGER_INFO* rmi)
-{
-    if (rmi->http_info.content_type == CONTENT_TYPE_OGG) {
-	return ripstream_rip_ogg (rmi);
-    } else {
-	return ripstream_rip_mp3 (rmi);
-    }
-}
-
-/******************************************************************************
- * Private functions
- *****************************************************************************/
-static error_code
-ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
+ripstream_rip()
 {
     int ret;
     int real_ret = SR_SUCCESS;
     u_long extract_size;
 
-    /* get the data from the stream */
-    debug_printf ("RIPSTREAM_RIP_OGG: top of loop\n");
-    ret = get_stream_data(rmi, rmi->getbuffer, rmi->current_track.raw_metadata);
+    /* get the data & title */
+    debug_printf ("RIPSTREAM_RIP: get_stream_data\n");
+    ret = m_in->get_stream_data(m_getbuffer, m_current_track.raw_metadata);
     if (ret != SR_SUCCESS) {
-	debug_printf("get_stream_data bad return code: %d\n", ret);
+	debug_printf("m_in->get_stream_data bad return code: %d\n", ret);
 	return ret;
     }
 
-    if (rmi->ripstream_first_time_through) {
-	/* Allocate circular buffer */
-	rmi->detected_bitrate = -1;
-	rmi->bitrate = -1;
-	rmi->getbuffer_size = 1024;
-	rmi->cbuf2_size = 128;
-	ret = cbuf2_init (&rmi->cbuf2, rmi->http_info.content_type, 
-			  GET_MAKE_RELAY(rmi->prefs->flags),
-			  rmi->getbuffer_size, rmi->cbuf2_size);
+    /* Immediately dump data to relay & show file */
+    rip_manager_put_raw_data (m_getbuffer, m_meta_interval);
+
+    /* First time through, determine the bitrate. 
+       The bitrate is needed to do the track splitting parameters 
+       properly in seconds.  See the readme file for details.  */
+    if (m_bitrate == -1) {
+        unsigned long test_bitrate;
+	debug_printf("Querying stream for bitrate - first time.\n");
+	if (m_content_type == CONTENT_TYPE_MP3) {
+	    find_bitrate(&test_bitrate, m_getbuffer, m_meta_interval);
+	    m_bitrate = test_bitrate / 1000;
+	    debug_printf("Got bitrate: %d\n",m_bitrate);
+	} else {
+	    m_bitrate = 0;
+	}
+
+	if (m_bitrate == 0) {
+	    /* Couldn't decode from mp3, so let's go with what the 
+	       http header says, or fallback to 24.  */
+	    if (m_http_bitrate > 0)
+		m_bitrate = m_http_bitrate;
+	    else
+		m_bitrate = 24;
+	}
+        compute_cbuffer_size (m_sp_opt, m_bitrate, m_in->getsize);
+	ret = cbuffer_init(&m_cbuffer, m_in->getsize * m_cbuffer_size);
 	if (ret != SR_SUCCESS) return ret;
-	rmi->ogg_have_track = 0;
-	/* Warm up the ogg decoding routines */
-	rip_ogg_init (rmi);
-	/* Done! */
-	rmi->ripstream_first_time_through = 0;
     }
 
-    /* Copy the data into cbuffer */
-    clear_track_info (&rmi->current_track);
-    ret = cbuf2_insert_chunk (rmi, &rmi->cbuf2, 
-			      rmi->getbuffer, rmi->getbuffer_size,
-			      rmi->http_info.content_type, 
-			      &rmi->current_track);
-    if (ret != SR_SUCCESS) {
-	debug_printf("start_track had bad return code %d\n", ret);
-	return ret;
+    /* Parse metadata */
+    if (m_current_track.raw_metadata[0]) {
+        parse_metadata (&m_current_track);
+    } else {
+        clear_track_info (&m_current_track);
     }
 
-    ret = filelib_write_show (rmi, rmi->getbuffer, rmi->getbuffer_size);
-    if (ret != SR_SUCCESS) {
-        debug_printf("filelib_write_show had bad return code: %d\n", ret);
-        return ret;
-    }
-
-    /* If we have unwritten pages for the current track, write them */
-    if (rmi->ogg_have_track) {
-	do {
-	    error_code ret;
-	    unsigned long amt_filled;
-	    int got_eos;
-	    ret = cbuf2_ogg_peek_song (&rmi->cbuf2, rmi->getbuffer, 
-				       rmi->getbuffer_size,
-				       &amt_filled, &got_eos);
-	    debug_printf ("^^^ogg_peek: %d %d\n", amt_filled, got_eos);
-	    if (ret != SR_SUCCESS) {
-		debug_printf ("cbuf2_ogg_peek_song: %d\n",ret);
-		return ret;
-	    }
-	    if (amt_filled == 0) {
-		break;
-	    }
-	    ret = rip_manager_put_data (rmi, rmi->getbuffer, amt_filled);
-	    if (ret != SR_SUCCESS) {
-		debug_printf ("rip_manager_put_data(#1): %d\n",ret);
-		return ret;
-	    }
-	    if (got_eos) {
-		end_track_ogg (rmi, &rmi->old_track);
-		rmi->ogg_have_track = 0;
-		break;
-	    }
-	} while (1);
-    }
-
-    format_track_info (&rmi->current_track, "current");
-
-    /* If we got a new track, then start a new file */
-    if (rmi->current_track.have_track_info) {
-	ret = rip_manager_start_track (rmi, &rmi->current_track);
+    /* First time through, so start a track. */
+    if (m_first_time_through) {
+	int ret;
+	debug_printf ("First time through...\n");
+	m_first_time_through = 0;
+	if (!m_current_track.have_track_info) {
+	    strcpy (m_current_track.raw_metadata, m_no_meta_name);
+	}
+	ret = rip_manager_start_track (&m_current_track, m_track_count);
 	if (ret != SR_SUCCESS) {
 	    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
 	    return ret;
 	}
-	filelib_write_cue (rmi, &rmi->current_track, 0);
-	copy_track_info (&rmi->old_track, &rmi->current_track);
-
-	rmi->ogg_have_track = 1;
-    }
-
-    /* If buffer almost full, advance the buffer */
-    if (cbuf2_get_free(&rmi->cbuf2) < rmi->getbuffer_size) {
-	debug_printf ("cbuf2_get_free < getbuffer_size\n");
-	extract_size = rmi->getbuffer_size - cbuf2_get_free(&rmi->cbuf2);
-
-        ret = cbuf2_advance_ogg (rmi, &rmi->cbuf2, rmi->getbuffer_size);
-
-        if (ret != SR_SUCCESS) {
-	    debug_printf("cbuf2_advance_ogg had bad return code %d\n", ret);
-	    return ret;
-	}
-    }
-
-    return real_ret;
-}
-
-static error_code
-ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
-{
-    int ret;
-    int real_ret = SR_SUCCESS;
-    u_long extract_size;
-
-    /* get the data & meta-data from the stream */
-    debug_printf ("RIPSTREAM_RIP_MP3: top of loop\n");
-    ret = get_stream_data(rmi, rmi->getbuffer, rmi->current_track.raw_metadata);
-    if (ret != SR_SUCCESS) {
-	debug_printf("get_stream_data bad return code: %d\n", ret);
-	return ret;
-    }
-
-    /* First time through, need to determine the bitrate. 
-       The bitrate is needed to do the track splitting parameters 
-       properly in seconds.  See the readme file for details.  */
-    /* GCS FIX: For VBR streams, the header value may be more reliable. */
-    if (rmi->ripstream_first_time_through) {
-        unsigned long test_bitrate;
-	debug_printf("Querying stream for bitrate - first time.\n");
-	if (rmi->http_info.content_type == CONTENT_TYPE_MP3) {
-	    find_bitrate(&test_bitrate, rmi->getbuffer, rmi->getbuffer_size);
-	    rmi->detected_bitrate = test_bitrate / 1000;
-	    debug_printf("Detected bitrate: %d\n",rmi->detected_bitrate);
-	} else {
-	    rmi->detected_bitrate = 0;
-	}
-
-	if (rmi->detected_bitrate == 0) {
-	    /* Couldn't decode from mp3.  If http header reported a bitrate,
-	       we'll use that.  Otherwise we use 24. */
-	    if (rmi->http_bitrate > 0)
-		rmi->bitrate = rmi->http_bitrate;
-	    else
-		rmi->bitrate = 24;
-	} else {
-	    rmi->bitrate = rmi->detected_bitrate;
-	}
-
-        compute_cbuf2_size (rmi, &rmi->prefs->sp_opt, 
-			    rmi->bitrate, rmi->getbuffer_size);
-	ret = cbuf2_init (&rmi->cbuf2, rmi->http_info.content_type, 
-			  GET_MAKE_RELAY(rmi->prefs->flags),
-			  rmi->getbuffer_size, rmi->cbuf2_size);
-	if (ret != SR_SUCCESS) return ret;
-    }
-
-    if (rmi->ep) {
-	/* If getting metadata from external process, check for update */
-	clear_track_info (&rmi->current_track);
-	read_external (rmi, rmi->ep, &rmi->current_track);
-    } else {
-	/* Otherwise, apply parse rules to raw metadata */
-	if (rmi->current_track.raw_metadata[0]) {
-	    parse_metadata (rmi, &rmi->current_track);
-	} else {
-	    clear_track_info (&rmi->current_track);
-	}
+	filelib_write_cue (&m_current_track, 0);
+	copy_track_info (&m_old_track, &m_current_track);
     }
 
     /* Copy the data into cbuffer */
-    ret = cbuf2_insert_chunk (rmi, &rmi->cbuf2, 
-			      rmi->getbuffer, rmi->getbuffer_size,
-			      rmi->http_info.content_type, 
-			      &rmi->current_track);
+    ret = cbuffer_insert(&m_cbuffer, m_getbuffer, m_in->getsize);
     if (ret != SR_SUCCESS) {
-	debug_printf("cbuf2_insert_chunk had bad return code %d\n", ret);
+	debug_printf("start_track had bad return code %d\n", ret);
 	return ret;
-    }
-
-    ret = filelib_write_show (rmi, rmi->getbuffer, rmi->getbuffer_size);
-    if (ret != SR_SUCCESS) {
-        debug_printf("filelib_write_show had bad return code: %d\n", ret);
-        return ret;
-    }
-
-    /* Set the track number */
-    if (rmi->current_track.track_p[0]) {
-	mstrcpy (rmi->current_track.track_a, rmi->current_track.track_p);
-    } else {
-        msnprintf (rmi->current_track.track_a, MAX_HEADER_LEN,
-		   m_("%d"), rmi->track_count + 1);
-    }
-
-    /* First time through, so start a track. */
-    if (rmi->ripstream_first_time_through) {
-	int ret;
-	debug_printf ("First time through...\n");
-	if (!rmi->current_track.have_track_info) {
-	    strcpy (rmi->current_track.raw_metadata, rmi->no_meta_name);
-	}
-	msnprintf (rmi->current_track.track_a, MAX_HEADER_LEN, m_("0"));
-	ret = start_track_mp3 (rmi, &rmi->current_track);
-	if (ret != SR_SUCCESS) {
-	    debug_printf ("start_track_mp3 failed(#1): %d\n",ret);
-	    return ret;
-	}
-	rmi->ripstream_first_time_through = 0;
-	copy_track_info (&rmi->old_track, &rmi->current_track);
-    }
+    }													
 
     /* Check for track change. */
-    debug_printf ("rmi->current_track.have_track_info = %d\n", 
-		  rmi->current_track.have_track_info);
-    if (rmi->current_track.have_track_info && is_track_changed(rmi)) {
+    if (m_current_track.have_track_info && is_track_changed()) {
 	/* Set m_find_silence equal to the number of additional blocks 
 	   needed until we can do silence separation. */
-	debug_printf ("VERIFIED TRACK CHANGE (find_silence = %d)\n",
-		      rmi->find_silence);
-	copy_track_info (&rmi->new_track, &rmi->current_track);
-	if (rmi->find_silence < 0) {
-	    if (rmi->mic_to_cb_end > 0) {
-		rmi->find_silence = rmi->mic_to_cb_end;
+	debug_printf ("VERIFIED TRACK CHANGE (m_find_silence = %d)\n",
+		      m_find_silence);
+	copy_track_info (&m_new_track, &m_current_track);
+	relaylib_send_meta_data (m_current_track.raw_metadata);
+	if (m_find_silence < 0) {
+	    if (m_mi_to_cbuffer_end > 0) {
+		m_find_silence = m_mi_to_cbuffer_end;
 	    } else {
-		rmi->find_silence = 0;
+		m_find_silence = 0;
 	    }
 	}
+    } else {
+	relaylib_send_meta_data (0);
     }
 
-    format_track_info (&rmi->old_track, "old");
-    format_track_info (&rmi->new_track, "new");
-    format_track_info (&rmi->current_track, "current");
+    debug_printf ("Checking for silence\n");
+    format_track_info (&m_old_track, "old");
+    format_track_info (&m_new_track, "new");
+    format_track_info (&m_current_track, "current");
 
-    if (rmi->find_silence == 0) {
+    if (m_find_silence == 0) {
 	/* Find separation point */
 	u_long pos1, pos2;
-	debug_printf ("m_find_silence == 0\n");
-	ret = find_sep (rmi, &pos1, &pos2);
-	if (ret == SR_ERROR_REQUIRED_WINDOW_EMPTY) {
-	    /* If this happens, the previous song should be truncated to 
-	       zero bytes. */
-	    pos1 = -1;
-	    pos2 = 0;
-	}
-	else if (ret != SR_SUCCESS) {
+	ret = find_sep (&pos1, &pos2);
+	if (ret != SR_SUCCESS) {
 	    debug_printf("find_sep had bad return code %d\n", ret);
 	    return ret;
 	}
 
 	/* Write out previous track */
-	ret = end_track_mp3 (rmi, pos1, pos2, &rmi->old_track);
+	ret = end_track(pos1, pos2, &m_old_track);
 	if (ret != SR_SUCCESS)
 	    real_ret = ret;
-	rmi->cue_sheet_bytes += pos2;
+        m_cue_sheet_bytes += pos2;
 
 	/* Start next track */
-	ret = start_track_mp3 (rmi, &rmi->new_track);
+	ret = start_track (&m_new_track);
 	if (ret != SR_SUCCESS)
 	    real_ret = ret;
-	rmi->find_silence = -1;
+	m_find_silence = -1;
 
-	copy_track_info (&rmi->old_track, &rmi->new_track);
+	copy_track_info (&m_old_track, &m_new_track);
     }
-    if (rmi->find_silence >= 0) rmi->find_silence --;
+    if (m_find_silence >= 0) m_find_silence --;
 
     /* If buffer almost full, dump extra to current song. */
-    if (cbuf2_get_free(&rmi->cbuf2) < rmi->getbuffer_size) {
-	u_long curr_song;
-	debug_printf ("cbuf2_get_free < getbuffer_size\n");
-	extract_size = rmi->getbuffer_size - cbuf2_get_free(&rmi->cbuf2);
-        ret = cbuf2_extract(rmi, &rmi->cbuf2, rmi->getbuffer, 
-			    extract_size, &curr_song);
+    if (cbuffer_get_free(&m_cbuffer) < m_in->getsize) {
+        /* Extract only as much as needed */
+	extract_size = m_in->getsize - cbuffer_get_free(&m_cbuffer);
+        ret = cbuffer_extract(&m_cbuffer, m_getbuffer, extract_size);
         if (ret != SR_SUCCESS) {
-	    debug_printf("cbuf2_extract had bad return code %d\n", ret);
+	    debug_printf("cbuffer_extract had bad return code %d\n", ret);
 	    return ret;
 	}
-
 	/* Post to caller */
-	if (curr_song < extract_size) {
-	    u_long curr_song_bytes = extract_size - curr_song;
-	    rmi->cue_sheet_bytes += curr_song_bytes;
-	    ret = rip_manager_put_data (rmi, &rmi->getbuffer[curr_song], 
-					curr_song_bytes);
-            if (ret != SR_SUCCESS) {
-                debug_printf ("rip_manager_put_data returned: %d\n",ret);
-                return ret;
-            }
-	}
+	m_cue_sheet_bytes += extract_size;
+	rip_manager_put_data(m_getbuffer, extract_size);
     }
 
     return real_ret;
 }
 
-static error_code
-find_sep (RIP_MANAGER_INFO* rmi, u_long* pos1, u_long* pos2)
+static u_long
+clip_to_cbuffer (int pos)
 {
-    SPLITPOINT_OPTIONS* sp_opt = &rmi->prefs->sp_opt;
-    int rw_start, rw_end, sw_sil;
+    if (pos < 0) {
+	return 0;
+    } else if ((u_long)pos > cbuffer_get_used(&m_cbuffer)) {
+	return cbuffer_get_used(&m_cbuffer);
+    } else {
+	return (u_long) pos;
+    }
+}
+
+/* New version */
+error_code
+find_sep (u_long *pos1, u_long *pos2)
+{
+    int pos1i, pos2i;
+    int sw_start, sw_end, sw_sil;
+    u_long psilence;
     int ret;
 
     debug_printf ("*** Finding separation point\n");
 
     /* First, find the search region w/in cbuffer. */
-    rw_start = rmi->cbuf2.item_count - rmi->rw_start_to_cb_end;
-    if (rw_start < 0) {
-	return SR_ERROR_REQUIRED_WINDOW_EMPTY;
-    }
-    rw_end = rmi->cbuf2.item_count - rmi->rw_end_to_cb_end;
-    if (rw_end < 0) {
-	return SR_ERROR_REQUIRED_WINDOW_EMPTY;
-    }
+    sw_start = cbuffer_get_used(&m_cbuffer) - m_sw_start_to_cbuffer_end;
+    if (sw_start < 0) sw_start = 0;
+    sw_end = cbuffer_get_used(&m_cbuffer) - m_sw_end_to_cbuffer_end;
+    if (sw_end < 0) sw_end = 0;
+    debug_printf ("search window (bytes): %d,%d,%d\n", sw_start, sw_end,
+		  cbuffer_get_used(&m_cbuffer));
 
-    debug_printf ("search window (bytes): [%d,%d] within %d\n", 
-		    rw_start, rw_end,
-		    rmi->cbuf2.item_count);
-
-    if (rmi->http_info.content_type != CONTENT_TYPE_MP3) {
-	sw_sil = (rw_end + rw_start) / 2;
+    if (m_content_type != CONTENT_TYPE_MP3) {
+        /* If the search region is too small, take the middle. */
+	sw_sil = (sw_end + sw_start) / 2;
 	debug_printf ("(not mp3) taking middle: sw_sil=%d\n", sw_sil);
-	*pos1 = rw_start + sw_sil - 1;
-	*pos2 = rw_start + sw_sil;
+    }
+    else if (sw_end - sw_start < m_min_search_win) {
+        /* If the search region is too small, take the middle. */
+	sw_sil = (sw_end + sw_start) / 2;
+	debug_printf ("taking middle: sw_sil=%d\n", sw_sil);
     } else {
-	int bufsize = rw_end - rw_start;
-	char* buf = (char*) malloc (bufsize);
-	ret = cbuf2_peek_rgn (&rmi->cbuf2, buf, rw_start, bufsize);
+	/* Otherwise, copy from search window into private buffer */
+	int bufsize = sw_end - sw_start;
+	char* buf = (u_char *)malloc(bufsize);
+	ret = cbuffer_peek_rgn (&m_cbuffer, buf, sw_start, bufsize);
 	if (ret != SR_SUCCESS) {
 	    debug_printf ("PEEK FAILED: %d\n", ret);
 	    free(buf);
@@ -564,89 +415,84 @@ find_sep (RIP_MANAGER_INFO* rmi, u_long* pos1, u_long* pos2)
 	debug_printf ("PEEK OK\n");
 
 	/* Find silence point */
-	if (sp_opt->xs == 2) {
-	    ret = findsep_silence_2 (buf, 
-				   bufsize, 
-				   rmi->rw_start_to_sw_start,
-				   sp_opt->xs_search_window_1 
-				   + sp_opt->xs_search_window_2,
-				   sp_opt->xs_silence_length,
-				   sp_opt->xs_padding_1,
-				   sp_opt->xs_padding_2,
-				   pos1, pos2);
-	} else {
-	    ret = findsep_silence (buf, 
-				   bufsize, 
-				   rmi->rw_start_to_sw_start,
-				   sp_opt->xs_search_window_1 
-				   + sp_opt->xs_search_window_2,
-				   sp_opt->xs_silence_length,
-				   sp_opt->xs_padding_1,
-				   sp_opt->xs_padding_2,
-				   pos1, pos2);
-	}
-	*pos1 += rw_start;
-	*pos2 += rw_start;
+	ret = findsep_silence(buf, bufsize, m_sp_opt->xs_silence_length,
+			      &psilence);
 	free(buf);
+	if (ret != SR_SUCCESS && ret != SR_ERROR_CANT_DECODE_MP3) {
+	    return ret;
+	}
+	sw_sil = sw_start + psilence;
+
+	/* Add 1/2 of the silence window to get middle */
+	sw_sil = sw_sil + ms_to_bytes(m_sp_opt->xs_silence_length/2,m_bitrate);
     }
+
+    /* Compute padding.  We need pos1 == end of 1st song and 
+       pos2 == beginning of 2nd song. */
+    pos1i = sw_sil + ms_to_bytes(m_sp_opt->xs_padding_2,m_bitrate);
+    pos2i = sw_sil - ms_to_bytes(m_sp_opt->xs_padding_1,m_bitrate);
+
+    /* Clip padding to amount available in cbuffer (there could be 
+       less than the full cbuffer in a few cases, such as track 
+       changes close to each other). */
+    *pos1 = clip_to_cbuffer (pos1i);
+    *pos2 = clip_to_cbuffer (pos2i);
+
     return SR_SUCCESS;
 }
 
-// pos1 is pos of last byte in previous track
-// pos2 is pos of first byte in next track
-// These positions are relative to cbuf2->read_index
-static error_code
-end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, u_long pos2, TRACK_INFO* ti)
+error_code
+end_track(u_long pos1, u_long pos2, TRACK_INFO* ti)
 {
+    // pos1 is end of prev track
+    // pos2 is beginning of next track
     int ret;
-    char *buf;
 
-    /* GCS pos1 is byte position. Here we convert it into a "count". */
-    pos1++;
+    // I think pos can be zero if the silence is right at the beginning
+    // i.e. it is a bug in s.r.
+    u_char *buf = (u_char *)malloc(pos1);
 
-    /* I think pos can be zero if the silence is right at the beginning
-       i.e. it is a bug in s.r. */
-    buf = (char*) malloc (pos1);
+    // pos1 is end of prev track
+    // pos2 is beginning of next track
 
-    /* First, dump the part only in prev track */
-    ret = cbuf2_peek (&rmi->cbuf2, buf, pos1);
-    if (ret != SR_SUCCESS) goto BAIL;
-
-    /* Let cbuf know about the start of the next track */
-    cbuf2_set_next_song (&rmi->cbuf2, pos2);
-
-    /* Write that out to the current file
-       GCS FIX: m_bytes_ripped is incorrect when there is padding */
-    if ((ret = rip_manager_put_data (rmi, buf, pos1)) != SR_SUCCESS)
-	goto BAIL;
-
-    /* Add id3v1 if requested */
-    if (GET_ADD_ID3V1(rmi->prefs->flags)) {
-	ID3V1Tag id3;
-	memset (&id3, '\000',sizeof(id3));
-	strncpy (id3.tag, "TAG", strlen("TAG"));
-	string_from_mstring (rmi, id3.artist, sizeof(id3.artist), 
-			     ti->artist, CODESET_ID3);
-	string_from_mstring (rmi, id3.songtitle, sizeof(id3.songtitle), 
-			     ti->title, CODESET_ID3);
-	string_from_mstring (rmi, id3.album, sizeof(id3.album),
-			     ti->album, CODESET_ID3);
-	string_from_mstring (rmi, id3.year, sizeof(id3.year),
-			     ti->year, CODESET_ID3);
-	id3.genre = (char) 0xFF; // see http://www.id3.org/id3v2.3.0.html#secA
-	ret = rip_manager_put_data (rmi, (char *)&id3, sizeof(id3));
-	if (ret != SR_SUCCESS) {
+    // First, dump the part only in prev track
+    if (pos1 <= pos2) {
+	if ((ret = cbuffer_extract(&m_cbuffer, buf, pos1)) != SR_SUCCESS)
 	    goto BAIL;
+	// Next, skip past portion not in either track
+	if (pos1 < pos2) {
+	    if ((ret = cbuffer_fastforward(&m_cbuffer, pos2-pos1)) != SR_SUCCESS)
+		goto BAIL;
 	}
+    } else {
+	if ((ret = cbuffer_extract(&m_cbuffer, buf, pos2)) != SR_SUCCESS)
+	    goto BAIL;
+	// Next, grab, but don't skip, past portion in both tracks
+	if ((ret = cbuffer_peek(&m_cbuffer, buf+pos2, pos1-pos2)) != SR_SUCCESS)
+	    goto BAIL;
     }
 
-    /* Only save this track if we've skipped over enough cruft 
-       at the beginning of the stream */
-    debug_printf("Current track number %d (dropcount is %d)\n", 
-		 rmi->track_count, 
-		 rmi->prefs->dropcount);
-    if (rmi->track_count >= rmi->prefs->dropcount)
-	if ((ret = rip_manager_end_track (rmi, ti)) != SR_SUCCESS)
+    // Write that out to the current file
+    if ((ret = rip_manager_put_data(buf, pos1)) != SR_SUCCESS)
+	goto BAIL;
+
+    if (m_addID3tag) {
+	ID3Tag id3;
+	memset(&id3, '\000',sizeof(id3));
+	strncpy(id3.tag, "TAG", strlen("TAG"));
+	strncpy(id3.artist, ti->artist, sizeof(id3.artist));
+	strncpy(id3.songtitle, ti->title, sizeof(id3.songtitle));
+	strncpy(id3.album, ti->album, sizeof(id3.album));
+	if ((ret = rip_manager_put_data((char *)&id3, sizeof(id3))) != SR_SUCCESS)
+	    goto BAIL;
+    }
+
+    // Only save this track if we've skipped over enough cruft 
+    // at the beginning of the stream
+    debug_printf("Current track number %d (skipping if %d or less)\n", 
+		 m_track_count, m_drop_count);
+    if (m_track_count > m_drop_count)
+	if ((ret = rip_manager_end_track(ti)) != SR_SUCCESS)
 	    goto BAIL;
 
  BAIL:
@@ -654,142 +500,144 @@ end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, u_long pos2, TRACK_INFO* ti)
     return ret;
 }
 
+error_code
+start_track (TRACK_INFO* ti)
+{
 #define HEADER_SIZE 1600
-// Write data to a new frame, using tag_name e.g. TPE1, and increment
-// *sent with the number of bytes written
-static error_code
-write_id3v2_frame(RIP_MANAGER_INFO* rmi, char* tag_name, mchar* data,
-		  int charset, int *sent)
-{
-    int ret;
-    int rc;
-    char bigbuf[HEADER_SIZE] = "";
-    ID3V2frame id3v2frame;
-#ifndef WIN32
-    __uint32_t framesize = 0;
-#else
-    unsigned long int framesize = 0;
-#endif
-
-    memset(&id3v2frame, '\000', sizeof(id3v2frame));
-    strncpy(id3v2frame.id, tag_name, 4);
-    id3v2frame.pad[2] = charset;
-    rc = string_from_mstring (rmi, bigbuf, HEADER_SIZE, data, CODESET_ID3);
-    framesize = htonl (rc+1);
-    ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.id), 4);
-    if (ret != SR_SUCCESS) return ret;
-    *sent += 4;
-    ret = rip_manager_put_data (rmi, (char *)&(framesize),
-                                sizeof(framesize));
-    if (ret != SR_SUCCESS) return ret;
-    *sent += sizeof(framesize);
-    ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.pad), 3);
-    if (ret != SR_SUCCESS) return ret;
-    *sent += 3;
-    ret = rip_manager_put_data (rmi, bigbuf, rc);
-    if (ret != SR_SUCCESS) return ret;
-    *sent += rc;
-
-    return SR_SUCCESS;
-}
-
-static error_code
-start_track_mp3 (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
-{
     int ret;
     int i;
+    //ID3V2head id3v2header;
+    ID3V2frame id3v2frame1;
+    ID3V2frame id3v2frame2;
+    char comment[1024] = "Ripped with Streamripper";
+    char bigbuf[HEADER_SIZE] = "";
+    int	sent = 0;
+    char header1[6] = "ID3\x03\0\0";
+    int header_size = HEADER_SIZE;
+    unsigned long int framesize = 0;
     unsigned int secs;
 
     debug_printf ("calling rip_manager_start_track(#2)\n");
-    ret = rip_manager_start_track (rmi, ti);
+    ret = rip_manager_start_track (ti, m_track_count);
     if (ret != SR_SUCCESS) {
 	debug_printf ("rip_manager_start_track failed(#2): %d\n",ret);
         return ret;
     }
 
     /* Dump to artist/title to cue sheet */
-    secs = bytes_to_secs (rmi->cue_sheet_bytes, rmi->bitrate);
-    ret = filelib_write_cue (rmi, ti, secs);
+    secs = bytes_to_secs (m_cue_sheet_bytes);
+    ret = filelib_write_cue (ti, secs);
     if (ret != SR_SUCCESS)
         return ret;
 
     /* Oddsock's ID3 stuff, (oddsock@oddsock.org) */
-    if (GET_ADD_ID3V2(rmi->prefs->flags)) {
-	char bigbuf[HEADER_SIZE] = "";
-	int header_size = HEADER_SIZE;
-	char header1[6] = "ID3\x03\0\0";
-	int sent = 0;
-	int id3_charset;
-
+    if (m_addID3tag) {
 	memset(bigbuf, '\000', sizeof(bigbuf));
+	//memset(&id3v2header, '\000', sizeof(id3v2header));
+	memset(&id3v2frame1, '\000', sizeof(id3v2frame1));
+	memset(&id3v2frame2, '\000', sizeof(id3v2frame2));
 
+#if defined (commentout)
+	strncpy(id3v2header.tag, "ID3", 3);
+	id3v2header.size = 1599;
+	framesize = htonl(id3v2header.size);
+	id3v2header.version = 3;
+	buf[0] = 3;
+	buf[1] = '\000';
+	ret = rip_manager_put_data((char *)&(id3v2header.tag), 3);
+	if (ret != SR_SUCCESS) return ret;
+	ret = rip_manager_put_data((char *)&buf, 2);
+	if (ret != SR_SUCCESS) return ret;
+	ret = rip_manager_put_data((char *)&(id3v2header.flags), 1);
+	if (ret != SR_SUCCESS) return ret;
+	ret = rip_manager_put_data((char *)&(framesize), sizeof(framesize));
+	if (ret != SR_SUCCESS) return ret;
+	sent += sizeof(id3v2header);
+#endif
 	/* Write header */
-	ret = rip_manager_put_data (rmi, header1, 6);
+	ret = rip_manager_put_data(header1, 6);
 	if (ret != SR_SUCCESS) return ret;
 	for (i = 0; i < 4; i++) {
 	    char x = (header_size >> (3-i)*7) & 0x7F;
-	    ret = rip_manager_put_data (rmi, (char *)&x, 1);
+	    ret = rip_manager_put_data((char *)&x, 1);
 	    if (ret != SR_SUCCESS) return ret;
 	}
 
-	/* ID3 V2.3 is only defined for ISO-8859-1 and UCS-2
-	   If user specifies another codeset, we will use it, and 
-	   report ISO-8859-1 in the encoding field */
-	id3_charset = is_id3_unicode(rmi);
+	// Write ID3V2 frame1 with data
+	strncpy(id3v2frame1.id, "TPE1", 4);
+	framesize = htonl(strlen(ti->artist)+1);
+	ret = rip_manager_put_data((char *)&(id3v2frame1.id), 4);
+	if (ret != SR_SUCCESS) return ret;
+	sent += 4;
+	ret = rip_manager_put_data((char *)&(framesize), sizeof(framesize));
+	if (ret != SR_SUCCESS) return ret;
+	sent += sizeof(framesize);
+	ret = rip_manager_put_data((char *)&(id3v2frame1.pad), 3);
+	if (ret != SR_SUCCESS) return ret;
+	sent += 3;
+	ret = rip_manager_put_data(ti->artist, strlen(ti->artist));
+	if (ret != SR_SUCCESS) return ret;
+	sent += strlen(ti->artist);
 
-	/* Lead performer */
-        ret = write_id3v2_frame(rmi, "TPE1", ti->artist, id3_charset, &sent);
+	// Write ID3V2 frame2 with data
+	strncpy(id3v2frame2.id, "TIT2", 4);
+	framesize = htonl(strlen(ti->title)+1);
+	ret = rip_manager_put_data((char *)&(id3v2frame2.id), 4);
+	if (ret != SR_SUCCESS) return ret;
+	sent += 4;
+	ret = rip_manager_put_data((char *)&(framesize), sizeof(framesize));
+	if (ret != SR_SUCCESS) return ret;
+	sent += sizeof(framesize);
+	ret = rip_manager_put_data((char *)&(id3v2frame2.pad), 3);
+	if (ret != SR_SUCCESS) return ret;
+	sent += 3;
+	ret = rip_manager_put_data(ti->title, strlen(ti->title));
+	if (ret != SR_SUCCESS) return ret;
+	sent += strlen(ti->title);
 
-        /* Title */
-        ret = write_id3v2_frame(rmi, "TIT2", ti->title, id3_charset, &sent);
+	// Write ID3V2 frame2 with data
+	strncpy(id3v2frame2.id, "TENC", 4);
+	framesize = htonl(strlen(comment)+1);
+	ret = rip_manager_put_data((char *)&(id3v2frame2.id), 4);
+	if (ret != SR_SUCCESS) return ret;
+	sent += 4;
+	ret = rip_manager_put_data((char *)&(framesize), sizeof(framesize));
+	if (ret != SR_SUCCESS) return ret;
+	sent += sizeof(framesize);
+	ret = rip_manager_put_data((char *)&(id3v2frame2.pad), 3);
+	if (ret != SR_SUCCESS) return ret;
+	sent += 3;
+	sent += sizeof(id3v2frame2);
+	ret = rip_manager_put_data(comment, strlen(comment));
+	if (ret != SR_SUCCESS) return ret;
+	sent += strlen(comment);
 
-        /* Encoded by */
-        ret = write_id3v2_frame(rmi, "TENC",
-				m_("Ripped with Streamripper"), 0, &sent);
-	
-        /* Album */
-        ret = write_id3v2_frame(rmi, "TALB", ti->album, 0, &sent);
+	// Write ID3V2 frame2 with data
+	memset(&id3v2frame2, '\000', sizeof(id3v2frame2));
+	strncpy(id3v2frame2.id, "TALB", 4);
+	framesize = htonl(strlen(ti->album)+1);
+	ret = rip_manager_put_data((char *)&(id3v2frame2.id), 4);
+	if (ret != SR_SUCCESS) return ret;
+	sent += 4;
+	ret = rip_manager_put_data((char *)&(framesize), sizeof(framesize));
+	if (ret != SR_SUCCESS) return ret;
+	sent += sizeof(framesize);
+	ret = rip_manager_put_data((char *)&(id3v2frame2.pad), 3);
+	if (ret != SR_SUCCESS) return ret;
+	sent += 3;
+	ret = rip_manager_put_data(ti->album, strlen(ti->album));
+	if (ret != SR_SUCCESS) return ret;
+	sent += strlen(ti->album);
 
-        /* Track */
-        ret = write_id3v2_frame(rmi, "TRCK", ti->track_a, 0, &sent);
-
-        /* Year */
-        ret = write_id3v2_frame(rmi, "TYER", ti->year, 0, &sent);
-
-	/* Zero out padding */
-	memset (bigbuf, '\000', sizeof(bigbuf));
-
-	/* Pad up to header_size */
-	ret = rip_manager_put_data (rmi, bigbuf, HEADER_SIZE-sent);
+	ret = rip_manager_put_data(bigbuf, 1600-sent);
 	if (ret != SR_SUCCESS) return ret;
     }
-
-    if (!rmi->ripstream_first_time_through) {
-        rmi->track_count ++;
-        debug_printf ("Changed track count to %d\n", rmi->track_count);
-    }
+    m_track_count ++;
+    debug_printf ("Changed track count to %d\n", m_track_count);
 
     return SR_SUCCESS;
 }
 
-// Only save this track if we've skipped over enough cruft 
-// at the beginning of the stream
-static error_code
-end_track_ogg (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
-{
-    error_code ret;
-    debug_printf ("Current track number %d (skipping if %d or less)\n", 
-		  rmi->track_count, rmi->prefs->dropcount);
-    if (rmi->track_count > rmi->prefs->dropcount) {
-	ret = rip_manager_end_track (rmi, ti);
-    } else {
-	ret = SR_SUCCESS;
-    }
-    rmi->track_count ++;
-    return ret;
-}
-
-#if defined (commentout)
 /* GCS: This converts either positive or negative ms to blocks,
    and must work for rounding up and rounding down */
 static int
@@ -798,7 +646,7 @@ ms_to_blocks (int ms, int bitrate, int round_up)
     int ms_abs = ms > 0 ? ms : -ms;
     int ms_sign = ms > 0 ? 1 : 0;
     int bits = ms_abs * bitrate;
-    int bits_per_block = 8 * rmi->getbuffer_size;
+    int bits_per_block = 8 * m_meta_interval;
     int blocks = bits / bits_per_block;
     if (bits % bits_per_block > 0) {
 	if (!(round_up ^ ms_sign)) {
@@ -810,7 +658,6 @@ ms_to_blocks (int ms, int bitrate, int round_up)
     }
     return blocks;
 }
-#endif
 
 /* Simpler routine, rounded toward zero */
 static int
@@ -825,90 +672,20 @@ ms_to_bytes (int ms, int bitrate)
 
 /* Assume positive, round toward zero */
 static int
-bytes_to_secs (unsigned int bytes, int bitrate)
+bytes_to_secs (unsigned int bytes)
 {
     /* divided by 125 because 125 = 1000 / 8 */
-    int secs = (bytes / bitrate) / 125;
+    int secs = (bytes / m_bitrate) / 125;
     return secs;
 }
 
-/* --------------------------------------------------------------------------
-   Buffering for silence splitting & padding
-
-   We may flush the circular buffer as soon as anything that 
-   needs to go into the next song has passed.   For simplicity, 
-   we also buffer up to the latest point that can go into the 
-   next song.  This is called the "required window."
-
-   The "required window" is part that is decoded, even though 
-   we don't need volume data for all of it.  We simply mark the 
-   frame boundaries so we don't chop any frames.
-
-   The circular buffer is a bit bigger than the required window. 
-   This includes all of the stuff which cannot be flushed out of 
-   the cbuf, because cbuf is flushed in blocks.
-
-   Some abbreviations:
-     mic      meta inf change
-     cb	      cbuf2, aka circular buffer
-     rw	      required window
-     sw	      search window
-
-   This is the complete picture:
-
-    A---------A---------A----+----B---------B     meta intervals
-
-                                  /mic            meta-inf change (A to B)
-                             +--->|
-                             /mi                  meta-inf point
-                             |
-                   |---+-----+------+---|         search window
-                       |            |   
-                       |            |   
-                   |---+---|    |---+---|         silence length
-                       |            |
-         |-------------|            |-----|
-              prepad                postpad
-
-         |--------------------------------|       required window
-
-                        |---------|               minimum rw (1 meta int, 
-                                                  includes sw, need not 
-                                                  be aligned to metadata)
-
-    |---------------------------------------|     cbuf
-
-                   |<-------------+               mic_to_sw_start (usu neg)
-                                  +---->|         mic_to_sw_end   (usu pos)
-         |<-----------------------+               mic_to_rw_start
-                                  +------>|       mic_to_rw_end
-    |<----------------------------+               mic_to_cb_start
-                                  +-------->|     mic_to_cb_end
-
-   ------------------------------------------------------------------------*/
 static void
-compute_cbuf2_size (RIP_MANAGER_INFO* rmi, 
-		    SPLITPOINT_OPTIONS *sp_opt, 
-		    int bitrate, 
-		    int meta_interval)
+compute_cbuffer_size (SPLITPOINT_OPTIONS *sp_opt, int bitrate, 
+		      int meta_interval)
 {
-    long sws, sl;
-    long mi_to_mic;
-    long prepad, postpad;
-    long offset;
-    long rw_len;
-    long mic_to_sw_start, mic_to_sw_end;
-    long mic_to_rw_start, mic_to_rw_end;
-    long mic_to_cb_start, mic_to_cb_end;
-    int xs_silence_length;
-    int xs_search_window_1;
-    int xs_search_window_2;
-    int xs_offset;
-    int xs_padding_1;
-    int xs_padding_2;
+    u_long sws;
 
     debug_printf ("---------------------------------------------------\n");
-    debug_printf ("xs: %d\n", sp_opt->xs);
     debug_printf ("xs_search_window: %d,%d\n",
 		  sp_opt->xs_search_window_1,sp_opt->xs_search_window_2);
     debug_printf ("xs_silence_length: %d\n", sp_opt->xs_silence_length);
@@ -916,220 +693,87 @@ compute_cbuf2_size (RIP_MANAGER_INFO* rmi,
 		  sp_opt->xs_padding_2);
     debug_printf ("xs_offset: %d\n", sp_opt->xs_offset);
     debug_printf ("---------------------------------------------------\n");
-    debug_printf ("bitrate = %d, meta_inf = %d\n", bitrate, meta_interval);
-    debug_printf ("---------------------------------------------------\n");
     
-    /* If xs-none, clear out the other xs options */
-    if (sp_opt->xs == 0){
-	xs_silence_length = 0;
-	xs_search_window_1 = 0;
-	xs_search_window_2 = 0;
-	xs_offset = 0;
-	xs_padding_1 = 0;
-	xs_padding_2 = 0;
-    } else {
-	xs_silence_length = sp_opt->xs_silence_length;
-	xs_search_window_1 = sp_opt->xs_search_window_1;
-	xs_search_window_2 = sp_opt->xs_search_window_2;
-	xs_offset = sp_opt->xs_offset;
-	xs_padding_1 = sp_opt->xs_padding_1;
-	xs_padding_2 = sp_opt->xs_padding_2;
-    }
+    /* compute the search window size */
+    sws = sp_opt->xs_search_window_1 + sp_opt->xs_search_window_2;
 
+    /* compute interval from mi to beginning of buffer */
+    m_mi_to_cbuffer_start = sp_opt->xs_offset - sp_opt->xs_search_window_1
+	+ sp_opt->xs_silence_length/2 - sp_opt->xs_padding_1;
+    debug_printf ("m_mi_to_cbuffer_start (ms): %d\n", m_mi_to_cbuffer_start);
 
-    /* mi_to_mic is the "half of a meta-inf" from the meta inf 
-       change to the previous (non-changed) meta inf */
-    mi_to_mic = meta_interval / 2;
-    debug_printf ("mi_to_mic: %d\n", mi_to_mic);
+    /* compute interval from mi to end of buffer */
+    m_mi_to_cbuffer_end = sp_opt->xs_offset + sp_opt->xs_search_window_2
+	- sp_opt->xs_silence_length/2 + sp_opt->xs_padding_2;
+    debug_printf ("m_mi_to_cbuffer_end (ms): %d\n", m_mi_to_cbuffer_end);
+    debug_printf ("bitrate = %d, meta_inf = %d\n", bitrate, meta_interval);
 
-    /* compute the search window size (sws) */
-    sws = ms_to_bytes (xs_search_window_1, bitrate) 
-	    + ms_to_bytes (xs_search_window_2, bitrate);
-    debug_printf ("sws: %d\n", sws);
+    debug_printf ("CBUFFER (ms): %d:%d\n",m_mi_to_cbuffer_start,
+	m_mi_to_cbuffer_end);
 
-    /* compute the silence length (sl) */
-    sl = ms_to_bytes (xs_silence_length, bitrate);
-    debug_printf ("sl: %d\n", sl);
+    /* convert from ms to meta-inf blocks */
+    m_mi_to_cbuffer_start = ms_to_blocks (m_mi_to_cbuffer_start, bitrate, 0);
+    m_mi_to_cbuffer_end = ms_to_blocks (m_mi_to_cbuffer_end, bitrate, 1);
 
-    /* compute padding */
-    prepad = ms_to_bytes (xs_padding_1, bitrate);
-    postpad = ms_to_bytes (xs_padding_2, bitrate);
-    debug_printf ("padding: %d %d\n", prepad, postpad);
-
-    /* compute offset */
-    offset = ms_to_bytes (xs_offset,bitrate);
-    debug_printf ("offset: %d\n", offset);
-
-    /* compute interval from mi to search window */
-    mic_to_sw_start = - mi_to_mic + offset 
-	    - ms_to_bytes(xs_search_window_1,bitrate);
-    mic_to_sw_end = - mi_to_mic + offset 
-	    + ms_to_bytes(xs_search_window_2,bitrate);
-    debug_printf ("mic_to_sw_start: %d\n", mic_to_sw_start);
-    debug_printf ("mic_to_sw_end: %d\n", mic_to_sw_end);
-
-    /* compute interval from mi to required window */
-    mic_to_rw_start = mic_to_sw_start + sl / 2 - prepad;
-    if (mic_to_rw_start > mic_to_sw_start) {
-	mic_to_rw_start = mic_to_sw_start;
-    }
-    mic_to_rw_end = mic_to_sw_end - sl / 2 + postpad;
-    if (mic_to_rw_end < mic_to_sw_end) {
-	mic_to_rw_end = mic_to_sw_end;
-    }
-    debug_printf ("mic_to_rw_start: %d\n", mic_to_rw_start);
-    debug_printf ("mic_to_rw_end: %d\n", mic_to_rw_end);
-
-    /* if rw is not long enough, make it longer */
-    rw_len = mic_to_rw_end - mic_to_rw_start;
-    if (rw_len < meta_interval) {
-	long start_extra = (meta_interval - rw_len) / 2;
-	long end_extra = meta_interval - start_extra;
-	mic_to_rw_start -= start_extra;
-	mic_to_rw_end += end_extra;
-	debug_printf ("mic_to_rw_start (2): %d\n", mic_to_rw_start);
-	debug_printf ("mic_to_rw_end (2): %d\n", mic_to_rw_end);
-    }
-
-    /* This code replaces the 3 cases (see OBSOLETE in gcs_notes.txt) */
-    mic_to_cb_start = mic_to_rw_start;
-    mic_to_cb_end = mic_to_rw_end;
-    if (mic_to_cb_start > -meta_interval) {
-	mic_to_cb_start = -meta_interval;
-    }
-    if (mic_to_cb_end < 0) {
-	mic_to_cb_end = 0;
-    }
-
-    /* Convert to chunks & compute cbuf size */
-    mic_to_cb_end = (mic_to_cb_end + (meta_interval-1)) / meta_interval;
-    mic_to_cb_start = -((-mic_to_cb_start + (meta_interval-1)) 
-			/ meta_interval);
-    rmi->cbuf2_size = - mic_to_cb_start + mic_to_cb_end;
-    if (rmi->cbuf2_size < 3) {
-	rmi->cbuf2_size = 3;
-    }
-    debug_printf ("mic_to_cb_start: %d\n", mic_to_cb_start * meta_interval);
-    debug_printf ("mic_to_cb_end: %d\n", mic_to_cb_end * meta_interval);
-    debug_printf ("CBUF2 (BLOCKS): %d:%d -> %d\n", mic_to_cb_start,
-		  mic_to_cb_end, rmi->cbuf2_size);
-
-    /* Set some global variables to be used by splitting algorithm */
-    rmi->mic_to_cb_end = mic_to_cb_end;
-    rmi->rw_start_to_cb_end = mic_to_cb_end * meta_interval - mic_to_rw_start;
-    rmi->rw_end_to_cb_end = mic_to_cb_end * meta_interval - mic_to_rw_end;
-    rmi->rw_start_to_sw_start = xs_padding_1 - xs_silence_length / 2;
-    if (rmi->rw_start_to_sw_start < 0) {
-	rmi->rw_start_to_sw_start = 0;
-    }
-    debug_printf ("m_mic_to_cb_end: %d\n", rmi->mic_to_cb_end);
-    debug_printf ("m_rw_start_to_cb_end: %d\n", rmi->rw_start_to_cb_end);
-    debug_printf ("m_rw_end_to_cb_end: %d\n", rmi->rw_end_to_cb_end);
-    debug_printf ("m_rw_start_to_sw_start: %d\n", rmi->rw_start_to_sw_start);
-}
-
-/* GCS: This used to be myrecv in rip_manager.c */
-static int
-ripstream_recvall (RIP_MANAGER_INFO* rmi, char* buffer, int size)
-{
-    int ret;
-    ret = socklib_recvall (rmi, &rmi->stream_sock, buffer, size, 
-			   rmi->prefs->timeout);
-    if (ret >= 0 && ret != size) {
-	debug_printf ("rip_manager_recv: expected %d, got %d\n",size,ret);
-	ret = SR_ERROR_RECV_FAILED;
-    }
-    return ret;
-}
-
-/* Data followed by meta-data */
-static error_code
-get_stream_data (RIP_MANAGER_INFO* rmi, char *data_buf, char *track_buf)
-{
-    int ret = 0;
-    char c;
-    char newtrack[MAX_TRACK_LEN];
-
-    *track_buf = 0;
-    ret = ripstream_recvall (rmi, data_buf, rmi->getbuffer_size);
-    if (ret <= 0)
-	return ret;
-
-    if (rmi->meta_interval == NO_META_INTERVAL) {
-	return SR_SUCCESS;
-    }
-
-    if ((ret = ripstream_recvall (rmi, &c, 1)) <= 0)
-	return ret;
-
-    debug_printf ("METADATA LEN: %d\n",(int)c);
-    if (c < 0) {
-	debug_printf ("Got invalid metadata: %d\n",c);
-	return SR_ERROR_INVALID_METADATA;
-    } else if (c == 0) {
-	// around christmas time 2001 someone noticed that 1.8.7 shoutcast
-	// none-meta servers now just send a '0' if they have no meta data
-	// anyway, bassicly if the first meta capture is null then we assume
-	// that the stream does not have metadata
-	return SR_SUCCESS;
-    } else {
-	ret = get_track_from_metadata (rmi, c * 16, newtrack);
-	if (ret != SR_SUCCESS) {
-	    debug_printf("get_trackname had a bad return %d", ret);
-	    return ret;
+    /* Case 1 -- see readme (GCS) */
+    if (m_mi_to_cbuffer_start > 0) {
+	debug_printf ("CASE 1\n");
+        m_cbuffer_size = m_mi_to_cbuffer_end;
+	m_sw_end_to_cbuffer_end = sp_opt->xs_padding_2 
+	    - sp_opt->xs_silence_length/2;
+	/* GCS: Mar 27, 2004 - it's possible for padding to be less 
+	   than search window */
+	if (m_sw_end_to_cbuffer_end < 0) {
+	    m_sw_end_to_cbuffer_end = 0;
 	}
+	m_sw_start_to_cbuffer_end = m_sw_end_to_cbuffer_end + sws;
+    }
 
-	/* WolfFM is a station that does not stream meta-data, 
-	   but is in that format anyway.  StreamTitle='', so we need 
-	   to pretend this has no meta data. */
-	if (*newtrack == '\0') {
-	    return SR_SUCCESS;
+    /* Case 2 */
+    else if (m_mi_to_cbuffer_end >= 0) {
+	debug_printf ("CASE 2\n");
+        m_cbuffer_size = m_mi_to_cbuffer_end - m_mi_to_cbuffer_start;
+	m_sw_end_to_cbuffer_end = sp_opt->xs_padding_2 
+	    - sp_opt->xs_silence_length/2;
+	/* GCS: Mar 27, 2004 - it's possible for padding to be less 
+	   than search window */
+	if (m_sw_end_to_cbuffer_end < 0) {
+	    m_sw_end_to_cbuffer_end = 0;
 	}
-	/* This is the case where we got metadata. */
-	strncpy(track_buf, newtrack, MAX_TRACK_LEN);
-    }
-    return SR_SUCCESS;
-}
-
-static error_code
-get_track_from_metadata (RIP_MANAGER_INFO* rmi, int size, char *newtrack)
-{
-    int i;
-    int ret;
-    char *namebuf;
-
-    if ((namebuf = malloc(size)) == NULL)
-	return SR_ERROR_CANT_ALLOC_MEMORY;
-
-    ret = ripstream_recvall (rmi, namebuf, size);
-    if (ret <= 0) {
-	free(namebuf);
-	return ret;
+	m_sw_start_to_cbuffer_end = m_sw_end_to_cbuffer_end + sws;
     }
 
-    debug_printf ("METADATA TITLE\n");
-    for (i=0; i<size; i++) {
-	debug_printf ("%2x ",(unsigned char)namebuf[i]);
-	if (i % 20 == 19) {
-	    debug_printf ("\n");
+    /* Case 3 */
+    else {
+	debug_printf ("CASE 3\n");
+        m_cbuffer_size = - m_mi_to_cbuffer_start;
+        m_sw_start_to_cbuffer_end = m_cbuffer_size 
+	    + sp_opt->xs_silence_length/2 
+	    - sp_opt->xs_padding_1;
+	/* GCS: Mar 27, 2004 - it's possible for padding to be less 
+	   than search window */
+	if (m_sw_start_to_cbuffer_end > m_cbuffer_size) {
+	    m_sw_start_to_cbuffer_end = m_cbuffer_size;
 	}
+	m_sw_end_to_cbuffer_end = m_sw_start_to_cbuffer_end + sws;
     }
-    debug_printf ("\n");
-    for (i=0; i<size; i++) {
-	debug_printf ("%2c ",namebuf[i]);
-	if (i % 20 == 19) {
-	    debug_printf ("\n");
-	}
-    }
-    debug_printf ("\n");
 
-    if(strstr(namebuf, "StreamTitle='") == NULL) {
-	free(namebuf);
-	return SR_ERROR_NO_TRACK_INFO;
-    }
-    subnstr_until(namebuf+strlen("StreamTitle='"), "';", newtrack, MAX_TRACK_LEN);
-    trim(newtrack);
+    /* Convert these from ms to bytes */
+    debug_printf ("SEARCH WIN (ms): %d | %d | %d\n",
+		  m_sw_start_to_cbuffer_end,
+		  sws, m_sw_end_to_cbuffer_end);
+    m_sw_start_to_cbuffer_end = ms_to_bytes (m_sw_start_to_cbuffer_end, 
+	bitrate);
+    m_sw_end_to_cbuffer_end = ms_to_bytes (m_sw_end_to_cbuffer_end, bitrate);
 
-    free(namebuf);
-    return SR_SUCCESS;
+    /* Get minimum search window (in bytes) */
+    m_min_search_win = sp_opt->xs_silence_length + (sws - sp_opt->xs_silence_length) / 2 ;
+    m_min_search_win = ms_to_bytes (m_min_search_win, bitrate);
+
+    debug_printf ("CBUFFER (BLOCKS): %d:%d -> %d\n",m_mi_to_cbuffer_start,
+	m_mi_to_cbuffer_end, m_cbuffer_size);
+    debug_printf ("SEARCH WIN (bytes): %d | %d | %d\n",
+		  m_sw_start_to_cbuffer_end,
+		  ms_to_bytes(sws,bitrate),
+		  m_sw_end_to_cbuffer_end);
 }
