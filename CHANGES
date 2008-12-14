@@ -1,11 +1,13 @@
 New for 1.64.1
 ------------------------------------
+Sat, Dec 13, 2008
 * Plugin: Streamripper can now load zipped skins
 * Streamripper again skips leading dots "." when making files & directories
 * Fix problem with control characters in metadata
 * Fix crash when splitting without padding and without search window
-* Add --xs-none option
 * Workaround problem with ogg streams which don't send any metadata
+* Streamripper now respects user timeout in more situations
+* Add --xs-none option
 
 New for 1.64.0
 ------------------------------------
