@@ -19,7 +19,11 @@ autoheader
 # cd ..
 
 rm -f config.cache
-./configure --with-included-libmad --with-included-glib
+
+## Included glib doesn't work yet.  Include file glib.h not found.
+# ./configure --with-included-libmad --with-included-glib
+
+./configure --with-included-libmad
 
 exit
 

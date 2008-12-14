@@ -105,7 +105,8 @@ read_interface (char *if_name, uint32_t *addr)
  * socket_handle gets assigned to the handle for the connection
  */
 error_code 
-socklib_open (HSOCKET *socket_handle, char *host, int port, char *if_name, int timeout)
+socklib_open (HSOCKET *socket_handle, char *host, int port, 
+	      char *if_name, int timeout)
 {
     int rc;
     struct sockaddr_in address, local;
@@ -121,7 +122,7 @@ socklib_open (HSOCKET *socket_handle, char *host, int port, char *if_name, int t
     socket_handle->s = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_handle->s == SOCKET_ERROR) {
 	debug_printf ("socket() failed\n");
-	WSACleanup();
+	WSACleanup ();
 	return SR_ERROR_CANT_CREATE_SOCKET;
     }
 
@@ -133,24 +134,26 @@ socklib_open (HSOCKET *socket_handle, char *host, int port, char *if_name, int t
 	/* On error:
 	   Unix returns -1 and sets errno.
 	   Windows??? */
+	debug_printf ("Calling bind\n");
 	if (bind(socket_handle->s, (struct sockaddr *)&local, 
 		 sizeof(local)) == SOCKET_ERROR) {
 	    debug_printf ("Bind failed\n");
-	    WSACleanup();
-	    closesocket(socket_handle->s);
+	    WSACleanup ();
+	    closesocket (socket_handle->s);
 	    return SR_ERROR_CANT_BIND_ON_INTERFACE;
 	}
     }
 
     if ((address.sin_addr.s_addr = inet_addr(host)) == INADDR_NONE) {
-	hp = gethostbyname(host);
+	debug_printf ("Calling gethostbyname\n");
+	hp = gethostbyname (host);
 	if (hp) {
-	    memcpy(&address.sin_addr, hp->h_addr_list[0], hp->h_length);
+	    memcpy (&address.sin_addr, hp->h_addr_list[0], hp->h_length);
 	} else {
-	    debug_printf("resolving hostname: %s failed\n", host);
-	    WSACleanup();
+	    debug_printf ("resolving hostname: %s failed\n", host);
+	    WSACleanup ();
 	    /* GCS Added... */
-	    closesocket(socket_handle->s);
+	    closesocket (socket_handle->s);
 	    return SR_ERROR_CANT_RESOLVE_HOSTNAME;
 	}
     }
@@ -158,12 +161,14 @@ socklib_open (HSOCKET *socket_handle, char *host, int port, char *if_name, int t
     address.sin_port = htons((unsigned short)port);
     len = sizeof(address);
 
+    debug_printf ("Calling connect\n");
     rc = connect (socket_handle->s, (struct sockaddr *)&address, len);
+    debug_printf ("Connect complete\n");
     if (rc == SOCKET_ERROR) {
-	debug_printf("connect failed\n");
+	debug_printf ("connect failed\n");
 	/* GCS Added... */
-	WSACleanup();
-	closesocket(socket_handle->s);
+	WSACleanup ();
+	closesocket (socket_handle->s);
 	return SR_ERROR_CONNECT_FAILED;
     }
 
@@ -173,10 +178,10 @@ socklib_open (HSOCKET *socket_handle, char *host, int port, char *if_name, int t
 	rc = setsockopt (socket_handle->s, SOL_SOCKET,  SO_RCVTIMEO, 
 			 (char *)&tv, sizeof(struct timeval));
 	if (rc == SOCKET_ERROR) {
-	    debug_printf("setsockopt failed\n");
+	    debug_printf ("setsockopt failed\n");
 	    /* GCS Added... */
-	    WSACleanup();
-	    closesocket(socket_handle->s);
+	    WSACleanup ();
+	    closesocket (socket_handle->s);
 	    return SR_ERROR_CANT_SET_SOCKET_OPTIONS;
 	}
     }

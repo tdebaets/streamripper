@@ -12,6 +12,13 @@ How to sync the web site:
    rsync -av --del htdocs gregsharp,streamripper@web.sourceforge.net:
 
 -----------------------------------------------------------------------
+
+Adding locales on debian: dpkg-reconfigure locales
+
+
+Russian locales: ru_RU.CP1251, ru_RU.UTF-8
+
+-----------------------------------------------------------------------
 GLIB FAILURE ON WIN98
 -----------------------------------------------------------------------
 

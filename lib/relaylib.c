@@ -109,7 +109,7 @@ tag_compare (char *str, char *tag)
 }
 
 static int
-header_receive (int sock, int *icy_metadata, int timeout)
+header_receive (int sock, int *icy_metadata)
 {
     fd_set fds;
     struct timeval tv;
@@ -124,7 +124,7 @@ header_receive (int sock, int *icy_metadata, int timeout)
 	// that lacks CRLF delimiter
 	FD_ZERO(&fds);
         FD_SET(sock, &fds);
-        tv.tv_sec = timeout;
+        tv.tv_sec = 2;
         tv.tv_usec = 0;
         r = select (sock + 1, &fds, NULL, NULL, &tv);
         if (r != 1) {
@@ -509,7 +509,7 @@ thread_accept (void* arg)
                     // Socket is new and its buffer had better have 
 		    // room to hold the entire HTTP header!
                     good = FALSE;
-                    if (header_receive (newsock, &icy_metadata, rmi->prefs->timeout) == 0 && rmi->cbuf2.buf != NULL) {
+                    if (header_receive (newsock, &icy_metadata) == 0 && rmi->cbuf2.buf != NULL) {
 			int header_len;
 			make_nonblocking (newsock);
 			client_http_header = client_relay_header_generate (rmi, icy_metadata);

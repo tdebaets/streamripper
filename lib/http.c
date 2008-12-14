@@ -76,18 +76,25 @@ http_sc_connect (RIP_MANAGER_INFO* rmi,
 	if ((ret = socklib_init()) != SR_SUCCESS)
 	    return ret;
 
-	debug_printf("http_sc_connect(): calling socklib_open: host=%s, port=%d\n",
-	    url_info.host, url_info.port);
-	if ((ret = socklib_open(sock, url_info.host, url_info.port, if_name, rmi->prefs->timeout)) != SR_SUCCESS)
+	debug_printf ("http_sc_connect(): calling socklib_open"
+		      " host=%s, port=%d\n", url_info.host, url_info.port);
+	ret = socklib_open (sock, url_info.host, url_info.port, if_name, 
+			    rmi->prefs->timeout);
+	if (ret != SR_SUCCESS) {
 	    return ret;
+	}
 
 	debug_printf("http_sc_connect(): calling http_construct_sc_request\n");
-	if ((ret = http_construct_sc_request(url, proxyurl, headbuf, useragent)) != SR_SUCCESS)
+	ret = http_construct_sc_request (url, proxyurl, headbuf, useragent);
+	if (ret != SR_SUCCESS) {
 	    return ret;
+	}
 
 	debug_printf("http_sc_connect(): calling socklib_sendall\n");
-	if ((ret = socklib_sendall(sock, headbuf, strlen(headbuf))) < 0)
+	ret = socklib_sendall (sock, headbuf, strlen(headbuf));
+	if (ret < 0) {
 	    return ret;
+	}
 
 	debug_printf("http_sc_connect(): calling http_get_sc_header\n");
 	if ((ret = http_get_sc_header(rmi, url, sock, info)) != SR_SUCCESS)
