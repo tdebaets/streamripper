@@ -284,7 +284,7 @@ print_usage (FILE* stream)
     fprintf(stream, "      -L file        - Create a relay playlist file\n");
     fprintf(stream, "      -z             - Don't scan for free ports if base port is not avail\n");
     fprintf(stream, "      -p url         - Use HTTP proxy server at <url>\n");
-    fprintf(stream, "      -o (always|never|larger|version)    - When to tracks in complete\n");
+    fprintf(stream, "      -o (always|never|larger|version)    - When to write tracks in complete\n");
     fprintf(stream, "      -t             - Don't overwrite tracks in incomplete\n");
     fprintf(stream, "      -c             - Don't auto-reconnect\n");
     fprintf(stream, "      -l seconds     - Number of seconds to run, otherwise runs forever\n");
@@ -307,11 +307,12 @@ print_usage (FILE* stream)
     fprintf(stream, "      --with-id3v1                 - Add ID3V1 tags to output file\n");
     fprintf(stream, "      --without-id3v2              - Don't add ID3V2 tags to output file\n");
     fprintf(stream, "Splitpoint opts (mp3 only):\n");
-    fprintf(stream, "      --xs2                        - Use new algorithm for silence detection\n");
+    fprintf(stream, "      --xs-none                    - Don't search for silence\n");
     fprintf(stream, "      --xs-offset=num              - Shift relative to metadata (msec)\n");
     fprintf(stream, "      --xs-padding=num:num         - Add extra to prev:next track (msec)\n");
     fprintf(stream, "      --xs-search-window=num:num   - Search window relative to metadata (msec)\n");
     fprintf(stream, "      --xs-silence-length=num      - Expected length of silence (msec)\n");
+    fprintf(stream, "      --xs2                        - Use new algorithm for silence detection\n");
     fprintf(stream, "Codeset opts:\n");
     fprintf(stream, "      --codeset-filesys=codeset    - Specify codeset for the file system\n");
     fprintf(stream, "      --codeset-id3=codeset        - Specify codeset for id3 tags\n");
@@ -392,6 +393,7 @@ parse_arguments (STREAM_PREFS* prefs, int argc, char **argv)
 		     "Please use -w parse_rules instead.\n");
 	    exit (1);
 	case 'h':
+	case '?':
 	    print_usage (stdout);
             exit(0);
 	    break;

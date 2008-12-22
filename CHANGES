@@ -1,3 +1,8 @@
+New for 1.64.2
+------------------------------------
+Mon, Dec 22, 2008
+* Windows: Fix packaging error (missing dll)
+
 New for 1.64.1
 ------------------------------------
 Sat, Dec 13, 2008
