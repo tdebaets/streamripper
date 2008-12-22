@@ -165,13 +165,14 @@ Section "Core Libraries" sec_core
   ;File "D:\sripper_1x\win32\glib-2.12.12\bin\libglib-2.0-0.dll"
   ;File "D:\sripper_1x\iconv-win32\dll\iconv.dll"
   ;File "D:\sripper_1x\intl.dll"
+  File "..\win32\glib-2.16.6-1\bin\libglib-2.0-0.dll"
   File "..\win32\libogg-1.1.3\ogg.dll"
   File "..\win32\libvorbis-1.1.2\vorbis.dll"
+  File "..\win32\microsoft\unicows.dll"
   File "..\win32\mingw\libiconv-2.dll"
   File "..\win32\mingw\libintl-8.dll"
-  File "..\win32\microsoft\unicows.dll"
-  File "..\win32\glib-2.16.6-1\bin\libglib-2.0-0.dll"
   File "..\win32\Release\streamripper.dll"
+  File "..\win32\zlib-1.2.3\zlib1.dll"
   
   ;Store installation folder(s)
   WriteRegStr HKCU "Software\Streamripper" "" $INSTDIR
@@ -314,6 +315,7 @@ Section "Uninstall"
   Delete $INSTDIR\tre.dll
   Delete $INSTDIR\unicows.dll
   Delete $INSTDIR\vorbis.dll
+  Delete $INSTDIR\zlib1.dll
   Delete $INSTDIR\README
   Delete $INSTDIR\COPYING
   Delete $INSTDIR\THANKS
