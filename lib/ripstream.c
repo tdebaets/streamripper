@@ -238,7 +238,7 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 
     /* get the data from the stream */
     debug_printf ("RIPSTREAM_RIP_OGG: top of loop\n");
-    ret = get_stream_data(rmi, rmi->getbuffer, rmi->current_track.raw_metadata);
+    ret = get_stream_data (rmi, rmi->getbuffer, rmi->current_track.raw_metadata);
     if (ret != SR_SUCCESS) {
 	debug_printf("get_stream_data bad return code: %d\n", ret);
 	return ret;
@@ -254,7 +254,7 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 			  GET_MAKE_RELAY(rmi->prefs->flags),
 			  rmi->getbuffer_size, rmi->cbuf2_size);
 	if (ret != SR_SUCCESS) return ret;
-	rmi->ogg_have_track = 0;
+	rmi->ogg_track_state = 0;
 	/* Warm up the ogg decoding routines */
 	rip_ogg_init (rmi);
 	/* Done! */
@@ -278,6 +278,8 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
         return ret;
     }
 
+
+#if defined (commentout)
     /* If we have unwritten pages for the current track, write them */
     if (rmi->ogg_have_track) {
 	do {
@@ -289,10 +291,11 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 				       &amt_filled, &got_eos);
 	    debug_printf ("^^^ogg_peek: %d %d\n", amt_filled, got_eos);
 	    if (ret != SR_SUCCESS) {
-		debug_printf ("cbuf2_ogg_peek_song: %d\n",ret);
+		debug_printf ("cbuf2_ogg_peek_song: %d\n", ret);
 		return ret;
 	    }
 	    if (amt_filled == 0) {
+		/* No more pages */
 		break;
 	    }
 	    ret = rip_manager_put_data (rmi, rmi->getbuffer, amt_filled);
@@ -301,9 +304,9 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 		return ret;
 	    }
 	    if (got_eos) {
-		end_track_ogg (rmi, &rmi->old_track);
+		//end_track_ogg (rmi, &rmi->old_track);
 		rmi->ogg_have_track = 0;
-		break;
+		//break;
 	    }
 	} while (1);
     }
@@ -322,6 +325,68 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 
 	rmi->ogg_have_track = 1;
     }
+#endif
+
+    do {
+	error_code ret;
+	unsigned long amt_filled;
+	int got_eos;
+	ret = cbuf2_ogg_peek_song (&rmi->cbuf2, rmi->getbuffer, 
+				   rmi->getbuffer_size,
+				   &amt_filled, &got_eos);
+	debug_printf ("^^^ogg_peek: %d %d\n", amt_filled, got_eos);
+	if (ret != SR_SUCCESS) {
+	    debug_printf ("cbuf2_ogg_peek_song: %d\n", ret);
+	    return ret;
+	}
+	if (amt_filled == 0) {
+	    /* No more pages */
+	    break;
+	}
+	debug_printf ("ogg_track_state = %d\n", rmi->ogg_track_state);
+	switch (rmi->ogg_track_state) {
+	case 0:
+	    if (rmi->current_track.have_track_info) {
+		format_track_info (&rmi->current_track, "current");
+		ret = rip_manager_start_track (rmi, &rmi->current_track);
+		if (ret != SR_SUCCESS) {
+		    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
+		    return ret;
+		}
+		filelib_write_cue (rmi, &rmi->current_track, 0);
+		copy_track_info (&rmi->old_track, &rmi->current_track);
+		rmi->ogg_track_state = 1;
+	    }
+	    break;
+	case 1:
+	    ret = rip_manager_put_data (rmi, rmi->getbuffer, amt_filled);
+	    if (ret != SR_SUCCESS) {
+		debug_printf ("rip_manager_put_data(#1): %d\n",ret);
+		return ret;
+	    }
+	    if (got_eos) {
+		rmi->ogg_track_state = 2;
+	    }
+	    break;
+	case 2:
+	    /* If we got a new track, then start a new file */
+	    if (rmi->current_track.have_track_info) {
+		if (is_track_changed (rmi)) {
+		    end_track_ogg (rmi, &rmi->old_track);
+		    format_track_info (&rmi->current_track, "current");
+		    ret = rip_manager_start_track (rmi, &rmi->current_track);
+		    if (ret != SR_SUCCESS) {
+			debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
+			return ret;
+		    }
+		    filelib_write_cue (rmi, &rmi->current_track, 0);
+		    copy_track_info (&rmi->old_track, &rmi->current_track);
+		}
+		rmi->ogg_track_state = 1;
+	    }
+	    break;
+	}
+    } while (1);
 
     /* If buffer almost full, advance the buffer */
     if (cbuf2_get_free(&rmi->cbuf2) < rmi->getbuffer_size) {

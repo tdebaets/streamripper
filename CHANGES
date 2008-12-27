@@ -1,5 +1,11 @@
 New for 1.64.2
 ------------------------------------
+* Windows: Fix socket timeout problem
+* Fix bug where ogg streams with repeated metadata were being split 
+  (#1804582,1953084)
+
+New for 1.64.2
+------------------------------------
 Mon, Dec 22, 2008
 * Windows: Fix packaging error (missing dll)
 

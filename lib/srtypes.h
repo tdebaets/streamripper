@@ -553,7 +553,10 @@ struct RIP_MANAGER_INFOst
     BOOL write_data;
 
     /* Used by ripstream ogg logic */
-    int ogg_have_track;
+    /* 0 : Track inactive, file closed */
+    /* 1 : Track active, file open */
+    /* 2 : Got eos, file open pending confirmed title change */
+    int ogg_track_state;
 
     /* Title & artist info */
     TRACK_INFO old_track;	    /* The track that's being ripped now */
