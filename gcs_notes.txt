@@ -1384,6 +1384,19 @@ http://www.wwitv.com/portal.htm?http://www.wwitv.com/television/index.html
 
 
 -----------------------------------------------------------------------
+id3 tools
+-----------------------------------------------------------------------
+id3mtag        http://home.wanadoo.nl/squell/id3.html
+               Good for adding/modifying tags, but does not display
+id3tool        http://nekohako.xware.cx/id3tool/
+               Doesn't seem to work at all.  Only id3v1?
+id3v2          http://id3v2.sourceforge.net/
+
+libid3tag
+libid3
+
+
+-----------------------------------------------------------------------
 Improving winamp plugin.  Implement some combination of these.
 -----------------------------------------------------------------------
 
