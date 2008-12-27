@@ -4,12 +4,12 @@ automake --foreign lib/Makefile
 autoconf
 autoheader
 
-cd libmad-0.15.1b
-aclocal
-automake --add-missing --foreign Makefile
-autoconf
-autoheader
-cd ..
+# cd libmad-0.15.1b
+# aclocal
+# automake --add-missing --foreign Makefile
+# autoconf
+# autoheader
+# cd ..
 
 # cd tre-0.7.2
 # aclocal -I m4
@@ -18,17 +18,24 @@ cd ..
 # autoheader
 # cd ..
 
-rm -f config.cache
+# cd glib-2.16.6
+# aclocal
+# libtoolize
+# autoheader
+# automake --add-missing
+# autoconf
+# cd ..
 
-## Included glib doesn't work yet.  Include file glib.h not found.
-# ./configure --with-included-libmad --with-included-glib
+# rm -f config.cache
+rm -rf autom4te.cache
 
-./configure --with-included-libmad
+./configure --with-included-glib
 
 exit
 
 ./configure
-./configure --without-included-tre
 ./configure --without-ogg
-./configure --with-included-libmad --with-included-tre --with-included-argv
-
+./configure --with-included-glib
+./configure --with-included-libmad
+./configure --with-included-libmad --with-included-argv
+./configure --with-included-libmad --with-included-glib

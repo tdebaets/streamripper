@@ -58,16 +58,16 @@ AC_SUBST(CPPFLAGS)
 
 dnl -------- Tests for using included glib ------
 
-LIBGLIB=""
-AC_SUBST(LIBGLIB)
 use_included_glib=yes
 if test "x$with_included_glib" != xyes; then
+  AC_MSG_NOTICE([Testing glib, user did not request included glib])
   AM_PATH_GLIB_2_0(2.16.0,use_included_glib=no)
 fi
 AM_CONDITIONAL(SUBDIR_GLIB, test "$use_included_glib" = yes)
 if test "$use_included_glib" = yes; then
-  LIBGLIB="glib-0.15.1b/.libs/glib.a"
-  AC_SUBST(LIBGLIB)
+  AC_MSG_NOTICE([Supposedly we are using included glib.])
+  GLIB_LIBS="glib-2.16.6/glib/.libs/libglib-2.0.a"
+dnl  AC_SUBST(GLIB_LIBS)
   AC_CONFIG_SUBDIRS(glib-2.16.6)
 fi
 
@@ -347,9 +347,9 @@ AC_OUTPUT(lib/Makefile Makefile)
 
 cat <<EOF
 * Streamripper configuration
-
-  Using included MAD library?        $use_included_libmad
-  Using included GLIB library?       $use_included_glib
-  Using included CDK library?        $use_included_cdk
-  Ogg/vorbis support?                $sr_have_ogg
+    Using included MAD library?      $use_included_libmad
+    Using included CDK library?      $use_included_cdk
+    Using included GLIB library?     $use_included_glib
+    Ogg/vorbis support?              $sr_have_ogg
 EOF
+

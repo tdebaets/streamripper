@@ -504,7 +504,18 @@ case $with_libiconv in
 esac
 
 dnl Initialize libtool
-AM_DISABLE_STATIC
+dnl GCS: Don't disable static
+dnl AM_DISABLE_STATIC
+
+dnl GCS: If this is true, we're configuring from streamripper configure
+AC_ENABLE_STATIC
+AC_ARG_WITH(included-glib,
+	[  --with-included-glib use the glib library included with streamripper])
+if test "x$with_included_glib" != xyes; then
+  enable_static=yes
+fi
+
+
 AC_LIBTOOL_WIN32_DLL
 AM_PROG_LIBTOOL
 
