@@ -210,7 +210,7 @@ socklib_read_header(RIP_MANAGER_INFO* rmi, HSOCKET *socket_handle,
 {
     int i;
 #ifdef WIN32
-    struct timeval timeout;
+    int timeout;
 #endif
     int ret;
     char *t;
@@ -219,9 +219,8 @@ socklib_read_header(RIP_MANAGER_INFO* rmi, HSOCKET *socket_handle,
 	return SR_ERROR_SOCKET_CLOSED;
 
 #ifdef WIN32
-    memset (&timeout, 0, sizeof (struct timeval));
-    timeout.tv_sec = 2 * rmi->prefs->timeout;
-    if (setsockopt (socket_handle->s, SOL_SOCKET,  SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) == SOCKET_ERROR)
+    timeout = 2 * rmi->prefs->timeout * 1000;  /* Convert sec to msec */
+    if (setsockopt (socket_handle->s, SOL_SOCKET,  SO_RCVTIMEO, (char *)&timeout, sizeof(int)) == SOCKET_ERROR)
 	return SR_ERROR_CANT_SET_SOCKET_OPTIONS;
 #endif
 
@@ -264,6 +263,7 @@ socklib_read_header(RIP_MANAGER_INFO* rmi, HSOCKET *socket_handle,
     buffer[i] = '\0';
 
 #ifdef WIN32
+    timeout = rmi->prefs->timeout * 1000;  /* Convert sec to msec */
     if (setsockopt (socket_handle->s, SOL_SOCKET,  SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) == SOCKET_ERROR)
 	return SR_ERROR_CANT_SET_SOCKET_OPTIONS;
 #endif
