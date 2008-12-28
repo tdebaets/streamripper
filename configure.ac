@@ -58,18 +58,18 @@ AC_SUBST(CPPFLAGS)
 
 dnl -------- Tests for using included glib ------
 
-use_included_glib=yes
-if test "x$with_included_glib" != xyes; then
-  AC_MSG_NOTICE([Testing glib, user did not request included glib])
-  AM_PATH_GLIB_2_0(2.16.0,use_included_glib=no)
-fi
-AM_CONDITIONAL(SUBDIR_GLIB, test "$use_included_glib" = yes)
-if test "$use_included_glib" = yes; then
-  AC_MSG_NOTICE([Supposedly we are using included glib.])
+use_included_glib=no
+if test "x$with_included_glib" = xyes; then
+  if test ! -d glib-2.16.6; then
+    AC_MSG_ERROR([Using included glib not available from tarball.])
+  fi
+  use_included_glib=yes
   GLIB_LIBS="glib-2.16.6/glib/.libs/libglib-2.0.a"
-dnl  AC_SUBST(GLIB_LIBS)
   AC_CONFIG_SUBDIRS(glib-2.16.6)
+else
+  AM_PATH_GLIB_2_0(2.16.0,,AC_MSG_ERROR([Glib 2.16 or greater required]))
 fi
+AM_CONDITIONAL(SUBDIR_GLIB, test "x$with_included_glib" = xyes)
 
 dnl -------- Tests for using included libmad ------
 LIBMAD=""

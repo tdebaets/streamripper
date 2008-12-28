@@ -3,7 +3,8 @@ include $(top_srcdir)/Makefile.decl
 
 AUTOMAKE_OPTIONS = 1.7
 
-SUBDIRS = . m4macros glib gmodule gthread gobject gio tests po docs
+## SUBDIRS = . m4macros glib gmodule gthread gobject gio tests po docs
+SUBDIRS = . m4macros glib 
 DIST_SUBDIRS = $(SUBDIRS) build
 
 bin_SCRIPTS = glib-gettextize
