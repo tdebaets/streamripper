@@ -1140,7 +1140,7 @@ get_stream_data (RIP_MANAGER_INFO* rmi, char *data_buf, char *track_buf)
     } else {
 	ret = get_track_from_metadata (rmi, c * 16, newtrack);
 	if (ret != SR_SUCCESS) {
-	    debug_printf("get_trackname had a bad return %d", ret);
+	    debug_printf("get_trackname had a bad return %d\n", ret);
 	    return ret;
 	}
 
@@ -1162,6 +1162,11 @@ get_track_from_metadata (RIP_MANAGER_INFO* rmi, int size, char *newtrack)
     int i;
     int ret;
     char *namebuf;
+    char *p;
+    gchar *gnamebuf;
+
+    /* Default is no track info */
+    *newtrack = 0;
 
     if ((namebuf = malloc(size)) == NULL)
 	return SR_ERROR_CANT_ALLOC_MEMORY;
@@ -1188,13 +1193,50 @@ get_track_from_metadata (RIP_MANAGER_INFO* rmi, int size, char *newtrack)
     }
     debug_printf ("\n");
 
-    if(strstr(namebuf, "StreamTitle='") == NULL) {
-	free(namebuf);
+    /* Depending on version, Icecast/Shoutcast use one of the following.
+         StreamTitle='Title';StreamURL='URL';
+         StreamTitle='Title';
+       Limecast has no semicolon, and only example I've seen had no title.
+          StreamTitle=' '
+    */
+
+#if defined (commentout)
+    /* This is the old code which doesn't work for Limecast */
+    if (strstr (namebuf, "StreamTitle='") == NULL) {
+	free (namebuf);
 	return SR_ERROR_NO_TRACK_INFO;
     }
-    subnstr_until(namebuf+strlen("StreamTitle='"), "';", newtrack, MAX_TRACK_LEN);
+    subnstr_until (namebuf+strlen("StreamTitle='"), "';", newtrack, MAX_TRACK_LEN);
     trim(newtrack);
-
     free(namebuf);
+#endif
+
+    /* GCS FIX: This assumes ASCII-compatible charset for quote & semicolon.
+       Shoutcast protocol has no specification on this... */
+    if (!g_str_has_prefix (namebuf, "StreamTitle='")) {
+	free (namebuf);
+	// return SR_ERROR_NO_TRACK_INFO;
+	return SR_SUCCESS;
+    }
+    gnamebuf = g_strdup (namebuf+strlen("StreamTitle='"));
+    free(namebuf);
+
+    if ((p = strstr (gnamebuf, "';"))) {
+	*p = 0;
+    }
+    else if ((p = strrchr (gnamebuf, '\''))) {
+	*p = 0;
+    }
+    g_strstrip (gnamebuf);
+    debug_printf ("gnamebuf (stripped) = %s\n", gnamebuf);
+
+    if (strlen (gnamebuf) == 0) {
+	g_free (gnamebuf);
+	return SR_SUCCESS;
+    }
+
+    g_strlcpy (newtrack, gnamebuf, MAX_TRACK_LEN);
+    g_free (gnamebuf);
+
     return SR_SUCCESS;
 }
