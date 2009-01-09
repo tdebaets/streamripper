@@ -486,7 +486,7 @@ thread_accept (void* arg)
             tv.tv_usec = 0;
 	    debug_printf("thread_accept:calling select()\n");
             ret = select (rli->m_listensock + 1, &fds, NULL, NULL, &tv);
-	    debug_printf("thread_accept:select() returned\n");
+	    debug_printf("thread_accept:select() returned %d\n", ret);
             if (ret == 1) {
                 unsigned long num_connected;
                 /* If connections are full, do nothing.  Note that 
