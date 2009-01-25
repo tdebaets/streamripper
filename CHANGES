@@ -1,6 +1,7 @@
 New for 1.64.4
 ------------------------------------
 * Robustify metadata parsing for Limecast servers
+* Fix bug with substitution rules (#2492422)
 
 New for 1.64.3
 ------------------------------------

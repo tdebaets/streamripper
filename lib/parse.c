@@ -605,10 +605,13 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 		continue;
 	    }
 	    tmp = g_strndup (query_string, start_pos);
-	    subst_string = g_strconcat (tmp, rulep->subst, 
-					&query_string[end_pos+1],
+	    tmp[start_pos] = 0;
+	    subst_string = g_strconcat (tmp,
+					rulep->subst, 
+					&tmp[end_pos],
 					NULL);
 	    g_free (tmp);
+	    g_match_info_free (match_info);
 	    mstrncpy (query_string, subst_string, MAX_TRACK_LEN);
 #else
 	    mchar subst_string[MAX_TRACK_LEN];
