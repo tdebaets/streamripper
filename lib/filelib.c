@@ -837,7 +837,7 @@ parse_and_subst_pat (RIP_MANAGER_INFO* rmi,
 	case m_('S'):
 	    /* stream name */
 	    /* GCS FIX: Not sure here */
-	    mstrncat (newfile, fli->m_icy_name, MAX_FILEBASELEN-nfi);
+	    mstrncat (newfile, fli->m_stripped_icy_name, MAX_FILEBASELEN-nfi);
 	    nfi = mstrlen (newfile);
 	    opi+=2;
 	    continue;
