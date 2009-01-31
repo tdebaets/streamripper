@@ -77,15 +77,6 @@ typedef struct ID3V1st
         char    genre;
 } ID3V1Tag;
 
-#if defined (commentout)
-typedef struct ID3V2headst {
-	char	tag[3];
-	int	version;
-	char	flags;
-	int	size;
-} ID3V2head;
-#endif
-
 typedef struct ID3V2framest {
 	char	id[4];
 	int	size;
@@ -161,7 +152,7 @@ is_track_changed (RIP_MANAGER_INFO* rmi)
 }
 
 static void
-format_track_info (TRACK_INFO* ti, char* tag)
+debug_track_info (TRACK_INFO* ti, char* tag)
 {
     debug_mprintf (m_("----- TRACK_INFO ") m_s m_("\n")
 		   m_("HAVETI: %d\n")
@@ -261,7 +252,8 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 	rmi->ripstream_first_time_through = 0;
     }
 
-    /* Copy the data into cbuffer */
+    /* Copy the data into cbuffer.  This calls rip_ogg_process_chunk,
+       which sets TRACK_INFO. */
     clear_track_info (&rmi->current_track);
     ret = cbuf2_insert_chunk (rmi, &rmi->cbuf2, 
 			      rmi->getbuffer, rmi->getbuffer_size,
@@ -311,7 +303,7 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 	} while (1);
     }
 
-    format_track_info (&rmi->current_track, "current");
+    debug_track_info (&rmi->current_track, "current");
 
     /* If we got a new track, then start a new file */
     if (rmi->current_track.have_track_info) {
@@ -327,38 +319,27 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
     }
 #endif
 
-    do {
-	error_code ret;
-	unsigned long amt_filled;
-	int got_eos;
-	ret = cbuf2_ogg_peek_song (&rmi->cbuf2, rmi->getbuffer, 
-				   rmi->getbuffer_size,
-				   &amt_filled, &got_eos);
-	debug_printf ("^^^ogg_peek: %d %d\n", amt_filled, got_eos);
-	if (ret != SR_SUCCESS) {
-	    debug_printf ("cbuf2_ogg_peek_song: %d\n", ret);
-	    return ret;
-	}
-	if (amt_filled == 0) {
-	    /* No more pages */
-	    break;
-	}
-	debug_printf ("ogg_track_state = %d\n", rmi->ogg_track_state);
-	switch (rmi->ogg_track_state) {
-	case 0:
-	    if (rmi->current_track.have_track_info) {
-		format_track_info (&rmi->current_track, "current");
-		ret = rip_manager_start_track (rmi, &rmi->current_track);
-		if (ret != SR_SUCCESS) {
-		    debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
-		    return ret;
-		}
-		filelib_write_cue (rmi, &rmi->current_track, 0);
-		copy_track_info (&rmi->old_track, &rmi->current_track);
-		rmi->ogg_track_state = 1;
+    debug_printf ("ogg_track_state[a] = %d\n", rmi->ogg_track_state);
+
+    /* If we have unwritten pages for the current track, write them */
+    if (rmi->ogg_track_state == 1) {
+	do {
+	    error_code ret;
+	    unsigned long amt_filled;
+	    int got_eos;
+
+	    ret = cbuf2_ogg_peek_song (&rmi->cbuf2, rmi->getbuffer, 
+				       rmi->getbuffer_size,
+				       &amt_filled, &got_eos);
+	    debug_printf ("^^^ogg_peek: %d %d\n", amt_filled, got_eos);
+	    if (ret != SR_SUCCESS) {
+		debug_printf ("cbuf2_ogg_peek_song: %d\n", ret);
+		return ret;
 	    }
-	    break;
-	case 1:
+	    if (amt_filled == 0) {
+		/* No more pages */
+		break;
+	    }
 	    ret = rip_manager_put_data (rmi, rmi->getbuffer, amt_filled);
 	    if (ret != SR_SUCCESS) {
 		debug_printf ("rip_manager_put_data(#1): %d\n",ret);
@@ -366,27 +347,30 @@ ripstream_rip_ogg (RIP_MANAGER_INFO* rmi)
 	    }
 	    if (got_eos) {
 		rmi->ogg_track_state = 2;
+		break;
 	    }
-	    break;
-	case 2:
-	    /* If we got a new track, then start a new file */
-	    if (rmi->current_track.have_track_info) {
-		if (is_track_changed (rmi)) {
-		    end_track_ogg (rmi, &rmi->old_track);
-		    format_track_info (&rmi->current_track, "current");
-		    ret = rip_manager_start_track (rmi, &rmi->current_track);
-		    if (ret != SR_SUCCESS) {
-			debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
-			return ret;
-		    }
-		    filelib_write_cue (rmi, &rmi->current_track, 0);
-		    copy_track_info (&rmi->old_track, &rmi->current_track);
-		}
-		rmi->ogg_track_state = 1;
+
+	} while (1);
+    }
+
+    debug_printf ("ogg_track_state[b] = %d\n", rmi->ogg_track_state);
+    debug_track_info (&rmi->current_track, "current");
+
+    /* If we got a new track, then (maybe) start a new file */
+    if (rmi->current_track.have_track_info) {
+	if (is_track_changed (rmi)) {
+	    if (rmi->ogg_track_state == 2) {
+		end_track_ogg (rmi, &rmi->old_track);
 	    }
-	    break;
+	    ret = rip_manager_start_track (rmi, &rmi->current_track);
+	    if (ret != SR_SUCCESS) {
+		debug_printf ("rip_manager_start_track failed(#1): %d\n",ret);
+		return ret;
+	    }
+	    copy_track_info (&rmi->old_track, &rmi->current_track);
 	}
-    } while (1);
+	rmi->ogg_track_state = 1;
+    }
 
     /* If buffer almost full, advance the buffer */
     if (cbuf2_get_free(&rmi->cbuf2) < rmi->getbuffer_size) {
@@ -525,9 +509,9 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
 	}
     }
 
-    format_track_info (&rmi->old_track, "old");
-    format_track_info (&rmi->new_track, "new");
-    format_track_info (&rmi->current_track, "current");
+    debug_track_info (&rmi->old_track, "old");
+    debug_track_info (&rmi->new_track, "new");
+    debug_track_info (&rmi->current_track, "current");
 
     if (rmi->find_silence == 0) {
 	/* Find separation point */
@@ -707,9 +691,8 @@ end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, u_long pos2, TRACK_INFO* ti)
 
     /* Only save this track if we've skipped over enough cruft 
        at the beginning of the stream */
-    debug_printf("Current track number %d (dropcount is %d)\n", 
-		 rmi->track_count, 
-		 rmi->prefs->dropcount);
+    debug_printf ("Current track number %d (skipping if less than %d)\n", 
+		  rmi->track_count, rmi->prefs->dropcount);
     if (rmi->track_count >= rmi->prefs->dropcount)
 	if ((ret = rip_manager_end_track (rmi, ti)) != SR_SUCCESS)
 	    goto BAIL;
@@ -843,9 +826,9 @@ static error_code
 end_track_ogg (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 {
     error_code ret;
-    debug_printf ("Current track number %d (skipping if %d or less)\n", 
+    debug_printf ("Current track number %d (skipping if less than %d)\n", 
 		  rmi->track_count, rmi->prefs->dropcount);
-    if (rmi->track_count > rmi->prefs->dropcount) {
+    if (rmi->track_count >= rmi->prefs->dropcount) {
 	ret = rip_manager_end_track (rmi, ti);
     } else {
 	ret = SR_SUCCESS;

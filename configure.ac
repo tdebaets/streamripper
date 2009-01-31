@@ -49,8 +49,12 @@ dnl   [  --with-included-tre use the tre library included with streamripper])
 AC_ARG_WITH(included-argv,
   [  --with-included-argv use argv.c included with streamripper])
 
-AC_ARG_WITH(included-cdk,
-  [  --with-included-cdk use the cdk library included with streamripper])
+dnl AC_ARG_WITH(included-cdk,
+dnl   [  --with-included-cdk use the cdk library included with streamripper])
+
+AC_ARG_WITH(curses, 
+  [  --with-curses(=XXX) compile curses front-end (XXX is curses (default), ncurses, ncursesw, pdcurses or slang)])
+
 
 CPPFLAGS="-D__UNIX__"
 AC_SUBST(CPPFLAGS)
@@ -237,26 +241,83 @@ AC_CHECK_LIB(faad,NeAACDecDecode2,[
         AC_DEFINE(HAVE_FAAD,0,[Define to 1 if you have faad2 libraries installed]))
 AC_SUBST(FAAD_LIBS)
 
-dnl -------- Tests for using included cdk ------
-CDK_LIBS=""
-use_included_cdk=no
-use_cdk=no
-if test "$with_included_cdk" = "yes"; then
-  use_included_cdk=yes
-  use_cdk=yes
-  CDK_LIBS="-lcdk -lncurses"
-  AC_DEFINE(HAVE_CDK,1,[Define to 1 if you have cdk libraries installed])
-else
-  dnl  LDFLAGS="$LDFLAGS -L/usr/local/lib"
-  dnl  INCLUDES="$INCLUDES -I/usr/local/include"
-  AC_CHECK_LIB(cdk,initCDKScreen,[
-    use_cdk=yes
-    CDK_LIBS="-lcdk -lncurses"
-    AC_DEFINE(HAVE_CDK,1,[Define to 1 if you have cdk libraries installed])
-  ],[],[-lncurses])
+dnl -------- Tests for curses ------
+if test x$with_curses = xyes || test x$with_curses = x ; then
+  found_curses=no
+  if test x$found_curses = xno; then
+    AC_CHECK_LIB(ncurses , initscr, [
+      found_curses=yes
+      with_curses=ncurses
+    ])
+  fi
+  if test x$found_curses = xno; then
+    AC_CHECK_LIB(curses  , initscr, [
+      found_curses=yes
+      with_curses=curses
+    ])
+  fi
+  if test x$found_curses = xno; then
+    AC_CHECK_LIB(ncursesw, initscr, [
+      found_curses=yes
+      with_curses=ncursesw
+    ])
+  fi
+  if test x$found_curses = xno; then
+    AC_CHECK_LIB(pdcurses, initscr, [
+      found_curses=yes
+      with_curses=pdcurses
+    ])
+  fi
+  if test x$found_curses = xno; then
+    with_curses=no
+  fi
 fi
-AM_CONDITIONAL(SUBDIR_CDK, test "x$use_included_cdk" = "xyes")
-AC_SUBST(CDK_LIBS)
+
+case x$with_curses in
+xcurses)
+	CF_WITH_CURSES_DIR
+	AC_MSG_NOTICE([Request for curses])
+	;;
+xncurses)
+	CF_WITH_CURSES_DIR
+	AC_MSG_NOTICE([Request for ncurses])
+	;;
+xncursesw)
+	CF_WITH_CURSES_DIR
+	AC_MSG_NOTICE([Request for ncursesw])
+	;;
+xpdcurses)
+	AC_MSG_NOTICE([Request for pdncurses])
+	;;
+xno)
+	AC_MSG_NOTICE([Request no curses])
+	;;
+esac
+
+dnl << GCS -- left off debugging here >>
+dnl exit
+
+dnl -------- Tests for using included cdk ------
+dnl CDK_LIBS=""
+dnl use_included_cdk=no
+dnl use_cdk=no
+dnl if test "$with_included_cdk" = "yes"; then
+dnl   use_included_cdk=yes
+dnl   use_cdk=yes
+dnl   CDK_LIBS="-lcdk -lncurses"
+dnl   AC_DEFINE(HAVE_CDK,1,[Define to 1 if you have cdk libraries installed])
+dnl else
+dnl   dnl  LDFLAGS="$LDFLAGS -L/usr/local/lib"
+dnl   dnl  INCLUDES="$INCLUDES -I/usr/local/include"
+dnl   AC_CHECK_LIB(cdk,initCDKScreen,[
+dnl     use_cdk=yes
+dnl     CDK_LIBS="-lcdk -lncurses"
+dnl     AC_DEFINE(HAVE_CDK,1,[Define to 1 if you have cdk libraries installed])
+dnl   ],[],[-lncurses])
+dnl fi
+dnl AM_CONDITIONAL(SUBDIR_CDK, test "x$use_included_cdk" = "xyes")
+dnl AC_SUBST(CDK_LIBS)
+
 AM_CONDITIONAL([WANT_CSTREAMRIPPER],[test x$use_cdk != xno])
 
 dnl -------- Tests for using ogg/vorbis ------
@@ -348,7 +409,7 @@ AC_OUTPUT(lib/Makefile Makefile)
 cat <<EOF
 * Streamripper configuration
     Using included MAD library?      $use_included_libmad
-    Using included CDK library?      $use_included_cdk
+dnl    Using included CDK library?      $use_included_cdk
     Using included GLIB library?     $use_included_glib
     Ogg/vorbis support?              $sr_have_ogg
 EOF

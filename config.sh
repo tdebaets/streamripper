@@ -29,7 +29,7 @@ autoheader
 # rm -f config.cache
 rm -rf autom4te.cache
 
-./configure --with-included-glib
+./configure
 
 exit
 

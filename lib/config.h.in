@@ -15,9 +15,6 @@
    */
 #undef HAVE_ALLOCA_H
 
-/* Define to 1 if you have cdk libraries installed */
-#undef HAVE_CDK
-
 /* Whether the system has connect() */
 #undef HAVE_CONNECT
 

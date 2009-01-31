@@ -13,14 +13,15 @@ if SUBDIR_GLIB
   AM_CPPFLAGS += -I@abs_top_srcdir@/glib-2.16.6
 endif
 
-if SUBDIR_CDK
-  MAYBE_CDK = cdk-5.0-20060507
-endif
+#if SUBDIR_CDK
+#  MAYBE_CDK = cdk-5.0-20060507
+#endif
 
 AM_CPPFLAGS += -I@abs_top_srcdir@/lib
 
-SUBDIRS = $(MAYBE_LIBMAD) $(MAYBE_CDK) $(MAYBE_GLIB) lib
+# SUBDIRS = $(MAYBE_LIBMAD) $(MAYBE_CDK) $(MAYBE_GLIB) lib
 # SUBDIRS = $(MAYBE_LIBMAD) $(MAYBE_CDK) lib
+SUBDIRS = $(MAYBE_LIBMAD) lib
 
 bin_PROGRAMS = streamripper
 if WANT_CSTREAMRIPPER
@@ -384,8 +385,9 @@ streamripper_LDADD = \
 	@LTLIBICONV@ @LIBCHARSET@ \
 	@LIBIBERTY_LIBS@ \
 	@OGG_LIBS@ @VORBIS_LIBS@ \
-        @CDK_LIBS@ \
 	@GLIB_LIBS@
+
+#        @CDK_LIBS@
 
 cstreamripper_LDADD = \
 	lib/libstreamripper.a \
@@ -395,7 +397,8 @@ cstreamripper_LDADD = \
 	@LTLIBICONV@ @LIBCHARSET@ \
 	@LIBIBERTY_LIBS@ \
 	@OGG_LIBS@ @VORBIS_LIBS@ \
-        @CDK_LIBS@ \
 	@GLIB_LIBS@
+
+#        @CDK_LIBS@
 
 ACLOCAL_AMFLAGS = -I m4

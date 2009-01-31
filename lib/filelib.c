@@ -303,9 +303,11 @@ filelib_write_show (RIP_MANAGER_INFO* rmi, char *buf, u_long size)
 {
     FILELIB_INFO* fli = &rmi->filelib_info;
     error_code rc;
+    debug_printf ("Testing to write showfile\n");
     if (!fli->m_do_show) {
 	return SR_SUCCESS;
     }
+    debug_printf ("Trying to write showfile\n");
     rc = filelib_write (fli->m_show_file, buf, size);
     if (rc != SR_SUCCESS) {
 	fli->m_do_show = 0;
@@ -1261,32 +1263,36 @@ filelib_open_showfiles (RIP_MANAGER_INFO* rmi)
     g_free (new_dir);
     g_free (new_fnbase);
 
-    /* Open cue file */
-    rc = filelib_open_for_write (rmi, &fli->m_cue_file, fli->m_cue_name);
-    if (rc != SR_SUCCESS) {
-	fli->m_do_show = 0;
-	return rc;
+    /* Open cue file, write header */
+    if (rmi->http_info.content_type != CONTENT_TYPE_OGG) {
+	rc = filelib_open_for_write (rmi, &fli->m_cue_file, fli->m_cue_name);
+	if (rc != SR_SUCCESS) {
+	    fli->m_do_show = 0;
+	    return rc;
+	}
+
+	/* Write cue header here */
+	/* GCS Nov 29, 2007 - As suggested on the forum, the cue file
+	   should use relative path. */
+	basename = mstrrchr (fli->m_show_name, PATH_SLASH);
+	if (basename) {
+	    basename++;
+	} else {
+	    basename = fli->m_show_name;
+	}
+	debug_mprintf (m_("show_name: ") m_S m_(", basename: ") m_S m_("\n"),
+		       fli->m_show_name, basename);
+	rc = msnprintf (mcue_buf, 1024, m_("FILE \"") m_S m_("\" MP3\n"), 
+			basename);
+	rc = string_from_mstring (rmi, cue_buf, 1024, mcue_buf, CODESET_FILESYS);
+	rc = filelib_write (fli->m_cue_file, cue_buf, rc);
+	if (rc != SR_SUCCESS) {
+	    fli->m_do_show = 0;
+	    return rc;
+	}
     }
 
-    /* Write cue header here */
-    /* GCS Nov 29, 2007 - As suggested on the forum, the cue file
-       should use relative path. */
-    basename = mstrrchr (fli->m_show_name, PATH_SLASH);
-    if (basename) {
-	basename++;
-    } else {
-	basename = fli->m_show_name;
-    }
-    debug_mprintf (m_("show_name: ") m_S m_(", basename: ") m_S m_("\n"),
-		   fli->m_show_name, basename);
-    rc = msnprintf (mcue_buf, 1024, m_("FILE \"") m_S m_("\" MP3\n"), 
-		    basename);
-    rc = string_from_mstring (rmi, cue_buf, 1024, mcue_buf, CODESET_FILESYS);
-    rc = filelib_write (fli->m_cue_file, cue_buf, rc);
-    if (rc != SR_SUCCESS) {
-	fli->m_do_show = 0;
-	return rc;
-    }
+    /* Open show file */
     rc = filelib_open_for_write (rmi, &fli->m_show_file, fli->m_show_name);
     if (rc != SR_SUCCESS) {
 	fli->m_do_show = 0;

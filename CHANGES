@@ -1,8 +1,11 @@
 New for 1.64.4
 ------------------------------------
+* Fix problem where corrupt ogg files are being created
 * Robustify metadata parsing for Limecast servers
 * Fix buffer overflow bug with substitution rules (#2492422)
-* Fix file creating bug with "/" in stream name (#2533980)
+* Fix file creation bug when "/" is in stream name (#2533980)
+* Disable creating cue file for ogg streams
+* Fix problem skipping extra track on ogg streams
 
 New for 1.64.3
 ------------------------------------
