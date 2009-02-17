@@ -1,5 +1,6 @@
 New for 1.64.4
 ------------------------------------
+Mon Feb 16 21:27:29 EST 2009
 * Fix problem where corrupt ogg files are being created
 * Robustify metadata parsing for Limecast servers
 * Fix buffer overflow bug with substitution rules (#2492422)

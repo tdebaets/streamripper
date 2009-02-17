@@ -7,11 +7,11 @@ if SUBDIR_LIBMAD
   AM_CPPFLAGS += -I@abs_top_srcdir@/libmad-0.15.1b
 endif
 
-if SUBDIR_GLIB
-  MAYBE_GLIB = glib-2.16.6
-  AM_CPPFLAGS += -I@abs_top_srcdir@/glib-2.16.6/glib
-  AM_CPPFLAGS += -I@abs_top_srcdir@/glib-2.16.6
-endif
+# if SUBDIR_GLIB
+#   MAYBE_GLIB = glib-2.16.6
+#   AM_CPPFLAGS += -I@abs_top_srcdir@/glib-2.16.6/glib
+#   AM_CPPFLAGS += -I@abs_top_srcdir@/glib-2.16.6
+# endif
 
 #if SUBDIR_CDK
 #  MAYBE_CDK = cdk-5.0-20060507

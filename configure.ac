@@ -10,7 +10,7 @@ dnl   AC_CHECK_LIB:   prepends the library to LIBS
 dnl   AC_CHECK_FUNC:  defines a shell variable
 
 AC_PREREQ(2.59)
-AC_INIT(streamripper,1.64.3)
+AC_INIT(streamripper,1.64.4)
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([lib/config.h])
@@ -40,8 +40,8 @@ dnl Configure options
 AC_ARG_WITH(included-libmad,
  [  --with-included-libmad use the libmad library included with streamripper])
 
-AC_ARG_WITH(included-glib,
- [  --with-included-glib use the glib library included with streamripper])
+dnl AC_ARG_WITH(included-glib,
+dnl  [  --with-included-glib use the glib library included with streamripper])
 
 dnl AC_ARG_WITH(included-tre,
 dnl   [  --with-included-tre use the tre library included with streamripper])
@@ -62,18 +62,20 @@ AC_SUBST(CPPFLAGS)
 
 dnl -------- Tests for using included glib ------
 
-use_included_glib=no
-if test "x$with_included_glib" = xyes; then
-  if test ! -d glib-2.16.6; then
-    AC_MSG_ERROR([Using included glib not available from tarball.])
-  fi
-  use_included_glib=yes
-  GLIB_LIBS="glib-2.16.6/glib/.libs/libglib-2.0.a"
-  AC_CONFIG_SUBDIRS(glib-2.16.6)
-else
-  AM_PATH_GLIB_2_0(2.16.0,,AC_MSG_ERROR([Glib 2.16 or greater required]))
-fi
-AM_CONDITIONAL(SUBDIR_GLIB, test "x$with_included_glib" = xyes)
+dnl use_included_glib=no
+dnl if test "x$with_included_glib" = xyes; then
+dnl   if test ! -d glib-2.16.6; then
+dnl     AC_MSG_ERROR([Using included glib not available from tarball.])
+dnl   fi
+dnl   use_included_glib=yes
+dnl   GLIB_LIBS="glib-2.16.6/glib/.libs/libglib-2.0.a"
+dnl   AC_CONFIG_SUBDIRS(glib-2.16.6)
+dnl else
+dnl   AM_PATH_GLIB_2_0(2.16.0,,AC_MSG_ERROR([Glib 2.16 or greater required]))
+dnl fi
+dnl AM_CONDITIONAL(SUBDIR_GLIB, test "x$with_included_glib" = xyes)
+
+AM_PATH_GLIB_2_0(2.16.0,,AC_MSG_ERROR([Glib 2.16 or greater required]))
 
 dnl -------- Tests for using included libmad ------
 LIBMAD=""
@@ -410,7 +412,7 @@ cat <<EOF
 * Streamripper configuration
     Using included MAD library?      $use_included_libmad
 dnl    Using included CDK library?      $use_included_cdk
-    Using included GLIB library?     $use_included_glib
+dnl    Using included GLIB library?     $use_included_glib
     Ogg/vorbis support?              $sr_have_ogg
 EOF
 
