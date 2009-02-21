@@ -1,3 +1,12 @@
+New for 1.64.5
+------------------------------------
+* Change default values for
+  - localhost from "localhost" to "127.0.0.1"
+  - splitpoint padding from 300 ms to 0 ms
+  - metadata and relay codeset (if UTF-8) to ISO-8895-1
+  - id3 codeset to UTF-16
+
+
 New for 1.64.4
 ------------------------------------
 Mon Feb 16 21:27:29 EST 2009

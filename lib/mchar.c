@@ -491,13 +491,18 @@ set_codesets_default (CODESET_OPTIONS* cs_opt)
     if (fromcode) {
 	strncpy (cs_opt->codeset_locale, fromcode, MAX_CODESET_STRING);
 	strncpy (cs_opt->codeset_filesys, fromcode, MAX_CODESET_STRING);
-	strncpy (cs_opt->codeset_id3, fromcode, MAX_CODESET_STRING);
 	strncpy (cs_opt->codeset_metadata, fromcode, MAX_CODESET_STRING);
 	strncpy (cs_opt->codeset_relay, fromcode, MAX_CODESET_STRING);
     }
 
-    /* I could potentially add stuff like forcing filesys to be utf8 
-       (or whatever) for osx here */
+    /* Always use UTF-16 for id3 */
+    strncpy (cs_opt->codeset_id3, "UTF-16", MAX_CODESET_STRING);
+
+    /* Don't use UTF-8 for metadata */
+    if (!strcmp (fromcode, "UTF-8")) {
+	strncpy (cs_opt->codeset_metadata, "ISO-8895-1", MAX_CODESET_STRING);
+	strncpy (cs_opt->codeset_relay, "ISO-8895-1", MAX_CODESET_STRING);
+    }
 }
 
 void

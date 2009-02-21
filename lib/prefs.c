@@ -37,18 +37,24 @@ static GKeyFile *m_key_file = NULL;
 enum PrefsVersion {
     PREFS_VERSION_1_63_BETA_2,
     PREFS_VERSION_1_63_BETA_8,
-    PREFS_VERSION_1_63_4
+    PREFS_VERSION_1_63_4,
+    PREFS_VERSION_1_64_5
 };
 
 static const char* prefs_version_strings[] = {
-    "",		         // None = "1.63-beta-2"
-    "1.63-beta-8",       // Change dropcount from 0 to 1
-    "1.63.4",            // Change overwrite from larger to version
+    "",		         /* None = "1.63-beta-2" */
+    "1.63-beta-8",       /* Change dropcount from 0 to 1 */
+    "1.63.4",            /* Change overwrite from larger to version */
+    "1.64.5",            /* Change localost from localhost to 127.0.0.1
+			    Change id3 codeset to UTF-16
+			    Change metadata and relay codesets from UTF-8 
+			    to iso-8895-1
+			    Change splitpoint padding from 300 to 0. */
     0
 };
 
 /* Preference file versions */
-#define PREFS_VERSION_CURRENT "1.63.4"
+#define PREFS_VERSION_CURRENT "1.64.5"
 
 
 /******************************************************************************
@@ -67,9 +73,9 @@ static void prefs_set_stream_prefs_keyfile (STREAM_PREFS* prefs,
 static void prefs_get_wstreamripper_defaults (WSTREAMRIPPER_PREFS* prefs);
 
 static int prefs_get_string (char* dest, gsize dest_size, char* group, char* key);
-static void prefs_get_int (int *dest, char *group, char *key);
+static int prefs_get_int (int *dest, char *group, char *key);
 static int prefs_get_ulong (u_long *dest, char *group, char *key);
-static void prefs_get_long (long *dest, char *group, char *key);
+static int prefs_get_long (long *dest, char *group, char *key);
 static void prefs_set_string (char* group, char* key, char* value);
 static void prefs_set_integer (char* group, char* key, gint value);
 
@@ -123,8 +129,11 @@ prefs_load (void)
     /* Silently update preferences on version change */
     if (rc) {
 	int rc1;
+	int padding;
 	u_long dropcount;
 	char overwrite_str[128];
+	char codeset_str[MAX_CODESET_STRING];
+	char localhost_str[SR_MAX_PATH];
 
 	debug_printf ("Updating prefs %d\n", 
 		      string_to_prefs_version (global_prefs.version));
@@ -146,6 +155,42 @@ prefs_load (void)
 	    }
 	    /* Fall through */
 	case PREFS_VERSION_1_63_4:
+	    /* Silently update localhost to 127.0.0.1 */
+	    rc1 = prefs_get_string (localhost_str, SR_MAX_PATH,
+				    "wstreamripper", "localhost");
+	    if (!rc1 || !strcmp (overwrite_str, "localhost")) {
+		prefs_set_string ("wstreamripper", "localhost", "127.0.0.1");
+	    }
+
+	    /* Silently update id3 codeset to UTF-16 for all values*/
+	    prefs_set_string ("stream defaults", "codeset_id3", "UTF-16");
+
+	    /* Silently update metadata and relay codeset if UTF-8 */
+	    rc1 = prefs_get_string (codeset_str, MAX_CODESET_STRING, 
+				    "stream defaults", "codeset_metadata");
+	    if (!rc1 || !strcmp (codeset_str, "UTF-8")) {
+		prefs_set_string ("stream defaults", "codeset_metadata",
+				  "ISO-8895-1");
+	    }
+	    rc1 = prefs_get_string (codeset_str, MAX_CODESET_STRING, 
+				    "stream defaults", "codeset_relay");
+	    if (!rc1 || !strcmp (codeset_str, "UTF-8")) {
+		prefs_set_string ("stream defaults", "codeset_relay",
+				  "ISO-8895-1");
+	    }
+	    
+	    /* Silently update padding */
+	    prefs_get_int (&padding, "stream defaults", "xs_padding_1");
+	    if (!rc1 || padding == 300) {
+		prefs_set_integer ("stream defaults", "xs_padding_1", 0);
+	    }
+	    prefs_get_int (&padding, "stream defaults", "xs_padding_2");
+	    if (!rc1 || padding == 300) {
+		prefs_set_integer ("stream defaults", "xs_padding_2", 0);
+	    }
+
+	    /* Fall through */
+	case PREFS_VERSION_1_64_5:
 	default:
 	    /* Prefs version is up to date -- do nothing */
 	    break;
@@ -474,8 +519,8 @@ prefs_get_stream_defaults (STREAM_PREFS* prefs)
     prefs->sp_opt.xs_search_window_1 = 6000;
     prefs->sp_opt.xs_search_window_2 = 6000;
     prefs->sp_opt.xs_offset = 0;
-    prefs->sp_opt.xs_padding_1 = 300;
-    prefs->sp_opt.xs_padding_2 = 300;
+    prefs->sp_opt.xs_padding_1 = 0;   /* Changed from 300 to 0 vers. 1.64.5 */
+    prefs->sp_opt.xs_padding_2 = 0;   /* Changed from 300 to 0 vers. 1.64.5 */
 
     prefs->timeout = 15;
     prefs->dropcount = 1;  /* Changed from 0 to 1 in version 1.63-beta-8 */
@@ -498,7 +543,8 @@ prefs_get_wstreamripper_defaults (WSTREAMRIPPER_PREFS* prefs)
     prefs->m_enabled = 1;
     prefs->oldpos_x = 0;
     prefs->oldpos_y = 0;
-    strcpy (prefs->localhost, "localhost");
+    /* Changed from "localhost" to 127.0.0.1 in version 1.64.5 */
+    strcpy (prefs->localhost, "127.0.0.1");
     prefs->m_add_finished_tracks_to_playlist = 0;
     prefs->m_start_minimized = 0;
     prefs->use_old_playlist_ret = 0;
@@ -567,7 +613,8 @@ prefs_get_ulong (u_long *dest, char *group, char *key)
     return 1;
 }
 
-static void
+/* Return 0 if value not found, 1 if value found */
+static int
 prefs_get_long (long *dest, char *group, char *key)
 {
     GError *error = NULL;
@@ -577,12 +624,14 @@ prefs_get_long (long *dest, char *group, char *key)
     if (error) {
 	/* Key doesn't exist, do nothing */
 	g_error_free (error);
-	return;
+	return 0;
     }
     *dest = (long) value;
+    return 1;
 }
 
-static void
+/* Return 0 if value not found, 1 if value found */
+static int
 prefs_get_int (int *dest, char *group, char *key)
 {
     GError *error = NULL;
@@ -592,9 +641,10 @@ prefs_get_int (int *dest, char *group, char *key)
     if (error) {
 	/* Key doesn't exist, do nothing */
 	g_error_free (error);
-	return;
+	return 0;
     }
     *dest = (u_long) value;
+    return 1;
 }
 
 static void
