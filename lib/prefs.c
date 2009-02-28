@@ -130,7 +130,7 @@ prefs_load (void)
     if (rc) {
 	int rc1;
 	int padding;
-	u_long dropcount;
+	u_long tmp_u_long;
 	char overwrite_str[128];
 	char codeset_str[MAX_CODESET_STRING];
 	char localhost_str[SR_MAX_PATH];
@@ -140,8 +140,8 @@ prefs_load (void)
 	switch (string_to_prefs_version (global_prefs.version)) {
 	case PREFS_VERSION_1_63_BETA_2:
 	    /* Silently update dropcount */
-	    rc1 = prefs_get_ulong (&dropcount, "stream defaults", "dropcount");
-	    if (!rc1 || dropcount == 0) {
+	    rc1 = prefs_get_ulong (&tmp_u_long, "stream defaults", "dropcount");
+	    if (!rc1 || tmp_u_long == 0) {
 		prefs_set_integer ("stream defaults", "dropcount", 1);
 	    }
 	    /* Fall through */
@@ -188,6 +188,9 @@ prefs_load (void)
 	    if (!rc1 || padding == 300) {
 		prefs_set_integer ("stream defaults", "xs_padding_2", 0);
 	    }
+	    
+	    /* Silently update keep_incomplete */
+	    prefs_set_integer ("stream defaults", "keep_incomplete", 1);
 
 	    /* Fall through */
 	case PREFS_VERSION_1_64_5:
