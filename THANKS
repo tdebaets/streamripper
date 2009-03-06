@@ -4,6 +4,8 @@ THANKS (1.64)
 ---------------------
 "Stefan Cornelius" <vuln a@t secunia.com> at Secunia Research for 
 finding buffer overflows.
+"bl4" <bl4 a@t users.sourceforge.net> parse rules patch for artists 
+that contain "-" in their name
 
 THANKS (1.62 & 1.63)
 ---------------------
