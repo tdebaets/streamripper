@@ -69,7 +69,7 @@ s/^[[:space:]]*-[[:space:]]*//
 # This is the normal parsing rule: "Artist - Title"
 # The trailing "A1" means that the artist (A) matches subpattern 1
 # The trailing "T2" means that the title (T) matches subpattern 2
-m/^[[:space:]]*([^-]*[^-[:space:]])[[:space:]]*-[[:space:]]*(.*)[[:space:]]*$/A1T2
+m/^[[:space:]]*(.*?[^-[:space:]])[[:space:]]+-[[:space:]]+(.*)[[:space:]]*$/A1T2m/^[[:space:]]*([^-]*[^-[:space:]])[[:space:]]*-[[:space:]]*(.*)[[:space:]]*$/A1T2
 
 # This is slightly different parsing rule: "Artist, Title"
 ## m/^[[:space:]]*([^,]*[^,[:space:]])[[:space:]]*,[[:space:]]*(.*)[[:space:]]*$/A1T2

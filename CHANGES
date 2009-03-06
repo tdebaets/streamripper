@@ -6,6 +6,7 @@ New for 1.64.5
   - metadata and relay codeset (if UTF-8) to ISO-8895-1
   - id3 codeset to UTF-16
   - "keep files in incomplete" from false to true
+* Fix parse rules to properly tag artists with "-" in their name (#540543)
 
 New for 1.64.4
 ------------------------------------
