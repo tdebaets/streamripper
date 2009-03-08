@@ -7,6 +7,7 @@ New for 1.64.5
   - id3 codeset to UTF-16
   - "keep files in incomplete" from false to true
 * Fix parse rules to properly tag artists with "-" in their name (#540543)
+* Fix bitrate & metadata reporting in console (#1957248)
 
 New for 1.64.4
 ------------------------------------

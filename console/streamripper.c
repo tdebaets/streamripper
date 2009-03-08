@@ -209,18 +209,20 @@ print_status (RIP_MANAGER_INFO *rmi)
 	}
 			
     }
-    if (!printed_fullinfo)
-    {
+    if (!printed_fullinfo) {
 	print_to_console ("stream: %s\n"
-			  "server name: %s\n"
-			  "bitrate: %d\n"
-			  "meta interval: %d\n",
+			  "server name: %s\n",
 			  rmi->streamname,
-			  rmi->server_name,
-			  rmi->bitrate,
-			  rmi->meta_interval);
-	if(GET_MAKE_RELAY(prefs->flags))
-	{
+			  rmi->server_name);
+	if (rmi->http_bitrate > 0) {
+	    print_to_console ("declared bitrate: %d\n",
+			      rmi->http_bitrate);
+	}
+	if (rmi->meta_interval != NO_META_INTERVAL) {
+	    print_to_console ("meta interval: %d\n",
+			      rmi->meta_interval);
+	}
+	if (GET_MAKE_RELAY(prefs->flags)) {
 	    print_to_console ("relay port: %d\n"
 			      "[%14s]\r",
 			      prefs->relay_port,
