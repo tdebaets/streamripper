@@ -55,13 +55,13 @@ static Parse_Rule m_default_rule_list[] = {
       "[[:space:]]*-?[[:space:]]*mp3pro$",
       ""
     },
-/*     { PARSERULE_CMD_MATCH,  */
-/*       PARSERULE_ICASE, */
-/*       1, 2, 0, 0, 0, */
-/*       0, */
-/*       "^[[:space:]]*(.*?[^-[:space:]])[[:space:]]+-[[:space:]]+(.*)[[:space:]]*$", */
-/*       "" */
-/*     }, */
+    { PARSERULE_CMD_MATCH,
+      PARSERULE_ICASE,
+      1, 2, 0, 0, 0,
+      0,
+      "^[[:space:]]*(.*?[^-[:space:]])[[:space:]]+-[[:space:]]+(.*)[[:space:]]*$",
+      ""
+    },
     { PARSERULE_CMD_MATCH,
       PARSERULE_ICASE,
       1, 2, 0, 0, 0,
