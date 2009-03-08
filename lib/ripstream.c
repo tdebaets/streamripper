@@ -443,7 +443,7 @@ ripstream_rip_mp3 (RIP_MANAGER_INFO* rmi)
 	read_external (rmi, rmi->ep, &rmi->current_track);
     } else {
 	/* Otherwise, apply parse rules to raw metadata */
-	if (rmi->current_track.raw_metadata[0]) {
+	if (rmi->current_track.have_track_info) {
 	    parse_metadata (rmi, &rmi->current_track);
 	} else {
 	    clear_track_info (&rmi->current_track);
@@ -1099,6 +1099,7 @@ get_stream_data (RIP_MANAGER_INFO* rmi, char *data_buf, char *track_buf)
     char newtrack[MAX_TRACK_LEN];
 
     *track_buf = 0;
+    rmi->current_track.have_track_info = 0;
     ret = ripstream_recvall (rmi, data_buf, rmi->getbuffer_size);
     if (ret <= 0)
 	return ret;
@@ -1115,26 +1116,18 @@ get_stream_data (RIP_MANAGER_INFO* rmi, char *data_buf, char *track_buf)
 	debug_printf ("Got invalid metadata: %d\n",c);
 	return SR_ERROR_INVALID_METADATA;
     } else if (c == 0) {
-	// around christmas time 2001 someone noticed that 1.8.7 shoutcast
-	// none-meta servers now just send a '0' if they have no meta data
-	// anyway, bassicly if the first meta capture is null then we assume
-	// that the stream does not have metadata
+	/* We didn't get any metadata this time. */
 	return SR_SUCCESS;
     } else {
+	/* We got metadata this time. */
 	ret = get_track_from_metadata (rmi, c * 16, newtrack);
 	if (ret != SR_SUCCESS) {
 	    debug_printf("get_trackname had a bad return %d\n", ret);
 	    return ret;
 	}
 
-	/* WolfFM is a station that does not stream meta-data, 
-	   but is in that format anyway.  StreamTitle='', so we need 
-	   to pretend this has no meta data. */
-	if (*newtrack == '\0') {
-	    return SR_SUCCESS;
-	}
-	/* This is the case where we got metadata. */
 	strncpy(track_buf, newtrack, MAX_TRACK_LEN);
+	rmi->current_track.have_track_info = 1;
     }
     return SR_SUCCESS;
 }
@@ -1185,22 +1178,10 @@ get_track_from_metadata (RIP_MANAGER_INFO* rmi, int size, char *newtrack)
           StreamTitle=' '
     */
 
-#if defined (commentout)
-    /* This is the old code which doesn't work for Limecast */
-    if (strstr (namebuf, "StreamTitle='") == NULL) {
-	free (namebuf);
-	return SR_ERROR_NO_TRACK_INFO;
-    }
-    subnstr_until (namebuf+strlen("StreamTitle='"), "';", newtrack, MAX_TRACK_LEN);
-    trim(newtrack);
-    free(namebuf);
-#endif
-
-    /* GCS FIX: This assumes ASCII-compatible charset for quote & semicolon.
+    /* GCS NOTE: This assumes ASCII-compatible charset for quote & semicolon.
        Shoutcast protocol has no specification on this... */
     if (!g_str_has_prefix (namebuf, "StreamTitle='")) {
 	free (namebuf);
-	// return SR_ERROR_NO_TRACK_INFO;
 	return SR_SUCCESS;
     }
     gnamebuf = g_strdup (namebuf+strlen("StreamTitle='"));

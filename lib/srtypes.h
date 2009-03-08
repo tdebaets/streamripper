@@ -546,8 +546,10 @@ struct RIP_MANAGER_INFOst
     //void (*m_status_callback)(RIP_MANAGER_INFO* rmi, int message, void *data);
     RIP_MANAGER_CALLBACK status_callback;
 
-    /* Bytes ripped is stored to send to callback */
+    /* Bytes ripped is stored to send to callback, also used to decide 
+       when to stop based on bytes ripped. */
     u_long bytes_ripped;
+    u_long megabytes_ripped;
 
     /* Should we write a file for this track? */
     BOOL write_data;

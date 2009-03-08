@@ -3,11 +3,14 @@ New for 1.64.5
 * Change default values for
   - localhost from "localhost" to "127.0.0.1"
   - splitpoint padding from 300 ms to 0 ms
-  - metadata and relay codeset (if UTF-8) to ISO-8895-1
+  - metadata and relay codeset (if UTF-8) to ISO-8859-1
   - id3 codeset to UTF-16
   - "keep files in incomplete" from false to true
 * Fix parse rules to properly tag artists with "-" in their name (#540543)
 * Fix bitrate & metadata reporting in console (#1957248)
+* Fix integer overflow on bytes read (#1261305)
+* Option for stopping based on megabytes ripped now uses MiB instead of MB
+* Support splitting based on empty StreamTitle= strings 2648664
 
 New for 1.64.4
 ------------------------------------

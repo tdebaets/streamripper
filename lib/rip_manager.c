@@ -122,6 +122,7 @@ rip_manager_start (RIP_MANAGER_INFO **rmip,
 
     rmi->status_callback = status_callback;
     rmi->bytes_ripped = 0;
+    rmi->megabytes_ripped = 0;
     rmi->write_data = 1;
 
     /* Initialize the parsing rules */
@@ -301,6 +302,10 @@ rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
 
     rmi->filesize += size;	/* This is used by the GUI */
     rmi->bytes_ripped += size;	/* This is used to determine when to quit */
+    while (rmi->bytes_ripped >= 1048576) {
+	rmi->bytes_ripped -= 1048576;
+	rmi->megabytes_ripped++;
+    }
 
     return SR_SUCCESS;
 }
@@ -372,8 +377,8 @@ ripthread (void *thread_arg)
 	if (!rmi->started) {
 	    break;
 	}
-	else if (rmi->bytes_ripped/1000000 >= (rmi->prefs->maxMB_rip_size) &&
-		GET_CHECK_MAX_BYTES (rmi->prefs->flags)) {
+	else if (rmi->megabytes_ripped >= rmi->prefs->maxMB_rip_size 
+		 && GET_CHECK_MAX_BYTES (rmi->prefs->flags)) {
 	    /* GCS Aug 23, 2003: bytes_ripped can still overflow */
 	    socklib_close (&rmi->stream_sock);
 	    destroy_subsystems (rmi);

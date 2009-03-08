@@ -460,16 +460,11 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
     /* Has any m/.../x rule matched? */
     BOOL exclude_track_matched = FALSE;
 
-    ti->have_track_info = 0;
     ti->artist[0] = 0;
     ti->title[0] = 0;
     ti->album[0] = 0;
     ti->composed_metadata[0] = 0;
     ti->save_track = TRUE;
-    if (!ti->raw_metadata[0]) {
-	debug_printf ("Couldn't parse because no meta data\n");
-	return;
-    }
 
     /* Loop through rules, if we find a matching rule, then use it */
     /* For now, only default rules supported with ascii 
