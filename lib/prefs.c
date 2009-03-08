@@ -48,7 +48,7 @@ static const char* prefs_version_strings[] = {
     "1.64.5",            /* Change localost from localhost to 127.0.0.1
 			    Change id3 codeset to UTF-16
 			    Change metadata and relay codesets from UTF-8 
-			    to iso-8895-1
+			    to iso-8859-1
 			    Change splitpoint padding from 300 to 0. */
     0
 };
@@ -170,13 +170,13 @@ prefs_load (void)
 				    "stream defaults", "codeset_metadata");
 	    if (!rc1 || !strcmp (codeset_str, "UTF-8")) {
 		prefs_set_string ("stream defaults", "codeset_metadata",
-				  "ISO-8895-1");
+				  "ISO-8859-1");
 	    }
 	    rc1 = prefs_get_string (codeset_str, MAX_CODESET_STRING, 
 				    "stream defaults", "codeset_relay");
 	    if (!rc1 || !strcmp (codeset_str, "UTF-8")) {
 		prefs_set_string ("stream defaults", "codeset_relay",
-				  "ISO-8895-1");
+				  "ISO-8859-1");
 	    }
 	    
 	    /* Silently update padding */
