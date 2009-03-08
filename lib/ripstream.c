@@ -1169,7 +1169,9 @@ get_track_from_metadata (RIP_MANAGER_INFO* rmi, int size, char *newtrack)
     }
     debug_printf ("\n");
     for (i=0; i<size; i++) {
-	debug_printf ("%2c ",namebuf[i]);
+	if (namebuf[i] != 0) {
+	    debug_printf ("%2c ",namebuf[i]);
+	}
 	if (i % 20 == 19) {
 	    debug_printf ("\n");
 	}
