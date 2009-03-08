@@ -500,8 +500,8 @@ set_codesets_default (CODESET_OPTIONS* cs_opt)
 
     /* Don't use UTF-8 for metadata */
     if (!strcmp (fromcode, "UTF-8")) {
-	strncpy (cs_opt->codeset_metadata, "ISO-8895-1", MAX_CODESET_STRING);
-	strncpy (cs_opt->codeset_relay, "ISO-8895-1", MAX_CODESET_STRING);
+	strncpy (cs_opt->codeset_metadata, "ISO-8859-1", MAX_CODESET_STRING);
+	strncpy (cs_opt->codeset_relay, "ISO-8859-1", MAX_CODESET_STRING);
     }
 }
 
