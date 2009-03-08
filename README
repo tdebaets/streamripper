@@ -131,7 +131,7 @@ OPTIONS
        use this option to tell streamripper what you want to do. There are
        three choices: always, never, and larger. If you dont include any of
        the -o options on the command line, the default is "-o larger" for
-       version through 1.63.4, and "-o version" starting with 1.64.2.
+       version through 1.63.4, and "-o version" starting with 1.64.5.
 
        If you use the "-o never" option, this tells streamripper to never
        overwrite any existing file in the complete directory.
@@ -180,7 +180,8 @@ OPTIONS
        -M megabytes
            Stop ripping after this many megabytes
        Use this flag to tell streamripper to rip a certain number of
-       megabytes, then stop.
+       megabytes, then stop. As of version 1.64.5, megabytes are defined as
+       2^20 bytes.
 
        -q [start]
            Add sequence number to output filenames
@@ -518,11 +519,11 @@ RESOURCES
            http://www.icecast.org
 
 COPYING
-       Copyright © 2000-2002 Jon Clegg, © 2004-2008 Gregory C. Sharp. Free use
+       Copyright  2000-2002 Jon Clegg,  2004-2009 Gregory C. Sharp. Free use
        of this software is granted under the terms of the GNU General Public
        License (GPL).
 
 
 
 
-                                  12/22/2008                   STREAMRIPPER(1)
+                                  03/08/2009                   STREAMRIPPER(1)

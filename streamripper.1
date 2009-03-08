@@ -1,11 +1,11 @@
 .\"     Title: streamripper
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 12/22/2008
+.\"      Date: 03/08/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "STREAMRIPPER" "1" "12/22/2008" "" ""
+.TH "STREAMRIPPER" "1" "03/08/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -121,7 +121,7 @@ The default mode of operation is to create one file for each track\&. But someti
 .RS 4
 Overwrite tracks in complete directory
 .RE
-When streamripper rips tracks they are put into the incomplete directory until they are finished\&. Normally, they are then moved into the complete directory\&. However, when the track is already there, can use this option to tell streamripper what you want to do\&. There are three choices: always, never, and larger\&. If you don\'t include any of the \-o options on the command line, the default is "\-o larger" for version through 1\&.63\&.4, and "\-o version" starting with 1\&.64\&.2\&.
+When streamripper rips tracks they are put into the incomplete directory until they are finished\&. Normally, they are then moved into the complete directory\&. However, when the track is already there, can use this option to tell streamripper what you want to do\&. There are three choices: always, never, and larger\&. If you don\'t include any of the \-o options on the command line, the default is "\-o larger" for version through 1\&.63\&.4, and "\-o version" starting with 1\&.64\&.5\&.
 .sp
 If you use the "\-o never" option, this tells streamripper to never overwrite any existing file in the complete directory\&.
 .sp
@@ -161,7 +161,7 @@ Usually, streamripper runs until it crashes\&. Or rather, I meant to say that it
 .RS 4
 Stop ripping after this many megabytes
 .RE
-Use this flag to tell streamripper to rip a certain number of megabytes, then stop\&.
+Use this flag to tell streamripper to rip a certain number of megabytes, then stop\&. As of version 1\&.64\&.5, megabytes are defined as 2^20 bytes\&.
 .PP
 \-q [start]
 .RS 4
@@ -547,5 +547,5 @@ Icecast
 http://www\&.icecast\&.org
 .RE
 .SH "COPYING"
-Copyright \(co 2000\-2002 Jon Clegg, \(co 2004\-2008 Gregory C\&. Sharp\&. Free use of this software is granted under the terms of the GNU General Public License (GPL)\&.
+Copyright \(co 2000\-2002 Jon Clegg, \(co 2004\-2009 Gregory C\&. Sharp\&. Free use of this software is granted under the terms of the GNU General Public License (GPL)\&.
 .sp
