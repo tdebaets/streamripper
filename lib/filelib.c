@@ -81,6 +81,7 @@ static void fill_date_buf (RIP_MANAGER_INFO* rmi, gchar* datebuf,
 static error_code filelib_open_showfiles (RIP_MANAGER_INFO* rmi);
 static void move_file (RIP_MANAGER_INFO* rmi, gchar* new_filename, gchar* old_filename);
 static gchar* replace_invalid_chars (gchar *str);
+static void remove_trailing_periods (gchar *str);
 static BOOL new_file_is_better (RIP_MANAGER_INFO* rmi, gchar *oldfile, gchar *newfile);
 static void delete_file (RIP_MANAGER_INFO* rmi, gchar* filename);
 static void truncate_file (RIP_MANAGER_INFO* rmi, gchar* filename);
@@ -148,6 +149,11 @@ filelib_init (RIP_MANAGER_INFO* rmi,
     
     debug_printf ("Replacing invalid chars in stripped_icy_name\n");
     replace_invalid_chars (fli->m_stripped_icy_name);
+    debug_printf ("  %s\n", fli->m_stripped_icy_name);
+
+    debug_printf ("Removing trailing periods\n");
+    remove_trailing_periods (fli->m_stripped_icy_name);
+    debug_printf ("  %s\n", fli->m_stripped_icy_name);
 
     switch (content_type) {
     case CONTENT_TYPE_MP3:
@@ -1376,7 +1382,6 @@ get_next_sequence_number (RIP_MANAGER_INFO* rmi, gchar* fn_base)
     return seq;
 }
 
-/* GCS FIX: This should only strip "." at beginning of path */
 static gchar* 
 replace_invalid_chars (gchar *str)
 {
@@ -1411,4 +1416,13 @@ replace_invalid_chars (gchar *str)
     *newstr = '\0';
 
     return str;
+}
+
+static void
+remove_trailing_periods (gchar *str)
+{
+    gchar* s = str + strlen (str);
+    while (--s >= str && *s == '.') {
+	*s = 0;
+    }
 }
