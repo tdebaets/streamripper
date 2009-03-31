@@ -19,9 +19,9 @@ void sr_set_locale (void);
 void set_codesets_default (CODESET_OPTIONS* cs_opt);
 void register_codesets (RIP_MANAGER_INFO* rmi, CODESET_OPTIONS* cs_opt);
 
-int mstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen, 
+int gstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen, 
 			 char* c, int codeset_type);
-int string_from_mstring (RIP_MANAGER_INFO* rmi, char* c, int clen, 
+int string_from_gstring (RIP_MANAGER_INFO* rmi, char* c, int clen, 
 			 mchar* m, int codeset_type);
 
 mchar* mstrdup (mchar* src);

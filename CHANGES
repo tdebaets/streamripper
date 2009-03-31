@@ -1,5 +1,6 @@
 New for 1.64.6
 ------------------------------------
+* Fix bug which creates corrupted id3v2 tags
 * Remove trailing periods for stream name
 
 New for 1.64.5

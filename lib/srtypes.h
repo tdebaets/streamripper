@@ -196,9 +196,14 @@ typedef struct CODESET_OPTIONSst
 #define CODESET_METADATA      5
 #define CODESET_RELAY         6
 
-/* 
- * Wide character support
- */
+/* The Lstring is not null-terminated, and can belong to any locale */
+struct lstring {
+    gsize num_bytes;
+    gchar* data;
+};
+typedef struct lstring Lstring;
+
+/* The mchar is a legacy data structure, and should be removed */
 typedef gchar mchar;
 
 /* 

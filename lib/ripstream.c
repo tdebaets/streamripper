@@ -671,19 +671,19 @@ end_track_mp3 (RIP_MANAGER_INFO* rmi, u_long pos1, u_long pos2, TRACK_INFO* ti)
 
     /* Add id3v1 if requested */
     if (GET_ADD_ID3V1(rmi->prefs->flags)) {
-	ID3V1Tag id3;
-	memset (&id3, '\000',sizeof(id3));
-	strncpy (id3.tag, "TAG", strlen("TAG"));
-	string_from_mstring (rmi, id3.artist, sizeof(id3.artist), 
+	ID3V1Tag id3v1;
+	memset (&id3v1, '\000',sizeof(id3v1));
+	strncpy (id3v1.tag, "TAG", strlen("TAG"));
+	string_from_gstring (rmi, id3v1.artist, sizeof(id3v1.artist),
 			     ti->artist, CODESET_ID3);
-	string_from_mstring (rmi, id3.songtitle, sizeof(id3.songtitle), 
+	string_from_gstring (rmi, id3v1.songtitle, sizeof(id3v1.songtitle),
 			     ti->title, CODESET_ID3);
-	string_from_mstring (rmi, id3.album, sizeof(id3.album),
+	string_from_gstring (rmi, id3v1.album, sizeof(id3v1.album),
 			     ti->album, CODESET_ID3);
-	string_from_mstring (rmi, id3.year, sizeof(id3.year),
+	string_from_gstring (rmi, id3v1.year, sizeof(id3v1.year),
 			     ti->year, CODESET_ID3);
-	id3.genre = (char) 0xFF; // see http://www.id3.org/id3v2.3.0.html#secA
-	ret = rip_manager_put_data (rmi, (char *)&id3, sizeof(id3));
+	id3v1.genre = (char) 0xFF; // see http://www.id3.org/id3v2.3.0.html#secA
+	ret = rip_manager_put_data (rmi, (char *)&id3v1, sizeof(id3v1));
 	if (ret != SR_SUCCESS) {
 	    goto BAIL;
 	}
@@ -722,7 +722,7 @@ write_id3v2_frame(RIP_MANAGER_INFO* rmi, char* tag_name, mchar* data,
     memset(&id3v2frame, '\000', sizeof(id3v2frame));
     strncpy(id3v2frame.id, tag_name, 4);
     id3v2frame.pad[2] = charset;
-    rc = string_from_mstring (rmi, bigbuf, HEADER_SIZE, data, CODESET_ID3);
+    rc = string_from_gstring (rmi, bigbuf, HEADER_SIZE, data, CODESET_ID3);
     framesize = htonl (rc+1);
     ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.id), 4);
     if (ret != SR_SUCCESS) return ret;
@@ -793,16 +793,17 @@ start_track_mp3 (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 
         /* Encoded by */
         ret = write_id3v2_frame(rmi, "TENC",
-				m_("Ripped with Streamripper"), 0, &sent);
+				m_("Ripped with Streamripper"), 
+				id3_charset, &sent);
 	
         /* Album */
-        ret = write_id3v2_frame(rmi, "TALB", ti->album, 0, &sent);
+        ret = write_id3v2_frame(rmi, "TALB", ti->album, id3_charset, &sent);
 
         /* Track */
-        ret = write_id3v2_frame(rmi, "TRCK", ti->track_a, 0, &sent);
+        ret = write_id3v2_frame(rmi, "TRCK", ti->track_a, id3_charset, &sent);
 
         /* Year */
-        ret = write_id3v2_frame(rmi, "TYER", ti->year, 0, &sent);
+        ret = write_id3v2_frame(rmi, "TYER", ti->year, id3_charset, &sent);
 
 	/* Zero out padding */
 	memset (bigbuf, '\000', sizeof(bigbuf));

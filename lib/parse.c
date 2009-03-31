@@ -386,7 +386,7 @@ init_metadata_parser (RIP_MANAGER_INFO* rmi, char* rules_file)
 
 	/* Compile the rule */
 	debug_printf ("Compiling the rule\n");
-	mstring_from_string (rmi, w_match_buf, MAX_RULE_SIZE, match_buf, 
+	gstring_from_string (rmi, w_match_buf, MAX_RULE_SIZE, match_buf, 
 			     CODESET_UTF8);
 	if (!compile_rule(&rmi->parse_rules[ri], w_match_buf)) {
 	    printf ("Warning: malformed regular expression:\n%s\n", 
@@ -401,7 +401,7 @@ init_metadata_parser (RIP_MANAGER_INFO* rmi, char* rules_file)
 	debug_printf ("Copying rule string (2)\n");
 	if (rmi->parse_rules[ri].cmd == PARSERULE_CMD_SUBST) {
 	    debug_printf ("Copying rule string (3)\n");
-	    mstring_from_string (rmi, w_subst_buf, MAX_RULE_SIZE, subst_buf, 
+	    gstring_from_string (rmi, w_subst_buf, MAX_RULE_SIZE, subst_buf, 
 				 CODESET_UTF8);
 	    debug_printf ("Copying rule string (4)\n");
 	    rmi->parse_rules[ri].subst = mstrdup(w_subst_buf);
@@ -435,7 +435,7 @@ compose_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 	debug_printf ("No track info when composing relay metadata\n");
     }
     debug_printf ("Converting relay string to char\n");
-    num_bytes = string_from_mstring (rmi, &ti->composed_metadata[1], 
+    num_bytes = string_from_gstring (rmi, &ti->composed_metadata[1], 
 				     MAX_METADATA_LEN, 
 				     w_composed_metadata, 
 				     CODESET_RELAY);
@@ -470,7 +470,7 @@ parse_metadata (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
     /* For now, only default rules supported with ascii 
        regular expressions. */
     debug_printf ("Converting query string to wide\n");
-    mstring_from_string (rmi, query_string, MAX_TRACK_LEN, 
+    gstring_from_string (rmi, query_string, MAX_TRACK_LEN, 
 			 ti->raw_metadata, CODESET_METADATA);
     for (rulep = rmi->parse_rules; rulep->cmd; rulep++) {
 #if !defined (USE_GLIB_REGEX)

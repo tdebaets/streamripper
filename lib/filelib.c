@@ -132,16 +132,16 @@ filelib_init (RIP_MANAGER_INFO* rmi,
 		  showfile_pattern ? showfile_pattern : "");
     
     debug_printf ("converting output_directory\n");
-    mstring_from_string (rmi, tmp_output_directory, SR_MAX_PATH, 
+    gstring_from_string (rmi, tmp_output_directory, SR_MAX_PATH, 
 			 output_directory, CODESET_LOCALE);
     debug_printf ("converting output_pattern\n");
-    mstring_from_string (rmi, tmp_output_pattern, SR_MAX_PATH, 
+    gstring_from_string (rmi, tmp_output_pattern, SR_MAX_PATH, 
 			 output_pattern, CODESET_LOCALE);
     debug_printf ("converting showfile_pattern\n");
-    mstring_from_string (rmi, tmp_showfile_pattern, SR_MAX_PATH, 
+    gstring_from_string (rmi, tmp_showfile_pattern, SR_MAX_PATH, 
 			 showfile_pattern, CODESET_LOCALE);
     debug_printf ("converting icy_name\n");
-    mstring_from_string (rmi, fli->m_icy_name, SR_MAX_PATH, icy_name, 
+    gstring_from_string (rmi, fli->m_icy_name, SR_MAX_PATH, icy_name, 
 			 CODESET_METADATA);
     debug_printf ("Converted output directory: len=%d\n", 
 		  mstrlen (tmp_output_directory));
@@ -284,10 +284,10 @@ filelib_write_cue (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti, int secs)
     rc = snprintf (buf2, MAX_TRACK_LEN, "  TRACK %02d AUDIO\n", 
 		   fli->m_track_no++);
     filelib_write (fli->m_cue_file, buf2, rc);
-    string_from_mstring (rmi, buf1, MAX_TRACK_LEN, ti->title, CODESET_ID3);
+    string_from_gstring (rmi, buf1, MAX_TRACK_LEN, ti->title, CODESET_ID3);
     rc = snprintf (buf2, MAX_TRACK_LEN, "    TITLE \"%s\"\n", buf1);
     filelib_write (fli->m_cue_file, buf2, rc);
-    string_from_mstring (rmi, buf1, MAX_TRACK_LEN, ti->artist, CODESET_ID3);
+    string_from_gstring (rmi, buf1, MAX_TRACK_LEN, ti->artist, CODESET_ID3);
     rc = snprintf (buf2, MAX_TRACK_LEN, "    PERFORMER \"%s\"\n", buf1);
     filelib_write (fli->m_cue_file, buf2, rc);
     rc = snprintf (buf2, MAX_TRACK_LEN, "    INDEX 01 %02d:%02d:00\n", 
@@ -411,7 +411,7 @@ static error_code
 mkdir_if_needed (RIP_MANAGER_INFO* rmi, gchar *str)
 {
     char s[SR_MAX_PATH];
-    string_from_mstring (rmi, s, SR_MAX_PATH, str, CODESET_FILESYS);
+    string_from_gstring (rmi, s, SR_MAX_PATH, str, CODESET_FILESYS);
     debug_printf ("mkdir = %s -> %s\n", str, s);
 #if WIN32
     mkdir (s);
@@ -683,7 +683,7 @@ fill_date_buf (RIP_MANAGER_INFO* rmi, gchar* datebuf, int datebuf_len)
     char tmp[DATEBUF_LEN];
     time_t now = time(NULL);
     strftime (tmp, datebuf_len, "%Y_%m_%d_%H_%M_%S", localtime(&now));
-    mstring_from_string (rmi, datebuf, DATEBUF_LEN, tmp, CODESET_FILESYS);
+    gstring_from_string (rmi, datebuf, DATEBUF_LEN, tmp, CODESET_FILESYS);
 }
 
 static error_code
@@ -734,7 +734,7 @@ sr_getcwd (RIP_MANAGER_INFO* rmi, gchar* dirbuf)
 	return SR_ERROR_DIR_PATH_TOO_LONG;
     }
 #endif
-    mstring_from_string (rmi, dirbuf, SR_MAX_PATH, db, CODESET_FILESYS);
+    gstring_from_string (rmi, dirbuf, SR_MAX_PATH, db, CODESET_FILESYS);
     return SR_SUCCESS;
 }
 
@@ -765,7 +765,7 @@ file_exists (RIP_MANAGER_INFO* rmi, gchar *filename)
 {
     FHANDLE f;
     char fn[SR_MAX_PATH];
-    string_from_mstring (rmi, fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    string_from_gstring (rmi, fn, SR_MAX_PATH, filename, CODESET_FILESYS);
 #if defined (WIN32)
     f = CreateFile (fn, GENERIC_READ,
 	    FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
@@ -943,7 +943,7 @@ get_file_size (RIP_MANAGER_INFO* rmi, gchar *filename)
     long len;
     char fn[SR_MAX_PATH];
 
-    string_from_mstring (rmi, fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    string_from_gstring (rmi, fn, SR_MAX_PATH, filename, CODESET_FILESYS);
     fp = fopen (fn, "r");
     if (!fp) return 0;
 
@@ -1012,7 +1012,7 @@ static void
 truncate_file (RIP_MANAGER_INFO* rmi, gchar* filename)
 {
     char fn[SR_MAX_PATH];
-    string_from_mstring (rmi, fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    string_from_gstring (rmi, fn, SR_MAX_PATH, filename, CODESET_FILESYS);
     debug_printf ("Trying to truncate file: %s\n", fn);
 #if defined WIN32
     CloseHandle (CreateFile(fn, GENERIC_WRITE, 
@@ -1030,8 +1030,8 @@ move_file (RIP_MANAGER_INFO* rmi, gchar* new_filename, gchar* old_filename)
 {
     char old_fn[SR_MAX_PATH];
     char new_fn[SR_MAX_PATH];
-    string_from_mstring (rmi, old_fn, SR_MAX_PATH, old_filename, CODESET_FILESYS);
-    string_from_mstring (rmi, new_fn, SR_MAX_PATH, new_filename, CODESET_FILESYS);
+    string_from_gstring (rmi, old_fn, SR_MAX_PATH, old_filename, CODESET_FILESYS);
+    string_from_gstring (rmi, new_fn, SR_MAX_PATH, new_filename, CODESET_FILESYS);
 #if defined WIN32
     MoveFile(old_fn, new_fn);
 #else
@@ -1043,7 +1043,7 @@ static void
 delete_file (RIP_MANAGER_INFO* rmi, gchar* filename)
 {
     char fn[SR_MAX_PATH];
-    string_from_mstring (rmi, fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    string_from_gstring (rmi, fn, SR_MAX_PATH, filename, CODESET_FILESYS);
 #if defined WIN32
     DeleteFile (fn);
 #else
@@ -1055,7 +1055,7 @@ static error_code
 filelib_open_for_write (RIP_MANAGER_INFO* rmi, FHANDLE* fp, gchar* filename)
 {
     char fn[SR_MAX_PATH];
-    string_from_mstring (rmi, fn, SR_MAX_PATH, filename, CODESET_FILESYS);
+    string_from_gstring (rmi, fn, SR_MAX_PATH, filename, CODESET_FILESYS);
     debug_printf ("Trying to create file: %s\n", fn);
 #if WIN32
     *fp = CreateFile (fn, GENERIC_WRITE,         // open for reading 
@@ -1208,7 +1208,7 @@ filelib_adjust_cuefile (RIP_MANAGER_INFO* rmi, gchar* new_show_name,
     rc = msnprintf (mcue_buf, 1024, m_("FILE \"") m_S m_("\" MP3\n"), 
 		    show_fnbase);
     g_free (show_fnbase);
-    rc = string_from_mstring (rmi, cue_buf, 1024, mcue_buf, CODESET_FILESYS);
+    rc = string_from_gstring (rmi, cue_buf, 1024, mcue_buf, CODESET_FILESYS);
     fwrite (cue_buf, 1, rc, fp_out);
 
     /* Skip line in input file */
@@ -1290,7 +1290,7 @@ filelib_open_showfiles (RIP_MANAGER_INFO* rmi)
 		       fli->m_show_name, basename);
 	rc = msnprintf (mcue_buf, 1024, m_("FILE \"") m_S m_("\" MP3\n"), 
 			basename);
-	rc = string_from_mstring (rmi, cue_buf, 1024, mcue_buf, CODESET_FILESYS);
+	rc = string_from_gstring (rmi, cue_buf, 1024, mcue_buf, CODESET_FILESYS);
 	rc = filelib_write (fli->m_cue_file, cue_buf, rc);
 	if (rc != SR_SUCCESS) {
 	    fli->m_do_show = 0;
@@ -1360,8 +1360,8 @@ get_next_sequence_number (RIP_MANAGER_INFO* rmi, gchar* fn_base)
     fn_prefix[0] = 0;
     mstrcpy (fn_prefix, &fn_base[edi+1]);
 
-    rc = string_from_mstring (rmi, dname, SR_MAX_PATH, dir_name, CODESET_FILESYS);
-    rc = string_from_mstring (rmi, fnp, SR_MAX_PATH, fn_prefix, CODESET_FILESYS);
+    rc = string_from_gstring (rmi, dname, SR_MAX_PATH, dir_name, CODESET_FILESYS);
+    rc = string_from_gstring (rmi, fnp, SR_MAX_PATH, fn_prefix, CODESET_FILESYS);
 
     /* Look through directory for a filenames that match prefix */
     if ((dp = opendir (dname)) == 0) {

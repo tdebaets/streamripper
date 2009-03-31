@@ -337,7 +337,7 @@ vorbis_process (RIP_MANAGER_INFO* rmi, stream_processor *stream,
 			    || !strcmp(inf->vc.user_comments[i],"Artist")) {
 			    /* GCS FIX: This is a bit funky, maybe I need 
 			       to get rid of the ogg built-in utf8 decoder */
-			    mstring_from_string (rmi, ti->artist, 
+			    gstring_from_string (rmi, ti->artist, 
 						 MAX_TRACK_LEN, 
 						 decoded, CODESET_LOCALE);
 			} else if (!strcmp(inf->vc.user_comments[i],"title")
@@ -345,7 +345,7 @@ vorbis_process (RIP_MANAGER_INFO* rmi, stream_processor *stream,
 				   || !strcmp(inf->vc.user_comments[i],"Title")) {
 			    /* GCS FIX: This is a bit funky, maybe I need 
 			       to get rid of the ogg built-in utf8 decoder */
-			    mstring_from_string (rmi, ti->title, MAX_TRACK_LEN, 
+			    gstring_from_string (rmi, ti->title, MAX_TRACK_LEN, 
 						 decoded, CODESET_LOCALE);
 			    ti->have_track_info = 1;
 			} else if (!strcmp(inf->vc.user_comments[i],"album")
@@ -353,14 +353,14 @@ vorbis_process (RIP_MANAGER_INFO* rmi, stream_processor *stream,
 				   || !strcmp(inf->vc.user_comments[i],"Album")) {
 			    /* GCS FIX: This is a bit funky, maybe I need 
 			       to get rid of the ogg built-in utf8 decoder */
-			    mstring_from_string (rmi, ti->album, MAX_TRACK_LEN, 
+			    gstring_from_string (rmi, ti->album, MAX_TRACK_LEN, 
 						 decoded, CODESET_LOCALE);
 			} else if (!strcmp(inf->vc.user_comments[i],"tracknumber")
 				   || !strcmp(inf->vc.user_comments[i],"TRACKNUMBER")
 				   || !strcmp(inf->vc.user_comments[i],"Tracknumber")) {
 			    /* GCS FIX: This is a bit funky, maybe I need 
 			       to get rid of the ogg built-in utf8 decoder */
-			    mstring_from_string (rmi, ti->track_p, 
+			    gstring_from_string (rmi, ti->track_p, 
 						 MAX_TRACK_LEN, 
 						 decoded, CODESET_LOCALE);
 			}

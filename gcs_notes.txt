@@ -1,4 +1,33 @@
 -----------------------------------------------------------------------
+String conversion
+
+lib/external.c:
+external pgm strings (metadata->utf8)
+raw_metadata (utf8->metadata)
+
+lib/filelib.c:
+output_dir, output_pattern (locale -> utf8)
+icy_name (metadata->utf8)
+cue_file (utf8->id3)
+mkdir, file_exists, etc (utf8->filesys)
+
+lib/parse.c:
+rule compile (utf8->utf8)
+compose_metadata (utf8->relay)
+raw_metadata parsing (metadata->utf8)
+
+lib/ripogg.c:
+artist, title (locale->utf8)
+
+lib/rip_manager.c:
+console output (utf8->locale)
+end_track callback (utf8->locale)
+
+lib/ripstream.c:
+id3v1 (utf8->id3)
+id3v2 (utf8->id3)
+
+-----------------------------------------------------------------------
 Plans for 1.64.X
 -----------------------------------------------------------------------
 

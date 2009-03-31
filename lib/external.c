@@ -73,18 +73,18 @@ parse_external_byte (RIP_MANAGER_INFO* rmi, External_Process* ep,
     } else {
 	if (!strcmp (".",ep->line_buf)) {
 	    /* Found end of record! */
-	    mchar w_raw_metadata[MAX_TRACK_LEN];
-	    mstring_from_string (rmi, ti->artist, MAX_TRACK_LEN, ep->artist_buf,
+	    mchar tmp_raw_metadata[MAX_TRACK_LEN];
+	    gstring_from_string (rmi, ti->artist, MAX_TRACK_LEN, ep->artist_buf,
 				 CODESET_METADATA);
-	    mstring_from_string (rmi, ti->album, MAX_TRACK_LEN, ep->album_buf,
+	    gstring_from_string (rmi, ti->album, MAX_TRACK_LEN, ep->album_buf,
 				 CODESET_METADATA);
-	    mstring_from_string (rmi, ti->title, MAX_TRACK_LEN, ep->title_buf,
+	    gstring_from_string (rmi, ti->title, MAX_TRACK_LEN, ep->title_buf,
 				 CODESET_METADATA);
-	    /* GCS FIX - this is not quite right */
-	    msnprintf (w_raw_metadata, MAX_EXT_LINE_LEN, m_S m_(" - ") m_S,
-		       ti->artist, ti->title);
-	    string_from_mstring (rmi, ti->raw_metadata, MAX_EXT_LINE_LEN, 
-				 w_raw_metadata, CODESET_METADATA);
+
+	    g_snprintf (tmp_raw_metadata, MAX_TRACK_LEN, "%s - %s", 
+			ti->artist, ti->title);
+	    string_from_gstring (rmi, ti->raw_metadata, MAX_TRACK_LEN, 
+				 tmp_raw_metadata, CODESET_METADATA);
 	    ti->have_track_info = 1;
 	    ti->save_track = TRUE;
 
@@ -92,11 +92,11 @@ parse_external_byte (RIP_MANAGER_INFO* rmi, External_Process* ep,
 	    ep->album_buf[0] = 0;
 	    ep->title_buf[0] = 0;
 	    got_metadata = 1;
-	} else if (!strncmp("ARTIST=",ep->line_buf,strlen("ARTIST="))) {
+	} else if (!strncmp ("ARTIST=", ep->line_buf, strlen("ARTIST="))) {
 	    strcpy (ep->artist_buf, &ep->line_buf[strlen("ARTIST=")]);
-	} else if (!strncmp("ALBUM=",ep->line_buf,strlen("ALBUM="))) {
+	} else if (!strncmp ("ALBUM=", ep->line_buf, strlen("ALBUM="))) {
 	    strcpy (ep->album_buf, &ep->line_buf[strlen("ALBUM=")]);
-	} else if (!strncmp("TITLE=",ep->line_buf,strlen("TITLE="))) {
+	} else if (!strncmp ("TITLE=", ep->line_buf, strlen("TITLE="))) {
 	    strcpy (ep->title_buf, &ep->line_buf[strlen("TITLE=")]);
 	}
 	ep->line_buf[0] = 0;

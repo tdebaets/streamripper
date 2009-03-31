@@ -168,51 +168,99 @@ sr_strncpy (char* dst, char* src, int n)
 }
 
 /*****************************************************************************
+ * Lstring functions
+ *****************************************************************************/
+void
+lstring_initialize (Lstring* lstring)
+{
+    lstring->num_bytes = 0;
+    lstring->data = 0;
+}
+
+
+/*****************************************************************************
  * These functions ARE mchar related
  *****************************************************************************/
+void
+gmem_concat
+(
+ gchar** base_mem,          /* In/Out: The memory to be concatenated to */
+ gsize base_bytes,          /* Input: Size of base memory (in bytes) */
+ char* concat_mem,	    /* Input: The memory to concatenate */
+ gsize concat_bytes	    /* Input: Size of concat_mem (in bytes) */
+ )
+{
+    *base_mem = g_realloc (*base_mem, base_bytes + concat_bytes);
+    memcpy (*base_mem + base_bytes, concat_mem, concat_bytes);
+}
+
 /* Convert a string, replacing unconvertable characters.
    Returns a gchar* string, which must be freed by caller using g_free. */
-gchar*
+void
 convert_string_with_replacement
 (
- char* instring,	    /* String to convert */
- gsize len,		    /* Length of instring in bytes */
- char* from_codeset,	    /* Codeset of instring */
- char* to_codeset,	    /* Codeset to convert to */
- char* repl		    /* Replacement character (zero terminated,
-			       in to_codeset) */
+ gchar** output_string,     /* Output: The converted string */
+ gsize* output_bytes,       /* Output: Size of output string (in bytes) */
+ char* input_string,	    /* Input: String to convert */
+ gsize input_bytes,	    /* Input: Length of input string (in bytes) */
+ char* from_codeset,	    /* Input: Codeset of input string */
+ char* to_codeset,	    /* Input: Codeset of output string */
+ char* repl		    /* Input: Replacement character (zero terminated,
+			       in utf-8) */
  )
 {
     GIConv giconv;
     gsize cur = 0;              /* Current byte to convert */
-    gchar* output_string = g_strdup ("");
     GError *error = 0;
-    gsize bytes_to_convert = len;
+    gsize bytes_to_convert = input_bytes;
     int need_repl = 1;
+    gsize br, bw;
+    gchar* repl_string;
+    gsize repl_bytes;
+
+    *output_string = 0;
+    *output_bytes = 0;
 
     giconv = g_iconv_open (to_codeset, from_codeset);
     if (giconv == (GIConv) -1) {
 	/* Not sure why this would happen */
 	debug_printf ("g_iconv_open returned zero\n");
-	return output_string;
+	return;
     }
 
-    while (cur < len) {
+    /* Convert replacement character from UTF-8 to to_codeset */
+    repl_string = g_convert (repl, strlen (repl), 
+			     to_codeset, "UTF-8", 
+			     &br, &bw, &error);
+    if (repl_string && br == strlen (repl)) {
+	repl_bytes = bw;
+    } else {
+	repl_bytes = 0;
+	if (repl_string) {
+	    g_free (repl_string);
+	}
+    }
+
+    while (cur < input_bytes) {
 	gchar* os;
-	gsize br, bw;
 	int drop_byte = 0;    /* Should we drop a byte? */
 
 	br = 0;
-	os = g_convert_with_iconv (&instring[cur], bytes_to_convert, 
+	os = g_convert_with_iconv (&input_string[cur], bytes_to_convert, 
 				   giconv, &br, &bw, &error);
 	debug_printf ("cur=%d, btc=%d, br=%d, bw=%d (b1=0x%02x)\n", 
-		      cur, bytes_to_convert, br, bw, instring[cur]);
+		      cur, bytes_to_convert, br, bw, input_string[cur]);
 
 	/* If the conversion was unsuccessful, usually it means that 
 	   either the input byte doesn't belong to the from_codeset, 
 	   or the code point doesn't belong to the to_codeset.
 	*/
 	if (error) {
+	    /* There could be a partial output -- the specs aren't clear 
+	       about this.  Better free it just in case. */
+	    if (os) {
+		g_free (os);
+	    }
 	    switch (error->code) {
 	    case G_CONVERT_ERROR_ILLEGAL_SEQUENCE:
 	    case G_CONVERT_ERROR_FAILED:
@@ -226,7 +274,9 @@ convert_string_with_replacement
 		   conversion to/from UTF-8. */
 		debug_printf ("g_convert_with_iconv returned error: %d (%s)\n",
 			      error->code, error->message);
-		return output_string;
+		g_error_free (error);
+		g_free (repl_string);
+		return;
 	    }
 	    /* How many bytes to try next time? */
 	    switch (bytes_to_convert) {
@@ -258,40 +308,35 @@ convert_string_with_replacement
 		drop_byte = 1;
 	    } else {
 		/* A successful conversion. */
-		gchar* tmp = g_strconcat (output_string, os, NULL);
 		debug_printf ("Successful conversion: %d bytes read\n", br);
-		g_free (output_string);
+		gmem_concat (output_string, *output_bytes, os, bw);
 		g_free (os);
-		output_string = tmp;
 		cur += br;
-		bytes_to_convert = len - cur;
+		bytes_to_convert = input_bytes - cur;
+		*output_bytes += bw;
 		need_repl = 1;
 	    }
 	}
 
-	/* Check for conversion failure.  Drop current byte from input, 
-	   append replacement character into output.  But only use 
-	   a single replacement character for each group of dropped bytes. */
+	/* drop_byte will be true if a conversion failure happened.  
+	   Drop current byte from input, and append replacement 
+	   character into output.  But only append a single replacement 
+	   character for each group of dropped bytes. */
 	if (drop_byte) {
 	    cur ++;
-	    bytes_to_convert = len - cur;
+	    bytes_to_convert = input_bytes - cur;
 	    if (need_repl) {
+		gmem_concat (output_string, *output_bytes, repl, repl_bytes);
+		*output_bytes += repl_bytes;
 		need_repl = 0;
-		if (output_string) {
-		    gchar *tmp;
-		    tmp = g_strconcat (output_string, repl, NULL);
-		    g_free (output_string);
-		    output_string = tmp;
-		} else {
-		    output_string = g_strdup (repl);
-		}
 	    }
 	}
     }
+    g_free (repl_string);
     g_iconv_close (giconv);
     debug_printf ("convert_string_with_replacement |%s| -> |%s| (%s -> %s)\n",
-		  instring, output_string, from_codeset, to_codeset);
-    return output_string;
+		  input_string, *output_string, from_codeset, to_codeset);
+    return;
 }
 
 /* Assumes src is valid utf8 */
@@ -317,6 +362,35 @@ utf8cpy (gchar* dst, gchar* src, int dst_len)
     return dlen;
 }
 
+void
+lstring_from_lstring (Lstring* lstring_out,/* Output: Output string */
+		      Lstring* lstring_in, /* Input: Input string */
+		      char* from_codeset,  /* Input: Codeset of input string */
+		      char* to_codeset)	   /* Input: Codeset of output string */
+{
+    convert_string_with_replacement (&lstring_out->data, 
+				     &lstring_out->num_bytes, 
+				     lstring_in->data, 
+				     lstring_out->num_bytes, 
+				     from_codeset,
+				     to_codeset,
+				     "?");
+}
+
+void
+lstring_from_gstring (Lstring* lstring_out,/* Output: Output string */
+		      gchar* gstring_in,   /* Input: Input string */
+		      char* to_codeset)	   /* Input: Codeset of output string */
+{
+    convert_string_with_replacement (&lstring_out->data, 
+				     &lstring_out->num_bytes, 
+				     gstring_in, 
+				     strlen (gstring_in) + 1, 
+				     "UTF-8", 
+				     to_codeset,
+				     "?");
+}
+
 /* Input value mlen is measured in mchar, not bytes.
    Return value is the number of mchar occupied by the converted string, 
    not including the null character. 
@@ -328,7 +402,7 @@ utf8cpy (gchar* dst, gchar* src, int dst_len)
    GLIB UTF8 returns number of bytes.
 */
 int
-mstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen, 
+gstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen, 
 		     char* c, int codeset_type)
 {
     CODESET_OPTIONS* mchar_cs = &rmi->mchar_cs;
@@ -337,7 +411,8 @@ mstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen,
     if (!c) return 0;
 
     {
-	gchar* mstring;
+	gchar* gstring;
+	gsize gstring_len;
 	char* src_codeset;
 	int rc;
 	
@@ -364,16 +439,18 @@ mstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen,
 	    printf ("Program error.  Bad codeset m->c (%d)\n", codeset_type);
 	    exit (-1);
 	}
-	/* This is the new method */
-	mstring = convert_string_with_replacement (c, strlen(c), 
-						   src_codeset, "UTF-8", 
-						   "?");
-	if (!mstring) {
-	    debug_printf ("Error converting mstring_from_string\n");
+	/* GCS FIX: This is not correct, as strlen(c) won't work 
+	   for UTF-16. */
+	convert_string_with_replacement (&gstring, &gstring_len,
+					 c, strlen(c) + 1, 
+					 src_codeset, "UTF-8", 
+					 "?");
+	if (!gstring) {
+	    debug_printf ("Error converting gstring_from_string\n");
 	    return 0;
 	}
-	rc = utf8cpy (m, mstring, mlen);
-	g_free (mstring);
+	rc = utf8cpy (m, gstring, mlen);
+	g_free (gstring);
 	return rc;
     }
 }
@@ -381,7 +458,7 @@ mstring_from_string (RIP_MANAGER_INFO* rmi, mchar* m, int mlen,
 /* Return value is the number of char occupied by the converted string, 
    not including the null character. */
 int
-string_from_mstring (RIP_MANAGER_INFO* rmi, char* c, int clen, mchar* m, int codeset_type)
+string_from_gstring (RIP_MANAGER_INFO* rmi, char* c, int clen, mchar* m, int codeset_type)
 {
     CODESET_OPTIONS* mchar_cs = &rmi->mchar_cs;
     if (clen <= 0) return 0;
@@ -389,8 +466,8 @@ string_from_mstring (RIP_MANAGER_INFO* rmi, char* c, int clen, mchar* m, int cod
     if (!m) return 0;
     {
 	gchar* cstring;
+	gsize cstring_len;
 	char* tgt_codeset;
-	int rc;
 	
 	switch (codeset_type) {
 	case CODESET_UTF8:
@@ -416,19 +493,25 @@ string_from_mstring (RIP_MANAGER_INFO* rmi, char* c, int clen, mchar* m, int cod
 	    exit (-1);
 	}
 	/* This is the new method */
-	cstring = convert_string_with_replacement (m, strlen(m), 
-						   "UTF-8", 
-						   tgt_codeset, 
-						   "?");
+	convert_string_with_replacement (&cstring, &cstring_len,
+					 m, strlen(m) + 1, 
+					 "UTF-8", 
+					 tgt_codeset, 
+					 "?");
 	if (!cstring) {
-	    debug_printf ("Error converting string_from_mstring\n");
+	    debug_printf ("Error converting string_from_gstring\n");
 	    return 0;
 	}
 	/* GCS FIX: truncation can chop multibyte string */
 	/* This will be fixed by using dynamic memory here... */
-	rc = g_strlcpy (c, cstring, clen);
+	if (cstring_len >= clen) {
+	    cstring_len = clen - 1;
+	}
+	memcpy (c, cstring, cstring_len);
+	/* GCS FIX: If converting to UTF-16, need to add 00 to end */
+	c[cstring_len] = 0;
 	g_free (cstring);
-	return rc;
+	return cstring_len;
     }
 }
 
