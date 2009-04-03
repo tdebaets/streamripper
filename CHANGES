@@ -1,3 +1,7 @@
+New for 1.64.7
+------------------------------------
+* Fix a couple of small malloc errors
+
 New for 1.64.6
 ------------------------------------
 Mon Mar 30 21:10:13 EDT 2009
