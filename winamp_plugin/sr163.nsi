@@ -134,6 +134,7 @@ Section "GUI Application" sec_gui
   File srskin.zip
   File srskin_winamp.zip
   File srskin_XP.zip
+  File "skins\srskin_BigBento.zip"
 
   ;Store installation folder
   WriteRegStr HKCU "Software\Streamripper" "" $INSTDIR
