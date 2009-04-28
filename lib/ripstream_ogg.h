@@ -1,4 +1,4 @@
-/* ripogg.h
+/* ripstream_ogg.h
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,16 +14,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#ifndef __RIPOGG_H__
-#define __RIPOGG_H__
+#ifndef __RIPSTREAM_OGG_H__
+#define __RIPSTREAM_OGG_H__
 
-#include "list.h"
+#include "srtypes.h"
 
-void ripogg_init (RIP_MANAGER_INFO* rmi);
-void ripogg_get_current_header (RIP_MANAGER_INFO* rmi, char** ptr, int* len);
-void ripogg_process_chunk (RIP_MANAGER_INFO* rmi, 
-			   const char* chunk, 
-			   u_long size,
-			   TRACK_INFO* ti);
+error_code
+ripstream_ogg_rip (RIP_MANAGER_INFO* rmi);
 
 #endif

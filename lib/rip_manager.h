@@ -23,7 +23,7 @@
 #include "errors.h"
 #include "compat.h"
 
-#define SRVERSION	"1.64.6"
+#define SRVERSION	"1.65.0-alpha"
 
 #if defined (WIN32)
 #define SRPLATFORM      "windows"
@@ -101,9 +101,6 @@ error_code rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti);
 error_code rip_manager_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
 error_code rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size);
 
-char* client_relay_header_generate (RIP_MANAGER_INFO* rmi, 
-				    int icy_meta_support);
-void client_relay_header_release (char *ch);
 
 const char*
 overwrite_opt_to_string (enum OverwriteOpt oo);

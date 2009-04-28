@@ -40,6 +40,7 @@ SET(STREAMRIPPER_LIB_SRC
 	lib/ripaac.c
 	lib/ripogg.c
 	lib/ripstream.c
+	lib/ripstream_ogg.c
 	lib/rip_manager.c
 	lib/socklib.c
 	lib/threadlib.c

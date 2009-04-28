@@ -1,4 +1,4 @@
-/* ripogg.h
+/* sr_stdint.h
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,16 +14,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#ifndef __RIPOGG_H__
-#define __RIPOGG_H__
+#ifndef __SR_STDINT_H__
+#define __SR_STDINT_H__
 
-#include "list.h"
-
-void ripogg_init (RIP_MANAGER_INFO* rmi);
-void ripogg_get_current_header (RIP_MANAGER_INFO* rmi, char** ptr, int* len);
-void ripogg_process_chunk (RIP_MANAGER_INFO* rmi, 
-			   const char* chunk, 
-			   u_long size,
-			   TRACK_INFO* ti);
+#if defined (WIN32)
+/* Do something */
+#else
+#include "autoconf_stdint.h"
+#endif
 
 #endif

@@ -10,7 +10,7 @@ dnl   AC_CHECK_LIB:   prepends the library to LIBS
 dnl   AC_CHECK_FUNC:  defines a shell variable
 
 AC_PREREQ(2.59)
-AC_INIT(streamripper,1.64.6)
+AC_INIT(streamripper,1.65.0-alpha)
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([lib/config.h])
@@ -60,7 +60,7 @@ CPPFLAGS="-D__UNIX__"
 AC_SUBST(CPPFLAGS)
 
 
-dnl -------- Tests for using included glib ------
+dnl -------- Tests for using included glib
 
 dnl use_included_glib=no
 dnl if test "x$with_included_glib" = xyes; then
@@ -77,7 +77,7 @@ dnl AM_CONDITIONAL(SUBDIR_GLIB, test "x$with_included_glib" = xyes)
 
 AM_PATH_GLIB_2_0(2.16.0,,AC_MSG_ERROR([Glib 2.16 or greater required]))
 
-dnl -------- Tests for using included libmad ------
+dnl -------- Tests for using included libmad
 LIBMAD=""
 AC_SUBST(LIBMAD)
 use_included_libmad=yes
@@ -101,7 +101,7 @@ else
   AC_SUBST(LIBMAD)
 fi
 
-dnl -------- Tests for threading library ----------
+dnl -------- Tests for threading library
 THREADLIBS=no
 AC_CHECK_LIB(pthread,pthread_create,THREADLIBS="-lpthread",)
 if test "$THREADLIBS" = no; then
@@ -127,7 +127,7 @@ AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_CHECK_HEADERS(unistd.h)
 
-dnl -------- Tests for wchar support ---------
+dnl -------- Tests for wchar support
 dnl Wchar support is either all or nothing.  All the following 
 dnl must be present:
 dnl   1) Working wchar in C library
@@ -170,54 +170,6 @@ fi
 fi
 fi
 
-dnl -------- Tests for regular expressions ---------
-dnl Preference:
-dnl   1)  Use system tre if installed
-dnl   2a) If we don't have wchar, use system regex
-dnl   2b) If we have wchar, and system regex has regwcomp, use system regex
-dnl   3)  Use included tre
-dnl Note: If using included tre, it's not easy to know whether or not 
-dnl   it will compile with regwcomp() or not.  We will assume it does.
-dnl Note: Solaris now has a regwcomp() in system regex.  Is it compatible?
-dnl LIBREGEX=""
-dnl AC_SUBST(LIBREGEX)
-dnl use_included_tre=no
-dnl if test "$with_included_tre" = "yes"; then
-dnl   use_included_tre=yes
-dnl else
-dnl   AC_CHECK_LIB(tre,regwcomp)
-dnl   if test "$ac_cv_lib_tre_regwcomp" = "no"; then
-dnl     if test "$have_wchar" = "yes"; then
-dnl       if test "$with_included_tre" = "no"; then
-dnl         AC_CHECK_FUNC(regwcomp,,have_wchar=no)
-dnl       else
-dnl         AC_CHECK_FUNC(regwcomp,,use_included_tre=yes)
-dnl       fi
-dnl     fi
-dnl     if test "$have_wchar" = "no"; then
-dnl       AC_CHECK_LIB(tre,regcomp)
-dnl       if test "$ac_cv_lib_tre_regcomp" = "no"; then
-dnl         if test "$with_included_tre" = "no"; then
-dnl           AC_CHECK_FUNC(regcomp,,AC_MSG_ERROR([cannot find regular expression library]))
-dnl         else
-dnl           AC_CHECK_FUNC(regcomp,use_included_tre=no)
-dnl         fi
-dnl       fi
-dnl     fi
-dnl   fi
-dnl fi
-dnl AM_CONDITIONAL(SUBDIR_TRE, test "$use_included_tre" = yes)
-dnl if test "$use_included_tre" = "yes"; then
-dnl   LIBREGEX="tre-0.7.2/lib/.libs/libtre.a"
-dnl   AC_SUBST(LIBREGEX)
-dnl   AC_CONFIG_SUBDIRS(tre-0.7.2)
-dnl fi
-
-dnl -------- WCHAR support revisited
-dnl if test "$have_wchar" = yes; then
-dnl   AC_DEFINE(HAVE_WCHAR_SUPPORT,1,[Define to 1 if you have wide characters, iconv, and regwcomp])
-dnl fi
-
 dnl -------- Tests for using libiberty or argv.c
 use_included_argv=yes
 if test "x$with_included_argv" != xyes; then
@@ -234,7 +186,7 @@ else
   AC_SUBST(LIBIBERTY_LIBS)
 fi
 
-dnl -------- Tests for using faad2 ------
+dnl -------- Tests for using faad2
 AC_SUBST(FAAD_LIBS)
 AC_CHECK_LIB(faad,NeAACDecDecode2,[
 	FAAD_LIBS="-lfaad"
@@ -243,7 +195,7 @@ AC_CHECK_LIB(faad,NeAACDecDecode2,[
         AC_DEFINE(HAVE_FAAD,0,[Define to 1 if you have faad2 libraries installed]))
 AC_SUBST(FAAD_LIBS)
 
-dnl -------- Tests for curses ------
+dnl -------- Tests for curses
 if test x$with_curses = xyes || test x$with_curses = x ; then
   found_curses=no
   if test x$found_curses = xno; then
@@ -322,7 +274,7 @@ dnl AC_SUBST(CDK_LIBS)
 
 AM_CONDITIONAL([WANT_CSTREAMRIPPER],[test x$use_cdk != xno])
 
-dnl -------- Tests for using ogg/vorbis ------
+dnl -------- Tests for using ogg/vorbis
 AC_SUBST(VORBIS_CFLAGS)
 AC_SUBST(VORBIS_LIBS)
 AC_SUBST(OGG_CFLAGS)
@@ -341,7 +293,7 @@ XIPH_PATH_OGG([
   AC_DEFINE(HAVE_OGG_VORBIS,0,[Define to 1 if you have both the ogg and vorbis libraries installed])
   )
 
-dnl -------- Check for semaphore library ------
+dnl -------- Check for semaphore library
 AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(sem, sem_init,))
 dnl Solaris needs this: -lrt
 AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(rt, sem_init,))
@@ -349,18 +301,22 @@ AC_CHECK_FUNC(sem_init, , AC_CHECK_LIB(rt, sem_init,))
 dnl -------- Check for integer sizes ------
 dnl uint32_t vs. u_int32_t
 dnl ISO C 99 requires uint32_t, but u_int32_t is more common(?)
-AC_CHECK_HEADERS(stdint.h)
-AC_CHECK_HEADERS(inttypes.h)
-AC_CHECK_TYPES([uint32_t, u_int32_t])
+
+dnl AC_CHECK_HEADERS(stdint.h)
+dnl AC_CHECK_HEADERS(inttypes.h)
+dnl AC_CHECK_TYPES([uint32_t, u_int32_t])
+
 dnl (maybe these are needed in the future)
 dnl AC_CHECK_SIZEOF(short)
 dnl AC_CHECK_SIZEOF(int)
 dnl AC_CHECK_SIZEOF(long)
 
-dnl Sockets header needed on Solaris
+AX_CREATE_STDINT_H([lib/autoconf_stdint.h])
+
+dnl -------- Sockets header needed on Solaris
 AC_CHECK_HEADERS(sys/sockio.h)
 
-dnl -- GCS: Taken from distcc --
+dnl -------- GCS: Taken from distcc
 dnl The following test taken from the cvs sources via Samba:
 dnl If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
 dnl The Irix 5 libc.so has connect and gethostbyname, but Irix 5 also has

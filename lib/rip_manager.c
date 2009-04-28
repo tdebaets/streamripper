@@ -235,24 +235,8 @@ rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
 {
     int ret;
 
-#if defined (commmentout)
-    /* GCS FIX -- here is where i would compose the incomplete filename */
-    char* trackname = ti->raw_metadata;
-    debug_printf("rip_manager_start_track: %s\n", trackname);
-    if (rmi->write_data && (ret = filelib_start(trackname)) != SR_SUCCESS) {
-        return ret;
-    }
-#endif
-
-    rmi->write_data = ti->save_track;
-
-    if (rmi->write_data && (ret = filelib_start (rmi, ti)) != SR_SUCCESS) {
-        return ret;
-    }
-
-    rmi->filesize = 0;
-
     /* Compose the string for the console output */
+    rmi->filesize = 0;
     compose_console_string (rmi, ti);
     rmi->filename[SR_MAX_PATH-1] = '\0';
     rmi->status_callback (rmi, RM_NEW_TRACK, (void*) rmi->filename);
@@ -308,28 +292,6 @@ rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
     }
 
     return SR_SUCCESS;
-}
-
-char *
-client_relay_header_generate (RIP_MANAGER_INFO* rmi, int icy_meta_support)
-{
-    int ret;
-    char *headbuf;
-
-    headbuf = (char *) malloc (MAX_HEADER_LEN);
-    ret = http_construct_sc_response (&rmi->http_info, headbuf, MAX_HEADER_LEN,
-				      icy_meta_support);
-    if (ret != SR_SUCCESS) {
-	headbuf[0] = 0;
-    }
-    
-    return headbuf;
-}
-
-void
-client_relay_header_release (char *ch)
-{
-    free (ch);
 }
 
 static void
@@ -446,7 +408,7 @@ ripthread (void *thread_arg)
 void
 destroy_subsystems (RIP_MANAGER_INFO* rmi)
 {
-    ripstream_clear (rmi);
+    ripstream_destroy (rmi);
     relaylib_stop (rmi);
     /* GCS Feb 17,2008.  The socklib_cleanup() is done at program 
        shutdown, not rip_manager shutdown. */
@@ -561,14 +523,14 @@ start_ripping (RIP_MANAGER_INFO* rmi)
     /* Allocate buffers for ripstream */
     strcpy(rmi->no_meta_name, rmi->http_info.icy_name);
     rmi->getbuffer = 0;
-    ripstream_clear (rmi);
     ret = ripstream_init(rmi);
     if (ret != SR_SUCCESS) {
-	ripstream_clear (rmi);
+	ripstream_destroy (rmi);
 	goto RETURN_ERR;
     }
 
     /* Launch relay server threads */
+    debug_printf ("start_ripping: checkpoint 3\n");
     if (GET_MAKE_RELAY (rmi->prefs->flags)) {
 	u_short new_port = 0;
 	ret = relaylib_start (rmi, 
@@ -593,6 +555,7 @@ start_ripping (RIP_MANAGER_INFO* rmi)
     }
 
     /* Done. */
+    debug_printf ("start_ripping: checkpoint 4\n");
     post_status (rmi, RM_STATUS_BUFFERING);
     return SR_SUCCESS;
 

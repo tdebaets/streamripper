@@ -30,6 +30,7 @@
 #include <sys/types.h>
 #endif
 
+/*
 #if HAVE_INTTYPES_H
 # include <inttypes.h>
 #else
@@ -37,6 +38,8 @@
 #  include <stdint.h>
 # endif
 #endif
+*/
+#include "sr_stdint.h"
 
 #if HAVE_SYS_SOCKIO_H
 #include <sys/sockio.h>
@@ -119,6 +122,9 @@ typedef unsigned long u_long;
 typedef unsigned char u_char;
 typedef unsigned short u_short;
 #endif
+
+/* Streamripper internal error codes */
+typedef int error_code;
 
 /* Different types of streams */
 #define CONTENT_TYPE_MP3		1
@@ -309,6 +315,21 @@ struct external_process
     char metadata_buf[MAX_EXT_LINE_LEN];
 };
 
+/* Each metadata within the cbuf gets this struct */
+typedef struct METADATA_LIST_struct METADATA_LIST;
+struct METADATA_LIST_struct
+{
+    unsigned long m_chunk;
+    /* m_composed_metadata includes 1 byte for size*16 */
+    char m_composed_metadata[MAX_METADATA_LEN+1];
+    LIST m_list;
+};
+
+/* These are the ogg page flags below */
+#define OGG_PAGE_BOS        0x01
+#define OGG_PAGE_EOS        0x02
+#define OGG_PAGE_2          0x04
+
 /* Each ogg page boundary within the cbuf gets this struct */
 typedef struct OGG_PAGE_LIST_struct OGG_PAGE_LIST;
 struct OGG_PAGE_LIST_struct
@@ -342,28 +363,60 @@ typedef struct CBUF2_struct
     LIST        frame_list;
 } CBUF2;
 
+typedef struct cbuf3 Cbuf3;
+struct cbuf3 {
+    HSEM        sem;
 
-/* Each relay server gets this list of clients */
-typedef struct RELAY_LIST_struct RELAY_LIST;
-struct RELAY_LIST_struct
+    GQueue      *buf;             /* Filled portion of buffer */
+    GSList      *free_list;       /* Free chunks */
+    char        *pending;         /* Filled, but not yet ready for relay */
+
+    u_long	chunk_size;
+    int         content_type;
+    int         have_relay;
+
+    GQueue      *ogg_page_refs;   /* List of pointers to ogg pages */
+    GList       *written_page;    /* Most recently written page */
+};
+
+typedef struct cbuf3_pointer Cbuf3_pointer;
+struct cbuf3_pointer
+{
+    GList      *chunk;
+    u_long      offset;
+};
+
+/* The location of the beginning of each ogg page within the cbuf 
+   is stored in an list of Ogg_page_references.  */
+typedef struct ogg_page_reference Ogg_page_reference;
+struct ogg_page_reference
+{
+    struct cbuf3_pointer   m_cbuf3_loc;
+    unsigned long          m_page_len;
+    unsigned long          m_page_flags;
+    char                   *m_header_buf_ptr;
+    unsigned long          m_header_buf_len;
+};
+
+/* The relay server keeps track of a list of clients */
+typedef struct relay_client Relay_client;
+struct relay_client
 {
     SOCKET m_sock;
     int m_is_new;
+    int m_icy_metadata;          // true if client requested metadata
     
-    char* m_buffer;            // large enough for 1 block & 1 metadata
+    char* m_buffer;              // large enough for 1 block & 1 metadata
     u_long m_buffer_size;
-    u_long m_cbuf_offset;      // must lie along chunck boundary for mp3
-    u_long m_offset;
+    u_long m_offset;             // offset within buffer
     u_long m_left_to_send;
-    int m_icy_metadata;        // true if client requested metadata
 
-    char* m_header_buf_ptr;    // for ogg header pages
-    u_long m_header_buf_len;   // for ogg header pages
-    u_long m_header_buf_off;   // for ogg header pages
+    Cbuf3_pointer m_cbuf_offset; // lies along chunck boundary for mp3
 
-    RELAY_LIST* m_next;
+    char* m_header_buf_ptr;      // for ogg header pages
+    u_long m_header_buf_len;     // for ogg header pages
+    u_long m_header_buf_off;     // for ogg header pages
 };
-
 
 #if (HAVE_OGG_VORBIS)
 typedef struct _stream_processor {
@@ -593,6 +646,9 @@ struct RIP_MANAGER_INFOst
     /* The circular buffer */
     CBUF2 cbuf2;
 
+    /* The circular buffer */
+    struct cbuf3 cbuf3;
+
     /* CBuf size variables.  Used by ripstream.c */
     int cbuf2_size;             /* blocks */
     int rw_start_to_cb_end;     /* bytes */
@@ -601,8 +657,9 @@ struct RIP_MANAGER_INFOst
     int mic_to_cb_end;          /* blocks */
 
     /* The Relay list */
-    RELAY_LIST* relay_list;
-    unsigned long relay_list_len;
+    //RELAY_LIST* relay_list;
+    //unsigned long relay_list_len;
+    GQueue *relay_list;
     HSEM relay_list_sem;
 
     /* Private data used by filelib.c */
@@ -621,6 +678,7 @@ struct RIP_MANAGER_INFOst
     stream_processor stream;
     char* ogg_curr_header;
     int ogg_curr_header_len;
+    uint32_t ogg_fixed_page_no;
 #endif
 
     /* Mchar codesets -- these shadow prefs codesets */

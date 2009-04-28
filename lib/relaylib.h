@@ -39,11 +39,13 @@ relaylib_start (RIP_MANAGER_INFO* rmi,
 		u_short *port_used, char *if_name, int max_connections, 
 		char *relay_ip, int have_metadata);
 //error_code relaylib_start(RIP_MANAGER_INFO* rmi);
-error_code relaylib_send(char *data, int len, int accept_new, int is_meta);
+//error_code relaylib_send(char *data, int len, int accept_new, int is_meta);
 void relaylib_stop (RIP_MANAGER_INFO* rmi);
 BOOL relaylib_isrunning();
 error_code relaylib_send_meta_data(char *track);
+#if defined (commentout)
 void relaylib_disconnect (RIP_MANAGER_INFO* rmi, 
 			  RELAY_LIST* prev, RELAY_LIST* ptr);
+#endif
 
 #endif //__RELAYLIB__

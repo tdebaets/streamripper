@@ -1,5 +1,6 @@
 New for 1.64.7
 ------------------------------------
+* Possible fix for discontinuities in ogg page numbers (#1392868)
 * Fix a couple of small malloc errors
 
 New for 1.64.6

@@ -3,8 +3,6 @@
 
 #include "srtypes.h"
 
-typedef int error_code;
-
 ////////////////////////////////////////////////
 // StreamRipper Codes
 ////////////////////////////////////////////////
@@ -78,7 +76,7 @@ typedef int error_code;
 #define SR_ERROR_SELECT_FAILED                  - 0x3c
 #define SR_ERROR_REQUIRED_WINDOW_EMPTY          - 0x3d  // Not an error
 #define SR_ERROR_CANT_BIND_ON_INTERFACE		- 0x3e
-#define SR_ERROR_NO_OGG_PAGES_FOR_RELAY		- 0x3f
+#define SR_ERROR_NO_DATA_FOR_RELAY		- 0x3f
 #define SR_ERROR_CANT_PARSE_PLS	                - 0x40
 #define SR_ERROR_CANT_PARSE_M3U	                - 0x41
 #define SR_ERROR_CANT_CREATE_SOCKET	        - 0x42
