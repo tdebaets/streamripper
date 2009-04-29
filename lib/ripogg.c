@@ -38,9 +38,6 @@
 #include <locale.h>
 
 
-#define CHUNK 4500
-// #define CHUNK 1
-
 #define _(a) (a)
 
 

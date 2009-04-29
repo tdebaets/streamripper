@@ -117,24 +117,26 @@ cbuf3_request_free_chunk (RIP_MANAGER_INFO *rmi,
 {
     char *chunk;
 
-    threadlib_waitfor_sem (&cbuf3->sem);
-
     /* If there is a free chunk, return it */
+    /* No need to lock, only the main thread accesses free_list */
     if (cbuf3->free_list) {
 	chunk = cbuf3->free_list->data;
 	cbuf3->free_list = g_slist_delete_link (cbuf3->free_list, 
 						cbuf3->free_list);
-	
-	threadlib_signal_sem (&cbuf3->sem);
 	return chunk;
     }
 
     /* Otherwise, we have to eject the oldest chunk from buf.  
        This requires updates to the relay lists. */
     if (cbuf3->have_relay) {
-	debug_printf ("Waiting for rmi->relay_list_sem\n");
+	debug_printf ("cbuf3_request_free_chunk is waiting for rmi->relay_list_sem\n");
 	threadlib_waitfor_sem (&rmi->relay_list_sem);
+	debug_printf ("cbuf3_request_free_chunk got rmi->relay_list_sem\n");
     }
+
+    debug_printf ("cbuf3_request_free_chunk is waiting for cbuf3->sem\n");
+    threadlib_waitfor_sem (&cbuf3->sem);
+    debug_printf ("cbuf3_request_free_chunk got cbuf3->sem\n");
 
     /* Remove the chunk */
     chunk = g_queue_pop_head (cbuf3->buf);
@@ -145,10 +147,13 @@ cbuf3_request_free_chunk (RIP_MANAGER_INFO *rmi,
     }
 
     /* Done */
+    threadlib_signal_sem (&cbuf3->sem);
+    debug_printf ("cbuf3_request_free_chunk released cbuf3->sem\n");
     if (cbuf3->have_relay) {
 	threadlib_signal_sem (&rmi->relay_list_sem);
+	debug_printf ("cbuf3_request_free_chunk released rmi->relay_list_sem\n");
     }
-    threadlib_signal_sem (&cbuf3->sem);
+
     return chunk;
 }
 
@@ -159,17 +164,22 @@ cbuf3_insert (struct cbuf3 *cbuf3, char *chunk)
     GList *p;
 
     /* Insert data */
+    debug_printf ("cbuf3_insert is waiting for cbuf3->sem\n");
     threadlib_waitfor_sem (&cbuf3->sem);
+    debug_printf ("cbuf3_insert got cbuf3->sem\n");
 
     debug_printf ("CBUF_INSERT\n");
+    debug_printf ("  Node       Data\n");
 
     g_queue_push_tail (cbuf3->buf, chunk);
 
     for (p = cbuf3->buf->head; p; p = p->next) {
+	
 	debug_printf ("  %p, %p\n", p, p->data);
     }
 
     threadlib_signal_sem (&cbuf3->sem);
+    debug_printf ("cbuf3_insert released cbuf3->sem\n");
     return SR_SUCCESS;
 }
 
@@ -253,7 +263,9 @@ cbuf3_splice_page_list (struct cbuf3 *cbuf3,
 			GList **chunk_page_list)
 {
     /* Do I need to lock?  If so, read access should lock too? */
+    debug_printf ("cbuf3_splice_page_list is waiting for cbuf3->sem\n");
     threadlib_waitfor_sem (&cbuf3->sem);
+    debug_printf ("cbuf3_splice_page_list got cbuf3->sem\n");
 
     while (*chunk_page_list) {
 	GList *ele = (*chunk_page_list);
@@ -264,6 +276,7 @@ cbuf3_splice_page_list (struct cbuf3 *cbuf3,
     cbuf3_debug_ogg_page_list (cbuf3);
     
     threadlib_signal_sem (&cbuf3->sem);
+    debug_printf ("cbuf3_splice_page_list released cbuf3->sem\n");
 }
 
 /* Sets (*page_node) if a page was found */
@@ -298,7 +311,9 @@ cbuf3_add_relay_entry (struct cbuf3 *cbuf3,
 		       struct relay_client *relay_client,
 		       u_long burst_request)
 {
+    debug_printf ("cbuf3_add_relay_entry is waiting for cbuf3->sem\n");
     threadlib_waitfor_sem (&cbuf3->sem);
+    debug_printf ("cbuf3_add_relay_entry got cbuf3->sem\n");
 
     /* Find a Cbuf3_pointer for the relay to start sending */
     if (cbuf3->content_type == CONTENT_TYPE_OGG) {
@@ -310,16 +325,19 @@ cbuf3_add_relay_entry (struct cbuf3 *cbuf3,
 	   find page at location > burst_request. */
 	ogg_page_ptr = cbuf3->ogg_page_refs->tail;
 	if (!ogg_page_ptr) {
+	    debug_printf ("Error.  No data for relay\n");
 	    return SR_ERROR_NO_DATA_FOR_RELAY;
 	}
 	opr = (Ogg_page_reference *) ogg_page_ptr->data;
 	burst_amt += opr->m_page_len;
+	debug_printf ("OGG_ADD_RELAY_ENTRY: BA=%d\n", burst_amt);
 
 	while (burst_amt < burst_request) {
 	    ogg_page_ptr = ogg_page_ptr->prev;
 	    if (!ogg_page_ptr) break;
 	    opr = (Ogg_page_reference *) ogg_page_ptr->data;
 	    burst_amt += opr->m_page_len;
+	    debug_printf ("OGG_ADD_RELAY_ENTRY: BA=%d\n", burst_amt);
 	}
 
 	/* If the desired ogg page is a header page, spin forward 
@@ -327,12 +345,17 @@ cbuf3_add_relay_entry (struct cbuf3 *cbuf3,
 	while (opr->m_page_flags & (OGG_PAGE_BOS | OGG_PAGE_2)) {
 	    ogg_page_ptr = ogg_page_ptr->next;
 	    if (!ogg_page_ptr) {
+		debug_printf ("Error.  No data for relay\n");
 		return SR_ERROR_NO_DATA_FOR_RELAY;
 	    }
 	    opr = (Ogg_page_reference *) ogg_page_ptr->data;
 	}
 	relay_client->m_cbuf_offset.chunk = opr->m_cbuf3_loc.chunk;
 	relay_client->m_cbuf_offset.offset = opr->m_cbuf3_loc.offset;
+	relay_client->m_header_buf_ptr = opr->m_header_buf_ptr;
+	relay_client->m_header_buf_len = opr->m_header_buf_len;
+	relay_client->m_header_buf_off = 0;
+
     } else {
 	GList *chunk_ptr;
 	u_long burst_amt = 0;
@@ -357,6 +380,7 @@ cbuf3_add_relay_entry (struct cbuf3 *cbuf3,
     }
 
     threadlib_signal_sem (&cbuf3->sem);
+    debug_printf ("cbuf3_add_relay_entry released cbuf3->sem\n");
     return SR_SUCCESS;
 }
 
@@ -369,16 +393,22 @@ cbuf3_extract_relay (Cbuf3 *cbuf3,
     u_long offset, remaining;
     error_code ec;
 
+    debug_printf ("cbuf3_extract_relay is waiting for cbuf3->sem\n");
     threadlib_waitfor_sem (&cbuf3->sem);
+    debug_printf ("cbuf3_extract_relay got cbuf3->sem\n");
+
+    debug_printf ("EXTRACT_RELAY\n");
 
     chunk = relay_client->m_cbuf_offset.chunk;
     offset = relay_client->m_cbuf_offset.offset;
     chunk_data = (char*) chunk->data;
     remaining = cbuf3->chunk_size - offset;
 
+
     if (chunk->next == NULL) {
 	ec = SR_ERROR_BUFFER_EMPTY;
     } else {
+	debug_printf ("Client %d chunk %p\n", relay_client->m_sock, chunk);
 	memcpy (relay_client->m_buffer, &chunk_data[offset], remaining);
 	relay_client->m_left_to_send = remaining;
 	relay_client->m_cbuf_offset.chunk = chunk->next;
@@ -387,6 +417,7 @@ cbuf3_extract_relay (Cbuf3 *cbuf3,
     }
 
     threadlib_signal_sem (&cbuf3->sem);
+    debug_printf ("cbuf3_extract_relay released cbuf3->sem\n");
     return ec;
 }
 
@@ -406,7 +437,9 @@ cbuf3_extract (Cbuf3 *cbuf3,
 	return SR_ERROR_BUFFER_EMPTY;
     }
 
+    debug_printf ("cbuf3_extract is waiting for cbuf3->sem\n");
     threadlib_waitfor_sem (&cbuf3->sem);
+    debug_printf ("cbuf3_extract got cbuf3->sem\n");
 
     chunk_data = (char*) cbuf3_ptr->chunk->data;
     offset = cbuf3_ptr->offset;
@@ -423,6 +456,7 @@ cbuf3_extract (Cbuf3 *cbuf3,
     memcpy (buf, &chunk_data[offset], (*bytes_read));
 
     threadlib_signal_sem (&cbuf3->sem);
+    debug_printf ("cbuf3_extract released cbuf3->sem\n");
     return SR_SUCCESS;
 }
 
@@ -448,7 +482,7 @@ cbuf3_advance_relay_list (RIP_MANAGER_INFO *rmi, Cbuf3 *cbuf3)
 	   necessary?  It would be better to set the m_cbuf_offset
 	   before it is inserted. */
 	if (!relay_client->m_is_new) {
-	    
+	    kkk
 	}
 	
     }

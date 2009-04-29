@@ -190,10 +190,10 @@ swallow_receive (int sock)
         FD_SET(sock, &fds);
         tv.tv_sec = 0;
         tv.tv_usec = 0;
-        ret = select(sock + 1, &fds, NULL, NULL, &tv);
+        ret = select (sock + 1, &fds, NULL, NULL, &tv);
         if (ret == 1) {
             // Read and throw away data, ignoring errors
-            ret = recv(sock, buf, BUFSIZE, 0);
+            ret = recv (sock, buf, BUFSIZE, 0);
             if (ret > 0) {
                 hasmore = TRUE;
             }
@@ -476,6 +476,7 @@ relay_client_add (RIP_MANAGER_INFO *rmi, int newsock, int client_wants_metadata)
 	streamripper_gets_metadata = 1;
     }
 
+    debug_printf ("Creating new client\n");
     new_client = (Relay_client*) malloc (sizeof (Relay_client));
     if (new_client != NULL) {
 	int buffer_size;
@@ -501,10 +502,15 @@ relay_client_add (RIP_MANAGER_INFO *rmi, int newsock, int client_wants_metadata)
 	new_client->m_buffer_size = buffer_size;
 
 	/* GCS FIX: Watch deadlocks. Lock cbuf3, then lock relay (?) */
+	debug_printf ("relay_client_add is waiting for &rmi->relay_list_sem\n");
 	threadlib_waitfor_sem (&rmi->relay_list_sem);
+	debug_printf ("relay_client_add got &rmi->relay_list_sem\n");
+	debug_printf ("Pushing relay client onto relay_list\n");
 	g_queue_push_tail (rmi->relay_list, new_client);
-	threadlib_signal_sem (&rmi->relay_list_sem);
+	debug_printf ("Registering relay client with cbuf3\n");
 	cbuf3_add_relay_entry (cbuf3, new_client, burst_amount);
+	threadlib_signal_sem (&rmi->relay_list_sem);
+	debug_printf ("relay_client_add released &rmi->relay_list_sem\n");
     }
     return new_client;
 }
@@ -559,9 +565,12 @@ relaylib_accept_thread_main (void *arg)
                 unsigned long num_connected;
                 /* If connections are full, do nothing.  Note that 
                     m_max_connections is 0 for infinite connections allowed. */
+		debug_printf ("relaylib_accept_thread_main is waiting for &rmi->relay_list_sem\n");
                 threadlib_waitfor_sem (&rmi->relay_list_sem);
+		debug_printf ("relaylib_accept_thread_main got &rmi->relay_list_sem\n");
                 num_connected = g_queue_get_length (rmi->relay_list);
                 threadlib_signal_sem (&rmi->relay_list_sem);
+		debug_printf ("relaylib_accept_thread_main released &rmi->relay_list_sem\n");
                 if (prefs->max_connections > 0 && num_connected >= (unsigned long) prefs->max_connections) {
                     continue;
                 }
@@ -621,11 +630,21 @@ relaylib_accept_thread_main (void *arg)
 
 /* Send buffer is empty, so add more data to it */
 static error_code
-relaylib_fill_client_buffer_ogg (Cbuf3 *cbuf3, Relay_client *relay)
+relaylib_fill_client_buffer_ogg (Cbuf3 *cbuf3, Relay_client *relay)    
 {
+    debug_printf ("relaylib_fill_client_buffer_ogg: %d\n", 
+		  relay->m_header_buf_ptr);
     if (relay->m_header_buf_ptr) {
 	u_long remaining = relay->m_header_buf_len - relay->m_header_buf_off;
+	debug_printf ("relaylib_fill_client_buffer_ogg: %d %d %d\n",
+		      relay->m_header_buf_len, relay->m_header_buf_off,
+		      remaining);
 	if (remaining > relay->m_buffer_size) {
+	    debug_printf ("memcpy: %p, %p[%d], %d\n",
+			  relay->m_buffer, 
+			  relay->m_header_buf_ptr,
+			  relay->m_header_buf_off,
+			  relay->m_buffer_size);
 	    memcpy (relay->m_buffer, 
 		    &relay->m_header_buf_ptr[relay->m_header_buf_off], 
 		    relay->m_buffer_size);
@@ -641,6 +660,8 @@ relaylib_fill_client_buffer_ogg (Cbuf3 *cbuf3, Relay_client *relay)
 	    relay->m_left_to_send = remaining;
 	}
     } else {
+	error_code rc = cbuf3_extract_relay (cbuf3, relay);
+	return rc;
 #if defined (commentout)
 	u_long frag1, frag2;
 	u_long relay_idx, remaining;
@@ -700,49 +721,27 @@ relaylib_send (RIP_MANAGER_INFO* rmi, Relay_client *relay_client)
     int done = 0;
     Cbuf3 *cbuf3 = &rmi->cbuf3;
 
-#if defined (commentout)
-    /* For new clients, initialize cbuf pointers */
-    if (relay_client->m_is_new) {
-	int buffer_size;
-	int burst_amount = 32*1024;
-	//	int burst_amount = 64*1024;
-	//	int burst_amount = 128*1024;
-
-	relay_client->m_offset = 0;
-	relay_client->m_left_to_send = 0;
-	if (relay_client->m_icy_metadata) {
-	    buffer_size = cbuf3->chunk_size + 16*256;
-	} else {
-	    buffer_size = cbuf3->chunk_size;
-	}
-	relay_client->m_buffer = (char*) malloc (sizeof(char)*buffer_size);
-	relay_client->m_buffer_size = buffer_size;
-
-	cbuf3_add_relay_entry (cbuf3, relay_client, burst_amount);
-	
-	relay_client->m_is_new = 0;
-    }
-#endif
-
     while (!done) {
 	/* If our private buffer is empty, copy some from the cbuf */
 	if (!relay_client->m_left_to_send) {
 	    error_code rc;
 	    relay_client->m_offset = 0;
-	    //rc = cbuf3_extract_relay (&rmi->cbuf3, relay_client);
 	    rc = relaylib_fill_client_buffer (rmi, relay_client);
 	    
 	    if (rc == SR_ERROR_BUFFER_EMPTY) {
+		debug_printf ("Buffer is empty\n");
 		break;
 	    }
 	}
 	/* Send from the private buffer to the client */
-	debug_printf ("Relay: Sending Client %d to the client\n", 
-		      relay_client->m_left_to_send );
+	debug_printf ("Relay: Sending %d bytes to client %d\n", 
+		      relay_client->m_left_to_send,
+		      relay_client->m_sock);
 	ret = send (relay_client->m_sock, 
 		    relay_client->m_buffer+relay_client->m_offset, 
 		    relay_client->m_left_to_send, 0);
-	debug_printf ("Relay: Sending to Client returned %d\n", ret );
+	debug_printf ("Relay: Client %d returned %d\n", 
+		      relay_client->m_sock, ret);
 	if (ret == SOCKET_ERROR) {
 	    /* Sometimes windows gives me an errno of 0
 	       Sometimes windows gives me an errno of 183 
@@ -782,13 +781,19 @@ relaylib_disconnect (RIP_MANAGER_INFO* rmi, GList *node)
     Relay_client *relay_client = (Relay_client*) node->data;
 
     /* Close connection */
+    debug_printf ("Trying to close socket.\n");
+    debug_printf ("Trying to close socket (%d).\n", relay_client->m_sock);
     closesocket (relay_client->m_sock);
 
     /* Delete client from list without affecting list order */
+    debug_printf ("Trying to delete node from queue\n");
     g_queue_delete_link (rmi->relay_list, node);
 
     /* Free memory */
+    debug_printf ("Trying free relay_client\n");
     relaylib_free_relay_client (relay_client, 0);
+
+    debug_printf ("Disconnect complete\n");
 }
 
 /* This is the thread function that sends data to relay clients */
@@ -800,8 +805,9 @@ relaylib_send_thread_main (void* arg)
     GList *node;
 
     while (rli->m_running) {
-	//debug_printf ("thread_send: waiting for relay list semaphore\n");
+	debug_printf ("relaylib_send_thread_main is waiting for &rmi->relay_list_sem\n");
 	threadlib_waitfor_sem (&rmi->relay_list_sem);
+	debug_printf ("relaylib_send_thread_main got &rmi->relay_list_sem\n");
 
 	node = rmi->relay_list->head;
 	while (node) {
@@ -817,8 +823,8 @@ relaylib_send_thread_main (void* arg)
 	    relaylib_send (rmi, relay_client);
 	}
 
-	//debug_printf ("thread_send: signalling relay list semaphore\n");
 	threadlib_signal_sem (&rmi->relay_list_sem);
+	debug_printf ("relaylib_send_thread_main released &rmi->relay_list_sem\n");
 	Sleep (50);
     }
     rli->m_running_send = FALSE;
