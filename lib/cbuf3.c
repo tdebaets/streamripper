@@ -350,8 +350,8 @@ cbuf3_add_relay_entry (struct cbuf3 *cbuf3,
 	    }
 	    opr = (Ogg_page_reference *) ogg_page_ptr->data;
 	}
-	relay_client->m_cbuf_offset.chunk = opr->m_cbuf3_loc.chunk;
-	relay_client->m_cbuf_offset.offset = opr->m_cbuf3_loc.offset;
+	relay_client->m_cbuf_ptr.chunk = opr->m_cbuf3_loc.chunk;
+	relay_client->m_cbuf_ptr.offset = opr->m_cbuf3_loc.offset;
 	relay_client->m_header_buf_ptr = opr->m_header_buf_ptr;
 	relay_client->m_header_buf_len = opr->m_header_buf_len;
 	relay_client->m_header_buf_off = 0;
@@ -375,8 +375,8 @@ cbuf3_add_relay_entry (struct cbuf3 *cbuf3,
 	    burst_amt += cbuf3->chunk_size;
 	}
 
-	relay_client->m_cbuf_offset.chunk = chunk_ptr;
-	relay_client->m_cbuf_offset.offset = 0;
+	relay_client->m_cbuf_ptr.chunk = chunk_ptr;
+	relay_client->m_cbuf_ptr.offset = 0;
     }
 
     threadlib_signal_sem (&cbuf3->sem);
@@ -399,8 +399,8 @@ cbuf3_extract_relay (Cbuf3 *cbuf3,
 
     debug_printf ("EXTRACT_RELAY\n");
 
-    chunk = relay_client->m_cbuf_offset.chunk;
-    offset = relay_client->m_cbuf_offset.offset;
+    chunk = relay_client->m_cbuf_ptr.chunk;
+    offset = relay_client->m_cbuf_ptr.offset;
     chunk_data = (char*) chunk->data;
     remaining = cbuf3->chunk_size - offset;
 
@@ -411,8 +411,8 @@ cbuf3_extract_relay (Cbuf3 *cbuf3,
 	debug_printf ("Client %d chunk %p\n", relay_client->m_sock, chunk);
 	memcpy (relay_client->m_buffer, &chunk_data[offset], remaining);
 	relay_client->m_left_to_send = remaining;
-	relay_client->m_cbuf_offset.chunk = chunk->next;
-	relay_client->m_cbuf_offset.offset = 0;
+	relay_client->m_cbuf_ptr.chunk = chunk->next;
+	relay_client->m_cbuf_ptr.offset = 0;
 	ec = SR_SUCCESS;
     }
 
@@ -467,51 +467,18 @@ static void
 cbuf3_advance_relay_list (RIP_MANAGER_INFO *rmi, Cbuf3 *cbuf3)
 {
 
-    GList *ptr = rmi->relay_list->head;
+    GList *rlist_node = rmi->relay_list->head;
+    GList *cbuf3_head = cbuf3->buf->head;
 
-    if (!ptr) {
-	return;
-    }
+    while (rlist_node) {
+	Relay_client *relay_client = (Relay_client *) rlist_node->data;
+	GList *next = rlist_node->next;
 
-    while (ptr) {
-	Relay_client *relay_client = (Relay_client *) ptr->data;
-	
-	/* GCS FIX: This test is for the race condition caused by 
-	   the fact that the Relay_client data structure is inserted 
-	   into the list before it is fully initialized.  Is this 
-	   necessary?  It would be better to set the m_cbuf_offset
-	   before it is inserted. */
-	if (!relay_client->m_is_new) {
-	    kkk
+	if (relay_client->m_cbuf_ptr.chunk == cbuf3_head) {
+	    debug_printf ("Relay: Client %d couldn't keep up with cbuf\n", 
+			  relay_client->m_sock);
+	    relaylib_disconnect (rmi, rlist_node);
 	}
-	
+	rlist_node = next;
     }
-
-
-#if defined (commentout)
-    RELAY_LIST *prev, *ptr, *next;
-
-    ptr = rmi->relay_list;
-    if (ptr == NULL) {
-	return;
-    }
-    prev = NULL;
-    while (ptr != NULL) {
-	next = ptr->m_next;
-	if (!ptr->m_is_new) {
-	    if (ptr->m_cbuf_offset >= count) {
-		u_long old_pos = ptr->m_cbuf_offset;
-		ptr->m_cbuf_offset -= count;
-		debug_printf ("Updated relay pointer: %d -> %d\n",
-			      old_pos, ptr->m_cbuf_offset);
-		prev = ptr;
-	    } else {
-		debug_printf ("Relay: Client %d couldn't keep up with cbuf\n", 
-			      ptr->m_sock);
-		relaylib_disconnect (rmi, prev, ptr);
-	    }
-	}
-	ptr = next;
-    }
-#endif
 }

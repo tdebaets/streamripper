@@ -411,7 +411,7 @@ struct relay_client
     u_long m_offset;             // offset within buffer
     u_long m_left_to_send;
 
-    Cbuf3_pointer m_cbuf_offset; // lies along chunck boundary for mp3
+    Cbuf3_pointer m_cbuf_ptr;    // lies along chunck boundary for mp3
 
     char* m_header_buf_ptr;      // for ogg header pages
     u_long m_header_buf_len;     // for ogg header pages
