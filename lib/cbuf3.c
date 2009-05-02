@@ -306,8 +306,11 @@ cbuf3_ogg_advance_page (Cbuf3 *cbuf3)
     cbuf3->written_page = cbuf3->written_page->next;
 }
 
+/* This sets the m_cbuf_ptr (and related items) within the 
+   relay_client.  If it fails, m_cbuf_ptr.chunk is left unchanged 
+   at zero.  */
 error_code
-cbuf3_add_relay_entry (struct cbuf3 *cbuf3,
+cbuf3_initialize_relay_client_ptr (struct cbuf3 *cbuf3,
 		       struct relay_client *relay_client,
 		       u_long burst_request)
 {
@@ -326,6 +329,7 @@ cbuf3_add_relay_entry (struct cbuf3 *cbuf3,
 	ogg_page_ptr = cbuf3->ogg_page_refs->tail;
 	if (!ogg_page_ptr) {
 	    debug_printf ("Error.  No data for relay\n");
+	    threadlib_signal_sem (&cbuf3->sem);
 	    return SR_ERROR_NO_DATA_FOR_RELAY;
 	}
 	opr = (Ogg_page_reference *) ogg_page_ptr->data;
@@ -333,8 +337,11 @@ cbuf3_add_relay_entry (struct cbuf3 *cbuf3,
 	debug_printf ("OGG_ADD_RELAY_ENTRY: BA=%d\n", burst_amt);
 
 	while (burst_amt < burst_request) {
+	    if (!ogg_page_ptr->prev) {
+		debug_printf ("Hit list head while spinning back\n");
+		break;
+	    }
 	    ogg_page_ptr = ogg_page_ptr->prev;
-	    if (!ogg_page_ptr) break;
 	    opr = (Ogg_page_reference *) ogg_page_ptr->data;
 	    burst_amt += opr->m_page_len;
 	    debug_printf ("OGG_ADD_RELAY_ENTRY: BA=%d\n", burst_amt);
@@ -343,11 +350,12 @@ cbuf3_add_relay_entry (struct cbuf3 *cbuf3,
 	/* If the desired ogg page is a header page, spin forward 
 	   to a non-header page */
 	while (opr->m_page_flags & (OGG_PAGE_BOS | OGG_PAGE_2)) {
-	    ogg_page_ptr = ogg_page_ptr->next;
-	    if (!ogg_page_ptr) {
+	    if (!ogg_page_ptr->next) {
 		debug_printf ("Error.  No data for relay\n");
+		threadlib_signal_sem (&cbuf3->sem);
 		return SR_ERROR_NO_DATA_FOR_RELAY;
 	    }
+	    ogg_page_ptr = ogg_page_ptr->next;
 	    opr = (Ogg_page_reference *) ogg_page_ptr->data;
 	}
 	relay_client->m_cbuf_ptr.chunk = opr->m_cbuf3_loc.chunk;
@@ -363,6 +371,8 @@ cbuf3_add_relay_entry (struct cbuf3 *cbuf3,
 	/* For mp3 et al., walk through chunks in reverse order */
 	chunk_ptr = cbuf3->buf->tail;
 	if (!chunk_ptr) {
+	    debug_printf ("Error.  No data for relay\n");
+	    threadlib_signal_sem (&cbuf3->sem);
 	    return SR_ERROR_NO_DATA_FOR_RELAY;
 	}
 	burst_amt += cbuf3->chunk_size;

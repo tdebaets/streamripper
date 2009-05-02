@@ -54,9 +54,9 @@ cbuf3_ogg_peek_page (Cbuf3 *cbuf3,
 void
 cbuf3_ogg_advance_page (Cbuf3 *cbuf3);
 error_code
-cbuf3_add_relay_entry (struct cbuf3 *cbuf3,
-		       Relay_client *relay_client,
-		       u_long burst_request);
+cbuf3_initialize_relay_client_ptr (struct cbuf3 *cbuf3,
+				   struct relay_client *relay_client,
+				   u_long burst_request);
 error_code 
 cbuf3_extract_relay (Cbuf3 *cbuf3,
 		     Relay_client *relay_client);

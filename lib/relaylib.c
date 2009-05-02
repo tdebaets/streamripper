@@ -56,6 +56,11 @@
 #define errno WSAGetLastError()
 #endif
 
+//#define BURST_AMOUNT (128*1024)
+//#define BURST_AMOUNT (64*1024)
+#define BURST_AMOUNT (32*1024)
+
+
 /*****************************************************************************
  * Private functions
  *****************************************************************************/
@@ -480,9 +485,7 @@ relay_client_add (RIP_MANAGER_INFO *rmi, int newsock, int client_wants_metadata)
     new_client = (Relay_client*) malloc (sizeof (Relay_client));
     if (new_client != NULL) {
 	int buffer_size;
-	//	int burst_amount = 128*1024;
-	//	int burst_amount = 64*1024;
-	int burst_amount = 32*1024;
+	int burst_amount = BURST_AMOUNT;
 
 	new_client->m_sock = newsock;
 	if (streamripper_gets_metadata) {
@@ -500,6 +503,7 @@ relay_client_add (RIP_MANAGER_INFO *rmi, int newsock, int client_wants_metadata)
 	new_client->m_left_to_send = 0;
 	new_client->m_buffer = (char*) malloc (sizeof(char)*buffer_size);
 	new_client->m_buffer_size = buffer_size;
+	new_client->m_cbuf_ptr.chunk = 0;
 
 	/* GCS FIX: Watch deadlocks. Lock cbuf3, then lock relay (?) */
 	debug_printf ("relay_client_add is waiting for &rmi->relay_list_sem\n");
@@ -508,7 +512,7 @@ relay_client_add (RIP_MANAGER_INFO *rmi, int newsock, int client_wants_metadata)
 	debug_printf ("Pushing relay client onto relay_list\n");
 	g_queue_push_tail (rmi->relay_list, new_client);
 	debug_printf ("Registering relay client with cbuf3\n");
-	cbuf3_add_relay_entry (cbuf3, new_client, burst_amount);
+	cbuf3_initialize_relay_client_ptr (cbuf3, new_client, burst_amount);
 	threadlib_signal_sem (&rmi->relay_list_sem);
 	debug_printf ("relay_client_add released &rmi->relay_list_sem\n");
     }
@@ -720,6 +724,17 @@ relaylib_send (RIP_MANAGER_INFO* rmi, Relay_client *relay_client)
     int err_errno;
     int done = 0;
     Cbuf3 *cbuf3 = &rmi->cbuf3;
+
+    /* If the relay client connects too soon, it might not yet 
+       be initialized.  In that case, initialize it here. */
+    if (relay_client->m_cbuf_ptr.chunk == 0) {
+	error_code rc;
+	rc = cbuf3_initialize_relay_client_ptr (cbuf3, relay_client, 
+						BURST_AMOUNT);
+	if (rc != SR_SUCCESS) {
+	    return;
+	}
+    }
 
     while (!done) {
 	/* If our private buffer is empty, copy some from the cbuf */
