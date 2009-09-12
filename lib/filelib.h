@@ -82,15 +82,17 @@ filelib_init (RIP_MANAGER_INFO* rmi,
 	      int get_separate_dirs,
 	      int get_date_stamp,
 	      char* icy_name);
-error_code filelib_start (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
-error_code filelib_write_track (RIP_MANAGER_INFO* rmi, char *buf, u_long size);
+error_code
+filelib_start (RIP_MANAGER_INFO* rmi, Writer *writer, TRACK_INFO* ti);
+error_code
+filelib_write_track (Writer *writer, char *buf, u_long size);
 error_code
 filelib_write_show (RIP_MANAGER_INFO* rmi, char *buf, u_long size);
 error_code filelib_write_cue (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti, int secs);
 error_code
 filelib_end (RIP_MANAGER_INFO* rmi,
-	     TRACK_INFO* ti, enum OverwriteOpt overwrite,
-	     BOOL truncate_dup, mchar *fullpath);
+	     Writer *writer,
+	     TRACK_INFO* ti);
 void filelib_shutdown (RIP_MANAGER_INFO* rmi);
 
 #endif //FILELIB

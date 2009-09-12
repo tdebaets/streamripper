@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include "glib.h"
 #include "glib/gstdio.h"
+#include "rip_manager.h"
 #include "uce_dirent.h"
 
 #define TEMP_STR_LEN	(SR_MAX_PATH*2)
@@ -113,7 +114,7 @@ filelib_init (RIP_MANAGER_INFO* rmi,
     gchar tmp_output_pattern[SR_MAX_PATH];
     gchar tmp_showfile_pattern[SR_MAX_PATH];
 
-    fli->m_file = INVALID_FHANDLE;
+    //    fli->m_file = INVALID_FHANDLE;
     fli->m_show_file = INVALID_FHANDLE;
     fli->m_cue_file = INVALID_FHANDLE;
     fli->m_count = do_count ? count_start : -1;
@@ -245,7 +246,7 @@ filelib_init (RIP_MANAGER_INFO* rmi,
 }
 
 error_code
-filelib_start (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
+filelib_start (RIP_MANAGER_INFO* rmi, Writer *writer, TRACK_INFO* ti)
 {
     FILELIB_INFO* fli = &rmi->filelib_info;
     gchar newfile[TEMP_STR_LEN];
@@ -254,7 +255,7 @@ filelib_start (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 
     if (!fli->m_do_individual_tracks) return SR_SUCCESS;
 
-    close_file (&fli->m_file);
+    //    close_file (&fli->m_file);
 
     /* Compose and trim filename (not including directory) */
     msnprintf (fnbase1, TEMP_STR_LEN, m_S m_(" - ") m_S, 
@@ -267,7 +268,7 @@ filelib_start (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 				  fnbase, fli->m_extension);
     }
     mstrcpy (fli->m_incomplete_filename, newfile);
-    return filelib_open_for_write (rmi, &fli->m_file, newfile);
+    return filelib_open_for_write (rmi, &writer->m_file, newfile);
 }
 
 error_code
@@ -298,10 +299,9 @@ filelib_write_cue (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti, int secs)
 }
 
 error_code
-filelib_write_track (RIP_MANAGER_INFO* rmi, char *buf, u_long size)
+filelib_write_track (Writer *writer, char *buf, u_long size)
 {
-    FILELIB_INFO* fli = &rmi->filelib_info;
-    return filelib_write (fli->m_file, buf, size);
+    return filelib_write (writer->m_file, buf, size);
 }
 
 error_code
@@ -321,24 +321,28 @@ filelib_write_show (RIP_MANAGER_INFO* rmi, char *buf, u_long size)
     return rc;
 }
 
-// Moves the file from incomplete to complete directory
-// fullpath is an output parameter
+/** Close file and moves from incomplete to complete directory.
+*/
 error_code
 filelib_end (RIP_MANAGER_INFO* rmi,
-	     TRACK_INFO* ti,
-	     enum OverwriteOpt overwrite,
-	     BOOL truncate_dup,
-	     gchar *fullpath)
+	     Writer *writer,
+	     TRACK_INFO* ti)
 {
     FILELIB_INFO* fli = &rmi->filelib_info;
     BOOL ok_to_write = TRUE;
     gchar new_path[TEMP_STR_LEN];
     gchar* new_fnbase;
     gchar* new_dir;
+    enum OverwriteOpt overwrite = rmi->prefs->overwrite;
+    BOOL truncate_dup = GET_TRUNCATE_DUPS(rmi->prefs->flags);
+    /* GCS FIX: It used to be that fullpath was returned to 
+       the caller through the "streamripper API".  Is this necessary?
+       If so, the methodology should be documented. */
+    gchar *fullpath = 0;
 
     if (!fli->m_do_individual_tracks) return SR_SUCCESS;
 
-    close_file (&fli->m_file);
+    close_file (&writer->m_file);
 
     /* Construct filename for completed file */
     parse_and_subst_pat (rmi, new_path, ti, fli->m_output_directory, 
@@ -755,7 +759,8 @@ static void
 close_files (RIP_MANAGER_INFO* rmi)
 {
     FILELIB_INFO* fli = &rmi->filelib_info;
-    close_file (&fli->m_file);
+    /* GCS FIX: Need to close writers */
+    //    close_file (&fli->m_file);
     close_file (&fli->m_show_file);
     close_file (&fli->m_cue_file);
 }

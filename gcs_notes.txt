@@ -1410,6 +1410,15 @@ http://live.ladio.livedoor.com (japanese)
 mostly non-shoutcast
 http://www.radio-locator.com/cgi-bin/home
 http://www.wwitv.com/portal.htm?http://www.wwitv.com/television/index.html
+http://www.simulradio.jp/ (japanese)
+
+
+-----------------------------------------------------------------------
+Misc streaming video
+-----------------------------------------------------------------------
+aznv.tv
+https://www.crunchyroll.com/
+mysoju.com
 
 
 -----------------------------------------------------------------------
@@ -1535,3 +1544,6 @@ has all the packages for patent-encrusted formats such as AAC & MP4.
   1) http://wiki.debian.org/DebianMultimedia
   2) http://debian-multimedia.org
 
+
+========
+Zoom H2 Handy Portable Stereo Recorder - $160 Amazon (shipping incl)

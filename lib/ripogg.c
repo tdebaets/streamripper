@@ -478,7 +478,7 @@ ripogg_process_chunk (RIP_MANAGER_INFO* rmi,
     struct cbuf3_pointer cbuf3_tmp_loc;
     uint32_t pageno;
     uint32_t checksum;
-    GList *chunk_page_list = NULL;
+    GList *new_pages = NULL;
     struct cbuf3 *cbuf3 = &rmi->cbuf3;
     struct ogg_page_reference *ol;
 
@@ -486,12 +486,13 @@ ripogg_process_chunk (RIP_MANAGER_INFO* rmi,
 
     /* Find cbuf3 location of beginning of next page */
     if (!cbuf3->ogg_page_refs->tail) {
-	cbuf3_page_loc.chunk = cbuf3->buf->tail;
+	cbuf3_page_loc.node = cbuf3->buf->tail;
 	cbuf3_page_loc.offset = 0;
     } else {
 	struct ogg_page_reference *opr;
 	opr = (struct ogg_page_reference*) cbuf3->ogg_page_refs->tail->data;
-	cbuf3_add (cbuf3, &cbuf3_page_loc, &opr->m_cbuf3_loc, opr->m_page_len);
+	cbuf3_pointer_add (cbuf3, &cbuf3_page_loc, 
+			   &opr->m_cbuf3_loc, opr->m_page_len);
     }
 
     buffer = ogg_sync_buffer (&rmi->ogg_sync, size);
@@ -593,13 +594,13 @@ ripogg_process_chunk (RIP_MANAGER_INFO* rmi,
 	    }
 
 	    /* Assign page location within cbuf3 */
-	    /* Note: cbuf3_add might overflow here, but that's ok.  The 
-	       current chunk was already added to cbuf3.  Therefore 
+	    /* Note: cbuf3_pointer_add might overflow here, but that's ok.  
+	       The current chunk was already added to cbuf3.  Therefore 
 	       overflow can only occur on the last page of the loop. */
 	    debug_printf ("Assigning page location\n");
 	    ol->m_cbuf3_loc = cbuf3_page_loc;
-	    cbuf3_add (cbuf3, &cbuf3_page_loc, &ol->m_cbuf3_loc, 
-		       ol->m_page_len);
+	    cbuf3_pointer_add (cbuf3, &cbuf3_page_loc, &ol->m_cbuf3_loc, 
+			       ol->m_page_len);
 
 	    /* Fix gaps in page numbers - we will first set the page number 
 	       within the ogglib-controlled buffer, then recompute the 
@@ -625,14 +626,14 @@ ripogg_process_chunk (RIP_MANAGER_INFO* rmi,
 	    /* Copy page number and checksum to cbuf3 */
 	    /* These cannot overflow */
 	    debug_printf ("Copying page number and checksum to cbuf3\n");
-	    cbuf3_add (cbuf3, &cbuf3_tmp_loc, &ol->m_cbuf3_loc, 18);
+	    cbuf3_pointer_add (cbuf3, &cbuf3_tmp_loc, &ol->m_cbuf3_loc, 18);
 	    cbuf3_set_uint32 (cbuf3, &cbuf3_tmp_loc, pageno);
-	    cbuf3_add (cbuf3, &cbuf3_tmp_loc, &ol->m_cbuf3_loc, 22);
+	    cbuf3_pointer_add (cbuf3, &cbuf3_tmp_loc, &ol->m_cbuf3_loc, 22);
 	    cbuf3_set_uint32 (cbuf3, &cbuf3_tmp_loc, checksum);
 
 	    /* Add page reference to temporary list */
 	    debug_printf ("Adding page reference to temporary list\n");
-	    chunk_page_list = g_list_append (chunk_page_list, ol);
+	    new_pages = g_list_append (new_pages, ol);
 
 	    debug_printf ("OGG_PAGE\n"
 			  "  header_len = %d\n"
@@ -653,9 +654,9 @@ ripogg_process_chunk (RIP_MANAGER_INFO* rmi,
     } while (ret != 0);
 
     /* Splice temporary ogg page reference list onto cbuf3 list */
-    /* List nodes of chunk_page_list are moved onto cbuf3 list, 
-       so the chunk_page_list will be NULL after this call */
-    cbuf3_splice_page_list (cbuf3, &chunk_page_list);
+    /* List nodes of new_pages are moved onto cbuf3 list, 
+       so the new_pages will be NULL after this call */
+    cbuf3_splice_page_list (cbuf3, &new_pages);
 
     debug_printf ("OGG_SYNC state:\n"
 		  "  storage = %d\n"

@@ -19,13 +19,13 @@
 #include <string.h>
 #include "srtypes.h"
 #include "errors.h"
-#include "threadlib.h"
 #include "cbuf3.h"
+#include "threadlib.h"
+#include "relaylib.h"
 #include "debug.h"
 
 static void
-cbuf3_advance_relay_list (RIP_MANAGER_INFO *rmi, Cbuf3 *cbuf3);
-
+cbuf3_disconnect_slow_clients (RIP_MANAGER_INFO *rmi, Cbuf3 *cbuf3);
 
 
 /******************************************************************************
@@ -38,8 +38,6 @@ cbuf3_init (struct cbuf3 *cbuf3,
 	    unsigned long chunk_size, 
 	    unsigned long num_chunks)
 {
-    int i;
-
     debug_printf ("Initializing cbuf3\n");
 
     if (chunk_size == 0 || num_chunks == 0) {
@@ -50,29 +48,60 @@ cbuf3_init (struct cbuf3 *cbuf3,
     cbuf3->chunk_size = chunk_size;
 
     cbuf3->buf = g_queue_new ();
-    cbuf3->free_list = NULL;
+    cbuf3->free_list = g_queue_new ();
     cbuf3->pending = 0;
+    cbuf3->num_chunks = 0;
 
-    for (i = 0; i < num_chunks; i++) {
-	char* chunk = (char*) malloc (chunk_size);
-	if (!chunk) {
-	    return SR_ERROR_CANT_ALLOC_MEMORY;
-	}
-	cbuf3->free_list = g_slist_prepend (cbuf3->free_list, chunk);
-    }
-
+    /* Ogg stuff */
     cbuf3->ogg_page_refs = g_queue_new ();
+
+    /* Mp3 stuff */
+    cbuf3->write_list = g_queue_new ();
+    cbuf3->metadata_list = g_queue_new ();
 
     //    cbuf2->next_song = 0;        /* MP3 only */
     //    cbuf2->song_page = 0;        /* OGG only */
     //    cbuf2->song_page_done = 0;   /* OGG only */
 
-    //    INIT_LIST_HEAD (&cbuf2->metadata_list);
-    //    INIT_LIST_HEAD (&cbuf2->ogg_page_list);
-
     cbuf3->sem = threadlib_create_sem();
     threadlib_signal_sem (&cbuf3->sem);
 
+    /* Allocate chunks */
+    cbuf3_allocate_minimum (cbuf3, num_chunks);
+
+    return SR_SUCCESS;
+}
+
+error_code
+cbuf3_allocate_minimum (struct cbuf3 *cbuf3, 
+			unsigned long num_chunks)
+{
+    int i;
+
+    debug_printf ("Allocating cbuf3\n");
+
+    if (num_chunks == 0) {
+        return SR_ERROR_INVALID_PARAM;
+    }
+
+    threadlib_waitfor_sem (&cbuf3->sem);
+
+    if (cbuf3->num_chunks >= num_chunks) {
+	/* Already have enough chunks */
+	threadlib_signal_sem (&cbuf3->sem);
+	return SR_SUCCESS;
+    }
+
+    for (i = 0; i < num_chunks - cbuf3->num_chunks; i++) {
+	char* chunk = (char*) malloc (cbuf3->chunk_size);
+	if (!chunk) {
+	    threadlib_signal_sem (&cbuf3->sem);
+	    return SR_ERROR_CANT_ALLOC_MEMORY;
+	}
+	g_queue_push_head (cbuf3->free_list, chunk);
+    }
+
+    threadlib_signal_sem (&cbuf3->sem);
     return SR_SUCCESS;
 }
 
@@ -80,7 +109,6 @@ void
 cbuf3_destroy (struct cbuf3 *cbuf3)
 {
     char *c;
-    GSList *n;
 
     /* Remove buffer */
     if (cbuf3->buf) {
@@ -93,10 +121,10 @@ cbuf3_destroy (struct cbuf3 *cbuf3)
 
     /* Remove free_list */
     if (cbuf3->free_list) {
-	for (n = cbuf3->free_list; n; n = n->next) {
-	    free (n->data);
+	while ((c = g_queue_pop_head (cbuf3->free_list)) != 0) {
+	    free (c);
 	}
-	g_slist_free (cbuf3->free_list);
+	g_queue_free (cbuf3->free_list);
 	cbuf3->free_list = 0;
     }
 
@@ -110,60 +138,34 @@ cbuf3_destroy (struct cbuf3 *cbuf3)
     }
 }
 
-/* Returns a free chunk */
-char*
-cbuf3_request_free_chunk (RIP_MANAGER_INFO *rmi,
+/** Return 1 if there are no more empty nodes. */
+int
+cbuf3_is_full (Cbuf3 *cbuf3)
+{
+    return (!(cbuf3->free_list));
+}
+
+/* Returns a free node */
+GList*
+cbuf3_request_free_node (RIP_MANAGER_INFO *rmi,
 			  struct cbuf3 *cbuf3)
 {
-    char *chunk;
-
     /* If there is a free chunk, return it */
     /* No need to lock, only the main thread accesses free_list */
     if (cbuf3->free_list) {
-	chunk = cbuf3->free_list->data;
-	cbuf3->free_list = g_slist_delete_link (cbuf3->free_list, 
-						cbuf3->free_list);
-	return chunk;
+	return g_queue_pop_head_link (cbuf3->free_list);
     }
 
-    /* Otherwise, we have to eject the oldest chunk from buf.  
-       This requires updates to the relay lists. */
-    if (cbuf3->have_relay) {
-	debug_printf ("cbuf3_request_free_chunk is waiting for rmi->relay_list_sem\n");
-	threadlib_waitfor_sem (&rmi->relay_list_sem);
-	debug_printf ("cbuf3_request_free_chunk got rmi->relay_list_sem\n");
-    }
-
-    debug_printf ("cbuf3_request_free_chunk is waiting for cbuf3->sem\n");
-    threadlib_waitfor_sem (&cbuf3->sem);
-    debug_printf ("cbuf3_request_free_chunk got cbuf3->sem\n");
-
-    /* Remove the chunk */
-    chunk = g_queue_pop_head (cbuf3->buf);
-
-    /* Advance the chunk numbers in the relay list */
-    if (cbuf3->have_relay) {
-	cbuf3_advance_relay_list (rmi, cbuf3);
-    }
-
-    /* Done */
-    threadlib_signal_sem (&cbuf3->sem);
-    debug_printf ("cbuf3_request_free_chunk released cbuf3->sem\n");
-    if (cbuf3->have_relay) {
-	threadlib_signal_sem (&rmi->relay_list_sem);
-	debug_printf ("cbuf3_request_free_chunk released rmi->relay_list_sem\n");
-    }
-
-    return chunk;
+    /* Otherwise, we have to eject the oldest chunk from buf. */
+    return cbuf3_extract_oldest_node (rmi, cbuf3);
 }
 
-/* Adds chunk to buf, but relay is not yet allowed to access */
 error_code
-cbuf3_insert (struct cbuf3 *cbuf3, char *chunk)
+cbuf3_insert_node (struct cbuf3 *cbuf3, GList *node)
 {
     GList *p;
 
-    /* Insert data */
+    /* Insert node to cbuf */
     debug_printf ("cbuf3_insert is waiting for cbuf3->sem\n");
     threadlib_waitfor_sem (&cbuf3->sem);
     debug_printf ("cbuf3_insert got cbuf3->sem\n");
@@ -171,10 +173,9 @@ cbuf3_insert (struct cbuf3 *cbuf3, char *chunk)
     debug_printf ("CBUF_INSERT\n");
     debug_printf ("  Node       Data\n");
 
-    g_queue_push_tail (cbuf3->buf, chunk);
+    g_queue_push_tail_link (cbuf3->buf, node);
 
     for (p = cbuf3->buf->head; p; p = p->next) {
-	
 	debug_printf ("  %p, %p\n", p, p->data);
     }
 
@@ -183,31 +184,119 @@ cbuf3_insert (struct cbuf3 *cbuf3, char *chunk)
     return SR_SUCCESS;
 }
 
-/* Adds chunk to buf, but relay is not yet allowed to access */
+void
+cbuf3_insert_free_node (struct cbuf3 *cbuf3, GList *node)
+{
+    /* No need to lock, only the main thread accesses free_list */
+    g_queue_push_head_link (cbuf3->free_list, node);
+}
+
+/** Return oldest node. */
+GList*
+cbuf3_extract_oldest_node (RIP_MANAGER_INFO *rmi,
+			   struct cbuf3 *cbuf3)
+{
+    GList *node;
+
+    /* Otherwise, we have to eject the oldest chunk from buf.  
+       Relay threads access buf, so we need to lock. */
+    if (cbuf3->have_relay) {
+	debug_printf ("cbuf3_extract_oldest_node is waiting for rmi->relay_list_sem\n");
+	threadlib_waitfor_sem (&rmi->relay_list_sem);
+	debug_printf ("cbuf3_extract_oldest_node got rmi->relay_list_sem\n");
+    }
+
+    debug_printf ("cbuf3_extract_oldest_node is waiting for cbuf3->sem\n");
+    threadlib_waitfor_sem (&cbuf3->sem);
+    debug_printf ("cbuf3_extract_oldest_node got cbuf3->sem\n");
+
+    /* Disconnect clients which reference the node at head of buf */
+    if (cbuf3->have_relay) {
+	cbuf3_disconnect_slow_clients (rmi, cbuf3);
+    }
+
+    /* Remove the chunk */
+    node = g_queue_pop_head (cbuf3->buf);
+
+    /* Done */
+    threadlib_signal_sem (&cbuf3->sem);
+    debug_printf ("cbuf3_extract_oldest_node released cbuf3->sem\n");
+    if (cbuf3->have_relay) {
+	threadlib_signal_sem (&rmi->relay_list_sem);
+	debug_printf ("cbuf3_extract_oldest_node released rmi->relay_list_sem\n");
+    }
+
+    return node;
+}
+
 error_code
-cbuf3_add (struct cbuf3 *cbuf3, 
-	   struct cbuf3_pointer *out_ptr, 
-	   struct cbuf3_pointer *in_ptr, 
-	   u_long len)
+cbuf3_insert_metadata (struct cbuf3 *cbuf3, TRACK_INFO* ti)
+{
+    if (ti && ti->have_track_info) {
+	Metadata *metadata;
+	threadlib_waitfor_sem (&cbuf3->sem);
+
+	metadata = (Metadata*) malloc (sizeof(Metadata));
+	if (!metadata) {
+	    threadlib_signal_sem (&cbuf3->sem);
+	    return SR_ERROR_CANT_ALLOC_MEMORY;
+	}
+
+	metadata->m_node = cbuf3->buf->tail;
+	memcpy (metadata->m_composed_metadata, 
+		ti->composed_metadata, 
+		MAX_METADATA_LEN+1);
+	g_queue_push_tail (cbuf3->metadata_list, metadata);
+	threadlib_signal_sem (&cbuf3->sem);
+    }
+    return SR_SUCCESS;
+}
+
+error_code
+cbuf3_pointer_add (struct cbuf3 *cbuf3, 
+		   struct cbuf3_pointer *out_ptr, 
+		   struct cbuf3_pointer *in_ptr, 
+		   long len)
 {
     //debug_printf ("add: %p,%d + %d\n", in_ptr->chunk, in_ptr->offset, len);
-    out_ptr->chunk = in_ptr->chunk;
+    out_ptr->node = in_ptr->node;
     out_ptr->offset = in_ptr->offset;
+
+    /* For positive len */
     while (len > 0) {
 	out_ptr->offset += len;
 	len = 0;
-	/* Check for advancing to next chunk */
+	/* Check for advancing to next node */
 	if (out_ptr->offset >= cbuf3->chunk_size) {
 	    len = out_ptr->offset - cbuf3->chunk_size;
 	    out_ptr->offset = 0;
-	    out_ptr->chunk = out_ptr->chunk->next;
+	    out_ptr->node = out_ptr->node->next;
 	    /* Check for overflow */
-	    if (!out_ptr->chunk) {
-		//debug_printf ("     (overflow)\n");
+	    if (!out_ptr->node) {
 		return SR_ERROR_BUFFER_TOO_SMALL;
 	    }
 	}
     }
+
+    /* For negative len - note offset is unsigned */
+    while (len < 0) {
+	long tmp = (long) out_ptr->offset + len;
+	len = 0;
+	/* Check for rewinding to prev node */
+	if (tmp < 0) {
+	    len = tmp;
+	    out_ptr->offset = cbuf3->chunk_size;
+	    out_ptr->node = out_ptr->node->prev;
+	    /* Check for overflow */
+	    if (!out_ptr->node) {
+		//debug_printf ("     (overflow)\n");
+		return SR_ERROR_BUFFER_TOO_SMALL;
+	    }
+	} else {
+	    out_ptr->offset = (u_long) tmp;
+	}
+    }
+
     //debug_printf ("     %p,%d\n", out_ptr->chunk, out_ptr->offset);
     return SR_SUCCESS;
 }
@@ -222,15 +311,15 @@ cbuf3_set_uint32 (struct cbuf3 *cbuf3,
     error_code rc;
 
     //debug_printf ("set: %p,%d\n", in_ptr->chunk, in_ptr->offset);
-    tmp.chunk = in_ptr->chunk;
+    tmp.node = in_ptr->node;
     tmp.offset = in_ptr->offset;
 
     for (i = 0; i < 4; i++) {
-	rc = cbuf3_add (cbuf3, &tmp, in_ptr, i);
+	rc = cbuf3_pointer_add (cbuf3, &tmp, in_ptr, i);
 	if (rc != SR_SUCCESS) {
 	    return rc;
 	}
-	char *buf = (char*) tmp.chunk->data;
+	char *buf = (char*) tmp.node->data;
 	buf[tmp.offset] = (val & 0xff);
 	val >>= 8;
     }
@@ -242,7 +331,7 @@ void
 cbuf3_debug_ogg_page_ref (struct ogg_page_reference *opr, void *user_data)
 {
     debug_printf ("  chk/off/len: [%p,%5d,%5d] hdr: [%p,%5d] flg: %2d\n", 
-		  opr->m_cbuf3_loc.chunk,
+		  opr->m_cbuf3_loc.node,
 		  opr->m_cbuf3_loc.offset,
 		  opr->m_page_len,
 		  opr->m_header_buf_ptr,
@@ -260,16 +349,16 @@ cbuf3_debug_ogg_page_list (struct cbuf3 *cbuf3)
 
 void
 cbuf3_splice_page_list (struct cbuf3 *cbuf3, 
-			GList **chunk_page_list)
+			GList **new_pages)
 {
     /* Do I need to lock?  If so, read access should lock too? */
     debug_printf ("cbuf3_splice_page_list is waiting for cbuf3->sem\n");
     threadlib_waitfor_sem (&cbuf3->sem);
     debug_printf ("cbuf3_splice_page_list got cbuf3->sem\n");
 
-    while (*chunk_page_list) {
-	GList *ele = (*chunk_page_list);
-	(*chunk_page_list) = g_list_remove_link ((*chunk_page_list), ele);
+    while (*new_pages) {
+	GList *ele = (*new_pages);
+	(*new_pages) = g_list_remove_link ((*new_pages), ele);
 	g_queue_push_tail_link (cbuf3->ogg_page_refs, ele);
     }
 
@@ -307,7 +396,7 @@ cbuf3_ogg_advance_page (Cbuf3 *cbuf3)
 }
 
 /* This sets the m_cbuf_ptr (and related items) within the 
-   relay_client.  If it fails, m_cbuf_ptr.chunk is left unchanged 
+   relay_client.  If it fails, m_cbuf_ptr.node is left unchanged 
    at zero.  */
 error_code
 cbuf3_initialize_relay_client_ptr (struct cbuf3 *cbuf3,
@@ -358,19 +447,19 @@ cbuf3_initialize_relay_client_ptr (struct cbuf3 *cbuf3,
 	    ogg_page_ptr = ogg_page_ptr->next;
 	    opr = (Ogg_page_reference *) ogg_page_ptr->data;
 	}
-	relay_client->m_cbuf_ptr.chunk = opr->m_cbuf3_loc.chunk;
+	relay_client->m_cbuf_ptr.node = opr->m_cbuf3_loc.node;
 	relay_client->m_cbuf_ptr.offset = opr->m_cbuf3_loc.offset;
 	relay_client->m_header_buf_ptr = opr->m_header_buf_ptr;
 	relay_client->m_header_buf_len = opr->m_header_buf_len;
 	relay_client->m_header_buf_off = 0;
 
     } else {
-	GList *chunk_ptr;
+	GList *node_ptr;
 	u_long burst_amt = 0;
 
-	/* For mp3 et al., walk through chunks in reverse order */
-	chunk_ptr = cbuf3->buf->tail;
-	if (!chunk_ptr) {
+	/* For mp3 et al., walk through nodes in reverse order */
+	node_ptr = cbuf3->buf->tail;
+	if (!node_ptr) {
 	    debug_printf ("Error.  No data for relay\n");
 	    threadlib_signal_sem (&cbuf3->sem);
 	    return SR_ERROR_NO_DATA_FOR_RELAY;
@@ -378,14 +467,14 @@ cbuf3_initialize_relay_client_ptr (struct cbuf3 *cbuf3,
 	burst_amt += cbuf3->chunk_size;
 
 	while (burst_amt < burst_request) {
-	    chunk_ptr = chunk_ptr->prev;
-	    if (!chunk_ptr) {
+	    node_ptr = node_ptr->prev;
+	    if (!node_ptr) {
 		break;
 	    }
 	    burst_amt += cbuf3->chunk_size;
 	}
 
-	relay_client->m_cbuf_ptr.chunk = chunk_ptr;
+	relay_client->m_cbuf_ptr.node = node_ptr;
 	relay_client->m_cbuf_ptr.offset = 0;
     }
 
@@ -398,8 +487,8 @@ error_code
 cbuf3_extract_relay (Cbuf3 *cbuf3,
 		     Relay_client *relay_client)
 {
-    GList *chunk;
-    char *chunk_data;
+    GList *node;
+    char *chunk;
     u_long offset, remaining;
     error_code ec;
 
@@ -409,19 +498,19 @@ cbuf3_extract_relay (Cbuf3 *cbuf3,
 
     debug_printf ("EXTRACT_RELAY\n");
 
-    chunk = relay_client->m_cbuf_ptr.chunk;
+    node = relay_client->m_cbuf_ptr.node;
     offset = relay_client->m_cbuf_ptr.offset;
-    chunk_data = (char*) chunk->data;
+    chunk = (char*) node->data;
     remaining = cbuf3->chunk_size - offset;
 
 
-    if (chunk->next == NULL) {
+    if (node->next == NULL) {
 	ec = SR_ERROR_BUFFER_EMPTY;
     } else {
-	debug_printf ("Client %d chunk %p\n", relay_client->m_sock, chunk);
-	memcpy (relay_client->m_buffer, &chunk_data[offset], remaining);
+	debug_printf ("Client %d node %p\n", relay_client->m_sock, node);
+	memcpy (relay_client->m_buffer, &chunk[offset], remaining);
 	relay_client->m_left_to_send = remaining;
-	relay_client->m_cbuf_ptr.chunk = chunk->next;
+	relay_client->m_cbuf_ptr.node = node->next;
 	relay_client->m_cbuf_ptr.offset = 0;
 	ec = SR_SUCCESS;
     }
@@ -429,6 +518,40 @@ cbuf3_extract_relay (Cbuf3 *cbuf3,
     threadlib_signal_sem (&cbuf3->sem);
     debug_printf ("cbuf3_extract_relay released cbuf3->sem\n");
     return ec;
+}
+
+error_code 
+cbuf3_peek (Cbuf3 *cbuf3,
+	    char *buf,
+	    Cbuf3_pointer *ptr,
+	    u_long len)
+{
+    int bidx = 0;
+    Cbuf3_pointer cur;
+
+    cur.node = ptr->node;
+    cur.offset = ptr->offset;
+    while (len > 0) {
+	u_long this_len;
+	char *chunk = (char*) cur.node->data;
+	if (cur.offset + len > cbuf3->chunk_size) {
+	    this_len = cbuf3->chunk_size - cur.offset;
+	} else {
+	    this_len = len;
+	}
+	len -= this_len;
+
+	memcpy (&buf[bidx], &chunk[cur.offset], this_len);
+
+	cur.node = cur.node->next;
+	cur.offset = 0;
+	/* Check for overflow */
+	if (!cur.node) {
+	    return SR_ERROR_BUFFER_TOO_SMALL;
+	}
+    }
+
+    return SR_SUCCESS;
 }
 
 /* Copy data from the cbuf3 into the caller's buffer.  Note: This 
@@ -440,10 +563,10 @@ cbuf3_extract (Cbuf3 *cbuf3,
 	       u_long req_size,
 	       u_long *bytes_read)
 {
-    char *chunk_data;
+    char *chunk;
     u_long offset, chunk_remaining;
 
-    if (!cbuf3_ptr->chunk) {
+    if (!cbuf3_ptr->node) {
 	return SR_ERROR_BUFFER_EMPTY;
     }
 
@@ -451,7 +574,7 @@ cbuf3_extract (Cbuf3 *cbuf3,
     threadlib_waitfor_sem (&cbuf3->sem);
     debug_printf ("cbuf3_extract got cbuf3->sem\n");
 
-    chunk_data = (char*) cbuf3_ptr->chunk->data;
+    chunk = (char*) cbuf3_ptr->node->data;
     offset = cbuf3_ptr->offset;
     chunk_remaining = cbuf3->chunk_size - offset;
     if (req_size < chunk_remaining) {
@@ -459,11 +582,11 @@ cbuf3_extract (Cbuf3 *cbuf3,
 	cbuf3_ptr->offset += req_size;
     } else {
 	(*bytes_read) = chunk_remaining;
-	cbuf3_ptr->chunk = cbuf3_ptr->chunk->next;
+	cbuf3_ptr->node = cbuf3_ptr->node->next;
 	cbuf3_ptr->offset = 0;
     }
 
-    memcpy (buf, &chunk_data[offset], (*bytes_read));
+    memcpy (buf, &chunk[offset], (*bytes_read));
 
     threadlib_signal_sem (&cbuf3->sem);
     debug_printf ("cbuf3_extract released cbuf3->sem\n");
@@ -474,7 +597,7 @@ cbuf3_extract (Cbuf3 *cbuf3,
  * Private functions
  *****************************************************************************/
 static void
-cbuf3_advance_relay_list (RIP_MANAGER_INFO *rmi, Cbuf3 *cbuf3)
+cbuf3_disconnect_slow_clients (RIP_MANAGER_INFO *rmi, Cbuf3 *cbuf3)
 {
 
     GList *rlist_node = rmi->relay_list->head;
@@ -484,7 +607,7 @@ cbuf3_advance_relay_list (RIP_MANAGER_INFO *rmi, Cbuf3 *cbuf3)
 	Relay_client *relay_client = (Relay_client *) rlist_node->data;
 	GList *next = rlist_node->next;
 
-	if (relay_client->m_cbuf_ptr.chunk == cbuf3_head) {
+	if (relay_client->m_cbuf_ptr.node == cbuf3_head) {
 	    debug_printf ("Relay: Client %d couldn't keep up with cbuf\n", 
 			  relay_client->m_sock);
 	    relaylib_disconnect (rmi, rlist_node);

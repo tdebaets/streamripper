@@ -28,6 +28,7 @@
  *     void rip_manager_cleanup (void);
  *
  *****************************************************************************/
+/*! \file */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -59,7 +60,6 @@
  * Private functions
  *****************************************************************************/
 static void ripthread (void *thread_arg);
-static void post_status (RIP_MANAGER_INFO* rmi, int status);
 static error_code start_ripping (RIP_MANAGER_INFO* rmi);
 void destroy_subsystems (RIP_MANAGER_INFO* rmi);
 
@@ -84,7 +84,10 @@ rip_manager_init (void)
     socklib_init();
 }
 
-/* Create a RMI structure and start the ripping thread */
+/** Create a RMI structure and start the ripping thread. 
+    \callgraph
+    \callergraph
+*/
 error_code
 rip_manager_start (RIP_MANAGER_INFO **rmip,
 		   STREAM_PREFS *prefs,
@@ -137,6 +140,10 @@ rip_manager_start (RIP_MANAGER_INFO **rmip,
 				  ripthread, (void*) rmi);
 }
 
+/** Abort ripping threads and processes, and free memory.
+    \callgraph
+    \callergraph
+*/
 void
 rip_manager_stop (RIP_MANAGER_INFO *rmi)
 {
@@ -184,6 +191,13 @@ rip_manager_stop (RIP_MANAGER_INFO *rmi)
 #endif
 }
 
+void
+rip_manager_post_status (RIP_MANAGER_INFO* rmi, int status)
+{
+    if (status != 0)
+        rmi->status = status;
+    rmi->status_callback (rmi, RM_UPDATE, 0);
+}
 
 void
 rip_manager_cleanup (void)
@@ -207,14 +221,6 @@ post_error (RIP_MANAGER_INFO* rmi, error_code err)
 }
 
 static void
-post_status (RIP_MANAGER_INFO* rmi, int status)
-{
-    if (status != 0)
-        rmi->status = status;
-    rmi->status_callback (rmi, RM_UPDATE, 0);
-}
-
-static void
 compose_console_string (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
 {
     mchar console_string[SR_MAX_PATH];
@@ -233,18 +239,17 @@ compose_console_string (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
 error_code
 rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
 {
-    int ret;
-
     /* Compose the string for the console output */
     rmi->filesize = 0;
     compose_console_string (rmi, ti);
     rmi->filename[SR_MAX_PATH-1] = '\0';
     rmi->status_callback (rmi, RM_NEW_TRACK, (void*) rmi->filename);
-    post_status(rmi, 0);
+    rip_manager_post_status (rmi, 0);
 
     return SR_SUCCESS;
 }
 
+#if defined (commentout)
 /* Ok, the end_track()'s function is actually to move 
  * tracks out from the incomplete directory. It does 
  * get called, but only after the 2nd track is played. 
@@ -256,24 +261,30 @@ rip_manager_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
     mchar mfullpath[SR_MAX_PATH];
     char fullpath[SR_MAX_PATH];
 
+#if defined (commentout)
+    /* GCS FIX: kkk */
     if (rmi->write_data) {
         filelib_end (rmi, ti, rmi->prefs->overwrite,
 		     GET_TRUNCATE_DUPS(rmi->prefs->flags),
 		     mfullpath);
     }
-    post_status(rmi, 0);
+#endif
+    rip_manager_post_status (rmi, 0);
 
     string_from_gstring (rmi, fullpath, SR_MAX_PATH, mfullpath, CODESET_FILESYS);
     rmi->status_callback (rmi, RM_TRACK_DONE, (void*)fullpath);
 
     return SR_SUCCESS;
 }
+#endif
 
 error_code
 rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
 {
     int ret;
 
+#if defined (commentout)
+    /* GCS FIX: kkk */
     if (GET_INDIVIDUAL_TRACKS(rmi->prefs->flags)) {
 	if (rmi->write_data) {
 	    ret = filelib_write_track (rmi, buf, size);
@@ -283,6 +294,7 @@ rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
 	    }
 	}
     }
+#endif
 
     rmi->filesize += size;	/* This is used by the GUI */
     rmi->bytes_ripped += size;	/* This is used to determine when to quit */
@@ -309,6 +321,12 @@ debug_ripthread (RIP_MANAGER_INFO* rmi)
     debug_printf ("external_process = %p\n", rmi->ep);
 }
 
+/** Main function launched by ripping thread.
+    This function loops, calling ripstream_rip(), and then posting 
+    status to caller and checks for abort conditions.
+    \callgraph
+    \callergraph
+*/
 static void
 ripthread (void *thread_arg)
 {
@@ -327,7 +345,7 @@ ripthread (void *thread_arg)
     }
 
     rmi->status_callback (rmi, RM_STARTED, (void *)NULL);
-    post_status (rmi, RM_STATUS_BUFFERING);
+    rip_manager_post_status (rmi, RM_STATUS_BUFFERING);
     debug_printf ("Ripthread did initialization\n");
     threadlib_signal_sem(&rmi->started_sem);
 
@@ -348,7 +366,7 @@ ripthread (void *thread_arg)
 	    break;
 	}
 	else if (ret == SR_SUCCESS_BUFFERING) {
-	    post_status (rmi, RM_STATUS_BUFFERING);
+	    rip_manager_post_status (rmi, RM_STATUS_BUFFERING);
 	    /* Fall through */
 	}
 	else if (ret == SR_ERROR_CANT_DECODE_MP3) {
@@ -361,7 +379,7 @@ ripthread (void *thread_arg)
 		  ret == SR_ERROR_SELECT_FAILED) && 
 		 GET_AUTO_RECONNECT (rmi->prefs->flags)) {
 	    /* Try to reconnect */
-	    post_status (rmi, RM_STATUS_RECONNECTING);
+	    rip_manager_post_status (rmi, RM_STATUS_RECONNECTING);
 	    while (rmi->started) {
 		socklib_close(&rmi->stream_sock);
 		if (rmi->ep) {
@@ -392,7 +410,7 @@ ripthread (void *thread_arg)
 
 	/* All systems go.  Caller should update GUI that it is ripping */
 	if (rmi->filesize > 0) {
-	    post_status (rmi, RM_STATUS_RIPPING);
+	    rip_manager_post_status (rmi, RM_STATUS_RIPPING);
 	}
     }
 
@@ -556,7 +574,7 @@ start_ripping (RIP_MANAGER_INFO* rmi)
 
     /* Done. */
     debug_printf ("start_ripping: checkpoint 4\n");
-    post_status (rmi, RM_STATUS_BUFFERING);
+    rip_manager_post_status (rmi, RM_STATUS_BUFFERING);
     return SR_SUCCESS;
 
  RETURN_ERR:

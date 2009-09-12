@@ -30,15 +30,6 @@
 #include <sys/types.h>
 #endif
 
-/*
-#if HAVE_INTTYPES_H
-# include <inttypes.h>
-#else
-# if HAVE_STDINT_H
-#  include <stdint.h>
-# endif
-#endif
-*/
 #include "sr_stdint.h"
 
 #if HAVE_SYS_SOCKIO_H
@@ -87,29 +78,25 @@ typedef unsigned int uint32_t;
     fixing this for other platforms. */
 #define SR_MAX_PATH		254
 #define MAX_HOST_LEN		512
-#define MAX_IP_LEN			3+1+3+1+3+1+3+1
+#define MAX_IP_LEN		(3+1+3+1+3+1+3+1)
 #define MAX_HEADER_LEN		8192
 #define MAX_URL_LEN		8192
 #define MAX_VERSION_LEN		256
 #define MAX_ICY_STRING		4024
 #define MAX_SERVER_LEN		1024
-//#define MAX_TRACK_LEN		MAX_PATH
 #define MAX_TRACK_LEN		SR_MAX_PATH /* GCS - be careful here... */
 #define MAX_URI_STRING		1024
 #define MAX_ERROR_STR           (4096)
 #define MAX_USERAGENT_STR	1024
 #define MAX_AUTH_LEN            255
-//#define MAX_DROPSTRING_LEN      255
-
-#define MAX_METADATA_LEN (127*16)
-
+#define MAX_METADATA_LEN        (127*16)
 #define MAX_STATUS_LEN		256
 #define MAX_STREAMNAME_LEN	1024
 #define MAX_SERVER_LEN		1024
-#define MAX_EXT_LINE_LEN 255
+#define MAX_EXT_LINE_LEN        255
+#define MAX_CODESET_STRING      128
 
 #define DEFAULT_META_INTERVAL	1024
-
 
 #ifdef WIN32
   #ifndef _WINSOCKAPI_
@@ -148,18 +135,6 @@ typedef struct IO_DATA_INPUTst{
 #define NO_TRACK_STR	"No track info..."
 
 /* 
- * IO_GET_STREAM is an interface for getting data and track info from
- * a better splite on the track seperation. it keeps a back buffer and 
- * does the "find silent point" shit.
- */
-#if defined (commentout)
-typedef struct IO_GET_STREAMst{
-	int (*get_stream_data)(char* data_buf, char *track_buf);
-	u_long getsize;
-} IO_GET_STREAM;
-#endif
-
-/* 
  * SPLITPOINT_OPTIONS are the options used to tweek how the silence 
  * separation is done.
  */
@@ -171,9 +146,6 @@ typedef struct SPLITPOINT_OPTIONSst
     int xs_search_window_1;
     int xs_search_window_2;
     int xs_offset;
-    //int xd_offset;
-    //int xpadding_1;
-    //int xpadding_2;
     int xs_padding_1;
     int xs_padding_2;
 } SPLITPOINT_OPTIONS;
@@ -182,7 +154,6 @@ typedef struct SPLITPOINT_OPTIONSst
  * CODESET_OPTIONS are the options used to decide how to parse
  * and convert the metadata
  */
-#define MAX_CODESET_STRING 128
 typedef struct CODESET_OPTIONSst
 {
     char codeset_locale[MAX_CODESET_STRING];
@@ -289,11 +260,11 @@ typedef struct SR_HTTP_HEADERst
 
 typedef struct URLINFOst
 {
-	char host[MAX_HOST_LEN];
-	char path[SR_MAX_PATH];
-	u_short port;
-	char username[MAX_URI_STRING];
-	char password[MAX_URI_STRING];
+    char host[MAX_HOST_LEN];
+    char path[SR_MAX_PATH];
+    u_short port;
+    char username[MAX_URI_STRING];
+    char password[MAX_URI_STRING];
 } URLINFO;
 
 typedef struct external_process External_Process;
@@ -315,15 +286,15 @@ struct external_process
     char metadata_buf[MAX_EXT_LINE_LEN];
 };
 
-/* Each metadata within the cbuf gets this struct */
-typedef struct METADATA_LIST_struct METADATA_LIST;
-struct METADATA_LIST_struct
+typedef struct metadata Metadata;
+struct metadata
 {
-    unsigned long m_chunk;
     /* m_composed_metadata includes 1 byte for size*16 */
-    char m_composed_metadata[MAX_METADATA_LEN+1];
-    LIST m_list;
+    char    m_composed_metadata[MAX_METADATA_LEN+1];
+    /* m_node is pointer to chunk associated with metadata */
+    GList   *m_node;
 };
+
 
 /* These are the ogg page flags below */
 #define OGG_PAGE_BOS        0x01
@@ -342,47 +313,33 @@ struct OGG_PAGE_LIST_struct
     LIST m_list;
 };
 
-typedef struct CBUF2_struct
-{
-    char*	buf;
-    int         content_type;
-    int         have_relay;
-    u_long	num_chunks;
-    u_long	chunk_size;
-    u_long	size;        /* size is chunk_size * num_chunks */
-    u_long	base_idx;
-    u_long	item_count;  /* Amount filled */
-    u_long	next_song;   /* start of next song (mp3 only) */
-    OGG_PAGE_LIST* song_page;    /* current page being written (ogg only) */
-    u_long      song_page_done;  /* amount finished in current page (ogg) */
-
-    HSEM        cbuf_sem;
-
-    LIST        metadata_list;
-    LIST        ogg_page_list;
-    LIST        frame_list;
-} CBUF2;
-
 typedef struct cbuf3 Cbuf3;
 struct cbuf3 {
     HSEM        sem;
 
-    GQueue      *buf;             /* Filled portion of buffer */
-    GSList      *free_list;       /* Free chunks */
-    char        *pending;         /* Filled, but not yet ready for relay */
+    GQueue      *buf;             /**< Filled portion of buffer */
+    GQueue      *free_list;       /**< Free chunks */
+    char        *pending;         /**< Filled, but not yet ready for relay */
 
+    u_long      num_chunks;
     u_long	chunk_size;
-    int         content_type;
     int         have_relay;
 
-    GQueue      *ogg_page_refs;   /* List of pointers to ogg pages */
-    GList       *written_page;    /* Most recently written page */
+    int         content_type;
+
+    /* Ogg stuff */
+    GQueue      *ogg_page_refs;   /**< List of pointers to ogg pages */
+    GList       *written_page;    /**< Most recently written page */
+
+    /* MP3/AAC/NSV stuff */
+    GQueue      *write_list;      /**< List of writers with tracks to write */
+    GQueue      *metadata_list;   /**< List of all metadata */
 };
 
 typedef struct cbuf3_pointer Cbuf3_pointer;
 struct cbuf3_pointer
 {
-    GList      *chunk;
+    GList      *node;
     u_long      offset;
 };
 
@@ -391,12 +348,24 @@ struct cbuf3_pointer
 typedef struct ogg_page_reference Ogg_page_reference;
 struct ogg_page_reference
 {
-    struct cbuf3_pointer   m_cbuf3_loc;
-    unsigned long          m_page_len;
-    unsigned long          m_page_flags;
-    char                   *m_header_buf_ptr;
-    unsigned long          m_header_buf_len;
+    Cbuf3_pointer    m_cbuf3_loc;
+    unsigned long    m_page_len;
+    unsigned long    m_page_flags;
+    char            *m_header_buf_ptr;
+    unsigned long    m_header_buf_len;
 };
+
+/* These are pointers to song boundaries for write_list (MP3 only) */
+typedef struct writer Writer;
+struct writer
+{
+    int              m_started;
+    Cbuf3_pointer    m_next_byte;
+    int              m_ended;
+    Cbuf3_pointer    m_last_byte;
+    FHANDLE          m_file;
+};
+
 
 /* The relay server keeps track of a list of clients */
 typedef struct relay_client Relay_client;
@@ -458,7 +427,6 @@ struct RELAYLIB_INFO_struct
 typedef struct FILELIB_INFO_struct FILELIB_INFO;
 struct FILELIB_INFO_struct
 {
-    FHANDLE m_file;
     FHANDLE m_show_file;
     FHANDLE m_cue_file;
     int m_count;
@@ -644,9 +612,6 @@ struct RIP_MANAGER_INFOst
     unsigned int track_count;
 
     /* The circular buffer */
-    CBUF2 cbuf2;
-
-    /* The circular buffer */
     struct cbuf3 cbuf3;
 
     /* CBuf size variables.  Used by ripstream.c */
@@ -657,8 +622,6 @@ struct RIP_MANAGER_INFOst
     int mic_to_cb_end;          /* blocks */
 
     /* The Relay list */
-    //RELAY_LIST* relay_list;
-    //unsigned long relay_list_len;
     GQueue *relay_list;
     HSEM relay_list_sem;
 
@@ -685,5 +648,4 @@ struct RIP_MANAGER_INFOst
     CODESET_OPTIONS mchar_cs;
 };
 
-
-#endif //__SRIPPER_H__
+#endif

@@ -43,38 +43,10 @@
 /*****************************************************************************
  * Private functions
  *****************************************************************************/
-static void
-compute_cbuf2_size (RIP_MANAGER_INFO* rmi, 
-		    SPLITPOINT_OPTIONS *sp_opt, 
-		    int bitrate, 
-		    int meta_interval);
-static int ms_to_bytes (int ms, int bitrate);
-static int bytes_to_secs (unsigned int bytes, int bitrate);
 static int
 ripstream_recvall (RIP_MANAGER_INFO* rmi, char* buffer, int size);
 static error_code get_track_from_metadata (RIP_MANAGER_INFO* rmi, 
 					   int size, char *newtrack);
-
-/*****************************************************************************
- * Private structs
- *****************************************************************************/
-typedef struct ID3V1st
-{
-        char    tag[3];
-        char    songtitle[30];
-        char    artist[30];
-        char    album[30];
-        char    year[4];
-        char    comment[30];
-        char    genre;
-} ID3V1Tag;
-
-typedef struct ID3V2framest {
-	char	id[4];
-	int	size;
-	char	pad[3];
-} ID3V2frame;
-
 
 /******************************************************************************
  * Public functions
@@ -209,7 +181,7 @@ ripstream_get_data (RIP_MANAGER_INFO* rmi, char *data_buf, char *track_buf)
 error_code
 ripstream_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 {
-    error_code ret;
+    error_code rc;
 
     if (ti->save_track && GET_INDIVIDUAL_TRACKS(rmi->prefs->flags)) {
 	rmi->write_data = 1;
@@ -219,257 +191,40 @@ ripstream_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 
     /* Update data for callback */
     debug_printf ("calling rip_manager_start_track(#2)\n");
-    ret = rip_manager_start_track (rmi, ti);
-
-    /* Do content-specific stuff (no ogg-specific stuff at start track?) */
-    if (rmi->http_info.content_type != CONTENT_TYPE_OGG) {
-	ripstream_mp3_start_track (rmi, ti);
+    rc = rip_manager_start_track (rmi, ti);
+    if (rc != SR_SUCCESS) {
+	return rc;
     }
+
+    return SR_SUCCESS;
 }
+
+error_code
+ripstream_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
+{
+    mchar mfullpath[SR_MAX_PATH];
+    char fullpath[SR_MAX_PATH];
+
+#if defined (commentout)
+    /* GCS FIX: kkk */
+    if (rmi->write_data) {
+        filelib_end (rmi, ti, rmi->prefs->overwrite,
+		     GET_TRUNCATE_DUPS(rmi->prefs->flags),
+		     mfullpath);
+    }
+#endif
+    rip_manager_post_status(rmi, 0);
+
+    string_from_gstring (rmi, fullpath, SR_MAX_PATH, mfullpath, CODESET_FILESYS);
+    rmi->status_callback (rmi, RM_TRACK_DONE, (void*)fullpath);
+
+    return SR_SUCCESS;
+}
+
 
 /******************************************************************************
  * Private functions
  *****************************************************************************/
-#if defined (commentout)
-/* GCS: This converts either positive or negative ms to blocks,
-   and must work for rounding up and rounding down */
-static int
-ms_to_blocks (int ms, int bitrate, int round_up)
-{
-    int ms_abs = ms > 0 ? ms : -ms;
-    int ms_sign = ms > 0 ? 1 : 0;
-    int bits = ms_abs * bitrate;
-    int bits_per_block = 8 * rmi->getbuffer_size;
-    int blocks = bits / bits_per_block;
-    if (bits % bits_per_block > 0) {
-	if (!(round_up ^ ms_sign)) {
-	    blocks++;
-	}
-    }
-    if (!ms_sign) {
-	blocks = -blocks;
-    }
-    return blocks;
-}
-#endif
-
-/* Simpler routine, rounded toward zero */
-static int
-ms_to_bytes (int ms, int bitrate)
-{
-    int bits = ms * bitrate;
-    if (bits > 0)
-	return bits / 8;
-    else
-	return -((-bits)/8);
-}
-
-/* Assume positive, round toward zero */
-static int
-bytes_to_secs (unsigned int bytes, int bitrate)
-{
-    /* divided by 125 because 125 = 1000 / 8 */
-    int secs = (bytes / bitrate) / 125;
-    return secs;
-}
-
-/* --------------------------------------------------------------------------
-   Buffering for silence splitting & padding
-
-   We may flush the circular buffer as soon as anything that 
-   needs to go into the next song has passed.   For simplicity, 
-   we also buffer up to the latest point that can go into the 
-   next song.  This is called the "required window."
-
-   The "required window" is part that is decoded, even though 
-   we don't need volume data for all of it.  We simply mark the 
-   frame boundaries so we don't chop any frames.
-
-   The circular buffer is a bit bigger than the required window. 
-   This includes all of the stuff which cannot be flushed out of 
-   the cbuf, because cbuf is flushed in blocks.
-
-   Some abbreviations:
-     mic      meta inf change
-     cb	      cbuf3, aka circular buffer
-     rw	      required window
-     sw	      search window
-
-   This is the complete picture:
-
-    A---------A---------A----+----B---------B     meta intervals
-
-                                  /mic            meta-inf change (A to B)
-                             +--->|
-                             /mi                  meta-inf point
-                             |
-                   |---+-----+------+---|         search window
-                       |            |   
-                       |            |   
-                   |---+---|    |---+---|         silence length
-                       |            |
-         |-------------|            |-----|
-              prepad                postpad
-
-         |--------------------------------|       required window
-
-                        |---------|               minimum rw (1 meta int, 
-                                                  includes sw, need not 
-                                                  be aligned to metadata)
-
-    |---------------------------------------|     cbuf
-
-                   |<-------------+               mic_to_sw_start (usu neg)
-                                  +---->|         mic_to_sw_end   (usu pos)
-         |<-----------------------+               mic_to_rw_start
-                                  +------>|       mic_to_rw_end
-    |<----------------------------+               mic_to_cb_start
-                                  +-------->|     mic_to_cb_end
-
-   ------------------------------------------------------------------------*/
-static void
-compute_cbuf2_size (RIP_MANAGER_INFO* rmi, 
-		    SPLITPOINT_OPTIONS *sp_opt, 
-		    int bitrate, 
-		    int meta_interval)
-{
-    long sws, sl;
-    long mi_to_mic;
-    long prepad, postpad;
-    long offset;
-    long rw_len;
-    long mic_to_sw_start, mic_to_sw_end;
-    long mic_to_rw_start, mic_to_rw_end;
-    long mic_to_cb_start, mic_to_cb_end;
-    int xs_silence_length;
-    int xs_search_window_1;
-    int xs_search_window_2;
-    int xs_offset;
-    int xs_padding_1;
-    int xs_padding_2;
-
-    debug_printf ("---------------------------------------------------\n");
-    debug_printf ("xs: %d\n", sp_opt->xs);
-    debug_printf ("xs_search_window: %d,%d\n",
-		  sp_opt->xs_search_window_1,sp_opt->xs_search_window_2);
-    debug_printf ("xs_silence_length: %d\n", sp_opt->xs_silence_length);
-    debug_printf ("xs_padding: %d,%d\n", sp_opt->xs_padding_1,
-		  sp_opt->xs_padding_2);
-    debug_printf ("xs_offset: %d\n", sp_opt->xs_offset);
-    debug_printf ("---------------------------------------------------\n");
-    debug_printf ("bitrate = %d, meta_inf = %d\n", bitrate, meta_interval);
-    debug_printf ("---------------------------------------------------\n");
-    
-    /* If xs-none, clear out the other xs options */
-    if (sp_opt->xs == 0){
-	xs_silence_length = 0;
-	xs_search_window_1 = 0;
-	xs_search_window_2 = 0;
-	xs_offset = 0;
-	xs_padding_1 = 0;
-	xs_padding_2 = 0;
-    } else {
-	xs_silence_length = sp_opt->xs_silence_length;
-	xs_search_window_1 = sp_opt->xs_search_window_1;
-	xs_search_window_2 = sp_opt->xs_search_window_2;
-	xs_offset = sp_opt->xs_offset;
-	xs_padding_1 = sp_opt->xs_padding_1;
-	xs_padding_2 = sp_opt->xs_padding_2;
-    }
-
-
-    /* mi_to_mic is the "half of a meta-inf" from the meta inf 
-       change to the previous (non-changed) meta inf */
-    mi_to_mic = meta_interval / 2;
-    debug_printf ("mi_to_mic: %d\n", mi_to_mic);
-
-    /* compute the search window size (sws) */
-    sws = ms_to_bytes (xs_search_window_1, bitrate) 
-	    + ms_to_bytes (xs_search_window_2, bitrate);
-    debug_printf ("sws: %d\n", sws);
-
-    /* compute the silence length (sl) */
-    sl = ms_to_bytes (xs_silence_length, bitrate);
-    debug_printf ("sl: %d\n", sl);
-
-    /* compute padding */
-    prepad = ms_to_bytes (xs_padding_1, bitrate);
-    postpad = ms_to_bytes (xs_padding_2, bitrate);
-    debug_printf ("padding: %d %d\n", prepad, postpad);
-
-    /* compute offset */
-    offset = ms_to_bytes (xs_offset,bitrate);
-    debug_printf ("offset: %d\n", offset);
-
-    /* compute interval from mi to search window */
-    mic_to_sw_start = - mi_to_mic + offset 
-	    - ms_to_bytes(xs_search_window_1,bitrate);
-    mic_to_sw_end = - mi_to_mic + offset 
-	    + ms_to_bytes(xs_search_window_2,bitrate);
-    debug_printf ("mic_to_sw_start: %d\n", mic_to_sw_start);
-    debug_printf ("mic_to_sw_end: %d\n", mic_to_sw_end);
-
-    /* compute interval from mi to required window */
-    mic_to_rw_start = mic_to_sw_start + sl / 2 - prepad;
-    if (mic_to_rw_start > mic_to_sw_start) {
-	mic_to_rw_start = mic_to_sw_start;
-    }
-    mic_to_rw_end = mic_to_sw_end - sl / 2 + postpad;
-    if (mic_to_rw_end < mic_to_sw_end) {
-	mic_to_rw_end = mic_to_sw_end;
-    }
-    debug_printf ("mic_to_rw_start: %d\n", mic_to_rw_start);
-    debug_printf ("mic_to_rw_end: %d\n", mic_to_rw_end);
-
-    /* if rw is not long enough, make it longer */
-    rw_len = mic_to_rw_end - mic_to_rw_start;
-    if (rw_len < meta_interval) {
-	long start_extra = (meta_interval - rw_len) / 2;
-	long end_extra = meta_interval - start_extra;
-	mic_to_rw_start -= start_extra;
-	mic_to_rw_end += end_extra;
-	debug_printf ("mic_to_rw_start (2): %d\n", mic_to_rw_start);
-	debug_printf ("mic_to_rw_end (2): %d\n", mic_to_rw_end);
-    }
-
-    /* This code replaces the 3 cases (see OBSOLETE in gcs_notes.txt) */
-    mic_to_cb_start = mic_to_rw_start;
-    mic_to_cb_end = mic_to_rw_end;
-    if (mic_to_cb_start > -meta_interval) {
-	mic_to_cb_start = -meta_interval;
-    }
-    if (mic_to_cb_end < 0) {
-	mic_to_cb_end = 0;
-    }
-
-    /* Convert to chunks & compute cbuf size */
-    mic_to_cb_end = (mic_to_cb_end + (meta_interval-1)) / meta_interval;
-    mic_to_cb_start = -((-mic_to_cb_start + (meta_interval-1)) 
-			/ meta_interval);
-    rmi->cbuf2_size = - mic_to_cb_start + mic_to_cb_end;
-    if (rmi->cbuf2_size < 3) {
-	rmi->cbuf2_size = 3;
-    }
-    debug_printf ("mic_to_cb_start: %d\n", mic_to_cb_start * meta_interval);
-    debug_printf ("mic_to_cb_end: %d\n", mic_to_cb_end * meta_interval);
-    debug_printf ("CBUF2 (BLOCKS): %d:%d -> %d\n", mic_to_cb_start,
-		  mic_to_cb_end, rmi->cbuf2_size);
-
-    /* Set some global variables to be used by splitting algorithm */
-    rmi->mic_to_cb_end = mic_to_cb_end;
-    rmi->rw_start_to_cb_end = mic_to_cb_end * meta_interval - mic_to_rw_start;
-    rmi->rw_end_to_cb_end = mic_to_cb_end * meta_interval - mic_to_rw_end;
-    rmi->rw_start_to_sw_start = xs_padding_1 - xs_silence_length / 2;
-    if (rmi->rw_start_to_sw_start < 0) {
-	rmi->rw_start_to_sw_start = 0;
-    }
-    debug_printf ("m_mic_to_cb_end: %d\n", rmi->mic_to_cb_end);
-    debug_printf ("m_rw_start_to_cb_end: %d\n", rmi->rw_start_to_cb_end);
-    debug_printf ("m_rw_end_to_cb_end: %d\n", rmi->rw_end_to_cb_end);
-    debug_printf ("m_rw_start_to_sw_start: %d\n", rmi->rw_start_to_sw_start);
-}
-
-/* GCS: This used to be myrecv in rip_manager.c */
 static int
 ripstream_recvall (RIP_MANAGER_INFO* rmi, char* buffer, int size)
 {

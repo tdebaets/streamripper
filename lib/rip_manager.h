@@ -100,6 +100,7 @@ void rip_manager_cleanup (void);
 error_code rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti);
 error_code rip_manager_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
 error_code rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size);
+void rip_manager_post_status (RIP_MANAGER_INFO* rmi, int status);
 
 
 const char*

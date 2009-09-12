@@ -503,7 +503,7 @@ relay_client_add (RIP_MANAGER_INFO *rmi, int newsock, int client_wants_metadata)
 	new_client->m_left_to_send = 0;
 	new_client->m_buffer = (char*) malloc (sizeof(char)*buffer_size);
 	new_client->m_buffer_size = buffer_size;
-	new_client->m_cbuf_ptr.chunk = 0;
+	new_client->m_cbuf_ptr.node = 0;
 
 	/* GCS FIX: Watch deadlocks. Lock cbuf3, then lock relay (?) */
 	debug_printf ("relay_client_add is waiting for &rmi->relay_list_sem\n");
@@ -727,7 +727,7 @@ relaylib_send (RIP_MANAGER_INFO* rmi, Relay_client *relay_client)
 
     /* If the relay client connects too soon, it might not yet 
        be initialized.  In that case, initialize it here. */
-    if (relay_client->m_cbuf_ptr.chunk == 0) {
+    if (relay_client->m_cbuf_ptr.node == 0) {
 	error_code rc;
 	rc = cbuf3_initialize_relay_client_ptr (cbuf3, relay_client, 
 						BURST_AMOUNT);

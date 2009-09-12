@@ -33,5 +33,7 @@ error_code
 ripstream_get_data (RIP_MANAGER_INFO* rmi, char *data_buf, char *track_buf);
 error_code
 ripstream_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
+error_code
+ripstream_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
 
 #endif

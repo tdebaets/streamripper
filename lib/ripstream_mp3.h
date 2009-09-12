@@ -1,4 +1,4 @@
-/* ripstream_ogg.h
+/* ripstream_mp3.h
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,5 @@
 
 error_code
 ripstream_mp3_rip (RIP_MANAGER_INFO* rmi);
-error_code
-ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
 
 #endif

@@ -43,9 +43,7 @@ relaylib_start (RIP_MANAGER_INFO* rmi,
 void relaylib_stop (RIP_MANAGER_INFO* rmi);
 BOOL relaylib_isrunning();
 error_code relaylib_send_meta_data(char *track);
-#if defined (commentout)
-void relaylib_disconnect (RIP_MANAGER_INFO* rmi, 
-			  RELAY_LIST* prev, RELAY_LIST* ptr);
-#endif
+void 
+relaylib_disconnect (RIP_MANAGER_INFO* rmi, GList *node);
 
 #endif //__RELAYLIB__

@@ -53,7 +53,7 @@ ripstream_ogg_rip (RIP_MANAGER_INFO* rmi)
 {
     int ret;
     int real_ret = SR_SUCCESS;
-    char *chunk;
+    GList *node;
     Cbuf3 *cbuf3 = &rmi->cbuf3;
 
     debug_printf ("RIPSTREAM_RIP_OGG: top of loop\n");
@@ -77,15 +77,15 @@ ripstream_ogg_rip (RIP_MANAGER_INFO* rmi)
     }
 
     /* get the data from the stream */
-    chunk = cbuf3_request_free_chunk (rmi, cbuf3);
-    ret = ripstream_get_data (rmi, chunk, rmi->current_track.raw_metadata);
+    node = cbuf3_request_free_node (rmi, cbuf3);
+    ret = ripstream_get_data (rmi, node->data, rmi->current_track.raw_metadata);
     if (ret != SR_SUCCESS) {
 	debug_printf ("get_stream_data bad return code: %d\n", ret);
 	return ret;
     }
 
     /* Copy the data into cbuffer */
-    ret = cbuf3_insert (cbuf3, chunk);
+    ret = cbuf3_insert_node (cbuf3, node);
     if (ret != SR_SUCCESS) {
 	debug_printf ("cbuf3_insert had bad return code %d\n", ret);
 	return ret;
@@ -93,7 +93,7 @@ ripstream_ogg_rip (RIP_MANAGER_INFO* rmi)
 
     /* Fill in this_page_list with ogg page references */
     track_info_clear (&rmi->current_track);
-    ripogg_process_chunk (rmi, chunk, cbuf3->chunk_size, 
+    ripogg_process_chunk (rmi, node->data, cbuf3->chunk_size, 
 			  &rmi->current_track);
 
     debug_printf ("ogg_track_state[a] = %d\n", rmi->ogg_track_state);
@@ -187,7 +187,10 @@ ripstream_ogg_handle_bos (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 		end_track_ogg (rmi, &rmi->old_track);
 	    }
 	    debug_printf ("ripstream_ogg_handle_bos: starting track\n");
+	    /* GCS FIX: kkk */
+#if defined (commentout)
 	    ret = filelib_start (rmi, ti);
+#endif
 	    if (ret != SR_SUCCESS) {
 		return ret;
 	    }
@@ -205,7 +208,7 @@ ripstream_ogg_write_page (RIP_MANAGER_INFO *rmi, Ogg_page_reference *opr)
     error_code ret;
     u_long bytes_remaining;
 
-    cbuf3_ptr.chunk = opr->m_cbuf3_loc.chunk;
+    cbuf3_ptr.node = opr->m_cbuf3_loc.node;
     cbuf3_ptr.offset = opr->m_cbuf3_loc.offset;
     bytes_remaining = opr->m_page_len;
     while (bytes_remaining > 0) {
@@ -217,7 +220,7 @@ ripstream_ogg_write_page (RIP_MANAGER_INFO *rmi, Ogg_page_reference *opr)
 	} else {
 	    bytes_requested = bytes_remaining;
 	}
-	debug_printf ("cbuf3_extract: ptr [%p,%d], req %d\n", cbuf3_ptr.chunk,
+	debug_printf ("cbuf3_extract: ptr [%p,%d], req %d\n", cbuf3_ptr.node,
 		      cbuf3_ptr.offset, bytes_requested);
 	ret = cbuf3_extract (&rmi->cbuf3,
 			     &cbuf3_ptr,
@@ -239,7 +242,10 @@ ripstream_ogg_write_page (RIP_MANAGER_INFO *rmi, Ogg_page_reference *opr)
 	/* Do the actual write -- split files */
 	if (GET_INDIVIDUAL_TRACKS(rmi->prefs->flags)) {
 	    if (rmi->write_data) {
+#if defined (commentout)
+		/* GCS FIX: kkk */
 		ret = filelib_write_track (rmi, rmi->getbuffer, bytes_read);
+#endif
 		if (ret != SR_SUCCESS) {
 		    debug_printf ("filelib_write_track returned: %d\n",ret);
 		    return ret;
@@ -259,7 +265,7 @@ end_track_ogg (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
     debug_printf ("Current track number %d (skipping if less than %d)\n", 
 		  rmi->track_count, rmi->prefs->dropcount);
     if (rmi->track_count >= rmi->prefs->dropcount) {
-	ret = rip_manager_end_track (rmi, ti);
+	ret = ripstream_end_track (rmi, ti);
     } else {
 	ret = SR_SUCCESS;
     }
