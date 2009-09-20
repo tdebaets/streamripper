@@ -101,7 +101,7 @@ PostBuild_Cmds=copy debug\streamripper.dll "C:\Program Files\Streamripper"
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
-SOURCE=..\lib\cbuf2.c
+SOURCE=..\lib\cbuf3.c
 # End Source File
 # Begin Source File
 
@@ -165,6 +165,14 @@ SOURCE=..\lib\ripstream.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\lib\ripstream_mp3.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\ripstream_ogg.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\lib\socklib.c
 # End Source File
 # Begin Source File
@@ -174,6 +182,10 @@ SOURCE=.\streamripper.def
 # Begin Source File
 
 SOURCE=..\lib\threadlib.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\lib\track_info.c
 # End Source File
 # Begin Source File
 

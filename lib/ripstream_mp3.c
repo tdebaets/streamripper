@@ -388,7 +388,7 @@ ripstream_mp3_write_node (RIP_MANAGER_INFO* rmi,
 		write_sz = writer->m_last_byte.offset 
 			- writer->m_next_byte.offset;
 	    }
-	    write_ptr = node->data + writer->m_next_byte.offset;
+	    write_ptr = ((char*) node->data) + writer->m_next_byte.offset;
 	    filelib_write_track (writer, write_ptr, write_sz);
 
 	    /* Check if we need to end the track */

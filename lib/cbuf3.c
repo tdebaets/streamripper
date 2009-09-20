@@ -315,11 +315,12 @@ cbuf3_set_uint32 (struct cbuf3 *cbuf3,
     tmp.offset = in_ptr->offset;
 
     for (i = 0; i < 4; i++) {
+	char *buf;
 	rc = cbuf3_pointer_add (cbuf3, &tmp, in_ptr, i);
 	if (rc != SR_SUCCESS) {
 	    return rc;
 	}
-	char *buf = (char*) tmp.node->data;
+	buf = (char*) tmp.node->data;
 	buf[tmp.offset] = (val & 0xff);
 	val >>= 8;
     }
