@@ -606,12 +606,6 @@ http_construct_sc_response(SR_HTTP_HEADER *info, char *header, int size, int icy
 
     memset(header, 0, size);
 
-#if defined (commentout)
-    /* GCS - try this */
-    strcpy (header, test_header);
-    return SR_SUCCESS;
-#endif
-
     /* GCS: The code used to give HTTP instead of ICY for the response header, 
 	like this: sprintf(buf, "HTTP/1.0 200 OK\r\n"); */
     sprintf (buf, "ICY 200 OK\r\n");

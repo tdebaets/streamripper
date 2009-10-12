@@ -121,6 +121,7 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     }
 
     /* Get new data from the stream */
+    debug_printf ("cbuf3_request_free_node\n");
     node = cbuf3_request_free_node (rmi, cbuf3);
     rc = ripstream_get_data (rmi, node->data, rmi->current_track.raw_metadata);
     if (rc != SR_SUCCESS) {
@@ -129,12 +130,16 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     }
 
     /* If first time through, check the bitrate in the stream. */
+    debug_printf ("DFL 1\n");
+    cbuf3_debug_free_list (cbuf3);
     if (rmi->ripstream_first_time_through) {
 	rc = ripstream_mp3_check_bitrate (rmi);
 	if (rc != SR_SUCCESS) return rc;
     }
 
     /* Get the metadata for the new node */
+    debug_printf ("DFL 2\n");
+    cbuf3_debug_free_list (cbuf3);
     if (rmi->ep) {
 	/* If getting metadata from external process, check for update */
 	track_info_clear (&rmi->current_track);
@@ -142,13 +147,18 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     } else {
 	/* Otherwise, apply parse rules to raw metadata */
 	if (rmi->current_track.have_track_info) {
+	    debug_printf ("parse_metadata\n");
 	    parse_metadata (rmi, &rmi->current_track);
 	} else {
+	    debug_printf ("track_info_clear\n");
 	    track_info_clear (&rmi->current_track);
 	}
     }
 
     /* Copy the data into cbuffer */
+    debug_printf ("DFL 3\n");
+    cbuf3_debug_free_list (cbuf3);
+    debug_printf ("cbuf3_insert_node\n");
     rc = cbuf3_insert_node (cbuf3, node);
     if (rc != SR_SUCCESS) {
 	debug_printf ("cbuf3_insert had bad return code %d\n", rc);
@@ -156,6 +166,8 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     }
 
     /* Insert the metadata into cbuf */
+    debug_printf ("DFL 4\n");
+    cbuf3_debug_free_list (cbuf3);
     rc = cbuf3_insert_metadata (cbuf3, &rmi->current_track);
     if (rc != SR_SUCCESS) {
 	debug_printf ("cbuf3_insert_metadata had bad return code %d\n", rc);
@@ -163,6 +175,8 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     }
 
     /* Write showfile immediately */
+    debug_printf ("DFL 5\n");
+    cbuf3_debug_free_list (cbuf3);
     rc = filelib_write_show (rmi, node->data, cbuf3->chunk_size);
     if (rc != SR_SUCCESS) {
         debug_printf("filelib_write_show had bad return code: %d\n", rc);
@@ -170,6 +184,8 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     }
 
     /* Set the track number */
+    debug_printf ("DFL 6\n");
+    cbuf3_debug_free_list (cbuf3);
     if (rmi->current_track.track_p[0]) {
 	mstrcpy (rmi->current_track.track_a, rmi->current_track.track_p);
     } else {
@@ -178,6 +194,8 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     }
 
     /* First time through, so start a track. */
+    debug_printf ("DFL 7\n");
+    cbuf3_debug_free_list (cbuf3);
     if (rmi->ripstream_first_time_through) {
 	int rc;
 
@@ -207,9 +225,13 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     }
 
     /* Check for track change. */
+    debug_printf ("DFL 8\n");
+    cbuf3_debug_free_list (cbuf3);
     ripstream_mp3_check_for_track_change (rmi);
 
     /* If buffer is full, write oldest node to disk */
+    debug_printf ("DFL 9\n");
+    cbuf3_debug_free_list (cbuf3);
     if (cbuf3_is_full (cbuf3)) {
 	GList *node = cbuf3_extract_oldest_node (rmi, cbuf3);
 	rc = ripstream_mp3_write_node (rmi, node);
@@ -230,6 +252,9 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
 	}
     }
 #endif
+
+    debug_printf ("DFL 10\n");
+    cbuf3_debug_free_list (cbuf3);
 
     return real_rc;
 }

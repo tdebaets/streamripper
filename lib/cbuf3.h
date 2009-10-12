@@ -37,6 +37,8 @@ cbuf3_destroy (struct cbuf3 *cbuf3);
 GList*
 cbuf3_request_free_node (RIP_MANAGER_INFO *rmi,
 			 struct cbuf3 *cbuf3);
+void
+cbuf3_debug_free_list (Cbuf3 *cbuf3);
 int
 cbuf3_is_full (Cbuf3 *cbuf3);
 error_code

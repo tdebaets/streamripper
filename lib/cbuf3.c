@@ -102,6 +102,7 @@ cbuf3_allocate_minimum (struct cbuf3 *cbuf3,
     }
 
     threadlib_signal_sem (&cbuf3->sem);
+    debug_printf ("Allocating cbuf3 [complete]\n");
     return SR_SUCCESS;
 }
 
@@ -138,11 +139,17 @@ cbuf3_destroy (struct cbuf3 *cbuf3)
     }
 }
 
+void
+cbuf3_debug_free_list (Cbuf3 *cbuf3)
+{
+    debug_printf ("Free_list: %d nodes.\n", cbuf3->free_list->length);
+}
+
 /** Return 1 if there are no more empty nodes. */
 int
 cbuf3_is_full (Cbuf3 *cbuf3)
 {
-    return (!(cbuf3->free_list));
+    return g_queue_is_empty (cbuf3->free_list);
 }
 
 /* Returns a free node */
@@ -152,11 +159,14 @@ cbuf3_request_free_node (RIP_MANAGER_INFO *rmi,
 {
     /* If there is a free chunk, return it */
     /* No need to lock, only the main thread accesses free_list */
-    if (cbuf3->free_list) {
+    if (! g_queue_is_empty (cbuf3->free_list)) {
+	debug_printf ("Free node from empty list [%d].\n",
+		      cbuf3->free_list->length);
 	return g_queue_pop_head_link (cbuf3->free_list);
     }
 
     /* Otherwise, we have to eject the oldest chunk from buf. */
+    debug_printf ("Free node from used list.\n");
     return cbuf3_extract_oldest_node (rmi, cbuf3);
 }
 
@@ -173,6 +183,7 @@ cbuf3_insert_node (struct cbuf3 *cbuf3, GList *node)
     debug_printf ("CBUF_INSERT\n");
     debug_printf ("  Node       Data\n");
 
+    node->prev = node->next = 0;
     g_queue_push_tail_link (cbuf3->buf, node);
 
     for (p = cbuf3->buf->head; p; p = p->next) {
@@ -188,6 +199,8 @@ void
 cbuf3_insert_free_node (struct cbuf3 *cbuf3, GList *node)
 {
     /* No need to lock, only the main thread accesses free_list */
+    debug_printf ("Inserting free node\n");
+    node->prev = node->next = 0;
     g_queue_push_head_link (cbuf3->free_list, node);
 }
 
@@ -216,7 +229,7 @@ cbuf3_extract_oldest_node (RIP_MANAGER_INFO *rmi,
     }
 
     /* Remove the chunk */
-    node = g_queue_pop_head (cbuf3->buf);
+    node = g_queue_pop_head_link (cbuf3->buf);
 
     /* Done */
     threadlib_signal_sem (&cbuf3->sem);

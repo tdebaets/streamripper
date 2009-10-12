@@ -146,7 +146,11 @@ ripstream_get_data (RIP_MANAGER_INFO* rmi, char *data_buf, char *track_buf)
 
     *track_buf = 0;
     rmi->current_track.have_track_info = 0;
+    debug_printf ("ripstream_recvall (%p, %d)\n", 
+		  data_buf, 
+		  rmi->getbuffer_size);
     ret = ripstream_recvall (rmi, data_buf, rmi->getbuffer_size);
+    debug_printf ("ripstream_recvall (ret = %d)\n", ret);
     if (ret <= 0)
 	return ret;
 
@@ -213,6 +217,7 @@ ripstream_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 		     mfullpath);
     }
 #endif
+
     rip_manager_post_status(rmi, 0);
 
     string_from_gstring (rmi, fullpath, SR_MAX_PATH, mfullpath, CODESET_FILESYS);
