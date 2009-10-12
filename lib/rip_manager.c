@@ -55,6 +55,7 @@
 #include "compat.h"
 #include "parse.h"
 #include "http.h"
+#include "callback.h"
 
 /******************************************************************************
  * Private functions
@@ -191,6 +192,7 @@ rip_manager_stop (RIP_MANAGER_INFO *rmi)
 #endif
 }
 
+#if defined (commentout)
 void
 rip_manager_post_status (RIP_MANAGER_INFO* rmi, int status)
 {
@@ -198,6 +200,7 @@ rip_manager_post_status (RIP_MANAGER_INFO* rmi, int status)
         rmi->status = status;
     rmi->status_callback (rmi, RM_UPDATE, 0);
 }
+#endif
 
 void
 rip_manager_cleanup (void)
@@ -209,6 +212,7 @@ rip_manager_cleanup (void)
 /******************************************************************************
  * Private functions
  *****************************************************************************/
+#if defined (commentout)
 static void
 post_error (RIP_MANAGER_INFO* rmi, error_code err)
 {
@@ -248,6 +252,7 @@ rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
 
     return SR_SUCCESS;
 }
+#endif
 
 static void
 debug_ripthread (RIP_MANAGER_INFO* rmi)
@@ -283,12 +288,12 @@ ripthread (void *thread_arg)
     if (ret != SR_SUCCESS) {
 	debug_printf ("Ripthread did start_ripping()\n");
 	threadlib_signal_sem (&rmi->started_sem);
-	post_error (rmi, ret);
+	callback_post_error (rmi, ret);
 	goto DONE;
     }
 
     rmi->status_callback (rmi, RM_STARTED, (void *)NULL);
-    rip_manager_post_status (rmi, RM_STATUS_BUFFERING);
+    callback_post_status (rmi, RM_STATUS_BUFFERING);
     debug_printf ("Ripthread did initialization\n");
     threadlib_signal_sem(&rmi->started_sem);
 
@@ -309,11 +314,11 @@ ripthread (void *thread_arg)
 	    break;
 	}
 	else if (ret == SR_SUCCESS_BUFFERING) {
-	    rip_manager_post_status (rmi, RM_STATUS_BUFFERING);
+	    callback_post_status (rmi, RM_STATUS_BUFFERING);
 	    /* Fall through */
 	}
 	else if (ret == SR_ERROR_CANT_DECODE_MP3) {
-	    post_error (rmi, ret);
+	    callback_post_error (rmi, ret);
 	    continue;
 	}
 	else if ((ret == SR_ERROR_RECV_FAILED || 
@@ -322,7 +327,7 @@ ripthread (void *thread_arg)
 		  ret == SR_ERROR_SELECT_FAILED) && 
 		 GET_AUTO_RECONNECT (rmi->prefs->flags)) {
 	    /* Try to reconnect */
-	    rip_manager_post_status (rmi, RM_STATUS_RECONNECTING);
+	    callback_post_status (rmi, RM_STATUS_RECONNECTING);
 	    while (rmi->started) {
 		socklib_close(&rmi->stream_sock);
 		if (rmi->ep) {
@@ -347,13 +352,13 @@ ripthread (void *thread_arg)
 	}
 	else if (ret != SR_SUCCESS) {
 	    destroy_subsystems (rmi);
-	    post_error (rmi, ret);
+	    callback_post_error (rmi, ret);
 	    break;
 	}
 
 	/* All systems go.  Caller should update GUI that it is ripping */
 	if (rmi->filesize > 0) {
-	    rip_manager_post_status (rmi, RM_STATUS_RIPPING);
+	    callback_post_status (rmi, RM_STATUS_RIPPING);
 	}
     }
 
@@ -517,7 +522,7 @@ start_ripping (RIP_MANAGER_INFO* rmi)
 
     /* Done. */
     debug_printf ("start_ripping: checkpoint 4\n");
-    rip_manager_post_status (rmi, RM_STATUS_BUFFERING);
+    callback_post_status (rmi, RM_STATUS_BUFFERING);
     return SR_SUCCESS;
 
  RETURN_ERR:

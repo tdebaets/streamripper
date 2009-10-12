@@ -23,7 +23,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 #if WIN32
-//#define sleep	Sleep
 #include <windows.h>
 #else
 #include <unistd.h>
@@ -36,6 +35,7 @@
 #include <math.h>
 #include <time.h>
 #include "srtypes.h"
+#include "callback.h"
 #include "rip_manager.h"
 #include "prefs.h"
 #include "mchar.h"

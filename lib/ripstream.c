@@ -39,6 +39,7 @@
 #include "external.h"
 #include "ripogg.h"
 #include "track_info.h"
+#include "callback.h"
 
 /*****************************************************************************
  * Private functions
@@ -185,9 +186,9 @@ ripstream_get_data (RIP_MANAGER_INFO* rmi, char *data_buf, char *track_buf)
 error_code
 ripstream_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
 {
+#if defined (commentout)
     int ret;
 
-#if defined (commentout)
     /* GCS FIX: kkk */
     if (GET_INDIVIDUAL_TRACKS (rmi->prefs->flags)) {
 	if (rmi->write_data) {
@@ -223,7 +224,7 @@ ripstream_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 
     /* Update data for callback */
     debug_printf ("calling rip_manager_start_track(#2)\n");
-    rc = rip_manager_start_track (rmi, ti);
+    rc = callback_start_track (rmi, ti);
     if (rc != SR_SUCCESS) {
 	return rc;
     }
@@ -246,9 +247,10 @@ ripstream_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
     }
 #endif
 
-    rip_manager_post_status(rmi, 0);
+    callback_post_status(rmi, 0);
 
-    string_from_gstring (rmi, fullpath, SR_MAX_PATH, mfullpath, CODESET_FILESYS);
+    string_from_gstring (rmi, fullpath, SR_MAX_PATH, mfullpath, 
+			 CODESET_FILESYS);
     rmi->status_callback (rmi, RM_TRACK_DONE, (void*)fullpath);
 
     return SR_SUCCESS;

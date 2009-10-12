@@ -17,6 +17,7 @@ AM_CPPFLAGS += -I@abs_top_srcdir@/lib
 noinst_LIBRARIES = libstreamripper.a
 
 libstreamripper_a_SOURCES = \
+	callback.c \
 	cbuf3.c \
 	charset.c \
 	debug.c \
@@ -41,6 +42,8 @@ libstreamripper_a_SOURCES = \
 	threadlib.c \
 	track_info.c \
 	utf8.c \
+	\
+	callback.h \
 	cbuf3.h \
 	charmaps.h \
 	charset.h \
