@@ -183,6 +183,34 @@ ripstream_get_data (RIP_MANAGER_INFO* rmi, char *data_buf, char *track_buf)
 }
 
 error_code
+ripstream_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
+{
+    int ret;
+
+#if defined (commentout)
+    /* GCS FIX: kkk */
+    if (GET_INDIVIDUAL_TRACKS (rmi->prefs->flags)) {
+	if (rmi->write_data) {
+	    ret = filelib_write_track (rmi, buf, size);
+	    if (ret != SR_SUCCESS) {
+		debug_printf ("filelib_write_track returned: %d\n",ret);
+		return ret;
+	    }
+	}
+    }
+#endif
+
+    rmi->filesize += size;	/* This is used by the GUI */
+    rmi->bytes_ripped += size;	/* This is used to determine when to quit */
+    while (rmi->bytes_ripped >= 1048576) {
+	rmi->bytes_ripped -= 1048576;
+	rmi->megabytes_ripped++;
+    }
+
+    return SR_SUCCESS;
+}
+
+error_code
 ripstream_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 {
     error_code rc;

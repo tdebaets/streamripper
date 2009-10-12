@@ -31,6 +31,8 @@ error_code ripstream_rip (RIP_MANAGER_INFO* rmi);
 void ripstream_destroy (RIP_MANAGER_INFO* rmi);
 error_code
 ripstream_get_data (RIP_MANAGER_INFO* rmi, char *data_buf, char *track_buf);
+error_code 
+ripstream_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size);
 error_code
 ripstream_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
 error_code

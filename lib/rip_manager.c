@@ -249,63 +249,6 @@ rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
     return SR_SUCCESS;
 }
 
-#if defined (commentout)
-/* Ok, the end_track()'s function is actually to move 
- * tracks out from the incomplete directory. It does 
- * get called, but only after the 2nd track is played. 
- * the first track is *never* complete.
- */
-error_code
-rip_manager_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
-{
-    mchar mfullpath[SR_MAX_PATH];
-    char fullpath[SR_MAX_PATH];
-
-#if defined (commentout)
-    /* GCS FIX: kkk */
-    if (rmi->write_data) {
-        filelib_end (rmi, ti, rmi->prefs->overwrite,
-		     GET_TRUNCATE_DUPS(rmi->prefs->flags),
-		     mfullpath);
-    }
-#endif
-    rip_manager_post_status (rmi, 0);
-
-    string_from_gstring (rmi, fullpath, SR_MAX_PATH, mfullpath, CODESET_FILESYS);
-    rmi->status_callback (rmi, RM_TRACK_DONE, (void*)fullpath);
-
-    return SR_SUCCESS;
-}
-#endif
-
-error_code
-rip_manager_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
-{
-    int ret;
-
-#if defined (commentout)
-    /* GCS FIX: kkk */
-    if (GET_INDIVIDUAL_TRACKS(rmi->prefs->flags)) {
-	if (rmi->write_data) {
-	    ret = filelib_write_track (rmi, buf, size);
-	    if (ret != SR_SUCCESS) {
-		debug_printf ("filelib_write_track returned: %d\n",ret);
-		return ret;
-	    }
-	}
-    }
-#endif
-
-    rmi->filesize += size;	/* This is used by the GUI */
-    rmi->bytes_ripped += size;	/* This is used to determine when to quit */
-    while (rmi->bytes_ripped >= 1048576) {
-	rmi->bytes_ripped -= 1048576;
-	rmi->megabytes_ripped++;
-    }
-
-    return SR_SUCCESS;
-}
-
 static void
 debug_ripthread (RIP_MANAGER_INFO* rmi)
 {

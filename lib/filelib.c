@@ -301,6 +301,7 @@ filelib_write_cue (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti, int secs)
 error_code
 filelib_write_track (Writer *writer, char *buf, u_long size)
 {
+    debug_printf ("filelib_write_track %p %u\n", buf, size);
     return filelib_write (writer->m_file, buf, size);
 }
 
@@ -1100,16 +1101,17 @@ filelib_write (FHANDLE fp, char *buf, u_long size)
     {
 	BOOL rc;
 	DWORD bytes_written = 0;
-	rc = WriteFile(fp, buf, size, &bytes_written, NULL);
+	rc = WriteFile (fp, buf, size, &bytes_written, NULL);
 	if (rc == 0) {
-	    debug_print_error();
-	    debug_printf("filelib_write: WriteFile rc = 0\n");
-	    debug_printf("size = %d, bytes_written = %d\n", size, bytes_written);
+	    debug_print_error ();
+	    debug_printf ("filelib_write: WriteFile rc = 0\n");
+	    debug_printf ("size = %d, bytes_written = %d\n", 
+			 size, bytes_written);
 	    return SR_ERROR_CANT_WRITE_TO_FILE;
 	}
     }
 #else
-    if (write(fp, buf, size) == -1)
+    if (write (fp, buf, size) == -1)
 	return SR_ERROR_CANT_WRITE_TO_FILE;
 #endif
 

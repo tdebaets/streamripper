@@ -173,6 +173,7 @@ cbuf3_request_free_node (RIP_MANAGER_INFO *rmi,
 error_code
 cbuf3_insert_node (struct cbuf3 *cbuf3, GList *node)
 {
+    int i;
     GList *p;
 
     /* Insert node to cbuf */
@@ -181,13 +182,13 @@ cbuf3_insert_node (struct cbuf3 *cbuf3, GList *node)
     debug_printf ("cbuf3_insert got cbuf3->sem\n");
 
     debug_printf ("CBUF_INSERT\n");
-    debug_printf ("  Node       Data\n");
+    debug_printf ("       Node       Data\n");
 
     node->prev = node->next = 0;
     g_queue_push_tail_link (cbuf3->buf, node);
 
-    for (p = cbuf3->buf->head; p; p = p->next) {
-	debug_printf ("  %p, %p\n", p, p->data);
+    for (i = 0, p = cbuf3->buf->head; p; i++, p = p->next) {
+	debug_printf ("[%3d]  %p, %p\n", i, p, p->data);
     }
 
     threadlib_signal_sem (&cbuf3->sem);
@@ -211,8 +212,7 @@ cbuf3_extract_oldest_node (RIP_MANAGER_INFO *rmi,
 {
     GList *node;
 
-    /* Otherwise, we have to eject the oldest chunk from buf.  
-       Relay threads access buf, so we need to lock. */
+    /* Relay threads access used list, so we need to lock. */
     if (cbuf3->have_relay) {
 	debug_printf ("cbuf3_extract_oldest_node is waiting for rmi->relay_list_sem\n");
 	threadlib_waitfor_sem (&rmi->relay_list_sem);

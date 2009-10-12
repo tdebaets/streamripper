@@ -58,19 +58,18 @@ static error_code
 write_id3v2_frame(RIP_MANAGER_INFO* rmi, char* tag_name, mchar* data,
 		  int charset, int *sent);
 static error_code
-ripstream_mp3_write_node (RIP_MANAGER_INFO* rmi, 
-			  GList *node);
-static error_code
 ripstream_mp3_check_for_track_change (RIP_MANAGER_INFO* rmi);
-error_code
-ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, Writer *writer, 
-			   TRACK_INFO* ti);
 static error_code
 ripstream_mp3_end_track (RIP_MANAGER_INFO* rmi, 
 			 Writer* writer,
 			 TRACK_INFO* ti);
 static error_code
 ripstream_mp3_check_bitrate (RIP_MANAGER_INFO* rmi);
+static error_code
+ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti, 
+			   Cbuf3_pointer start_byte);
+static error_code
+ripstream_mp3_write_oldest_node (RIP_MANAGER_INFO* rmi);
 
 
 /*****************************************************************************
@@ -121,7 +120,6 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     }
 
     /* Get new data from the stream */
-    debug_printf ("cbuf3_request_free_node\n");
     node = cbuf3_request_free_node (rmi, cbuf3);
     rc = ripstream_get_data (rmi, node->data, rmi->current_track.raw_metadata);
     if (rc != SR_SUCCESS) {
@@ -130,16 +128,12 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     }
 
     /* If first time through, check the bitrate in the stream. */
-    debug_printf ("DFL 1\n");
-    cbuf3_debug_free_list (cbuf3);
     if (rmi->ripstream_first_time_through) {
 	rc = ripstream_mp3_check_bitrate (rmi);
 	if (rc != SR_SUCCESS) return rc;
     }
 
     /* Get the metadata for the new node */
-    debug_printf ("DFL 2\n");
-    cbuf3_debug_free_list (cbuf3);
     if (rmi->ep) {
 	/* If getting metadata from external process, check for update */
 	track_info_clear (&rmi->current_track);
@@ -156,9 +150,6 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     }
 
     /* Copy the data into cbuffer */
-    debug_printf ("DFL 3\n");
-    cbuf3_debug_free_list (cbuf3);
-    debug_printf ("cbuf3_insert_node\n");
     rc = cbuf3_insert_node (cbuf3, node);
     if (rc != SR_SUCCESS) {
 	debug_printf ("cbuf3_insert had bad return code %d\n", rc);
@@ -166,8 +157,6 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     }
 
     /* Insert the metadata into cbuf */
-    debug_printf ("DFL 4\n");
-    cbuf3_debug_free_list (cbuf3);
     rc = cbuf3_insert_metadata (cbuf3, &rmi->current_track);
     if (rc != SR_SUCCESS) {
 	debug_printf ("cbuf3_insert_metadata had bad return code %d\n", rc);
@@ -175,8 +164,6 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     }
 
     /* Write showfile immediately */
-    debug_printf ("DFL 5\n");
-    cbuf3_debug_free_list (cbuf3);
     rc = filelib_write_show (rmi, node->data, cbuf3->chunk_size);
     if (rc != SR_SUCCESS) {
         debug_printf("filelib_write_show had bad return code: %d\n", rc);
@@ -184,8 +171,6 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     }
 
     /* Set the track number */
-    debug_printf ("DFL 6\n");
-    cbuf3_debug_free_list (cbuf3);
     if (rmi->current_track.track_p[0]) {
 	mstrcpy (rmi->current_track.track_a, rmi->current_track.track_p);
     } else {
@@ -194,10 +179,14 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     }
 
     /* First time through, so start a track. */
-    debug_printf ("DFL 7\n");
-    cbuf3_debug_free_list (cbuf3);
     if (rmi->ripstream_first_time_through) {
 	int rc;
+	Cbuf3_pointer first_byte;
+
+	/* The first byte is not aligned with mp3 frame, but 
+	   we don't worry about this for the first track. */
+	first_byte.node = cbuf3->buf->tail;
+	first_byte.offset = 0;
 
 	debug_printf ("First time through, starting track.\n");
 	if (!rmi->current_track.have_track_info) {
@@ -205,9 +194,11 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
 	}
 	msnprintf (rmi->current_track.track_a, MAX_HEADER_LEN, m_("0"));
 
-	rc = ripstream_start_track (rmi, &rmi->current_track);
+	//	rc = ripstream_start_track (rmi, &rmi->current_track);
+	rc = ripstream_mp3_start_track (rmi, &rmi->current_track, 
+					first_byte);
 	if (rc != SR_SUCCESS) {
-	    debug_printf ("ripstream_start_track failed(#1): %d\n",rc);
+	    debug_printf ("ripstream_mp3_start_track failed(#1): %d\n",rc);
 	    return rc;
 	}
 
@@ -225,17 +216,13 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     }
 
     /* Check for track change. */
-    debug_printf ("DFL 8\n");
-    cbuf3_debug_free_list (cbuf3);
     ripstream_mp3_check_for_track_change (rmi);
 
     /* If buffer is full, write oldest node to disk */
-    debug_printf ("DFL 9\n");
-    cbuf3_debug_free_list (cbuf3);
-    if (cbuf3_is_full (cbuf3)) {
-	GList *node = cbuf3_extract_oldest_node (rmi, cbuf3);
-	rc = ripstream_mp3_write_node (rmi, node);
-	cbuf3_insert_free_node (cbuf3, node);
+    rc = ripstream_mp3_write_oldest_node (rmi);
+    if (rc != SR_SUCCESS) {
+	debug_printf ("ripstream_mp3_write_oldest_node returned: %d\n", rc);
+	return rc;
     }
 
 #if defined (commentout)
@@ -244,7 +231,7 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     if (curr_song < extract_size) {
 	u_long curr_song_bytes = extract_size - curr_song;
 	rmi->cue_sheet_bytes += curr_song_bytes;
-	rc = rip_manager_put_data (rmi, &rmi->getbuffer[curr_song], 
+	rc = ripstream_put_data (rmi, &rmi->getbuffer[curr_song], 
 				   curr_song_bytes);
 	if (rc != SR_SUCCESS) {
 	    debug_printf ("rip_manager_put_data returned: %d\n",rc);
@@ -253,22 +240,36 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     }
 #endif
 
-    debug_printf ("DFL 10\n");
-    cbuf3_debug_free_list (cbuf3);
-
     return real_rc;
 }
 
 error_code
-ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, Writer *writer, 
-			   TRACK_INFO* ti)
+ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti, 
+			   Cbuf3_pointer start_byte)
 {
     error_code rc;
     int i;
+    Cbuf3 *cbuf3 = &rmi->cbuf3;
+    GQueue *write_list = cbuf3->write_list;
+    Writer *writer;
     unsigned int secs;
 
     debug_printf ("ripstream_mp3_start_track (starting)\n");
 
+    /* Create writer */
+    writer = (Writer*) malloc (sizeof(Writer));
+    if (!writer) {
+	return SR_ERROR_CANT_ALLOC_MEMORY;
+    }
+
+    /* Initialize writer */
+    memset (writer, 0, sizeof(Writer));
+    writer->m_next_byte = start_byte;
+
+    /* Add writer to queue */
+    g_queue_push_tail (write_list, writer);
+
+    /* Open output file */
     rc = filelib_start (rmi, writer, &rmi->current_track);
     if (rc != SR_SUCCESS) {
         debug_printf ("filelib_start failed %d\n", rc);
@@ -326,7 +327,7 @@ ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, Writer *writer,
 	if (rc != SR_SUCCESS) return rc;
 	for (i = 0; i < 4; i++) {
 	    char x = (header_size >> (3-i)*7) & 0x7F;
-	    rc = rip_manager_put_data (rmi, (char *)&x, 1);
+	    rc = ripstream_put_data (rmi, (char *)&x, 1);
 	    if (rc != SR_SUCCESS) return rc;
 	}
 
@@ -372,45 +373,60 @@ ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, Writer *writer,
 /*****************************************************************************
  * Private functions
  *****************************************************************************/
-/** Check incoming data, and write to file as needed.
+/** Add function documentation here.
     \callgraph
 */
 static error_code
-ripstream_mp3_write_node (RIP_MANAGER_INFO* rmi, 
-			  GList *node)
+ripstream_mp3_write_oldest_node (RIP_MANAGER_INFO* rmi)
 {
+    int i;
     Cbuf3 *cbuf3 = &rmi->cbuf3;
     GQueue *write_list = cbuf3->write_list;
+    GList *node;
     GList *p, *nextp;
 
+    /* Only write oldest node if buffer is full */
+    if (! cbuf3_is_full (cbuf3)) {
+	return SR_SUCCESS;
+    }
+
+    /* Remove oldest node from used queue */
+    node = cbuf3_extract_oldest_node (rmi, cbuf3);
+
+    /* Put it on the free list */
+    cbuf3_insert_free_node (cbuf3, node);
+
     /* If we're not writing tracks, return */
+    /* GCS kkk - this logic is obsolete - writer shouldn't enter 
+       write_list if not needed. */
     if (!GET_INDIVIDUAL_TRACKS (rmi->prefs->flags) || !rmi->write_data) {
 	return SR_SUCCESS;
     }
 
-    /* Loop through tracks that need to be written */
+    /* Loop through tracks that might need to be written */
+    debug_printf ("Looping through write_list\n");
+    i = 0;
     p = write_list->head;
     while (p) {
 	Writer *writer = (Writer*) p->data;
-	char* write_ptr;
-	long write_sz;
-
 	nextp = p->next;
 
+	debug_printf ("[%d] %p (%p,%p)\n", i++, 
+		      node,
+		      writer->m_next_byte.node, 
+		      writer->m_last_byte.node);
+
 	/* Check if the writer needs to write this node */
-	if (writer->m_next_byte.node != node) {
-	
-	    /* Start track if not started. */
-	    if (!writer->m_started) {
-		ripstream_mp3_start_track (rmi, writer,
-					   &rmi->current_track);
-	    }
+	if (writer->m_next_byte.node == node) {
+	    char* write_ptr;
+	    long write_sz;
 
 	    /* Write the data to the file. */
 	    if (writer->m_last_byte.node == node) {
-		write_sz = cbuf3->chunk_size - writer->m_next_byte.offset;
-	    } else {
 		write_sz = writer->m_last_byte.offset 
+			- writer->m_next_byte.offset;
+	    } else {
+		write_sz = cbuf3->chunk_size 
 			- writer->m_next_byte.offset;
 	    }
 	    write_ptr = ((char*) node->data) + writer->m_next_byte.offset;
@@ -428,7 +444,9 @@ ripstream_mp3_write_node (RIP_MANAGER_INFO* rmi,
 
 	    } else {
 		/* Not end of track, so advance writer pointer */
-		writer->m_next_byte.node = node->next;
+		debug_printf ("Advancing writer next node: %p -> %p\n",
+			      writer->m_next_byte.node, cbuf3->buf->head);
+		writer->m_next_byte.node = cbuf3->buf->head;
 		writer->m_next_byte.offset = 0;
 	    }
 	}
@@ -442,6 +460,7 @@ static error_code
 ripstream_mp3_check_for_track_change (RIP_MANAGER_INFO* rmi)
 {
     error_code rc, real_rc;
+    GQueue *write_list = rmi->cbuf3.write_list;
 
     debug_printf ("rmi->current_track.have_track_info = %d\n", 
 		  rmi->current_track.have_track_info);
@@ -466,40 +485,42 @@ ripstream_mp3_check_for_track_change (RIP_MANAGER_INFO* rmi)
     track_info_debug (&rmi->current_track, "current");
 
     if (rmi->find_silence == 0) {
-	/* Find separation point */
-	//u_long pos1, pos2;
+	Writer *prev_writer;
 	Cbuf3_pointer end_of_previous, start_of_next;
+
+	/* Find separation point */
 	debug_printf ("m_find_silence == 0\n");
 	rc = find_sep (rmi, &end_of_previous, &start_of_next);
 
 #if defined (commentout)
+	/* GCS kkk: Is this still necessary? */
 	if (rc == SR_ERROR_REQUIRED_WINDOW_EMPTY) {
 	    /* If this happens, the previous song should be truncated to 
 	       zero bytes. */
 	    pos1 = -1;
 	    pos2 = 0;
 	}
-	else if (rc != SR_SUCCESS) {
-	    debug_printf("find_sep had bad return code %d\n", rc);
+#endif
+
+	if (rc != SR_SUCCESS) {
+	    debug_printf ("find_sep had bad return code %d\n", rc);
 	    return rc;
 	}
-#endif
 
-#if defined (commentout)
-	/* Write out previous track */
-	//rc = end_track_mp3 (rmi, pos1, pos2, &rmi->old_track);
-	rc = end_track_mp3 (rmi, &end_of_previous, &rmi->old_track);
-	if (rc != SR_SUCCESS)
-	    real_rc = rc;
-#endif
+	/* GCS kkk: What if prev track was not written? */
 
+	/* Add end point to prev writer in list */
+	prev_writer = (Writer*) write_list->tail->data;
+	prev_writer->m_last_byte = end_of_previous;
+	prev_writer->m_ended = 1;
+
+	/* Queue new writer */
+	rc = ripstream_mp3_start_track (rmi, &rmi->new_track, start_of_next);
+	
 #if defined (commentout)
+	/* GCS kkk: This is needed to set cue sheet info (until we 
+	   decode everything) */
 	rmi->cue_sheet_bytes += pos2;
-#endif
-
-#if defined (commentout)
-	/* Let cbuf know about the start of the next track */
-	cbuf3_set_next_song (&rmi->cbuf3, pos2);
 #endif
 
 	/* Start next track */
@@ -677,17 +698,17 @@ write_id3v2_frame (RIP_MANAGER_INFO* rmi, char* tag_name, mchar* data,
     id3v2frame.pad[2] = charset;
     rc = string_from_gstring (rmi, bigbuf, HEADER_SIZE, data, CODESET_ID3);
     framesize = htonl (rc+1);
-    ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.id), 4);
+    ret = ripstream_put_data (rmi, (char *)&(id3v2frame.id), 4);
     if (ret != SR_SUCCESS) return ret;
     *sent += 4;
-    ret = rip_manager_put_data (rmi, (char *)&(framesize),
+    ret = ripstream_put_data (rmi, (char *)&(framesize),
                                 sizeof(framesize));
     if (ret != SR_SUCCESS) return ret;
     *sent += sizeof(framesize);
-    ret = rip_manager_put_data (rmi, (char *)&(id3v2frame.pad), 3);
+    ret = ripstream_put_data (rmi, (char *)&(id3v2frame.pad), 3);
     if (ret != SR_SUCCESS) return ret;
     *sent += 3;
-    ret = rip_manager_put_data (rmi, bigbuf, rc);
+    ret = ripstream_put_data (rmi, bigbuf, rc);
     if (ret != SR_SUCCESS) return ret;
     *sent += rc;
 
