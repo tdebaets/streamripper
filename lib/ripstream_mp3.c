@@ -196,7 +196,7 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
 	}
 	msnprintf (rmi->current_track.track_a, MAX_HEADER_LEN, m_("0"));
 
-	//	rc = ripstream_start_track (rmi, &rmi->current_track);
+	/* Create file, queue new writer, and notify callback */
 	rc = ripstream_mp3_start_track (rmi, &rmi->current_track, 
 					first_byte);
 	if (rc != SR_SUCCESS) {
@@ -468,7 +468,7 @@ ripstream_mp3_write_oldest_node (RIP_MANAGER_INFO* rmi)
 static error_code
 ripstream_mp3_check_for_track_change (RIP_MANAGER_INFO* rmi)
 {
-    error_code rc, real_rc;
+    error_code rc;
     GQueue *write_list = rmi->cbuf3.write_list;
 
     debug_printf ("rmi->current_track.have_track_info = %d\n", 
@@ -523,27 +523,27 @@ ripstream_mp3_check_for_track_change (RIP_MANAGER_INFO* rmi)
 	prev_writer->m_last_byte = end_of_previous;
 	prev_writer->m_ended = 1;
 
-	/* Queue new writer */
+	/* Create file, queue new writer, and notify callback */
 	rc = ripstream_mp3_start_track (rmi, &rmi->new_track, start_of_next);
-	
+	if (rc != SR_SUCCESS) {
+	    debug_printf ("ripstream_mp3_start_track had bad "
+			  "return code %d\n", rc);
+	    return rc;
+	}
+
 #if defined (commentout)
 	/* GCS kkk: This is needed to set cue sheet info (until we 
 	   decode everything) */
 	rmi->cue_sheet_bytes += pos2;
 #endif
 
-	/* Start next track */
-	rc = ripstream_start_track (rmi, &rmi->new_track);
-	if (rc != SR_SUCCESS) {
-	    real_rc = rc;
-	}
 	rmi->find_silence = -1;
 
 	track_info_copy (&rmi->old_track, &rmi->new_track);
     }
     if (rmi->find_silence >= 0) rmi->find_silence --;
 
-    return real_rc;
+    return SR_SUCCESS;
 }
 
 static error_code
