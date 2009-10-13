@@ -296,7 +296,7 @@ ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti,
         return rc;
     }
 
-    /* GCS FIX: kkk Some of these items should be separated out from 
+    /* GCS FIX: kkk Some of these items should be separated out into 
        the individual file writer */
 
     /* Update track count */
@@ -331,7 +331,6 @@ ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti,
 	if (rc != SR_SUCCESS) return rc;
 	for (i = 0; i < 4; i++) {
 	    char x = (header_size >> (3-i)*7) & 0x7F;
-	    //rc = ripstream_put_data (rmi, (char *)&x, 1);
 	    rc = filelib_write_track (writer, (char *)&x, 1);
 	    if (rc != SR_SUCCESS) return rc;
 	}
@@ -600,7 +599,6 @@ find_sep (RIP_MANAGER_INFO* rmi,
 	debug_printf ("PEEK OK\n");
 
 	/* Find silence point */
-#if defined (commentout)
 	if (sp_opt->xs == 2) {
 	    rc = findsep_silence_2 (buf, 
 				    bufsize, 
@@ -610,7 +608,7 @@ find_sep (RIP_MANAGER_INFO* rmi,
 				    sp_opt->xs_silence_length,
 				    sp_opt->xs_padding_1,
 				    sp_opt->xs_padding_2,
-				    pos1, pos2);
+				    &pos1, &pos2);
 	} else {
 	    rc = findsep_silence (buf, 
 				  bufsize, 
@@ -620,20 +618,8 @@ find_sep (RIP_MANAGER_INFO* rmi,
 				  sp_opt->xs_silence_length,
 				  sp_opt->xs_padding_1,
 				  sp_opt->xs_padding_2,
-				  pos1, pos2);
+				  &pos1, &pos2);
 	}
-	*pos1 += rw_start;
-	*pos2 += rw_start;
-#endif
-	rc = findsep_silence (buf, 
-			      bufsize, 
-			      rmi->rw_start_to_sw_start,
-			      sp_opt->xs_search_window_1 
-			      + sp_opt->xs_search_window_2,
-			      sp_opt->xs_silence_length,
-			      sp_opt->xs_padding_1,
-			      sp_opt->xs_padding_2,
-			      &pos1, &pos2);
 
 	cbuf3_pointer_add (cbuf3, end_of_previous, &rw_start, pos1);
 	cbuf3_pointer_add (cbuf3, start_of_next, &rw_start, pos2);
@@ -664,7 +650,6 @@ ripstream_mp3_end_track (RIP_MANAGER_INFO* rmi,
 	string_from_gstring (rmi, id3v1.year, sizeof(id3v1.year),
 			     ti->year, CODESET_ID3);
 	id3v1.genre = (char) 0xFF; // see http://www.id3.org/id3v2.3.0.html#secA
-	//	ret = rip_manager_put_data (rmi, (char *)&id3v1, sizeof(id3v1));
 	ret = filelib_write_track (writer, (char *)&id3v1, sizeof(id3v1));
 	if (ret != SR_SUCCESS) {
 	    return ret;
@@ -1015,4 +1000,3 @@ compute_cbuf2_size (RIP_MANAGER_INFO* rmi,
     debug_printf ("m_rw_end_to_cb_end: %d\n", rmi->rw_end_to_cb_end);
     debug_printf ("m_rw_start_to_sw_start: %d\n", rmi->rw_start_to_sw_start);
 }
-
