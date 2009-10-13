@@ -44,5 +44,7 @@ void
 callback_post_error (RIP_MANAGER_INFO* rmi, error_code err);
 error_code
 callback_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti);
+void
+callback_put_data (RIP_MANAGER_INFO *rmi, u_long size);
 
 #endif //__CALLBACK_H__

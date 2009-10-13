@@ -38,6 +38,7 @@
 #include "external.h"
 #include "ripogg.h"
 #include "track_info.h"
+#include "callback.h"
 
 
 /*****************************************************************************
@@ -55,8 +56,9 @@ compute_cbuf2_size (RIP_MANAGER_INFO* rmi,
 static int ms_to_bytes (int ms, int bitrate);
 static int bytes_to_secs (unsigned int bytes, int bitrate);
 static error_code
-write_id3v2_frame(RIP_MANAGER_INFO* rmi, char* tag_name, mchar* data,
-		  int charset, int *sent);
+write_id3v2_frame (RIP_MANAGER_INFO *rmi, 
+		   Writer *writer, char* tag_name, mchar* data,
+		   int charset, int *sent);
 static error_code
 ripstream_mp3_check_for_track_change (RIP_MANAGER_INFO* rmi);
 static error_code
@@ -225,6 +227,9 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
 	return rc;
     }
 
+    /* Give some feedback to the user about how much we ripped so far */
+    callback_put_data (rmi, rmi->getbuffer_size);
+
 #if defined (commentout)
     /* GCS FIX: Need to figure out application interface */
     /* Post to caller */
@@ -256,6 +261,13 @@ ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti,
 
     debug_printf ("ripstream_mp3_start_track (starting)\n");
 
+    /* Give some feedback to the user */
+    rc = callback_start_track (rmi, ti);
+    if (rc != SR_SUCCESS) {
+	debug_printf ("callback_start_track failed: %d\n", rc);
+        return rc;
+    }
+
     /* Create writer */
     writer = (Writer*) malloc (sizeof(Writer));
     if (!writer) {
@@ -275,14 +287,6 @@ ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti,
         debug_printf ("filelib_start failed %d\n", rc);
         return rc;
     }
-
-#if defined (commentout)
-    ret = rip_manager_start_track (rmi, ti);
-    if (ret != SR_SUCCESS) {
-	debug_printf ("rip_manager_start_track failed(#2): %d\n",ret);
-        return ret;
-    }
-#endif
 
     /* Dump to artist/title to cue sheet */
     secs = bytes_to_secs (rmi->cue_sheet_bytes, rmi->bitrate);
@@ -327,7 +331,8 @@ ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti,
 	if (rc != SR_SUCCESS) return rc;
 	for (i = 0; i < 4; i++) {
 	    char x = (header_size >> (3-i)*7) & 0x7F;
-	    rc = ripstream_put_data (rmi, (char *)&x, 1);
+	    //rc = ripstream_put_data (rmi, (char *)&x, 1);
+	    rc = filelib_write_track (writer, (char *)&x, 1);
 	    if (rc != SR_SUCCESS) return rc;
 	}
 
@@ -337,30 +342,34 @@ ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti,
 	id3_charset = is_id3_unicode(rmi);
 
 	/* Lead performer */
-        rc = write_id3v2_frame(rmi, "TPE1", ti->artist, id3_charset, &sent);
+        rc = write_id3v2_frame (rmi, writer, "TPE1", 
+				ti->artist, id3_charset, &sent);
 
         /* Title */
-        rc = write_id3v2_frame(rmi, "TIT2", ti->title, id3_charset, &sent);
+        rc = write_id3v2_frame (rmi, writer, "TIT2", 
+				ti->title, id3_charset, &sent);
 
         /* Encoded by */
-        rc = write_id3v2_frame(rmi, "TENC",
+        rc = write_id3v2_frame (rmi, writer, "TENC",
 				m_("Ripped with Streamripper"), 
 				id3_charset, &sent);
 	
         /* Album */
-        rc = write_id3v2_frame(rmi, "TALB", ti->album, id3_charset, &sent);
+        rc = write_id3v2_frame (rmi, writer, "TALB", 
+				ti->album, id3_charset, &sent);
 
         /* Track */
-        rc = write_id3v2_frame(rmi, "TRCK", ti->track_a, id3_charset, &sent);
+        rc = write_id3v2_frame (rmi, writer, "TRCK", 
+				ti->track_a, id3_charset, &sent);
 
         /* Year */
-        rc = write_id3v2_frame(rmi, "TYER", ti->year, id3_charset, &sent);
+        rc = write_id3v2_frame (rmi, writer, "TYER", 
+				ti->year, id3_charset, &sent);
 
 	/* Zero out padding */
 	memset (bigbuf, '\000', sizeof(bigbuf));
 
 	/* Pad up to header_size */
-	//rc = rip_manager_put_data (rmi, bigbuf, HEADER_SIZE-sent);
 	rc = filelib_write_track (writer, bigbuf, HEADER_SIZE-sent);
 	if (rc != SR_SUCCESS) {
 	    return rc;
@@ -680,7 +689,8 @@ ripstream_mp3_end_track (RIP_MANAGER_INFO* rmi,
 // Write data to a new frame, using tag_name e.g. TPE1, and increment
 // *sent with the number of bytes written
 static error_code
-write_id3v2_frame (RIP_MANAGER_INFO* rmi, char* tag_name, mchar* data,
+write_id3v2_frame (RIP_MANAGER_INFO *rmi, 
+		   Writer *writer, char* tag_name, mchar* data,
 		   int charset, int *sent)
 {
     int ret;
@@ -698,17 +708,17 @@ write_id3v2_frame (RIP_MANAGER_INFO* rmi, char* tag_name, mchar* data,
     id3v2frame.pad[2] = charset;
     rc = string_from_gstring (rmi, bigbuf, HEADER_SIZE, data, CODESET_ID3);
     framesize = htonl (rc+1);
-    ret = ripstream_put_data (rmi, (char *)&(id3v2frame.id), 4);
+    ret = filelib_write_track (writer, (char *)&(id3v2frame.id), 4);
     if (ret != SR_SUCCESS) return ret;
     *sent += 4;
-    ret = ripstream_put_data (rmi, (char *)&(framesize),
-                                sizeof(framesize));
+    ret = filelib_write_track (writer, (char *)&(framesize),
+			      sizeof(framesize));
     if (ret != SR_SUCCESS) return ret;
     *sent += sizeof(framesize);
-    ret = ripstream_put_data (rmi, (char *)&(id3v2frame.pad), 3);
+    ret = filelib_write_track (writer, (char *)&(id3v2frame.pad), 3);
     if (ret != SR_SUCCESS) return ret;
     *sent += 3;
-    ret = ripstream_put_data (rmi, bigbuf, rc);
+    ret = filelib_write_track (writer, bigbuf, rc);
     if (ret != SR_SUCCESS) return ret;
     *sent += rc;
 

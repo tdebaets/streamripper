@@ -543,26 +543,36 @@ cbuf3_peek (Cbuf3 *cbuf3,
     int bidx = 0;
     Cbuf3_pointer cur;
 
+    debug_printf ("cbuf3_peek, %d bytes at cbuf3_ptr (%p,%d)\n",
+		  len, ptr->node, ptr->offset);
+
     cur.node = ptr->node;
     cur.offset = ptr->offset;
     while (len > 0) {
 	u_long this_len;
 	char *chunk = (char*) cur.node->data;
+
+	/* Check for overflow */
+	if (!cur.node) {
+	    return SR_ERROR_BUFFER_TOO_SMALL;
+	}
+
+	/* Compute length to peek from this chunk */
 	if (cur.offset + len > cbuf3->chunk_size) {
 	    this_len = cbuf3->chunk_size - cur.offset;
 	} else {
 	    this_len = len;
 	}
+
+	debug_printf ("Copying %d bytes (%d).\n", this_len, len);
+
+	/* Peek */
+	memcpy (&buf[bidx], &chunk[cur.offset], this_len);
 	len -= this_len;
 
-	memcpy (&buf[bidx], &chunk[cur.offset], this_len);
-
+	/* Go to next node */
 	cur.node = cur.node->next;
 	cur.offset = 0;
-	/* Check for overflow */
-	if (!cur.node) {
-	    return SR_ERROR_BUFFER_TOO_SMALL;
-	}
     }
 
     return SR_SUCCESS;

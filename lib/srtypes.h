@@ -530,7 +530,6 @@ struct RIP_MANAGER_INFOst
     STREAM_PREFS *prefs;
     char streamname[MAX_STREAMNAME_LEN];
     char server_name[MAX_SERVER_LEN];
-    u_long filesize;
     int	status;
     int	meta_interval;
 
@@ -542,9 +541,6 @@ struct RIP_MANAGER_INFOst
 
     /* Bitrate used to compute buffer size */
     int bitrate;
-
-    /* it's not the filename, it's the trackname */
-    char filename[SR_MAX_PATH];
 
     /* Process id & handle for external process */
     External_Process *ep;
@@ -571,6 +567,10 @@ struct RIP_MANAGER_INFOst
     /* Callback function */
     //void (*m_status_callback)(RIP_MANAGER_INFO* rmi, int message, void *data);
     RIP_MANAGER_CALLBACK status_callback;
+
+    /* Callback data */
+    u_long callback_filesize;             /* bytes written to current track */
+    char callback_filename[SR_MAX_PATH];  /* not the filename, the trackname */
 
     /* Bytes ripped is stored to send to callback, also used to decide 
        when to stop based on bytes ripped. */

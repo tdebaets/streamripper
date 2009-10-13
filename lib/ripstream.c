@@ -201,7 +201,7 @@ ripstream_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
     }
 #endif
 
-    rmi->filesize += size;	/* This is used by the GUI */
+    rmi->callback_filesize += size;	/* This is used by the GUI */
     rmi->bytes_ripped += size;	/* This is used to determine when to quit */
     while (rmi->bytes_ripped >= 1048576) {
 	rmi->bytes_ripped -= 1048576;

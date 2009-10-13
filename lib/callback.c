@@ -55,8 +55,6 @@
 #include "compat.h"
 #include "callback.h"
 
-static void
-compose_console_string (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti);
 
 /******************************************************************************
  * Public functions
@@ -89,26 +87,32 @@ callback_post_error (RIP_MANAGER_INFO* rmi, error_code err)
 error_code
 callback_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
 {
+    mchar console_string[SR_MAX_PATH];
+
     /* Compose the string for the console output */
-    rmi->filesize = 0;
-    compose_console_string (rmi, ti);
-    rmi->filename[SR_MAX_PATH-1] = '\0';
-    rmi->status_callback (rmi, RM_NEW_TRACK, (void*) rmi->filename);
+    msnprintf (console_string, SR_MAX_PATH, m_S m_(" - ") m_S, 
+	       ti->artist, ti->title);
+    rmi->callback_filesize = 0;
+    string_from_gstring (rmi, rmi->callback_filename, 
+			 SR_MAX_PATH, console_string, 
+			 CODESET_LOCALE);
+    rmi->callback_filename[SR_MAX_PATH-1] = '\0';
+    rmi->status_callback (rmi, RM_NEW_TRACK, (void*) rmi->callback_filename);
     callback_post_status (rmi, 0);
 
     return SR_SUCCESS;
 }
 
-/******************************************************************************
- * Private functions
- *****************************************************************************/
-static void
-compose_console_string (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
+void
+callback_put_data (RIP_MANAGER_INFO *rmi, u_long size)
 {
-    mchar console_string[SR_MAX_PATH];
-    msnprintf (console_string, SR_MAX_PATH, m_S m_(" - ") m_S, 
-	       ti->artist, ti->title);
-    string_from_gstring (rmi, rmi->filename, SR_MAX_PATH, console_string,
-			 CODESET_LOCALE);
-}
+    /* This is used by the GUI */
+    rmi->callback_filesize += size;
 
+    /* This is used to determine when to quit */
+    rmi->bytes_ripped += size;
+    while (rmi->bytes_ripped >= 1048576) {
+	rmi->bytes_ripped -= 1048576;
+	rmi->megabytes_ripped++;
+    }
+}

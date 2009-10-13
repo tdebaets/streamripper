@@ -192,16 +192,6 @@ rip_manager_stop (RIP_MANAGER_INFO *rmi)
 #endif
 }
 
-#if defined (commentout)
-void
-rip_manager_post_status (RIP_MANAGER_INFO* rmi, int status)
-{
-    if (status != 0)
-        rmi->status = status;
-    rmi->status_callback (rmi, RM_UPDATE, 0);
-}
-#endif
-
 void
 rip_manager_cleanup (void)
 {
@@ -212,48 +202,6 @@ rip_manager_cleanup (void)
 /******************************************************************************
  * Private functions
  *****************************************************************************/
-#if defined (commentout)
-static void
-post_error (RIP_MANAGER_INFO* rmi, error_code err)
-{
-    ERROR_INFO err_info;
-    err_info.error_code = err;
-    strcpy(err_info.error_str, errors_get_string (err));
-    debug_printf ("post_error: %d %s\n", err_info.error_code, 
-		  err_info.error_str);
-    rmi->status_callback (rmi, RM_ERROR, &err_info);
-}
-
-static void
-compose_console_string (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
-{
-    mchar console_string[SR_MAX_PATH];
-    msnprintf (console_string, SR_MAX_PATH, m_S m_(" - ") m_S, 
-	       ti->artist, ti->title);
-    string_from_gstring (rmi, rmi->filename, SR_MAX_PATH, console_string,
-			 CODESET_LOCALE);
-}
-
-/* 
- * This is called by ripstream when we get a new track. 
- * most logic is handled by filelib_start() so we just
- * make sure there are no bad characters in the name and 
- * update via the callback 
- */
-error_code
-rip_manager_start_track (RIP_MANAGER_INFO *rmi, TRACK_INFO* ti)
-{
-    /* Compose the string for the console output */
-    rmi->filesize = 0;
-    compose_console_string (rmi, ti);
-    rmi->filename[SR_MAX_PATH-1] = '\0';
-    rmi->status_callback (rmi, RM_NEW_TRACK, (void*) rmi->filename);
-    rip_manager_post_status (rmi, 0);
-
-    return SR_SUCCESS;
-}
-#endif
-
 static void
 debug_ripthread (RIP_MANAGER_INFO* rmi)
 {
@@ -262,8 +210,6 @@ debug_ripthread (RIP_MANAGER_INFO* rmi)
     debug_printf ("server_name = %s\n", rmi->server_name);
     debug_printf ("bitrate = %d\n", rmi->bitrate);
     debug_printf ("meta_interval = %d\n", rmi->meta_interval);
-    debug_printf ("filename = %s\n", rmi->filename);
-    debug_printf ("filesize = %d\n", rmi->filesize);
     debug_printf ("status = %d\n", rmi->status);
     debug_printf ("track_count = %d\n", rmi->track_count);
     debug_printf ("external_process = %p\n", rmi->ep);
@@ -357,7 +303,7 @@ ripthread (void *thread_arg)
 	}
 
 	/* All systems go.  Caller should update GUI that it is ripping */
-	if (rmi->filesize > 0) {
+	if (rmi->callback_filesize > 0) {
 	    callback_post_status (rmi, RM_STATUS_RIPPING);
 	}
     }

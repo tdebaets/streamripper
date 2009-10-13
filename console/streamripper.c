@@ -173,7 +173,7 @@ print_status (RIP_MANAGER_INFO *rmi)
     if (m_dont_print)
 	return;
 
-    if (printed_fullinfo && rmi->filename[0]) {
+    if (printed_fullinfo && rmi->callback_filename[0]) {
 
 	switch(rmi->status)
 	{
@@ -187,7 +187,7 @@ print_status (RIP_MANAGER_INFO *rmi)
 
 	    print_to_console ("[%14s] %.50s\r",
 			      status_str,
-			      rmi->filename);
+			      rmi->callback_filename);
 	    break;
 
 	case RM_STATUS_RIPPING:
@@ -196,10 +196,10 @@ print_status (RIP_MANAGER_INFO *rmi)
 	    } else {
 		strcpy(status_str, "ripping...    ");
 	    }
-	    format_byte_size(filesize_str, rmi->filesize);
+	    format_byte_size(filesize_str, rmi->callback_filesize);
 	    print_to_console ("[%14s] %.50s [%7s]\r",
 			      status_str,
-			      rmi->filename,
+			      rmi->callback_filename,
 			      filesize_str);
 	    break;
 	case RM_STATUS_RECONNECTING:
