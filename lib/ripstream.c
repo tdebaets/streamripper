@@ -238,15 +238,6 @@ ripstream_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
     mchar mfullpath[SR_MAX_PATH];
     char fullpath[SR_MAX_PATH];
 
-#if defined (commentout)
-    /* GCS FIX: kkk */
-    if (rmi->write_data) {
-        filelib_end (rmi, ti, rmi->prefs->overwrite,
-		     GET_TRUNCATE_DUPS(rmi->prefs->flags),
-		     mfullpath);
-    }
-#endif
-
     callback_post_status(rmi, 0);
 
     string_from_gstring (rmi, fullpath, SR_MAX_PATH, mfullpath, 

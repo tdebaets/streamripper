@@ -114,7 +114,6 @@ filelib_init (RIP_MANAGER_INFO* rmi,
     gchar tmp_output_pattern[SR_MAX_PATH];
     gchar tmp_showfile_pattern[SR_MAX_PATH];
 
-    //    fli->m_file = INVALID_FHANDLE;
     fli->m_show_file = INVALID_FHANDLE;
     fli->m_cue_file = INVALID_FHANDLE;
     fli->m_count = do_count ? count_start : -1;
@@ -218,7 +217,8 @@ filelib_init (RIP_MANAGER_INFO* rmi,
     }
 
     /* Compute the amount of remaining path length for the filenames */
-    fli->m_max_filename_length = SR_MAX_PATH - mstrlen(fli->m_incomplete_directory);
+    fli->m_max_filename_length = SR_MAX_PATH 
+	    - mstrlen (fli->m_incomplete_directory);
 
     /* Get directory and pattern of showfile */
     if (do_show_file) {
@@ -255,7 +255,7 @@ filelib_start (RIP_MANAGER_INFO* rmi, Writer *writer, TRACK_INFO* ti)
 
     if (!fli->m_do_individual_tracks) return SR_SUCCESS;
 
-    //    close_file (&fli->m_file);
+    debug_printf ("filelib_start\n");
 
     /* Compose and trim filename (not including directory) */
     msnprintf (fnbase1, TEMP_STR_LEN, m_S m_(" - ") m_S, 
@@ -326,8 +326,7 @@ filelib_write_show (RIP_MANAGER_INFO* rmi, char *buf, u_long size)
 */
 error_code
 filelib_end (RIP_MANAGER_INFO* rmi,
-	     Writer *writer,
-	     TRACK_INFO* ti)
+	     Writer *writer)
 {
     FILELIB_INFO* fli = &rmi->filelib_info;
     BOOL ok_to_write = TRUE;
@@ -346,7 +345,8 @@ filelib_end (RIP_MANAGER_INFO* rmi,
     close_file (&writer->m_file);
 
     /* Construct filename for completed file */
-    parse_and_subst_pat (rmi, new_path, ti, fli->m_output_directory, 
+    parse_and_subst_pat (rmi, new_path, &writer->m_ti, 
+			 fli->m_output_directory, 
 			 fli->m_output_pattern, fli->m_extension);
 
     /* Build up the output directory */
@@ -367,7 +367,8 @@ filelib_end (RIP_MANAGER_INFO* rmi,
 	break;
     case OVERWRITE_LARGER:
 	/* Smart overwriting -- only overwrite if new file is bigger */
-	ok_to_write = new_file_is_better (rmi, new_path, fli->m_incomplete_filename);
+	ok_to_write = new_file_is_better (rmi, new_path, 
+					  fli->m_incomplete_filename);
 	break;
     case OVERWRITE_VERSION:
     default:
@@ -380,6 +381,8 @@ filelib_end (RIP_MANAGER_INFO* rmi,
 	g_free (new_fnbase);
 	ok_to_write = TRUE;
     }
+
+    debug_printf ("filelib_end: new_path = %s\n", new_path);
 
     if (ok_to_write) {
 	if (file_exists (rmi, new_path)) {

@@ -63,13 +63,12 @@ static error_code
 ripstream_mp3_check_for_track_change (RIP_MANAGER_INFO* rmi);
 static error_code
 ripstream_mp3_end_track (RIP_MANAGER_INFO* rmi, 
-			 Writer* writer,
-			 TRACK_INFO* ti);
+			 Writer* writer);
 static error_code
 ripstream_mp3_check_bitrate (RIP_MANAGER_INFO* rmi);
 static error_code
-ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti, 
-			   Cbuf3_pointer start_byte);
+ripstream_mp3_queue_writer (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti, 
+			    Cbuf3_pointer start_byte);
 static error_code
 ripstream_mp3_write_oldest_node (RIP_MANAGER_INFO* rmi);
 
@@ -196,22 +195,13 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
 	}
 	msnprintf (rmi->current_track.track_a, MAX_HEADER_LEN, m_("0"));
 
-	/* Create file, queue new writer, and notify callback */
-	rc = ripstream_mp3_start_track (rmi, &rmi->current_track, 
-					first_byte);
+	/* Queue new writer, and notify callback */
+	rc = ripstream_mp3_queue_writer (rmi, &rmi->current_track, 
+					 first_byte);
 	if (rc != SR_SUCCESS) {
 	    debug_printf ("ripstream_mp3_start_track failed(#1): %d\n",rc);
 	    return rc;
 	}
-
-#if defined (commentout)
-	/* GCS FIX:  Instead, we should set up start position */
-	rc = filelib_start (rmi, &rmi->current_track);
-	if (rc != SR_SUCCESS) {
-	    debug_printf ("filelib_start failed(#1): %d\n", rc);
-	    return rc;
-	}
-#endif
 
 	rmi->ripstream_first_time_through = 0;
 	track_info_copy (&rmi->old_track, &rmi->current_track);
@@ -231,29 +221,24 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     callback_put_data (rmi, rmi->getbuffer_size);
 
 #if defined (commentout)
-    /* GCS FIX: Need to figure out application interface */
-    /* Post to caller */
-    if (curr_song < extract_size) {
-	u_long curr_song_bytes = extract_size - curr_song;
-	rmi->cue_sheet_bytes += curr_song_bytes;
-	rc = ripstream_put_data (rmi, &rmi->getbuffer[curr_song], 
-				   curr_song_bytes);
-	if (rc != SR_SUCCESS) {
-	    debug_printf ("rip_manager_put_data returned: %d\n",rc);
-	    return rc;
-	}
-    }
+    /* GCS FIX: Still need to fix cue sheet bytes */
+    rmi->cue_sheet_bytes += curr_song_bytes;
 #endif
 
     return real_rc;
 }
 
-error_code
-ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti, 
-			   Cbuf3_pointer start_byte)
+/*****************************************************************************
+ * Private functions
+ *****************************************************************************/
+/** Add function documentation here.
+    \callgraph
+*/
+static error_code
+ripstream_mp3_queue_writer (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti, 
+			    Cbuf3_pointer start_byte)
 {
     error_code rc;
-    int i;
     Cbuf3 *cbuf3 = &rmi->cbuf3;
     GQueue *write_list = cbuf3->write_list;
     Writer *writer;
@@ -277,16 +262,10 @@ ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti,
     /* Initialize writer */
     memset (writer, 0, sizeof(Writer));
     writer->m_next_byte = start_byte;
+    track_info_copy (&writer->m_ti, ti);
 
     /* Add writer to queue */
     g_queue_push_tail (write_list, writer);
-
-    /* Open output file */
-    rc = filelib_start (rmi, writer, &rmi->current_track);
-    if (rc != SR_SUCCESS) {
-        debug_printf ("filelib_start failed %d\n", rc);
-        return rc;
-    }
 
     /* Dump to artist/title to cue sheet */
     secs = bytes_to_secs (rmi->cue_sheet_bytes, rmi->bitrate);
@@ -295,9 +274,6 @@ ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti,
         debug_printf ("filelib_write_cue failed %d\n", rc);
         return rc;
     }
-
-    /* GCS FIX: kkk Some of these items should be separated out into 
-       the individual file writer */
 
     /* Update track count */
     if (!rmi->ripstream_first_time_through) {
@@ -315,8 +291,27 @@ ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti,
 	return SR_SUCCESS;
     }
 
-    /* Oddsock's ID3 stuff, (oddsock@oddsock.org) */
+    return SR_SUCCESS;
+}
+
+static error_code
+ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, Writer *writer)
+{
+    TRACK_INFO *ti = &writer->m_ti;
+    error_code rc;
+
+    debug_printf ("ripstream_mp3_start_track (starting)\n");
+
+    /* Open output file */
+    rc = filelib_start (rmi, writer, ti);
+    if (rc != SR_SUCCESS) {
+        debug_printf ("filelib_start failed %d\n", rc);
+        return rc;
+    }
+
+    /* Write ID3V2 */
     if (GET_ADD_ID3V2(rmi->prefs->flags)) {
+	int i;
 	char bigbuf[HEADER_SIZE] = "";
 	int header_size = HEADER_SIZE;
 	char header1[6] = "ID3\x03\0\0";
@@ -326,7 +321,6 @@ ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti,
 	memset(bigbuf, '\000', sizeof(bigbuf));
 
 	/* Write header */
-	//rc = rip_manager_put_data (rmi, header1, 6);
 	rc = filelib_write_track (writer, header1, 6);
 	if (rc != SR_SUCCESS) return rc;
 	for (i = 0; i < 4; i++) {
@@ -378,12 +372,6 @@ ripstream_mp3_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti,
     return SR_SUCCESS;
 }
 
-/*****************************************************************************
- * Private functions
- *****************************************************************************/
-/** Add function documentation here.
-    \callgraph
-*/
 static error_code
 ripstream_mp3_write_oldest_node (RIP_MANAGER_INFO* rmi)
 {
@@ -429,6 +417,12 @@ ripstream_mp3_write_oldest_node (RIP_MANAGER_INFO* rmi)
 	    char* write_ptr;
 	    long write_sz;
 
+	    /* Open the file and write header */
+	    if (!writer->m_started) {
+		ripstream_mp3_start_track (rmi, writer);
+		writer->m_started = 1;
+	    }
+
 	    /* Write the data to the file. */
 	    if (writer->m_last_byte.node == node) {
 		write_sz = writer->m_last_byte.offset 
@@ -443,8 +437,7 @@ ripstream_mp3_write_oldest_node (RIP_MANAGER_INFO* rmi)
 	    /* Check if we need to end the track */
 	    if (writer->m_last_byte.node == node) {
 		/* Yes we do, so add id3 and close file. */
-		ripstream_mp3_end_track (rmi, writer,
-					 &rmi->current_track);
+		ripstream_mp3_end_track (rmi, writer);
 
 		/* Free up writer */
 		free (writer);
@@ -523,7 +516,7 @@ ripstream_mp3_check_for_track_change (RIP_MANAGER_INFO* rmi)
 	prev_writer->m_ended = 1;
 
 	/* Create file, queue new writer, and notify callback */
-	rc = ripstream_mp3_start_track (rmi, &rmi->new_track, start_of_next);
+	rc = ripstream_mp3_queue_writer (rmi, &rmi->new_track, start_of_next);
 	if (rc != SR_SUCCESS) {
 	    debug_printf ("ripstream_mp3_start_track had bad "
 			  "return code %d\n", rc);
@@ -631,8 +624,7 @@ find_sep (RIP_MANAGER_INFO* rmi,
 
 static error_code
 ripstream_mp3_end_track (RIP_MANAGER_INFO* rmi, 
-			 Writer* writer,
-			 TRACK_INFO* ti)
+			 Writer* writer)
 {
     int ret;
 
@@ -642,13 +634,13 @@ ripstream_mp3_end_track (RIP_MANAGER_INFO* rmi,
 	memset (&id3v1, '\000',sizeof(id3v1));
 	strncpy (id3v1.tag, "TAG", strlen("TAG"));
 	string_from_gstring (rmi, id3v1.artist, sizeof(id3v1.artist),
-			     ti->artist, CODESET_ID3);
+			     writer->m_ti.artist, CODESET_ID3);
 	string_from_gstring (rmi, id3v1.songtitle, sizeof(id3v1.songtitle),
-			     ti->title, CODESET_ID3);
+			     writer->m_ti.title, CODESET_ID3);
 	string_from_gstring (rmi, id3v1.album, sizeof(id3v1.album),
-			     ti->album, CODESET_ID3);
+			     writer->m_ti.album, CODESET_ID3);
 	string_from_gstring (rmi, id3v1.year, sizeof(id3v1.year),
-			     ti->year, CODESET_ID3);
+			     writer->m_ti.year, CODESET_ID3);
 	id3v1.genre = (char) 0xFF; // see http://www.id3.org/id3v2.3.0.html#secA
 	ret = filelib_write_track (writer, (char *)&id3v1, sizeof(id3v1));
 	if (ret != SR_SUCCESS) {
@@ -657,7 +649,7 @@ ripstream_mp3_end_track (RIP_MANAGER_INFO* rmi,
     }
 
     if (rmi->write_data) {
-        filelib_end (rmi, writer, ti);
+        filelib_end (rmi, writer);
     }
 
     /* Only save this track if we've skipped over enough cruft 
@@ -665,7 +657,7 @@ ripstream_mp3_end_track (RIP_MANAGER_INFO* rmi,
     debug_printf ("Current track number %d (skipping if less than %d)\n", 
 		  rmi->track_count, rmi->prefs->dropcount);
     if (rmi->track_count >= rmi->prefs->dropcount)
-	if ((ret = ripstream_end_track (rmi, ti)) != SR_SUCCESS)
+	if ((ret = ripstream_end_track (rmi, &writer->m_ti)) != SR_SUCCESS)
 	    return ret;
 
     return SR_SUCCESS;

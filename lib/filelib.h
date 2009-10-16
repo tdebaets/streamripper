@@ -91,8 +91,7 @@ filelib_write_show (RIP_MANAGER_INFO* rmi, char *buf, u_long size);
 error_code filelib_write_cue (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti, int secs);
 error_code
 filelib_end (RIP_MANAGER_INFO* rmi,
-	     Writer *writer,
-	     TRACK_INFO* ti);
+	     Writer *writer);
 void filelib_shutdown (RIP_MANAGER_INFO* rmi);
 
 #endif //FILELIB

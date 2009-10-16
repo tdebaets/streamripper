@@ -360,10 +360,11 @@ typedef struct writer Writer;
 struct writer
 {
     int              m_started;
-    Cbuf3_pointer    m_next_byte;
     int              m_ended;
+    Cbuf3_pointer    m_next_byte;
     Cbuf3_pointer    m_last_byte;
     FHANDLE          m_file;
+    TRACK_INFO       m_ti;
 };
 
 
