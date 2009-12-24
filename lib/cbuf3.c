@@ -100,6 +100,7 @@ cbuf3_allocate_minimum (struct cbuf3 *cbuf3,
 	}
 	g_queue_push_head (cbuf3->free_list, chunk);
     }
+    cbuf3->num_chunks = num_chunks;
 
     threadlib_signal_sem (&cbuf3->sem);
     debug_printf ("Allocating cbuf3 [complete]\n");
@@ -190,6 +191,10 @@ cbuf3_insert_node (struct cbuf3 *cbuf3, GList *node)
     for (i = 0, p = cbuf3->buf->head; p; i++, p = p->next) {
 	debug_printf ("[%3d]  %p, %p\n", i, p, p->data);
     }
+    debug_printf ("filled = %d x %d = %d\n", i, 
+	cbuf3->chunk_size, i * cbuf3->chunk_size);
+    debug_printf ("size   = %d x %d = %d\n", cbuf3->num_chunks, 
+	cbuf3->chunk_size, cbuf3->num_chunks * cbuf3->chunk_size);
 
     threadlib_signal_sem (&cbuf3->sem);
     debug_printf ("cbuf3_insert released cbuf3->sem\n");
@@ -569,6 +574,7 @@ cbuf3_peek (Cbuf3 *cbuf3,
 	/* Peek */
 	memcpy (&buf[bidx], &chunk[cur.offset], this_len);
 	len -= this_len;
+	bidx += this_len;
 
 	/* Go to next node */
 	cur.node = cur.node->next;

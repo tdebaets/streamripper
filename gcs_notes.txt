@@ -1,4 +1,14 @@
 -----------------------------------------------------------------------
+1.65.0 - Testing guide
+
+Unix MP3, OGG
+Windows MP3, OGG
+MP3 w, w/o metadata
+Win98
+Check output files
+Check relay
+
+-----------------------------------------------------------------------
 String conversion
 
 lib/external.c:
