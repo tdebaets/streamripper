@@ -361,6 +361,7 @@ struct writer
 {
     int              m_started;
     int              m_ended;
+    int              m_track_no;
     Cbuf3_pointer    m_next_byte;
     Cbuf3_pointer    m_last_byte;
     FHANDLE          m_file;

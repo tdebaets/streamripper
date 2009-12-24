@@ -175,8 +175,11 @@ ripstream_mp3_rip (RIP_MANAGER_INFO* rmi)
     if (rmi->current_track.track_p[0]) {
 	mstrcpy (rmi->current_track.track_a, rmi->current_track.track_p);
     } else {
+	/* GCS FIX: Writer needs to do this... */
+#if defined (commentout)
         msnprintf (rmi->current_track.track_a, MAX_HEADER_LEN,
-		   m_("%d"), rmi->track_count + 1);
+		   m_("%d"), writer->m_track_no + 1);
+#endif
     }
 
     /* First time through, so start a track. */
@@ -263,6 +266,12 @@ ripstream_mp3_queue_writer (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti,
     memset (writer, 0, sizeof(Writer));
     writer->m_next_byte = start_byte;
     track_info_copy (&writer->m_ti, ti);
+    writer->m_track_no = rmi->track_count;
+
+    /* Update track count */
+    rmi->track_count ++;
+    debug_printf ("Changed track count %d -> %d\n", 
+	rmi->track_count - 1, rmi->track_count);
 
     /* Add writer to queue */
     g_queue_push_tail (write_list, writer);
@@ -275,11 +284,6 @@ ripstream_mp3_queue_writer (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti,
         return rc;
     }
 
-    /* Update track count */
-    if (!rmi->ripstream_first_time_through) {
-        rmi->track_count ++;
-        debug_printf ("Changed track count to %d\n", rmi->track_count);
-    }
 
     /* Check if we are writing this track */
     if (!GET_INDIVIDUAL_TRACKS(rmi->prefs->flags)) {
@@ -392,8 +396,11 @@ ripstream_mp3_write_oldest_node (RIP_MANAGER_INFO* rmi)
     /* Put it on the free list */
     cbuf3_insert_free_node (cbuf3, node);
 
+    debug_printf ("ripstream_mp3_write_oldest_node: %d, %d\n",
+	GET_INDIVIDUAL_TRACKS (rmi->prefs->flags), rmi->write_data);
+
     /* If we're not writing tracks, return */
-    /* GCS kkk - this logic is obsolete - writer shouldn't enter 
+    /* GCS FIX - this logic is obsolete - writer shouldn't enter 
        write_list if not needed. */
     if (!GET_INDIVIDUAL_TRACKS (rmi->prefs->flags) || !rmi->write_data) {
 	return SR_SUCCESS;
@@ -407,15 +414,19 @@ ripstream_mp3_write_oldest_node (RIP_MANAGER_INFO* rmi)
 	Writer *writer = (Writer*) p->data;
 	nextp = p->next;
 
-	debug_printf ("[%d] %p (%p,%p)\n", i++, 
-		      node,
-		      writer->m_next_byte.node, 
-		      writer->m_last_byte.node);
+	debug_printf ("Writer %02d: (%p), (%p,%p) %s\n", 
+	    i++, 
+	    node,
+	    writer->m_next_byte.node, 
+	    writer->m_last_byte.node,
+	    writer->m_ti.raw_metadata);
 
 	/* Check if the writer needs to write this node */
 	if (writer->m_next_byte.node == node) {
 	    char* write_ptr;
 	    long write_sz;
+
+	    debug_printf ("Writer requesed this node\n");
 
 	    /* Open the file and write header */
 	    if (!writer->m_started) {
@@ -426,10 +437,10 @@ ripstream_mp3_write_oldest_node (RIP_MANAGER_INFO* rmi)
 	    /* Write the data to the file. */
 	    if (writer->m_last_byte.node == node) {
 		write_sz = writer->m_last_byte.offset 
-			- writer->m_next_byte.offset;
+		    - writer->m_next_byte.offset;
 	    } else {
 		write_sz = cbuf3->chunk_size 
-			- writer->m_next_byte.offset;
+		    - writer->m_next_byte.offset;
 	    }
 	    write_ptr = ((char*) node->data) + writer->m_next_byte.offset;
 	    filelib_write_track (writer, write_ptr, write_sz);
@@ -437,6 +448,7 @@ ripstream_mp3_write_oldest_node (RIP_MANAGER_INFO* rmi)
 	    /* Check if we need to end the track */
 	    if (writer->m_last_byte.node == node) {
 		/* Yes we do, so add id3 and close file. */
+		debug_printf ("Ending track\n");
 		ripstream_mp3_end_track (rmi, writer);
 
 		/* Free up writer */
@@ -446,7 +458,7 @@ ripstream_mp3_write_oldest_node (RIP_MANAGER_INFO* rmi)
 	    } else {
 		/* Not end of track, so advance writer pointer */
 		debug_printf ("Advancing writer next node: %p -> %p\n",
-			      writer->m_next_byte.node, cbuf3->buf->head);
+		    writer->m_next_byte.node, cbuf3->buf->head);
 		writer->m_next_byte.node = cbuf3->buf->head;
 		writer->m_next_byte.offset = 0;
 	    }
@@ -504,7 +516,8 @@ ripstream_mp3_check_for_track_change (RIP_MANAGER_INFO* rmi)
 #endif
 
 	if (rc != SR_SUCCESS) {
-	    debug_printf ("find_sep had bad return code %d\n", rc);
+	    debug_printf ("find_sep had bad return code: %s\n", 
+		errors_get_string (rc));
 	    return rc;
 	}
 
@@ -655,8 +668,8 @@ ripstream_mp3_end_track (RIP_MANAGER_INFO* rmi,
     /* Only save this track if we've skipped over enough cruft 
        at the beginning of the stream */
     debug_printf ("Current track number %d (skipping if less than %d)\n", 
-		  rmi->track_count, rmi->prefs->dropcount);
-    if (rmi->track_count >= rmi->prefs->dropcount)
+	writer->m_track_no, rmi->prefs->dropcount);
+    if (writer->m_track_no >= rmi->prefs->dropcount)
 	if ((ret = ripstream_end_track (rmi, &writer->m_ti)) != SR_SUCCESS)
 	    return ret;
 

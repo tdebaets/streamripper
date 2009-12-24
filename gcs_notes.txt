@@ -1,4 +1,10 @@
 -----------------------------------------------------------------------
+
+Current problem list:
+
+find_sep had bad return code: SR_ERROR_RESERVED_WINDOW_EMPTY
+(causes metadata barfage on console, files)
+
 1.65.0 - Testing guide
 
 Unix MP3, OGG
