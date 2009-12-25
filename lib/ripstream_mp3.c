@@ -553,8 +553,8 @@ ripstream_mp3_check_for_track_change (RIP_MANAGER_INFO* rmi)
 
 static error_code
 find_sep (RIP_MANAGER_INFO* rmi, 
-	  Cbuf3_pointer *end_of_previous, 
-	  Cbuf3_pointer *start_of_next)
+    Cbuf3_pointer *end_of_previous, 
+    Cbuf3_pointer *start_of_next)
 {
     SPLITPOINT_OPTIONS* sp_opt = &rmi->prefs->sp_opt;
     //int rw_start, rw_end, sw_sil;
@@ -563,42 +563,51 @@ find_sep (RIP_MANAGER_INFO* rmi,
     Cbuf3_pointer rw_start, rw_end;
     Cbuf3_pointer cbuf_end;
     error_code rc;
+    u_long rw_size;
 
     debug_printf ("*** Finding separation point\n");
 
     /* First, find the search region w/in cbuffer. */
-    cbuf_end.node = cbuf3->buf->tail;
-    cbuf_end.offset = cbuf3->chunk_size;
+    cbuf3_get_tail (cbuf3, &cbuf_end);
     rc = cbuf3_pointer_add (cbuf3, &rw_start, &cbuf_end, 
-			    - rmi->rw_start_to_cb_end);
+	- rmi->rw_start_to_cb_end);
     if (rc == SR_ERROR_BUFFER_TOO_SMALL) {
-	debug_printf ("SR_ERROR_REQUIRED_WINDOW_EMPTY 1\n");
+	debug_printf ("SR_ERROR_BUFFER_TOO_SMALL 1\n");
 	debug_printf ("(%p,%d) + (%d)\n", rw_start.node, rw_start.offset,
 	    - rmi->rw_start_to_cb_end);
-	return SR_ERROR_REQUIRED_WINDOW_EMPTY;
+	cbuf3_get_head (cbuf3, &rw_start);
     }
     rc = cbuf3_pointer_add (cbuf3, &rw_end, &cbuf_end, 
-			    - rmi->rw_end_to_cb_end);
+	- rmi->rw_end_to_cb_end);
     if (rc == SR_ERROR_BUFFER_TOO_SMALL) {
-	debug_printf ("SR_ERROR_REQUIRED_WINDOW_EMPTY 2\n");
+	debug_printf ("SR_ERROR_BUFFER_TOO_SMALL 2\n");
 	debug_printf ("(%p,%d) + (%d)\n", rw_end.node, rw_end.offset,
 	    - rmi->rw_end_to_cb_end);
-	return SR_ERROR_REQUIRED_WINDOW_EMPTY;
+	cbuf3_get_tail (cbuf3, &rw_end);
     }
 
-    debug_printf ("search window : [%p,%d] to [%p,%d]\n",
-		  rw_start.node,
-		  rw_start.offset,
-		  rw_end.node,
-		  rw_end.offset);
+    rc = cbuf3_pointer_subtract (&rw_size, &rw_start, &rw_end);
+    if (rc == SR_ERROR_BUFFER_TOO_SMALL) {
+	debug_printf ("SR_ERROR_BUFFER_TOO_SMALL 3\n");
+	return rc;
+    }
+
+    debug_printf (
+	"search window : [%p,%d] to [%p,%d] (%lu bytes)\n",
+	rw_start.node,
+	rw_start.offset,
+	rw_end.node,
+	rw_end.offset,
+	rw_size
+    );
 
     if (rmi->http_info.content_type != CONTENT_TYPE_MP3) {
-	long midpoint = (rmi->rw_start_to_cb_end - rmi->rw_end_to_cb_end) / 2;
+	long midpoint = rw_size / 2;
 	debug_printf ("(not mp3) taking middle: sw_sil=%d\n", midpoint);
 	cbuf3_pointer_add (cbuf3, end_of_previous, &rw_start, midpoint - 1);
 	cbuf3_pointer_add (cbuf3, start_of_next, &rw_start, midpoint);
     } else {
-	u_long bufsize = (rmi->rw_start_to_cb_end - rmi->rw_end_to_cb_end);
+	u_long bufsize = rw_size;
 	char* buf = (char*) malloc (bufsize);
 	u_long pos1, pos2;
 
@@ -613,24 +622,24 @@ find_sep (RIP_MANAGER_INFO* rmi,
 	/* Find silence point */
 	if (sp_opt->xs == 2) {
 	    rc = findsep_silence_2 (buf, 
-				    bufsize, 
-				    rmi->rw_start_to_sw_start,
-				    sp_opt->xs_search_window_1 
-				    + sp_opt->xs_search_window_2,
-				    sp_opt->xs_silence_length,
-				    sp_opt->xs_padding_1,
-				    sp_opt->xs_padding_2,
-				    &pos1, &pos2);
+		bufsize, 
+		rmi->rw_start_to_sw_start,
+		sp_opt->xs_search_window_1 
+		+ sp_opt->xs_search_window_2,
+		sp_opt->xs_silence_length,
+		sp_opt->xs_padding_1,
+		sp_opt->xs_padding_2,
+		&pos1, &pos2);
 	} else {
 	    rc = findsep_silence (buf, 
-				  bufsize, 
-				  rmi->rw_start_to_sw_start,
-				  sp_opt->xs_search_window_1 
-				  + sp_opt->xs_search_window_2,
-				  sp_opt->xs_silence_length,
-				  sp_opt->xs_padding_1,
-				  sp_opt->xs_padding_2,
-				  &pos1, &pos2);
+		bufsize, 
+		rmi->rw_start_to_sw_start,
+		sp_opt->xs_search_window_1 
+		+ sp_opt->xs_search_window_2,
+		sp_opt->xs_silence_length,
+		sp_opt->xs_padding_1,
+		sp_opt->xs_padding_2,
+		&pos1, &pos2);
 	}
 
 	cbuf3_pointer_add (cbuf3, end_of_previous, &rw_start, pos1);

@@ -270,6 +270,35 @@ cbuf3_insert_metadata (struct cbuf3 *cbuf3, TRACK_INFO* ti)
     return SR_SUCCESS;
 }
 
+/* Return cbuf3_pointer that points to first byte */
+void
+cbuf3_get_head (
+    Cbuf3 *cbuf3,
+    struct cbuf3_pointer *out_ptr)
+{
+    out_ptr->node = cbuf3->buf->head;
+    out_ptr->offset = 0;
+}
+
+/* Return cbuf3_pointer that points just after last byte */
+void
+cbuf3_get_tail (
+    Cbuf3 *cbuf3,
+    struct cbuf3_pointer *out_ptr)
+{
+    out_ptr->node = cbuf3->buf->tail;
+    out_ptr->offset = cbuf3->chunk_size;
+}
+
+void
+cbuf3_pointer_copy (
+    struct cbuf3_pointer *out_ptr, 
+    struct cbuf3_pointer *in_ptr)
+{
+    out_ptr->node = in_ptr->node;
+    out_ptr->offset = out_ptr->offset;
+}
+
 error_code
 cbuf3_pointer_add (struct cbuf3 *cbuf3, 
 		   struct cbuf3_pointer *out_ptr, 
@@ -317,6 +346,35 @@ cbuf3_pointer_add (struct cbuf3 *cbuf3,
 
     //debug_printf ("     %p,%d\n", out_ptr->chunk, out_ptr->offset);
     return SR_SUCCESS;
+}
+
+/* Note: ptr2 must be after ptr1 */
+error_code
+cbuf3_pointer_subtract (
+    u_long *diff,                 /* Output */
+    struct cbuf3_pointer *ptr1,   /* Input */
+    struct cbuf3_pointer *ptr2    /* Input */
+)
+{
+    struct cbuf3_pointer p;
+
+    cbuf3_pointer_copy (&p, ptr1);
+    *diff = 0;
+    
+    do {
+	if (p.node == ptr2->node) {
+	    if (p.offset > ptr2->offset) {
+		return SR_ERROR_BUFFER_TOO_SMALL;
+	    }
+	    *diff += ptr2->offset - p.offset;
+	    return SR_SUCCESS;
+	} else {
+	    *diff += ptr2->offset - p.offset;
+	    p.node = p.node->next;
+	    p.offset = 0;
+	}
+    } while (p.node);
+    return SR_ERROR_BUFFER_TOO_SMALL;
 }
 
 error_code

@@ -56,9 +56,23 @@ cbuf3_pointer_add (struct cbuf3 *cbuf3,
 		   struct cbuf3_pointer *in_ptr, 
 		   long len);
 error_code
+cbuf3_pointer_subtract (
+    u_long *diff,                 /* Output */
+    struct cbuf3_pointer *ptr1,   /* Input */
+    struct cbuf3_pointer *ptr2    /* Input */
+);
+void
+cbuf3_get_tail (
+    Cbuf3 *cbuf3,
+    struct cbuf3_pointer *out_ptr);
+void
+cbuf3_get_head (
+    Cbuf3 *cbuf3,
+    struct cbuf3_pointer *out_ptr);
+error_code
 cbuf3_set_uint32 (struct cbuf3 *cbuf3, 
-		  struct cbuf3_pointer *in_ptr, 
-		  uint32_t val);
+    struct cbuf3_pointer *in_ptr, 
+    uint32_t val);
 void
 cbuf3_splice_page_list (struct cbuf3 *cbuf3, 
 			GList **new_pages);

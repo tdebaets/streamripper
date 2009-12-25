@@ -2,7 +2,7 @@
 Current 1.65.0 problem list:
 
 find_sep gets bad return code: SR_ERROR_RESERVED_WINDOW_EMPTY
-
+console says ripping instead of skipping for first track
 
 -----------------------------------------------------------------------
 1.65.0 - Testing guide
