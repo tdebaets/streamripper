@@ -572,11 +572,17 @@ find_sep (RIP_MANAGER_INFO* rmi,
     rc = cbuf3_pointer_add (cbuf3, &rw_start, &cbuf_end, 
 			    - rmi->rw_start_to_cb_end);
     if (rc == SR_ERROR_BUFFER_TOO_SMALL) {
+	debug_printf ("SR_ERROR_REQUIRED_WINDOW_EMPTY 1\n");
+	debug_printf ("(%p,%d) + (%d)\n", rw_start.node, rw_start.offset,
+	    - rmi->rw_start_to_cb_end);
 	return SR_ERROR_REQUIRED_WINDOW_EMPTY;
     }
     rc = cbuf3_pointer_add (cbuf3, &rw_end, &cbuf_end, 
 			    - rmi->rw_end_to_cb_end);
     if (rc == SR_ERROR_BUFFER_TOO_SMALL) {
+	debug_printf ("SR_ERROR_REQUIRED_WINDOW_EMPTY 2\n");
+	debug_printf ("(%p,%d) + (%d)\n", rw_end.node, rw_end.offset,
+	    - rmi->rw_end_to_cb_end);
 	return SR_ERROR_REQUIRED_WINDOW_EMPTY;
     }
 
@@ -637,7 +643,7 @@ find_sep (RIP_MANAGER_INFO* rmi,
 
 static error_code
 ripstream_mp3_end_track (RIP_MANAGER_INFO* rmi, 
-			 Writer* writer)
+    Writer* writer)
 {
     int ret;
 
@@ -647,13 +653,13 @@ ripstream_mp3_end_track (RIP_MANAGER_INFO* rmi,
 	memset (&id3v1, '\000',sizeof(id3v1));
 	strncpy (id3v1.tag, "TAG", strlen("TAG"));
 	string_from_gstring (rmi, id3v1.artist, sizeof(id3v1.artist),
-			     writer->m_ti.artist, CODESET_ID3);
+	    writer->m_ti.artist, CODESET_ID3);
 	string_from_gstring (rmi, id3v1.songtitle, sizeof(id3v1.songtitle),
-			     writer->m_ti.title, CODESET_ID3);
+	    writer->m_ti.title, CODESET_ID3);
 	string_from_gstring (rmi, id3v1.album, sizeof(id3v1.album),
-			     writer->m_ti.album, CODESET_ID3);
+	    writer->m_ti.album, CODESET_ID3);
 	string_from_gstring (rmi, id3v1.year, sizeof(id3v1.year),
-			     writer->m_ti.year, CODESET_ID3);
+	    writer->m_ti.year, CODESET_ID3);
 	id3v1.genre = (char) 0xFF; // see http://www.id3.org/id3v2.3.0.html#secA
 	ret = filelib_write_track (writer, (char *)&id3v1, sizeof(id3v1));
 	if (ret != SR_SUCCESS) {
@@ -662,16 +668,25 @@ ripstream_mp3_end_track (RIP_MANAGER_INFO* rmi,
     }
 
     if (rmi->write_data) {
-        filelib_end (rmi, writer);
+        filelib_close (rmi, writer);
     }
 
     /* Only save this track if we've skipped over enough cruft 
        at the beginning of the stream */
     debug_printf ("Current track number %d (skipping if less than %d)\n", 
 	writer->m_track_no, rmi->prefs->dropcount);
-    if (writer->m_track_no >= rmi->prefs->dropcount)
-	if ((ret = ripstream_end_track (rmi, &writer->m_ti)) != SR_SUCCESS)
+    if (writer->m_track_no >= rmi->prefs->dropcount) {
+	ret = filelib_rename_to_complete (rmi, writer);
+	if (ret != SR_SUCCESS) {
 	    return ret;
+	}
+    }
+
+    /* Post status */
+    ret = ripstream_end_track (rmi, &writer->m_ti);
+    if (ret != SR_SUCCESS) {
+	return ret;
+    }
 
     return SR_SUCCESS;
 }

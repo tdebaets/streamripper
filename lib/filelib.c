@@ -322,11 +322,11 @@ filelib_write_show (RIP_MANAGER_INFO* rmi, char *buf, u_long size)
     return rc;
 }
 
-/** Close file and moves from incomplete to complete directory.
-*/
+/** Move file from incomplete to complete directory. */
 error_code
-filelib_end (RIP_MANAGER_INFO* rmi,
-	     Writer *writer)
+filelib_rename_to_complete (
+    RIP_MANAGER_INFO* rmi,
+    Writer *writer)
 {
     FILELIB_INFO* fli = &rmi->filelib_info;
     BOOL ok_to_write = TRUE;
@@ -341,8 +341,6 @@ filelib_end (RIP_MANAGER_INFO* rmi,
     gchar *fullpath = 0;
 
     if (!fli->m_do_individual_tracks) return SR_SUCCESS;
-
-    close_file (&writer->m_file);
 
     /* Construct filename for completed file */
     parse_and_subst_pat (rmi, new_path, &writer->m_ti, 
@@ -400,6 +398,21 @@ filelib_end (RIP_MANAGER_INFO* rmi,
     }
     if (fli->m_count != -1)
 	fli->m_count++;
+    return SR_SUCCESS;
+}
+
+error_code
+filelib_close (
+    RIP_MANAGER_INFO* rmi,
+    Writer *writer
+)
+{
+    FILELIB_INFO* fli = &rmi->filelib_info;
+
+    if (!fli->m_do_individual_tracks) {
+	return SR_SUCCESS;
+    }
+    close_file (&writer->m_file);
     return SR_SUCCESS;
 }
 
