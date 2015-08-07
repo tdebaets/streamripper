@@ -250,7 +250,7 @@ prefs_save (void)
     /* Write to file */
     /* RMK: We use glib string encoding for conversion of the filename
 	rather than --codeset-filesys here. */
-    fp = g_fopen (prefs_fn, "w");
+	fp = fopen (prefs_fn, "w");
     if (fp) {
 	debug_printf ("Writing, len = %d\n", keyfile_contents_len);
 	fwrite (keyfile_contents, 1, keyfile_contents_len, fp);
