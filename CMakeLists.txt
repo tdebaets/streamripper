@@ -202,10 +202,21 @@ if (WIN32 AND (MSYS OR MINGW))
   	${CMAKE_CURRENT_SOURCE_DIR}/win32/chkstk.o)
 endif ()
 
+# The old windows dlls are from a previous version of the compiler.
+# Might need this in some msvc version.
+set (STREAMRIPPER_LDFLAGS "")
+if (WIN32)
+    set (STREAMRIPPER_LDFLAGS "/SAFESEH:NO")
+endif ()
+
 #ADD_LIBRARY (streamripper1 ${STREAMRIPPER_LIB_SRC})
 add_executable (streamripper ${STREAMRIPPER_SRC})
 target_link_libraries (streamripper 
     streamripper1 ${STREAMRIPPER_LIBS})
+if (NOT STREAMRIPPER_LDFLAGS STREQUAL "")
+    set_target_properties (streamripper 
+	PROPERTIES LINK_FLAGS ${STREAMRIPPER_LDFLAGS})
+endif ()
 
 if (WIN32)
     add_executable (wstreamripper WIN32 ${WSTREAMRIPPER_SRC})
@@ -213,6 +224,10 @@ if (WIN32)
       streamripper1 ${STREAMRIPPER_LIBS}
       comctl32.lib
       )
+  if (NOT STREAMRIPPER_LDFLAGS STREQUAL "")
+      set_target_properties (wstreamripper 
+	  PROPERTIES LINK_FLAGS ${STREAMRIPPER_LDFLAGS})
+  endif ()
 endif ()
 
 if (MSVC)
