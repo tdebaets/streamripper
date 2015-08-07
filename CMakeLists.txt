@@ -1,117 +1,118 @@
 ##-----------------------------------------------------------------------------
 ##  Welcome to Streamripper
 ##-----------------------------------------------------------------------------
-PROJECT (STREAMRIPPER)
+project (STREAMRIPPER)
 
-CMAKE_MINIMUM_REQUIRED (VERSION 2.6.0)
+cmake_minimum_required (VERSION 2.8.12)
 
 ## Tell CMake to be quiet
-CMAKE_POLICY (SET CMP0003 NEW)
+cmake_policy (SET CMP0003 NEW)
 
 ## Default to release
-IF (NOT CMAKE_BUILD_TYPE)
-  SET (CMAKE_BUILD_TYPE Release)
-ENDIF (NOT CMAKE_BUILD_TYPE)
+if (NOT CMAKE_BUILD_TYPE)
+  set (CMAKE_BUILD_TYPE Release)
+endif ()
 
 ##-----------------------------------------------------------------------------
 ##  Include files
 ##-----------------------------------------------------------------------------
-INCLUDE (CheckFunctionExists)
-INCLUDE (CheckLibraryExists)
-INCLUDE (FindPkgConfig)
-INCLUDE (FindOpenGL)  # Why?
+include (CheckFunctionExists)
+include (CheckLibraryExists)
+include (FindPkgConfig)
+include (FindOpenGL)  # Why?
 
 # http://www.cmake.org/pipermail/cmake/2008-December/025886.html
-INCLUDE (InstallRequiredSystemLibraries)
+include (InstallRequiredSystemLibraries)
 
 
 ##-----------------------------------------------------------------------------
 ##  Find libraries
 ##-----------------------------------------------------------------------------
-IF (UNIX)
-  SET (MATH_LIB -lm)
-ELSE (UNIX)
-  SET (MATH_LIB)
-ENDIF (UNIX)
+if (UNIX)
+    set (MATH_LIB -lm)
+else ()
+    set (MATH_LIB)
+endif ()
 
-IF (UNIX)
-  PKG_CHECK_MODULES (GLIB2 REQUIRED glib-2.0>=2.16)
-ENDIF (UNIX)
+if (UNIX)
+  pkg_check_modules (GLIB2 REQUIRED glib-2.0>=2.16)
+endif ()
 
-SET (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
-FIND_PACKAGE (IBERTY)
-FIND_PACKAGE (MAD)
-FIND_PACKAGE (OGG)
-FIND_PACKAGE (VORBIS)
+set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+find_package (IBERTY)
+find_package (MAD)
+find_package (OGG)
+find_package (Threads)
+find_package (VORBIS)
 
-IF (WIN32)
-  SET (MAD_LIBRARIES "${CMAKE_SOURCE_DIR}/win32/libmad-0.15.1b/lib/libmad.lib")
-  SET (MAD_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/win32/libmad-0.15.1b/include")
-ENDIF (WIN32)
+if (WIN32)
+  set (MAD_LIBRARIES "${CMAKE_SOURCE_DIR}/win32/libmad-0.15.1b/lib/libmad.lib")
+  set (MAD_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/win32/libmad-0.15.1b/include")
+endif ()
 
-INCLUDE (${CMAKE_SOURCE_DIR}/cmake/SR_FindSockets.cmake)
+include (${CMAKE_SOURCE_DIR}/cmake/SR_FindSockets.cmake)
 
-FIND_LIBRARY (SEMAPHORE_LIBRARIES NAMES sem rt)
+find_library (SEMAPHORE_LIBRARIES NAMES sem rt)
 
 ##-----------------------------------------------------------------------------
 ##  Include directories
 ##-----------------------------------------------------------------------------
-INCLUDE_DIRECTORIES (BEFORE ${GLIB2_INCLUDE_DIRS})
-INCLUDE_DIRECTORIES (BEFORE ${CMAKE_CURRENT_BINARY_DIR})
-INCLUDE_DIRECTORIES (BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+include_directories (BEFORE ${GLIB2_INCLUDE_DIRS})
+include_directories (BEFORE ${CMAKE_CURRENT_BINARY_DIR})
+include_directories (BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
-IF (WIN32)
-  INCLUDE_DIRECTORIES (BEFORE 
+if (WIN32)
+  include_directories (BEFORE 
     "${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.16.6-1/include/glib-2.0")
-  INCLUDE_DIRECTORIES (BEFORE 
+  include_directories (BEFORE 
     "${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.16.6-1/lib/glib-2.0/include")
-  INCLUDE_DIRECTORIES (BEFORE "${MAD_INCLUDE_DIR}")
-  INCLUDE_DIRECTORIES (BEFORE "${CMAKE_CURRENT_SOURCE_DIR}/win32/iconv")
-  INCLUDE_DIRECTORIES (BEFORE 
+  include_directories (BEFORE "${MAD_INCLUDE_DIR}")
+  include_directories (BEFORE "${CMAKE_CURRENT_SOURCE_DIR}/win32/iconv")
+  include_directories (BEFORE 
     "${CMAKE_CURRENT_SOURCE_DIR}/win32/libogg-1.1.3")
-  INCLUDE_DIRECTORIES (BEFORE 
+  include_directories (BEFORE 
     "${CMAKE_CURRENT_SOURCE_DIR}/win32/libvorbis-1.1.2")
-  INCLUDE_DIRECTORIES (BEFORE 
+  include_directories (BEFORE 
     "${CMAKE_CURRENT_SOURCE_DIR}/win32/zlib-1.2.3/include")
-ENDIF (WIN32)
+endif ()
 
 ##-----------------------------------------------------------------------------
 ##  Configure include file
 ##-----------------------------------------------------------------------------
-CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/sr_config.h.cmake 
-  ${CMAKE_CURRENT_BINARY_DIR}/sr_config.h)
+configure_file (${CMAKE_CURRENT_SOURCE_DIR}/sr_config.h.cmake 
+    ${CMAKE_CURRENT_BINARY_DIR}/sr_config.h)
 
 ##-----------------------------------------------------------------------------
 ##  Copy dlls
 ##-----------------------------------------------------------------------------
-IF (WIN32)
-  EXECUTE_PROCESS (COMMAND ${CMAKE_COMMAND} "-E" "copy" 
+if (WIN32)
+  execute_process (COMMAND ${CMAKE_COMMAND} "-E" "copy" 
     "${CMAKE_CURRENT_SOURCE_DIR}/win32/glib-2.16.6-1/bin/libglib-2.0-0.dll"
     "${CMAKE_CURRENT_BINARY_DIR}")
-  EXECUTE_PROCESS (COMMAND ${CMAKE_COMMAND} "-E" "copy" 
+  execute_process (COMMAND ${CMAKE_COMMAND} "-E" "copy" 
     "${CMAKE_CURRENT_SOURCE_DIR}/win32/mingw/libiconv-2.dll"
     "${CMAKE_CURRENT_BINARY_DIR}")
-  EXECUTE_PROCESS (COMMAND ${CMAKE_COMMAND} "-E" "copy" 
+  execute_process (COMMAND ${CMAKE_COMMAND} "-E" "copy" 
     "${CMAKE_CURRENT_SOURCE_DIR}/win32/mingw/libintl-8.dll"
     "${CMAKE_CURRENT_BINARY_DIR}")
-  EXECUTE_PROCESS (COMMAND ${CMAKE_COMMAND} "-E" "copy" 
+  execute_process (COMMAND ${CMAKE_COMMAND} "-E" "copy" 
     "${CMAKE_CURRENT_SOURCE_DIR}/win32/zlib-1.2.3/zlib1.dll"
     "${CMAKE_CURRENT_BINARY_DIR}")
-ENDIF (WIN32)
+endif ()
 
 ##-----------------------------------------------------------------------------
 ##  Build subdirectories
 ##-----------------------------------------------------------------------------
-ADD_SUBDIRECTORY (lib)
+add_subdirectory (lib)
 
 ##-----------------------------------------------------------------------------
 ##  Source files
 ##-----------------------------------------------------------------------------
-SET(STREAMRIPPER_SRC
-	console/streamripper.c
-	)
+set (STREAMRIPPER_SRC
+    console/streamripper.c
+    )
 
-SET(WSTREAMRIPPER_SRC
+set (WSTREAMRIPPER_SRC
 	winamp_plugin/debug_box.c
 	winamp_plugin/debug_box.h
 	winamp_plugin/dock.c
@@ -147,8 +148,8 @@ SET(WSTREAMRIPPER_SRC
 ##-----------------------------------------------------------------------------
 ##  Targets
 ##-----------------------------------------------------------------------------
-IF (WIN32)
-  LINK_DIRECTORIES(
+if (WIN32)
+    link_directories (
 #	"${CMAKE_CURRENT_SOURCE_DIR}/libmad-0.15.1b/msvc++/Release"
 	"${CMAKE_CURRENT_SOURCE_DIR}/win32/iconv"
 	"${CMAKE_CURRENT_SOURCE_DIR}/tre-0.7.2/win32/Release"
@@ -162,66 +163,70 @@ IF (WIN32)
 	"${CMAKE_CURRENT_SOURCE_DIR}/win32/libvorbis-1.1.2"
 	"${CMAKE_CURRENT_SOURCE_DIR}/win32/zlib-1.2.3/lib"
 	)
-ENDIF (WIN32)
+endif ()
 
-MESSAGE ("MAD_LIBRARIES = ${MAD_LIBRARIES}")
-SET (STREAMRIPPER_LIBS ${MAD_LIBRARIES} ${GLIB2_LIBRARIES} ${MATH_LIB})
+message ("MAD_LIBRARIES = ${MAD_LIBRARIES}")
+set (STREAMRIPPER_LIBS ${MAD_LIBRARIES} ${GLIB2_LIBRARIES})
 
-IF (WIN32)
-  SET (STREAMRIPPER_LIBS 
-    ${STREAMRIPPER_LIBS}
-    iconv unicows glib-2.0 unicows ws2_32 ogg vorbis zdll)
-ENDIF (WIN32)
+if (WIN32)
+    set (STREAMRIPPER_LIBS 
+	${STREAMRIPPER_LIBS}
+	iconv unicows glib-2.0 unicows ws2_32 ogg vorbis zdll)
+endif ()
 
-IF (SEMAPHORE_LIBRARIES)
-  SET (STREAMRIPPER_LIBS ${STREAMRIPPER_LIBS} ${SEMAPHORE_LIBRARIES})
-ENDIF (SEMAPHORE_LIBRARIES)
+if (SEMAPHORE_LIBRARIES)
+    set (STREAMRIPPER_LIBS ${STREAMRIPPER_LIBS} ${SEMAPHORE_LIBRARIES})
+endif ()
 
-IF (IBERTY_FOUND)
-  SET (STREAMRIPPER_LIBS ${STREAMRIPPER_LIBS} ${IBERTY_LIBRARIES})
-ENDIF (IBERTY_FOUND)
+if (IBERTY_FOUND)
+    set (STREAMRIPPER_LIBS ${STREAMRIPPER_LIBS} ${IBERTY_LIBRARIES})
+endif ()
 
-IF (OGG_FOUND AND VORBIS_FOUND)
-  SET (STREAMRIPPER_LIBS ${STREAMRIPPER_LIBS} ${OGG_LIBRARIES}
-    ${VORBIS_LIBRARIES})
-ENDIF (OGG_FOUND AND VORBIS_FOUND)
+if (OGG_FOUND AND VORBIS_FOUND)
+    set (STREAMRIPPER_LIBS ${STREAMRIPPER_LIBS} 
+	${OGG_LIBRARIES} ${VORBIS_LIBRARIES})
+endif ()
 
-SET (STREAMRIPPER_LIBS ${STREAMRIPPER_LIBS} ${SR_EXTRA_LIBS} ${MATH_LIB})
+if (CMAKE_THREAD_LIBS_INIT)
+    set (STREAMRIPPER_LIBS ${STREAMRIPPER_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+endif ()
+
+set (STREAMRIPPER_LIBS ${STREAMRIPPER_LIBS} ${SR_EXTRA_LIBS} ${MATH_LIB})
 
 ##-----------------------------------------------------------------------------
 ##  Linking
 ##-----------------------------------------------------------------------------
 ## chkstk.o may be required for mingw
-IF (WIN32 AND (MSYS OR MINGW))
-  SET (STREAMRIPPER_SRC ${STREAMRIPPER_SRC} 
-  		       ${CMAKE_CURRENT_SOURCE_DIR}/win32/chkstk.o)
-ENDIF (WIN32 AND (MSYS OR MINGW))
+if (WIN32 AND (MSYS OR MINGW))
+    set (STREAMRIPPER_SRC ${STREAMRIPPER_SRC} 
+  	${CMAKE_CURRENT_SOURCE_DIR}/win32/chkstk.o)
+endif ()
 
 #ADD_LIBRARY (streamripper1 ${STREAMRIPPER_LIB_SRC})
-ADD_EXECUTABLE (streamripper ${STREAMRIPPER_SRC})
-TARGET_LINK_LIBRARIES (streamripper ${MY_MATH_LIB} 
-  streamripper1 ${STREAMRIPPER_LIBS})
+add_executable (streamripper ${STREAMRIPPER_SRC})
+target_link_libraries (streamripper 
+    streamripper1 ${STREAMRIPPER_LIBS})
 
-IF (WIN32)
-    ADD_EXECUTABLE (wstreamripper WIN32 ${WSTREAMRIPPER_SRC})
-    TARGET_LINK_LIBRARIES (wstreamripper ${MY_MATH_LIB} 
+if (WIN32)
+    add_executable (wstreamripper WIN32 ${WSTREAMRIPPER_SRC})
+    target_link_libraries (wstreamripper 
       streamripper1 ${STREAMRIPPER_LIBS}
       comctl32.lib
       )
-ENDIF (WIN32)
+endif ()
 
-IF (MSVC)
-  ADD_EXECUTABLE (glib_iconv_test lib/glib_iconv_test.c)
-  TARGET_LINK_LIBRARIES (glib_iconv_test ${STREAMRIPPER_LIBS})
+if (MSVC)
+  add_executable (glib_iconv_test lib/glib_iconv_test.c)
+  target_link_libraries (glib_iconv_test ${STREAMRIPPER_LIBS})
 
-IF (0)
-  ADD_EXECUTABLE (glib_win98_test lib/glib_win98_test.c)
-  TARGET_LINK_LIBRARIES (glib_win98_test ${STREAMRIPPER_LIBS})
-ENDIF (0)
-ENDIF (MSVC)
+#  ADD_EXECUTABLE (glib_win98_test lib/glib_win98_test.c)
+#  TARGET_LINK_LIBRARIES (glib_win98_test ${STREAMRIPPER_LIBS})
+endif ()
 
 ##-----------------------------------------------------------------------------
 ##  Install
 ##-----------------------------------------------------------------------------
-INSTALL(TARGETS streamripper DESTINATION bin)
-INSTALL(TARGETS wstreamripper DESTINATION bin)
+install (TARGETS streamripper DESTINATION bin)
+if (WIN32)
+    install(TARGETS wstreamripper DESTINATION bin)
+endif ()
