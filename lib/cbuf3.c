@@ -210,7 +210,58 @@ cbuf3_insert_free_node (struct cbuf3 *cbuf3, GList *node)
     g_queue_push_head_link (cbuf3->free_list, node);
 }
 
-/** Return oldest node. */
+/** Destroy ogg page references in the oldest node. */
+error_code
+cbuf3_ogg_remove_old_page_references (Cbuf3 *cbuf3)
+{
+    Ogg_page_reference *opr;
+
+    if (!cbuf3_is_full (cbuf3)) {
+	return;
+    }
+
+    /* Loop through page references, starting at head, looking for 
+       opr which point to the head node in the buffer */
+    opr = (Ogg_page_reference *) cbuf3->ogg_page_refs->head->data;
+    debug_printf ("Testing old page references:\n"
+	"  opr head = (%p,%d)\n"
+	"  cbuf3 head = (%p)\n",
+	opr->m_cbuf3_loc.node, opr->m_cbuf3_loc.offset,
+	cbuf3->buf->head);
+    while (cbuf3->ogg_page_refs->head 
+	&& (opr = (Ogg_page_reference *) cbuf3->ogg_page_refs->head->data)
+	&& (opr->m_cbuf3_loc.node == cbuf3->buf->head))
+    {
+	/* Remove opr from the queue */
+	opr = g_queue_pop_head (cbuf3->ogg_page_refs);
+
+	debug_printf ("Removed ogg page reference: [%p,%5d,%5d]\n",
+	    opr->m_cbuf3_loc.node,
+	    opr->m_cbuf3_loc.offset,
+	    opr->m_page_len);
+
+	/* If there could be a really large ogg page (like 100K length) 
+	   which is not yet completely downloaded, we will drop the page, 
+	   but try not to crash. */
+	if (cbuf3->written_page == opr->m_cbuf3_loc.node) {
+	    cbuf3->written_page = 0;
+	}
+	/* GCS FIX: Do equivalent for the writer */
+	
+	/* The opr might be the last one which points to the ogg 
+	   track header.  In this case, we have some extra work to 
+	   free the memory stored in the ref. */
+	if (opr->m_page_flags & OGG_PAGE_EOS) {
+	    free (opr->m_header_buf_ptr);
+	}
+
+	/* Free the opr */
+	free (opr);
+    }
+    return SR_SUCCESS;
+}
+
+/** Return oldest node.  Oldest nodes are at the head. */
 GList*
 cbuf3_extract_oldest_node (RIP_MANAGER_INFO *rmi,
 			   struct cbuf3 *cbuf3)
@@ -305,7 +356,7 @@ cbuf3_pointer_add (struct cbuf3 *cbuf3,
 		   struct cbuf3_pointer *in_ptr, 
 		   long len)
 {
-    //debug_printf ("add: %p,%d + %d\n", in_ptr->chunk, in_ptr->offset, len);
+    debug_printf ("add: %p,%d + %d\n", in_ptr->node, in_ptr->offset, len);
     out_ptr->node = in_ptr->node;
     out_ptr->offset = in_ptr->offset;
 
@@ -351,6 +402,7 @@ cbuf3_pointer_add (struct cbuf3 *cbuf3,
 /* Note: ptr2 must be after ptr1 */
 error_code
 cbuf3_pointer_subtract (
+    Cbuf3 *cbuf3,                 /* Input */
     u_long *diff,                 /* Output */
     struct cbuf3_pointer *ptr1,   /* Input */
     struct cbuf3_pointer *ptr2    /* Input */
@@ -369,7 +421,7 @@ cbuf3_pointer_subtract (
 	    *diff += ptr2->offset - p.offset;
 	    return SR_SUCCESS;
 	} else {
-	    *diff += ptr2->offset - p.offset;
+	    *diff += cbuf3->chunk_size - p.offset;
 	    p.node = p.node->next;
 	    p.offset = 0;
 	}
@@ -386,7 +438,7 @@ cbuf3_set_uint32 (struct cbuf3 *cbuf3,
     struct cbuf3_pointer tmp;
     error_code rc;
 
-    //debug_printf ("set: %p,%d\n", in_ptr->chunk, in_ptr->offset);
+    //debug_printf ("set: %p,%d\n", in_ptr->node, in_ptr->offset);
     tmp.node = in_ptr->node;
     tmp.offset = in_ptr->offset;
 

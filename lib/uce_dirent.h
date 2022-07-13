@@ -25,9 +25,12 @@
  * 
  * May 28 1998, Toni Ronkko <tronkko@messi.uku.fi>
  *
- * $Id$
+ * $Id: uce_dirent.h,v 1.1 2005/07/10 19:24:57 gregsharp Exp $
  *
- * $Log$
+ * $Log: uce_dirent.h,v $
+ * Revision 1.1  2005/07/10 19:24:57  gregsharp
+ * Add this cool dirent compatibility layer file.
+ *
  * Revision 1.7  2002/05/13 10:48:35  tr
  * embedded some source code directly to the header so that no source
  * modules need to be included in the MS Visual C project using the

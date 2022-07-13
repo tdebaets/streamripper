@@ -16,7 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include "compat.h"
+#include "sr_compat.h"
 #include "srtypes.h"
 #include "socklib.h"
 #include "http.h"

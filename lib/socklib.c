@@ -43,7 +43,7 @@
 #include "srtypes.h"
 #include "socklib.h"
 #include "threadlib.h"
-#include "compat.h"
+#include "sr_compat.h"
 #include "debug.h"
 
 

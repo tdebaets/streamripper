@@ -211,6 +211,66 @@ ripstream_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size)
     return SR_SUCCESS;
 }
 
+/** Add function documentation here.
+    \callgraph
+*/
+error_code
+ripstream_queue_writer (
+    RIP_MANAGER_INFO* rmi, 
+    TRACK_INFO* ti, 
+    Cbuf3_pointer start_byte
+)
+{
+    error_code rc;
+    Cbuf3 *cbuf3 = &rmi->cbuf3;
+    GQueue *write_list = cbuf3->write_list;
+    Writer *writer;
+
+    debug_printf ("ripstream_mp3_start_track (starting)\n");
+
+    /* Give some feedback to the user */
+    rc = callback_start_track (rmi, ti);
+    if (rc != SR_SUCCESS) {
+	debug_printf ("callback_start_track failed: %d\n", rc);
+        return rc;
+    }
+
+    /* Create writer */
+    writer = (Writer*) malloc (sizeof(Writer));
+    if (!writer) {
+	return SR_ERROR_CANT_ALLOC_MEMORY;
+    }
+
+    /* Initialize writer */
+    memset (writer, 0, sizeof(Writer));
+    writer->m_next_byte = start_byte;
+    track_info_copy (&writer->m_ti, ti);
+    writer->m_track_no = rmi->track_count;
+
+    /* Update track count */
+    rmi->track_count ++;
+    debug_printf ("Changed track count %d -> %d\n", 
+	rmi->track_count - 1, rmi->track_count);
+
+    /* Add writer to queue */
+    debug_printf ("Queued writer.\n");
+    g_queue_push_tail (write_list, writer);
+    debug_printf ("write_list = %p, write_list->head = %p\n",
+	write_list, write_list->head);
+
+    /* Check if we are writing this track */
+    if (!GET_INDIVIDUAL_TRACKS (rmi->prefs->flags)) {
+        debug_printf ("!GET_INDIVIDUAL_TRACKS(rmi->prefs->flags)\n");
+	return SR_SUCCESS;
+    }
+    if (!rmi->write_data) {
+        debug_printf ("!rmi->write_data\n");
+	return SR_SUCCESS;
+    }
+
+    return SR_SUCCESS;
+}
+
 error_code
 ripstream_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 {
@@ -233,16 +293,35 @@ ripstream_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
 }
 
 error_code
-ripstream_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti)
+ripstream_end_track (RIP_MANAGER_INFO* rmi, Writer *writer)
 {
+    Cbuf3 *cbuf3 = &rmi->cbuf3;
+    GQueue *write_list = cbuf3->write_list;
     mchar mfullpath[SR_MAX_PATH];
     char fullpath[SR_MAX_PATH];
+    error_code rc;
 
-    callback_post_status(rmi, 0);
+    if (rmi->write_data) {
+        filelib_close (rmi, writer);
+    }
 
+    /* Rename the file to complete, or maybe leave in incomplete */
+    debug_printf ("Current track number %d (skipping if less than %d)\n", 
+	writer->m_track_no, rmi->prefs->dropcount);
+    if (writer->m_track_no >= rmi->prefs->dropcount) {
+	rc = filelib_rename_to_complete (rmi, writer);
+	if (rc != SR_SUCCESS) {
+	    return rc;
+	}
+    }
+
+    /* Post status */
+    callback_post_status (rmi, 0);
+#if defined (commentout)
     string_from_gstring (rmi, fullpath, SR_MAX_PATH, mfullpath, 
-			 CODESET_FILESYS);
+	CODESET_FILESYS);
     rmi->status_callback (rmi, RM_TRACK_DONE, (void*)fullpath);
+#endif
 
     return SR_SUCCESS;
 }

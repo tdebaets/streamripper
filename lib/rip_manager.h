@@ -21,7 +21,7 @@
 #include "prefs.h"
 #include "srtypes.h"
 #include "errors.h"
-#include "compat.h"
+#include "sr_compat.h"
 
 #define SRVERSION	"1.65.0-alpha"
 

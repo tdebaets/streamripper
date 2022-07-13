@@ -1,4 +1,6 @@
-/* sr_stdint.h
+/* sr_config.h.cmake
+ *
+ * This file is processed automatically by cmake to produce sr_config.h
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,13 +16,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#ifndef __SR_STDINT_H__
-#define __SR_STDINT_H__
+#ifndef __sr_config_h__
+#define __sr_config_h__
 
-#if defined (WIN32)
-/* Do something */
-#else
-#include <stdint.h>
+#cmakedefine OGG_FOUND 1
+#cmakedefine VORBIS_FOUND 1
+
+#if (OGG_FOUND && VORBIS_FOUND)
+#define OGG_VORBIS_FOUND 1
 #endif
 
 #endif

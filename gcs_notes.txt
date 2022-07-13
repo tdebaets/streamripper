@@ -1,8 +1,10 @@
 -----------------------------------------------------------------------
 Current 1.65.0 problem list:
 
-ogg doesn't write tracks (see "kkk" comments)
-console says ripping instead of skipping for first track
+console says ripping instead of skipping for first track (both mp3 and ogg)
+valgrind reports memory error in libmad (jump or move depends on 
+	 uninitialised value)
+valgrind reports memory leaks (due to exit method)
 
 -----------------------------------------------------------------------
 1.65.0 - Testing guide
@@ -13,6 +15,7 @@ MP3 w, w/o metadata
 Win98
 Check output files
 Check relay
+Check cue sheets
 
 -----------------------------------------------------------------------
 String conversion

@@ -17,9 +17,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#ifndef __RIPSTREAM_H__
-#define __RIPSTREAM_H__
+#ifndef __ripstream_h__
+#define __ripstream_h__
 
+#include "sr_config.h"
 #include "rip_manager.h"
 #include "srtypes.h"
 #include "prefs.h"
@@ -36,6 +37,12 @@ ripstream_put_data (RIP_MANAGER_INFO *rmi, char *buf, int size);
 error_code
 ripstream_start_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
 error_code
-ripstream_end_track (RIP_MANAGER_INFO* rmi, TRACK_INFO* ti);
+ripstream_queue_writer (
+    RIP_MANAGER_INFO* rmi, 
+    TRACK_INFO* ti, 
+    Cbuf3_pointer start_byte
+);
+error_code
+ripstream_end_track (RIP_MANAGER_INFO* rmi, Writer *writer);
 
 #endif

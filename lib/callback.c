@@ -52,7 +52,7 @@
 #include "ripstream.h"
 #include "threadlib.h"
 #include "debug.h"
-#include "compat.h"
+#include "sr_compat.h"
 #include "callback.h"
 
 

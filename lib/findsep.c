@@ -39,7 +39,7 @@
 // #define READSIZE	1000
 
 /* Uncomment to dump an mp3 of the search window. */
-// #define MAKE_DUMP_MP3 1
+#define MAKE_DUMP_MP3 1
 
 typedef struct FRAME_LIST_struct FRAME_LIST;
 struct FRAME_LIST_struct
@@ -214,8 +214,8 @@ findsep_silence (const char* mpgbuf,
     /* Run decoder */
     mad_decoder_init (&decoder, &ds, input, header, filter, output, 
 	error, NULL);
-    result = mad_decoder_run(&decoder, MAD_DECODER_MODE_SYNC);
-    mad_decoder_finish(&decoder);
+    result = mad_decoder_run (&decoder, MAD_DECODER_MODE_SYNC);
+    mad_decoder_finish (&decoder);
 
     debug_printf ("total length:    %d\n", ds.pcmpos);
     debug_printf ("silence_length:  %d ms\n", ds.silence_ms);
@@ -576,16 +576,17 @@ find_bitrate (unsigned long* bitrate, const char* mpgbuf, long mpgsize)
     gbs.mpgbuf = (unsigned char*) mpgbuf;
     gbs.mpgsize = mpgsize;
     gbs.bitrate = 0;
-    mad_decoder_init(&decoder,
-		     &gbs,
-		     input_get_bitrate /* input */,
-		     header_get_bitrate /* header */,
-		     NULL /* filter */,
-		     NULL /* output */,
-		     NULL /* error */,
-		     NULL /* message */);
-    result = mad_decoder_run(&decoder, MAD_DECODER_MODE_SYNC);
-    mad_decoder_finish(&decoder);
+    mad_decoder_init (
+	&decoder,
+	&gbs,
+	input_get_bitrate /* input */,
+	header_get_bitrate /* header */,
+	NULL /* filter */,
+	NULL /* output */,
+	NULL /* error */,
+	NULL /* message */);
+    result = mad_decoder_run (&decoder, MAD_DECODER_MODE_SYNC);
+    mad_decoder_finish (&decoder);
     *bitrate = gbs.bitrate;
     return SR_SUCCESS;
 }

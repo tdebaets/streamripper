@@ -27,7 +27,10 @@ Boston, MA 02111-1307, USA.  */
 #include "libiberty.h"
 #endif
 
-#include "config.h"
+#include "sr_config.h"
+
+/* Use compiler headers */
+#define ANSI_PROTOTYPES 1
 
 #if HAVE_ALLOCA_H
 # include <alloca.h>

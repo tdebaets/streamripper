@@ -11,7 +11,7 @@
  * See the file maintain.er for details of the current maintainer.	*
  ************************************************************************/
 
-/* $Id$ */
+/* $Id: panel.h,v 1.1 2007/07/07 20:12:17 gregsharp Exp $ */
 
 /*----------------------------------------------------------------------*
  *			   Panels for PDCurses				*

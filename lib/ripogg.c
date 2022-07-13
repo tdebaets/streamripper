@@ -18,7 +18,7 @@
  * Copyright 2002 Michael Smith <msmith@xiph.org>
  * Licensed under the GNU GPL, distributed with this program.
  */
-#include "srconfig.h"
+#include "sr_config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -31,7 +31,7 @@
 #include "debug.h"
 #include "mchar.h"
 
-#if (HAVE_OGG_VORBIS)
+#if OGG_VORBIS_FOUND
 #include <ogg/ogg.h>
 #include <vorbis/codec.h>
 #include <locale.h>
@@ -468,39 +468,43 @@ ripogg_get_checksum (ogg_page *op)
 
 void
 ripogg_process_chunk (RIP_MANAGER_INFO* rmi,
-                      const char* chunk,
-                      u_long size,
-                      TRACK_INFO* ti)
+    const char* chunk,
+    u_long size,
+    TRACK_INFO* ti)
 {
     int header;
     int ret;
     char *buffer;
-    struct cbuf3_pointer cbuf3_page_loc;
-    struct cbuf3_pointer cbuf3_tmp_loc;
+    Cbuf3_pointer cbuf3_page_loc;
+    Cbuf3_pointer cbuf3_tmp_loc;
     uint32_t pageno;
     uint32_t checksum;
     GList *new_pages = NULL;
-    struct cbuf3 *cbuf3 = &rmi->cbuf3;
-    struct ogg_page_reference *ol;
+    Cbuf3 *cbuf3 = &rmi->cbuf3;
+    Ogg_page_reference *opr;
 
     debug_printf ("-- ripogg_process_chunk (%d)\n", size);
 
-    /* Find cbuf3 location of beginning of next page */
+    /* Find cbuf3 location of beginning of new page (if new page is found) */
     if (!cbuf3->ogg_page_refs->tail) {
+	debug_printf ("Setting new ogg page loc to cbuf3->tail (why?)\n");
         cbuf3_page_loc.node = cbuf3->buf->tail;
         cbuf3_page_loc.offset = 0;
     } else {
-        struct ogg_page_reference *opr;
-        opr = (struct ogg_page_reference*) cbuf3->ogg_page_refs->tail->data;
+        Ogg_page_reference *opr;
+        opr = (Ogg_page_reference*) cbuf3->ogg_page_refs->tail->data;
         cbuf3_pointer_add (cbuf3, &cbuf3_page_loc,
-                           &opr->m_cbuf3_loc, opr->m_page_len);
+	    &opr->m_cbuf3_loc, opr->m_page_len);
     }
+    debug_printf ("cbuf3_page_loc initialized to (%p,%d)\n",
+	cbuf3_page_loc.node, cbuf3_page_loc.offset);
 
     buffer = ogg_sync_buffer (&rmi->ogg_sync, size);
     memcpy (buffer, chunk, size);
     ogg_sync_wrote (&rmi->ogg_sync, size);
 
     do {
+	debug_printf ("Looping on ogg_sync_pageout.\n");
         switch (ret = ogg_sync_pageout (&rmi->ogg_sync, &rmi->ogg_pg)) {
         case - 1:
             /* -1 if we were not properly synced and had to skip some bytes */
@@ -519,14 +523,14 @@ ripogg_process_chunk (RIP_MANAGER_INFO* rmi,
                 int rc;
                 ogg_packet packet;
                 ogg_stream_init (&rmi->stream.os,
-                                 ogg_page_serialno (&rmi->ogg_pg));
+		    ogg_page_serialno (&rmi->ogg_pg));
                 ogg_stream_pagein (&rmi->stream.os, &rmi->ogg_pg);
                 rc = ogg_stream_packetout (&rmi->stream.os, &packet);
                 if (rc <= 0) {
                     printf ("Warning: Invalid header page, no packet found\n");
                     exit (1);
                 } else if (packet.bytes >= 7
-                           && memcmp (packet.packet, "\001vorbis", 7) == 0) {
+		    && memcmp (packet.packet, "\001vorbis", 7) == 0) {
                     debug_printf ("Calling vorbis_start\n");
                     vorbis_start (&rmi->stream);
                 }
@@ -539,14 +543,13 @@ ripogg_process_chunk (RIP_MANAGER_INFO* rmi,
 
             /* Create ogg page reference */
             debug_printf ("Creating ogg page reference\n");
-            ol = (struct ogg_page_reference*) malloc
-                              (sizeof(struct ogg_page_reference));
-            if (!ol) {
+            opr = (Ogg_page_reference*) malloc (sizeof (Ogg_page_reference));
+            if (!opr) {
                 printf ("Malloc error\n");
                 exit (1);
             }
-            ol->m_page_len = rmi->ogg_pg.header_len + rmi->ogg_pg.body_len;
-            ol->m_page_flags = 0;
+            opr->m_page_len = rmi->ogg_pg.header_len + rmi->ogg_pg.body_len;
+            opr->m_page_flags = 0;
 
             /* *****************************************************
                Create header buffer for relay stream. A pointer to the
@@ -555,64 +558,70 @@ ripogg_process_chunk (RIP_MANAGER_INFO* rmi,
                the header to the relay. Finally, the memory for the
                header is freed when the last page of the song is
                ejected from the cbuf.
-             ** ******************************************************/
+	       ****************************************************** */
             debug_printf ("Decoding ogg page type\n");
             if (ogg_page_bos (&rmi->ogg_pg)) {
                 /* First page in song */
                 debug_printf ("First page in track\n");
-                ol->m_page_flags |= OGG_PAGE_BOS;
-                ol->m_header_buf_ptr = 0;
-                ol->m_header_buf_len = 0;
-                rmi->ogg_curr_header = (char*) malloc (ol->m_page_len);
-                rmi->ogg_curr_header_len = ol->m_page_len;
+                opr->m_page_flags |= OGG_PAGE_BOS;
+                opr->m_header_buf_ptr = 0;
+                opr->m_header_buf_len = 0;
+                rmi->ogg_curr_header = (char*) malloc (opr->m_page_len);
+                rmi->ogg_curr_header_len = opr->m_page_len;
                 memcpy (rmi->ogg_curr_header,
-                        rmi->ogg_pg.header, rmi->ogg_pg.header_len);
+		    rmi->ogg_pg.header, rmi->ogg_pg.header_len);
                 memcpy (rmi->ogg_curr_header + rmi->ogg_pg.header_len,
-                        rmi->ogg_pg.body, rmi->ogg_pg.body_len);
+		    rmi->ogg_pg.body, rmi->ogg_pg.body_len);
             } else if (header) {
                 /* Second or third page in song.  These are added together
                    with the first page to form the "song header".  */
                 debug_printf ("Second page in track\n");
-                ol->m_page_flags |= OGG_PAGE_2;
-                ol->m_header_buf_ptr = 0;
-                ol->m_header_buf_len = 0;
-                rmi->ogg_curr_header = (char*)
-                                       realloc (rmi->ogg_curr_header,
-                                                rmi->ogg_curr_header_len + ol->m_page_len);
+                opr->m_page_flags |= OGG_PAGE_2;
+                opr->m_header_buf_ptr = 0;
+                opr->m_header_buf_len = 0;
+                rmi->ogg_curr_header = (char*) realloc (rmi->ogg_curr_header,
+		    rmi->ogg_curr_header_len + opr->m_page_len);
                 memcpy (rmi->ogg_curr_header + rmi->ogg_curr_header_len,
-                        rmi->ogg_pg.header, rmi->ogg_pg.header_len);
+		    rmi->ogg_pg.header, rmi->ogg_pg.header_len);
                 memcpy (rmi->ogg_curr_header + rmi->ogg_curr_header_len
-                        + rmi->ogg_pg.header_len,
-                        rmi->ogg_pg.body, rmi->ogg_pg.body_len);
-                rmi->ogg_curr_header_len += ol->m_page_len;
+		    + rmi->ogg_pg.header_len,
+		    rmi->ogg_pg.body, rmi->ogg_pg.body_len);
+                rmi->ogg_curr_header_len += opr->m_page_len;
             } else if (!ogg_page_eos (&rmi->ogg_pg)) {
                 /* Middle pages in song */
                 debug_printf ("Middle page in track\n");
-                ol->m_header_buf_ptr = rmi->ogg_curr_header;
-                ol->m_header_buf_len = rmi->ogg_curr_header_len;
+                opr->m_header_buf_ptr = rmi->ogg_curr_header;
+                opr->m_header_buf_len = rmi->ogg_curr_header_len;
             } else {
                 /* Last page in song */
                 debug_printf ("Last page in track\n");
-                ol->m_page_flags |= OGG_PAGE_EOS;
-                ol->m_header_buf_ptr = rmi->ogg_curr_header;
-                ol->m_header_buf_len = rmi->ogg_curr_header_len;
+                opr->m_page_flags |= OGG_PAGE_EOS;
+                opr->m_header_buf_ptr = rmi->ogg_curr_header;
+                opr->m_header_buf_len = rmi->ogg_curr_header_len;
                 rmi->ogg_curr_header = 0;
                 rmi->ogg_curr_header_len = 0;
             }
 
             /* Assign page location within cbuf3 */
+            debug_printf ("Assigning page location (%p,%d)\n",
+		cbuf3_page_loc.node, cbuf3_page_loc.offset);
+            opr->m_cbuf3_loc = cbuf3_page_loc;
+
+	    /* Advance cbuf3_pointer */
             /* Note: cbuf3_pointer_add might overflow here, but that's ok.
                The current chunk was already added to cbuf3.  Therefore
                overflow can only occur on the last page of the loop. */
-            debug_printf ("Assigning page location\n");
-            ol->m_cbuf3_loc = cbuf3_page_loc;
-            cbuf3_pointer_add (cbuf3, &cbuf3_page_loc, &ol->m_cbuf3_loc,
-                               ol->m_page_len);
+            cbuf3_pointer_add (cbuf3, &cbuf3_page_loc, &opr->m_cbuf3_loc,
+		opr->m_page_len);
+            debug_printf ("   -> (%p,%d)\n",
+		cbuf3_page_loc.node, cbuf3_page_loc.offset);
 
-            /* Fix gaps in page numbers - we will first set the page number
+            /* *****************************************************
+	       Fix gaps in page numbers - we will first set the page number
                within the ogglib-controlled buffer, then recompute the
                checksum, and finally copy page number and checksum
-               to cbuf3 */
+               to cbuf3 
+	       ******************************************************* */
 
             /* Figure out correct page number */
             debug_printf ("Figuring out correct page number\n");
@@ -633,28 +642,29 @@ ripogg_process_chunk (RIP_MANAGER_INFO* rmi,
             /* Copy page number and checksum to cbuf3 */
             /* These cannot overflow */
             debug_printf ("Copying page number and checksum to cbuf3\n");
-            cbuf3_pointer_add (cbuf3, &cbuf3_tmp_loc, &ol->m_cbuf3_loc, 18);
+            cbuf3_pointer_add (cbuf3, &cbuf3_tmp_loc, &opr->m_cbuf3_loc, 18);
             cbuf3_set_uint32 (cbuf3, &cbuf3_tmp_loc, pageno);
-            cbuf3_pointer_add (cbuf3, &cbuf3_tmp_loc, &ol->m_cbuf3_loc, 22);
+            cbuf3_pointer_add (cbuf3, &cbuf3_tmp_loc, &opr->m_cbuf3_loc, 22);
             cbuf3_set_uint32 (cbuf3, &cbuf3_tmp_loc, checksum);
 
             /* Add page reference to temporary list */
             debug_printf ("Adding page reference to temporary list\n");
-            new_pages = g_list_append (new_pages, ol);
+            new_pages = g_list_append (new_pages, opr);
 
-            debug_printf ("OGG_PAGE\n"
-                          "  header_len = %d\n"
-                          "  body_len = %d\n"
-                          "  serial no = %d\n"
-                          "  page no = %d\n"
-                          "  bos? = %d\n"
-                          "  eos? = %d\n",
-                          rmi->ogg_pg.header_len,
-                          rmi->ogg_pg.body_len,
-                          ogg_page_serialno (&rmi->ogg_pg),
-                          ogg_page_pageno (&rmi->ogg_pg),
-                          ogg_page_bos (&rmi->ogg_pg),
-                          ogg_page_eos (&rmi->ogg_pg));
+            debug_printf (
+		"OGG_PAGE\n"
+		"  header_len = %d\n"
+		"  body_len = %d\n"
+		"  serial no = %d\n"
+		"  page no = %d\n"
+		"  bos? = %d\n"
+		"  eos? = %d\n",
+		rmi->ogg_pg.header_len,
+		rmi->ogg_pg.body_len,
+		ogg_page_serialno (&rmi->ogg_pg),
+		ogg_page_pageno (&rmi->ogg_pg),
+		ogg_page_bos (&rmi->ogg_pg),
+		ogg_page_eos (&rmi->ogg_pg));
 
             break; /* switch */
         }
@@ -666,18 +676,18 @@ ripogg_process_chunk (RIP_MANAGER_INFO* rmi,
     cbuf3_splice_page_list (cbuf3, &new_pages);
 
     debug_printf ("OGG_SYNC state:\n"
-                  "  storage = %d\n"
-                  "  fill = %d\n"
-                  "  returned = %d\n"
-                  "  unsynced = %d\n"
-                  "  headerbytes = %d\n"
-                  "  bodybytes = %d\n",
-                  rmi->ogg_sync.storage,
-                  rmi->ogg_sync.fill,
-                  rmi->ogg_sync.returned,
-                  rmi->ogg_sync.unsynced,
-                  rmi->ogg_sync.headerbytes,
-                  rmi->ogg_sync.bodybytes);
+	"  storage = %d\n"
+	"  fill = %d\n"
+	"  returned = %d\n"
+	"  unsynced = %d\n"
+	"  headerbytes = %d\n"
+	"  bodybytes = %d\n",
+	rmi->ogg_sync.storage,
+	rmi->ogg_sync.fill,
+	rmi->ogg_sync.returned,
+	rmi->ogg_sync.unsynced,
+	rmi->ogg_sync.headerbytes,
+	rmi->ogg_sync.bodybytes);
     //    return 1;
 }
 
@@ -697,14 +707,15 @@ ripogg_init (RIP_MANAGER_INFO* rmi)
     rmi->ogg_curr_header_len = 0;
 }
 
-#else /* HAVE_OGG_VORBIS == 0 */
+#else
 
 void
 ripogg_process_chunk (RIP_MANAGER_INFO* rmi,
-                      LIST* page_list, const char* buf, u_long size,
+                      const char* chunk,
+                      u_long size,
                       TRACK_INFO* ti)
 {
-    INIT_LIST_HEAD (page_list);
+    debug_printf ("-- ripogg_process_chunk (%d) [NO OGG DECODING]\n", size);
 }
 
 void
@@ -719,4 +730,4 @@ ripogg_init (RIP_MANAGER_INFO* rmi)
 {
 }
 
-#endif /* HAVE_OGG_VORBIS */
+#endif /* OGG_VORBIS_FOUND */

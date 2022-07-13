@@ -45,7 +45,7 @@
 #include "socklib.h"
 #include "threadlib.h"
 #include "debug.h"
-#include "compat.h"
+#include "sr_compat.h"
 #include "rip_manager.h"
 #include "cbuf3.h"
 

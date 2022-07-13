@@ -3,7 +3,7 @@
 
 #include "srtypes.h"
 #include "errors.h"
-#include "compat.h"
+#include "sr_compat.h"
 
 /******************************************************************************
  * Public functions

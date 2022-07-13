@@ -57,6 +57,7 @@ cbuf3_pointer_add (struct cbuf3 *cbuf3,
 		   long len);
 error_code
 cbuf3_pointer_subtract (
+    Cbuf3 *cbuf3,                 /* Input */
     u_long *diff,                 /* Output */
     struct cbuf3_pointer *ptr1,   /* Input */
     struct cbuf3_pointer *ptr2    /* Input */
@@ -81,6 +82,8 @@ cbuf3_ogg_peek_page (Cbuf3 *cbuf3,
 		     GList **page_node);
 void
 cbuf3_ogg_advance_page (Cbuf3 *cbuf3);
+error_code
+cbuf3_ogg_remove_old_page_references (Cbuf3 *cbuf3);
 error_code
 cbuf3_initialize_relay_client_ptr (struct cbuf3 *cbuf3,
 				   struct relay_client *relay_client,

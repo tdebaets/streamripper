@@ -20,7 +20,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
-#include "compat.h"
+#include "sr_compat.h"
 #include "filelib.h"
 #include "mchar.h"
 #include "debug.h"

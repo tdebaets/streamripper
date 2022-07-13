@@ -18,10 +18,8 @@
 #define __SRTYPES_H__
 
 #include <glib.h>
-
-//#include "regex.h"
-#include "srconfig.h"
-#include "compat.h"
+#include "sr_config.h"
+#include "sr_compat.h"
 #include "list.h"
 #if WIN32
 /* Warning: Not allowed to mix windows.h & cdk.h */
@@ -60,7 +58,7 @@ typedef unsigned int uint32_t;
 #include <stddef.h>
 #endif
 
-#if (HAVE_OGG_VORBIS)
+#if OGG_VORBIS_FOUND
 #include <ogg/ogg.h>
 #endif
 
@@ -327,12 +325,14 @@ struct cbuf3 {
 
     int         content_type;
 
+    /* This should be moved out of cbuf */
+    GQueue      *write_list;      /**< List of writers with tracks to write */
+
     /* Ogg stuff */
     GQueue      *ogg_page_refs;   /**< List of pointers to ogg pages */
     GList       *written_page;    /**< Most recently written page */
 
     /* MP3/AAC/NSV stuff */
-    GQueue      *write_list;      /**< List of writers with tracks to write */
     GQueue      *metadata_list;   /**< List of all metadata */
 };
 
@@ -389,7 +389,7 @@ struct relay_client
     u_long m_header_buf_off;     // for ogg header pages
 };
 
-#if (HAVE_OGG_VORBIS)
+#if OGG_VORBIS_FOUND
 typedef struct _stream_processor {
     void (*process_end)(struct _stream_processor *);
     int isillegal;
@@ -636,15 +636,15 @@ struct RIP_MANAGER_INFOst
     /* Private data used by parse.c */
     Parse_Rule* parse_rules;
 
-#if (HAVE_OGG_VORBIS)
+#if OGG_VORBIS_FOUND
     /* Ogg state, used by ripogg.c */
     ogg_sync_state ogg_sync;
     ogg_page ogg_pg;
     stream_processor stream;
     char* ogg_curr_header;
     int ogg_curr_header_len;
-    uint32_t ogg_fixed_page_no;
 #endif
+    uint32_t ogg_fixed_page_no;
 
     /* Mchar codesets -- these shadow prefs codesets */
     CODESET_OPTIONS mchar_cs;

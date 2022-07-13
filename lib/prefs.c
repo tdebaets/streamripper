@@ -493,6 +493,8 @@ static void
 prefs_get_stream_defaults (STREAM_PREFS* prefs)
 {
     debug_printf ("- set_rip_manager_options_defaults -\n");
+
+    strcpy (prefs->label, "stream defaults");
     //    prefs->url[0] = 0;
     prefs->proxyurl[0] = 0;
 
