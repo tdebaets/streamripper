@@ -1,0 +1,38 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "plugin_dll", "plugin_dll.vcproj", "{C0DB94DF-0013-4471-8268-B3FF9E42D69B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "streamripper_dll", "streamripper_dll.vcproj", "{DBA4AABA-54F4-4549-BB8A-1669A9AFC89F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "streamripper_exe", "streamripper_exe.vcproj", "{DD5CF196-5A66-4754-A163-FC19F270D522}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wstreamripper_exe", "wstreamripper_exe.vcproj", "{5C64A9F9-D755-42DF-9586-38A40C99D261}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C0DB94DF-0013-4471-8268-B3FF9E42D69B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C0DB94DF-0013-4471-8268-B3FF9E42D69B}.Debug|Win32.Build.0 = Debug|Win32
+		{C0DB94DF-0013-4471-8268-B3FF9E42D69B}.Release|Win32.ActiveCfg = Release|Win32
+		{C0DB94DF-0013-4471-8268-B3FF9E42D69B}.Release|Win32.Build.0 = Release|Win32
+		{DBA4AABA-54F4-4549-BB8A-1669A9AFC89F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DBA4AABA-54F4-4549-BB8A-1669A9AFC89F}.Debug|Win32.Build.0 = Debug|Win32
+		{DBA4AABA-54F4-4549-BB8A-1669A9AFC89F}.Release|Win32.ActiveCfg = Release|Win32
+		{DBA4AABA-54F4-4549-BB8A-1669A9AFC89F}.Release|Win32.Build.0 = Release|Win32
+		{DD5CF196-5A66-4754-A163-FC19F270D522}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DD5CF196-5A66-4754-A163-FC19F270D522}.Debug|Win32.Build.0 = Debug|Win32
+		{DD5CF196-5A66-4754-A163-FC19F270D522}.Release|Win32.ActiveCfg = Release|Win32
+		{DD5CF196-5A66-4754-A163-FC19F270D522}.Release|Win32.Build.0 = Release|Win32
+		{5C64A9F9-D755-42DF-9586-38A40C99D261}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5C64A9F9-D755-42DF-9586-38A40C99D261}.Debug|Win32.Build.0 = Debug|Win32
+		{5C64A9F9-D755-42DF-9586-38A40C99D261}.Release|Win32.ActiveCfg = Release|Win32
+		{5C64A9F9-D755-42DF-9586-38A40C99D261}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
