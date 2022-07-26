@@ -109,7 +109,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy release\streamripper.dll &quot;C:\Program Files\Streamripper&quot;"
+				CommandLine=""
 			/>
 		</Configuration>
 		<Configuration
@@ -145,11 +145,11 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\win32\glib-2.12.12\lib\glib-2.0\include&quot;;&quot;../win32/libogg-1.1.3&quot;;&quot;../win32/libvorbis-1.1.2&quot;;../lib;&quot;../libmad-0.15.1b/msvc++&quot;;&quot;..\win32\glib-2.16.6-1\include\glib-2.0&quot;;&quot;../iconv-win32/static&quot;"
+				AdditionalIncludeDirectories="&quot;..\win32\glib-2.16.6-1\lib\glib-2.0\include&quot;;&quot;../win32/libogg-1.1.3&quot;;&quot;../win32/libvorbis-1.1.2&quot;;../lib;&quot;../libmad-0.15.1b/msvc++&quot;;&quot;..\win32\glib-2.16.6-1\include\glib-2.0&quot;;&quot;../iconv-win32/static&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;HAVE_MPGLIB;NOANALYSIS;HAVE_MEMCPY;DEBUG_TO_FILE;_DEBUG_"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="2"
 				PrecompiledHeaderFile=".\Debug/streamripper_dll.pch"
 				AssemblerListingLocation=".\Debug/"
 				ObjectFile=".\Debug/"
@@ -207,7 +207,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy debug\streamripper.dll &quot;C:\Program Files\Streamripper&quot;"
+				CommandLine=""
 			/>
 		</Configuration>
 	</Configurations>
@@ -219,26 +219,8 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
-				RelativePath="..\lib\cbuf3.c"
+				RelativePath="..\lib\cbuf2.c"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\lib\debug.c"
@@ -571,50 +553,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\lib\ripstream_mp3.c"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\lib\ripstream_ogg.c"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="..\lib\socklib.c"
 				>
 				<FileConfiguration
@@ -642,28 +580,6 @@
 			</File>
 			<File
 				RelativePath="..\lib\threadlib.c"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\lib\track_info.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"

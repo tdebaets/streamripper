@@ -108,7 +108,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy release\streamripper.exe &quot;C:\Program Files\Streamripper&quot;"
+				CommandLine=""
 			/>
 		</Configuration>
 		<Configuration
@@ -207,7 +207,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy debug\streamripper.exe &quot;C:\Program Files\Streamripper&quot;"
+				CommandLine=""
 			/>
 		</Configuration>
 	</Configurations>
