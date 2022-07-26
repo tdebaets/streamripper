@@ -250,7 +250,7 @@ prefs_save (void)
     /* Write to file */
     /* RMK: We use glib string encoding for conversion of the filename
 	rather than --codeset-filesys here. */
-    fp = g_fopen (prefs_fn, "w");
+    fp = fopen (prefs_fn, "w");
     if (fp) {
 	debug_printf ("Writing, len = %d\n", keyfile_contents_len);
 	fwrite (keyfile_contents, 1, keyfile_contents_len, fp);
@@ -391,7 +391,7 @@ prefs_get_stream_prefs (STREAM_PREFS* prefs, char* label)
 	strcpy (prefs->url, label_copy);
     }
 
-    g_free (label_copy);
+    free (label_copy);
 
     //    printf ("Home dir is: %s\n", g_get_home_dir());
     //    printf ("Config dir is: %s\n", g_get_user_config_dir ());
