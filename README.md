@@ -1,6 +1,6 @@
 Unofficial fork of [Streamripper](http://streamripper.sourceforge.net/), an application that lets you record streaming MP3 to your hard drive. The source code was obtained both from Streamripper's Git repository and CVS repository at SourceForge, after which the (older) CVS history was merged with the (newer) Git history. That way, all publicly available and historic commits have been preserved.
 
-The latest version of Streamripper that was released is 1.64.6, from March 2009. That version has an issue where it's unable to record certain HTTP streams that redirect to a different location (more details further below), which is the main reason why this fork was created. Since development of Streamripper still continued for a while after the last version was released, the initial idea was to use this fork to create a build based off the latest commits to come up with a fix. However, this quickly proved to be impracticable since these builds are too unstable and usually crash a few seconds after recording has been started.
+The latest version of Streamripper that was released is 1.64.6, from March 2009. That version has an issue where it's unable to record certain HTTP streams that redirect to a different location (more details further below), which is the main reason why this fork was created. Since development of Streamripper still continued for a while after the last version was released, the initial idea was to use this fork to create a build based off the latest commits to come up with a fix. However, this quickly proved to be impractical since these builds are too unstable and usually crash a few seconds after recording has been started.
 
 So the alternative route was chosen to create a new branch based on the 1.64.6 code and apply the fix for the redirection issue on top of that. As a result, this newly created branch - [sripper-1_64_6](../../tree/sripper-1_64_6) - should be identical to the released 1.64.6 version, except for the following changes that were applied on top of the original code: (see the `sripper-1_64_6` commit log for more details)
 
@@ -15,6 +15,12 @@ First make sure that you have a recent version of the [Git client](https://git-s
 ```
 > git clone https://github.com/tdebaets/streamripper.git streamripper
 > cd streamripper
+```
+
+To switch to the 1.64.6 branch:
+
+```
+> git checkout sripper-1_64_6
 ```
 
 To keep your repository up-to-date, run the `git pull` command.
