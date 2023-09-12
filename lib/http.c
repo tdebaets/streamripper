@@ -178,18 +178,21 @@ http_parse_url(const char *url, URLINFO *urlinfo)
 	urlinfo->password[0] = '\0';
     }
 
-    /* search for a port seperator */
-    if (strchr(url, ':') != NULL) {
+    /* first check if there's an explicit host port specified */
 	debug_printf ("Branch 1 (%s)\n", url);
 	ret = sscanf(url, "%511[^:]:%hu/%252s", urlinfo->host, 
 		     (short unsigned int*)&urlinfo->port, urlinfo->path+1);
-	if (urlinfo->port < 1) return SR_ERROR_PARSE_FAILURE;
-	ret -= 1;
-    } else {
+    debug_printf ("sscanf returned %d\n", ret);
+    if (ret >= 2) {
+	    if (urlinfo->port < 1) return SR_ERROR_PARSE_FAILURE;
+	    return SR_SUCCESS;
+    }
+
 	debug_printf ("Branch 2 (%s)\n", url);
 	urlinfo->port = 80;
 	ret = sscanf(url, "%511[^/]/%252s", urlinfo->host, urlinfo->path+1);
-    }
+    debug_printf ("sscanf returned %d\n", ret);
+
     if (ret < 1) return SR_ERROR_INVALID_URL;
 
     return SR_SUCCESS;
@@ -202,6 +205,8 @@ http_construct_sc_request(const char *url, const char* proxyurl, char *buffer, c
     URLINFO ui;
     URLINFO proxyui;
     char myurl[MAX_URL_LEN];
+    char hostport[1+10+1];
+
     if ((ret = http_parse_url(url, &ui)) != SR_SUCCESS)
 	return ret;
 
@@ -226,6 +231,12 @@ http_construct_sc_request(const char *url, const char* proxyurl, char *buffer, c
 	     useragent[0] ? useragent : "Streamripper/1.x");
 #endif
 
+    /* Only include host port if it's different than the default */
+    if (ui.port != 80)
+    snprintf(hostport, sizeof(hostport), ":%d", ui.port);
+    else
+    hostport[0] = '\0';
+
     /* This is the header suggested Florian Stoehr */
     snprintf(buffer, MAX_HEADER_LEN + MAX_HOST_LEN + SR_MAX_PATH,
 	     "GET %s HTTP/1.1\r\n"
@@ -234,11 +245,11 @@ http_construct_sc_request(const char *url, const char* proxyurl, char *buffer, c
 	     "User-Agent: %s\r\n"
 	     "Icy-Metadata: 1\r\n"
 	     "Connection: close\r\n"
-	     "Host: %s:%d\r\n",
+	     "Host: %s%s\r\n",
 	     myurl,
 	     useragent[0] ? useragent: "Streamripper/1.x",
 	     ui.host,
-	     ui.port);
+         hostport);
 
     // http authentication (not proxy, see below for that)
     if (ui.username[0] && ui.password[0]) {
